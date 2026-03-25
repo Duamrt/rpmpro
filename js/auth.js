@@ -1,7 +1,7 @@
 // RPM Pro — Autenticação
 const AUTH = {
   async login(email, senha) {
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await db.auth.signInWithPassword({
       email, password: senha
     });
     if (error) throw error;
@@ -10,54 +10,48 @@ const AUTH = {
 
   async cadastrar(email, senha, nomeOficina, nomeUsuario) {
     // 1. Cria usuario no auth
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    const { data: authData, error: authError } = await db.auth.signUp({
       email, password: senha
     });
     if (authError) throw authError;
 
+    // Se nao tem sessao (confirmacao de email ligada), faz login
+    if (!authData.session) {
+      const { data: loginData, error: loginError } = await db.auth.signInWithPassword({
+        email, password: senha
+      });
+      if (loginError) throw new Error('Conta criada mas nao conseguiu logar. Tente fazer login.');
+    }
+
     const userId = authData.user.id;
 
-    // 2. Cria oficina
-    const { data: oficina, error: ofError } = await supabase
-      .from('oficinas')
-      .insert({
-        nome: nomeOficina,
-        plano: 'beta',
-        trial_ate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-      })
-      .select()
-      .single();
-    if (ofError) throw ofError;
+    // 2. Cria oficina + profile atomicamente via RPC
+    const { data: result, error: rpcError } = await db.rpc('criar_oficina_e_dono', {
+      p_user_id: userId,
+      p_email: email,
+      p_nome_oficina: nomeOficina,
+      p_nome_usuario: nomeUsuario
+    });
+    if (rpcError) throw rpcError;
 
-    // 3. Cria profile do dono
-    const { error: pfError } = await supabase
-      .from('profiles')
-      .insert({
-        id: userId,
-        oficina_id: oficina.id,
-        nome: nomeUsuario,
-        email: email,
-        role: 'dono'
-      });
-    if (pfError) throw pfError;
-
-    return { user: authData.user, oficina };
+    return { user: authData.user, oficina: result };
   },
 
   async logout() {
-    await supabase.auth.signOut();
+    await db.auth.signOut();
     window.location.href = 'login.html';
   },
 
   async getUser() {
-    const { data: { user } } = await supabase.auth.getUser();
-    return user;
+    const { data: { session } } = await db.auth.getSession();
+    if (!session) return null;
+    return session.user;
   },
 
   async getProfile() {
     const user = await this.getUser();
     if (!user) return null;
-    const { data } = await supabase
+    const { data } = await db
       .from('profiles')
       .select('*, oficinas(*)')
       .eq('id', user.id)
@@ -69,7 +63,10 @@ const AUTH = {
   async requireAuth() {
     const user = await this.getUser();
     if (!user) {
-      window.location.href = 'login.html';
+      // Evita loop: so redireciona se NAO estiver no login
+      if (!window.location.pathname.includes('login')) {
+        window.location.href = 'login.html';
+      }
       return null;
     }
     return user;

@@ -229,6 +229,7 @@ body {
 .badge-diagnostico { background: #8b5cf622; color: #a78bfa; }
 .badge-orcamento { background: var(--warning-bg); color: var(--warning); }
 .badge-aprovada { background: #06b6d422; color: #22d3ee; }
+.badge-aguardando_peca { background: #f0883e22; color: #f0883e; }
 .badge-execucao { background: var(--info-bg); color: var(--info); }
 .badge-pronto { background: var(--success-bg); color: var(--success); }
 .badge-entregue { background: #484f5822; color: var(--text-secondary); }

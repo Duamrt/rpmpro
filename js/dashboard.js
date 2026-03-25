@@ -6,32 +6,32 @@ const DASHBOARD = {
     // KPIs em paralelo
     const [osAbertas, aguardando, prontas, faturamento, fila] = await Promise.all([
       // OS abertas (tudo que nao foi entregue nem cancelada)
-      supabase.from('ordens_servico')
+      db.from('ordens_servico')
         .select('id', { count: 'exact', head: true })
         .eq('oficina_id', oficina_id)
         .not('status', 'in', '("entregue","cancelada")'),
 
       // Aguardando orcamento
-      supabase.from('ordens_servico')
+      db.from('ordens_servico')
         .select('id', { count: 'exact', head: true })
         .eq('oficina_id', oficina_id)
         .eq('status', 'orcamento'),
 
       // Prontas pra entrega
-      supabase.from('ordens_servico')
+      db.from('ordens_servico')
         .select('id', { count: 'exact', head: true })
         .eq('oficina_id', oficina_id)
         .eq('status', 'pronto'),
 
       // Faturamento do mes (OS entregues e pagas)
-      supabase.from('ordens_servico')
+      db.from('ordens_servico')
         .select('valor_total')
         .eq('oficina_id', oficina_id)
         .eq('pago', true)
         .gte('data_entrega', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()),
 
       // Fila do dia (OS nao entregues, ordenado por status)
-      supabase.from('ordens_servico')
+      db.from('ordens_servico')
         .select('*, veiculos(placa, marca, modelo), clientes(nome), profiles!ordens_servico_mecanico_id_fkey(nome)')
         .eq('oficina_id', oficina_id)
         .not('status', 'in', '("entregue","cancelada")')

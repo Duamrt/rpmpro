@@ -21,8 +21,8 @@ const APP = {
     const elUser = document.getElementById('user-nome');
     if (elUser) elUser.textContent = this.profile.nome;
 
-    // Carrega pagina salva ou dashboard
-    this.loadPage(localStorage.getItem('rpmpro-page') || 'dashboard');
+    // Carrega pagina salva ou kanban (patio)
+    this.loadPage(localStorage.getItem('rpmpro-page') || 'kanban');
 
     // Sidebar navigation
     document.querySelectorAll('[data-page]').forEach(el => {
