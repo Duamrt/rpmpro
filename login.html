@@ -34,8 +34,8 @@
 
   <div class="login-card">
     <div class="tab-switch">
-      <button class="active" onclick="showTab('login')">Entrar</button>
-      <button onclick="showTab('cadastro')">Criar conta</button>
+      <button class="active" onclick="showTab('login', event)">Entrar</button>
+      <button onclick="showTab('cadastro', event)">Criar conta</button>
     </div>
 
     <div class="login-error" id="login-error"></div>
@@ -90,9 +90,9 @@
     if (session) window.location.href = 'index.html';
   })();
 
-  function showTab(tab) {
+  function showTab(tab, e) {
     document.querySelectorAll('.tab-switch button').forEach(b => b.classList.remove('active'));
-    event.target.classList.add('active');
+    e.target.classList.add('active');
     document.getElementById('form-login').classList.toggle('hidden', tab !== 'login');
     document.getElementById('form-cadastro').classList.toggle('hidden', tab !== 'cadastro');
     document.getElementById('login-error').style.display = 'none';

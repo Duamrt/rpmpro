@@ -27,15 +27,24 @@ const KANBAN = {
     const isDono = ['dono', 'gerente'].includes(APP.profile.role);
     this._cachedIsDono = isDono;
 
-    // Busca todas OS ativas
-    const { data: ordens } = await db
-      .from('ordens_servico')
-      .select('*, veiculos(placa, marca, modelo, cor), clientes(nome, whatsapp), profiles!ordens_servico_mecanico_id_fkey(nome)')
-      .eq('oficina_id', APP.profile.oficina_id)
-      .not('status', 'eq', 'cancelada')
-      .order('created_at', { ascending: true });
+    // Busca OS ativas (não entregue/cancelada) + entregues dos últimos 7 dias
+    const seteDiasAtras = new Date(Date.now() - 7 * 86400000).toISOString();
 
-    const lista = ordens || [];
+    const [ativasRes, entreguesRes] = await Promise.all([
+      db.from('ordens_servico')
+        .select('*, veiculos(placa, marca, modelo, cor), clientes(nome, whatsapp), profiles!ordens_servico_mecanico_id_fkey(nome)')
+        .eq('oficina_id', APP.profile.oficina_id)
+        .not('status', 'in', '("entregue","cancelada")')
+        .order('created_at', { ascending: true }),
+      db.from('ordens_servico')
+        .select('*, veiculos(placa, marca, modelo, cor), clientes(nome, whatsapp), profiles!ordens_servico_mecanico_id_fkey(nome)')
+        .eq('oficina_id', APP.profile.oficina_id)
+        .eq('status', 'entregue')
+        .gte('data_entrega', seteDiasAtras)
+        .order('data_entrega', { ascending: false })
+    ]);
+
+    const lista = [...(ativasRes.data || []), ...(entreguesRes.data || [])];
 
     // Filtro por mecânico (se não for dono/gerente)
     const filtradas = isDono ? lista : lista.filter(os => os.mecanico_id === APP.profile.id);
@@ -93,7 +102,7 @@ const KANBAN = {
                style="min-width:220px;max-width:220px;flex-shrink:0;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);display:flex;flex-direction:column;${mostrarEntregue ? 'opacity:0.6;' : ''}">
             <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
               <span style="font-size:13px;font-weight:700;">${col.icon} ${esc(col.label)}</span>
-              <span style="background:var(--bg-input);padding:2px 8px;border-radius:12px;font-size:12px;font-weight:700;color:var(--text-secondary);">${cards.length}</span>
+              <span data-count style="background:var(--bg-input);padding:2px 8px;border-radius:12px;font-size:12px;font-weight:700;color:var(--text-secondary);">${cards.length}</span>
             </div>
             <div style="padding:8px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;" data-status="${col.status}">
               ${cards.map(os => this._renderCard(os, isDono)).join('')}
@@ -409,7 +418,8 @@ const KANBAN = {
     // Atualiza contadores
     document.querySelectorAll('.kanban-col').forEach(col => {
       const count = col.querySelectorAll('.kanban-card:not([style*="display: none"])').length;
-      col.querySelector('[style*="border-radius:12px"]').textContent = count;
+      const countEl = col.querySelector('[data-count]');
+      if (countEl) countEl.textContent = count;
     });
 
     document.getElementById('kanban-total').textContent = visivel + ' veiculos no patio';

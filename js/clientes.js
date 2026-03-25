@@ -1,31 +1,67 @@
 // RPM Pro — Clientes
 const CLIENTES = {
   _veiculoCount: 0,
+  _busca: '',
+  _offset: 0,
+  _limit: 100,
+  _lista: [],
+  _temMais: false,
 
-  async carregar() {
-    const { data, error } = await db
+  async carregar(append = false) {
+    if (!append) {
+      this._offset = 0;
+      this._lista = [];
+    }
+
+    let query = db
       .from('clientes')
       .select('*, veiculos(count)')
       .eq('oficina_id', APP.profile.oficina_id)
-      .order('nome');
+      .order('nome')
+      .range(this._offset, this._offset + this._limit - 1);
+
+    const busca = this._busca.trim();
+    if (busca) {
+      query = query.or(`nome.ilike.%${busca}%,whatsapp.ilike.%${busca}%,cpf_cnpj.ilike.%${busca}%`);
+    }
+
+    const { data, error } = await query;
 
     if (error) { APP.toast('Erro ao carregar clientes', 'error'); return; }
-    this.render(data || []);
+
+    const novos = data || [];
+    this._lista = append ? [...this._lista, ...novos] : novos;
+    this._temMais = novos.length === this._limit;
+    this._offset += novos.length;
+    this.render(this._lista);
+  },
+
+  _onBusca(valor) {
+    this._busca = valor;
+    clearTimeout(this._buscaTimer);
+    this._buscaTimer = setTimeout(() => this.carregar(), 300);
   },
 
   render(lista) {
     const container = document.getElementById('clientes-lista');
+
+    const buscaHtml = `
+      <div style="margin-bottom:14px;">
+        <input type="text" class="form-control" placeholder="Buscar por nome, whatsapp ou CPF/CNPJ..." value="${esc(this._busca)}" oninput="CLIENTES._onBusca(this.value)" style="max-width:400px;">
+      </div>`;
+
     if (!lista.length) {
-      container.innerHTML = `
+      container.innerHTML = buscaHtml + `
         <div class="empty-state">
           <div class="icon">👤</div>
-          <h3>Nenhum cliente cadastrado</h3>
-          <p>Clique em "+ Novo Cliente" para comecar</p>
+          <h3>${this._busca ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}</h3>
+          <p>${this._busca ? 'Tente outro termo de busca' : 'Clique em "+ Novo Cliente" para comecar'}</p>
         </div>`;
       return;
     }
 
-    container.innerHTML = `
+    container.innerHTML = buscaHtml + `
+      <div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">Mostrando ${lista.length} clientes${this._busca ? ' (filtrado)' : ''}</div>
       <table class="data-table">
         <thead>
           <tr>
@@ -49,7 +85,8 @@ const CLIENTES = {
             </tr>
           `).join('')}
         </tbody>
-      </table>`;
+      </table>
+      ${this._temMais ? `<div style="text-align:center;margin-top:16px;"><button class="btn btn-secondary" onclick="CLIENTES.carregar(true)">Carregar mais</button></div>` : ''}`;
   },
 
   async abrirModal(dados = {}) {

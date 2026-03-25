@@ -496,7 +496,7 @@ const OS = {
 
   async abrirDetalhes(id) {
     // Busca OS + itens + peças + checklists em paralelo
-    const [osRes, itensRes, pecasRes, chkEntradaRes, chkSaidaRes] = await Promise.all([
+    const [osRes, itensRes, chkEntradaRes, chkSaidaRes] = await Promise.all([
       db.from('ordens_servico')
         .select('*, veiculos(placa, marca, modelo, km_atual), clientes(nome, whatsapp), profiles!ordens_servico_mecanico_id_fkey(nome)')
         .eq('id', id).single(),
@@ -505,10 +505,6 @@ const OS = {
         .eq('os_id', id)
         .order('tipo', { ascending: false })
         .order('created_at'),
-      db.from('pecas')
-        .select('id, nome, codigo, marca, preco_venda, quantidade')
-        .eq('oficina_id', APP.profile.oficina_id)
-        .order('nome'),
       db.from('checklists_entrada')
         .select('*')
         .eq('os_id', id)
@@ -522,7 +518,9 @@ const OS = {
     const os = osRes.data;
     if (!os) return;
     const itens = itensRes.data || [];
-    const pecasEstoque = pecasRes.data || [];
+    // Peças do estoque carregadas sob demanda em mostrarAddPeca()
+    this._pecasEstoque = null; // limpa cache ao abrir outra OS
+    const pecasEstoque = [];
     const chkEntrada = chkEntradaRes.data || null;
     const chkSaida = chkSaidaRes.data || null;
 
@@ -698,12 +696,18 @@ const OS = {
       </div>
     `);
 
-    // Guarda peças do estoque pro modal
-    this._pecasEstoque = pecasEstoque;
   },
 
   // Adicionar peça (do estoque ou avulso)
-  mostrarAddPeca(tipo) {
+  async mostrarAddPeca(tipo) {
+    // Carrega peças do estoque sob demanda (com cache)
+    if (tipo === 'estoque' && !this._pecasEstoque) {
+      const { data } = await db.from('pecas')
+        .select('id, nome, codigo, marca, preco_venda, quantidade')
+        .eq('oficina_id', APP.profile.oficina_id)
+        .order('nome');
+      this._pecasEstoque = data || [];
+    }
     const container = document.getElementById('det-add-peca');
     container.classList.remove('hidden');
 
@@ -867,21 +871,26 @@ const OS = {
   async removerItem(itemId, osId, pecaId, quantidade) {
     if (!confirm('Remover este item?')) return;
 
-    // Se era do estoque, devolve
+    // Se era do estoque, devolve (incremento atômico via RPC)
     if (pecaId) {
-      const { data: peca } = await db.from('pecas').select('quantidade').eq('id', pecaId).single();
-      if (peca) {
-        await db.from('pecas').update({ quantidade: (peca.quantidade || 0) + quantidade }).eq('id', pecaId);
-        await db.from('estoque_movimentos').insert({
-          oficina_id: this._osAtualOficinaId,
-          peca_id: pecaId,
-          os_id: osId,
-          tipo: 'entrada',
-          quantidade: quantidade,
-          observacao: 'Devolvido da OS (item removido)',
-          created_by: APP.profile.id
-        });
+      try {
+        await db.rpc('devolver_estoque', { p_peca_id: pecaId, p_quantidade: quantidade });
+      } catch (_) {
+        // Fallback se RPC não existir ainda
+        const { data: peca } = await db.from('pecas').select('quantidade').eq('id', pecaId).single();
+        if (peca) {
+          await db.from('pecas').update({ quantidade: (peca.quantidade || 0) + quantidade }).eq('id', pecaId);
+        }
       }
+      await db.from('estoque_movimentos').insert({
+        oficina_id: this._osAtualOficinaId,
+        peca_id: pecaId,
+        os_id: osId,
+        tipo: 'entrada',
+        quantidade: quantidade,
+        observacao: 'Devolvido da OS (item removido)',
+        created_by: APP.profile.id
+      });
     }
 
     await db.from('itens_os').delete().eq('id', itemId);
