@@ -73,6 +73,7 @@ const DASHBOARD = {
       diagnostico: 'Diagnostico',
       orcamento: 'Orcamento',
       aprovada: 'Aprovada',
+      aguardando_peca: 'Aguardando Peca',
       execucao: 'Em execucao',
       pronto: 'Pronto',
     };
