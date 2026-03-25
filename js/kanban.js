@@ -315,6 +315,11 @@ const KANBAN = {
       }
     }
 
+    // Lança no caixa se entregue
+    if (novoStatus === 'entregue' && typeof OS._lancarNoCaixa === 'function') {
+      await OS._lancarNoCaixa(osId);
+    }
+
     APP.toast('Status: ' + novoStatus);
     this.carregar();
   },
@@ -394,6 +399,11 @@ const KANBAN = {
         const enviar = confirm(`Enviar WhatsApp pro cliente?\n\n"${msg}"`);
         if (enviar) window.open(`https://wa.me/${fone}?text=${encodeURIComponent(msg)}`, '_blank');
       }
+    }
+
+    // Lança no caixa se entregue
+    if (novoStatus === 'entregue' && typeof OS._lancarNoCaixa === 'function') {
+      await OS._lancarNoCaixa(osId);
     }
 
     APP.toast('Status atualizado: ' + novoStatus);

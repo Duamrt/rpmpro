@@ -966,16 +966,99 @@ const OS = {
     if (status === 'entregue') update.data_entrega = new Date().toISOString();
 
     await db.from('ordens_servico').update(update).eq('id', id);
+
+    // Se marcou como entregue, tenta lançar no caixa
+    if (status === 'entregue') {
+      await this._lancarNoCaixa(id);
+    }
+
     APP.toast('Status atualizado');
   },
 
   async atualizarPagamento(id, forma) {
+    const pago = forma !== 'pendente';
     await db.from('ordens_servico').update({
       forma_pagamento: forma,
-      pago: forma !== 'pendente',
+      pago,
       updated_at: new Date().toISOString()
     }).eq('id', id);
+
+    // Se pagou e OS já tá entregue, lança no caixa
+    if (pago) {
+      await this._lancarNoCaixa(id);
+    }
+
     APP.toast('Pagamento atualizado');
+  },
+
+  // Lança OS no caixa automaticamente (se entregue + paga + ainda não lançada)
+  async _lancarNoCaixa(osId) {
+    const oficina_id = APP.profile.oficina_id;
+
+    // Busca OS pra verificar se tá paga e entregue
+    const { data: os } = await db.from('ordens_servico')
+      .select('id, numero, status, pago, valor_mao_obra, valor_pecas, valor_total, desconto, forma_pagamento, veiculos(placa), clientes(nome)')
+      .eq('id', osId).single();
+
+    if (!os || !os.pago || os.status !== 'entregue') return;
+
+    // Verifica se já foi lançada (evita duplicata)
+    const { data: jaLancou } = await db.from('caixa')
+      .select('id')
+      .eq('oficina_id', oficina_id)
+      .eq('os_id', osId)
+      .maybeSingle();
+
+    if (jaLancou) return; // já tá no caixa
+
+    // Lança entrada no caixa
+    const descricao = `OS #${os.numero || '-'} — ${os.veiculos?.placa || ''} — ${os.clientes?.nome || ''}`;
+
+    const lancamentos = [];
+
+    if (os.valor_mao_obra > 0) {
+      lancamentos.push({
+        oficina_id,
+        os_id: osId,
+        tipo: 'entrada',
+        categoria: 'servico',
+        descricao: descricao + ' (mão de obra)',
+        valor: os.valor_mao_obra,
+        forma_pagamento: os.forma_pagamento,
+        created_by: APP.profile.id
+      });
+    }
+
+    if (os.valor_pecas > 0) {
+      lancamentos.push({
+        oficina_id,
+        os_id: osId,
+        tipo: 'entrada',
+        categoria: 'peca',
+        descricao: descricao + ' (peças)',
+        valor: os.valor_pecas,
+        forma_pagamento: os.forma_pagamento,
+        created_by: APP.profile.id
+      });
+    }
+
+    // Se só tem valor_total sem split, lança inteiro
+    if (!lancamentos.length && os.valor_total > 0) {
+      lancamentos.push({
+        oficina_id,
+        os_id: osId,
+        tipo: 'entrada',
+        categoria: 'servico',
+        descricao,
+        valor: os.valor_total,
+        forma_pagamento: os.forma_pagamento,
+        created_by: APP.profile.id
+      });
+    }
+
+    if (lancamentos.length) {
+      await db.from('caixa').insert(lancamentos);
+    }
   },
 
   // ==========================================
