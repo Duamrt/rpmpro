@@ -21,6 +21,9 @@ const APP = {
     const elUser = document.getElementById('user-nome');
     if (elUser) elUser.textContent = this.profile.nome;
 
+    // Ajusta bottom nav por perfil
+    this._setupBottomNav();
+
     // Carrega pagina salva ou kanban (patio)
     this.loadPage(localStorage.getItem('rpmpro-page') || 'kanban');
 
@@ -29,6 +32,9 @@ const APP = {
       el.addEventListener('click', (e) => {
         e.preventDefault();
         this.loadPage(el.dataset.page);
+        // Fecha menu overflow se aberto
+        const moreMenu = document.getElementById('bottom-nav-more');
+        if (moreMenu) moreMenu.remove();
       });
     });
   },
@@ -67,6 +73,83 @@ const APP = {
   formatDateTime(date) {
     if (!date) return '-';
     return new Date(date).toLocaleString('pt-BR');
+  },
+
+  _setupBottomNav() {
+    const nav = document.querySelector('.bottom-nav');
+    if (!nav) return;
+    const role = this.profile.role;
+
+    // Define itens por perfil
+    const configs = {
+      mecanico: [
+        { page: 'kanban', icon: '🏗️', label: 'Patio' },
+        { page: 'os', icon: '🔧', label: 'OS' },
+        { page: 'equipe', icon: '👥', label: 'Equipe' },
+      ],
+      atendente: [
+        { page: 'kanban', icon: '🏗️', label: 'Patio' },
+        { page: 'os', icon: '🔧', label: 'OS' },
+        { page: 'clientes', icon: '👤', label: 'Clientes' },
+        { page: 'veiculos', icon: '🚗', label: 'Veiculos' },
+      ],
+      dono: [
+        { page: 'kanban', icon: '🏗️', label: 'Patio' },
+        { page: 'os', icon: '🔧', label: 'OS' },
+        { page: 'clientes', icon: '👤', label: 'Clientes' },
+        { page: 'pecas', icon: '📦', label: 'Estoque' },
+        { page: '_more', icon: '⋯', label: 'Mais' },
+      ],
+    };
+    configs.gerente = configs.dono;
+
+    const items = configs[role] || configs.dono;
+
+    // Itens extras pro menu overflow (dono/gerente)
+    const moreItems = [
+      { page: 'veiculos', icon: '🚗', label: 'Veiculos' },
+      { page: 'equipe', icon: '👥', label: 'Equipe' },
+      { page: 'dashboard', icon: '📊', label: 'Dashboard' },
+      { page: 'config', icon: '⚙️', label: 'Config' },
+    ];
+
+    nav.innerHTML = items.map(item => {
+      if (item.page === '_more') {
+        return `<a href="#" onclick="event.preventDefault(); APP._toggleMoreMenu()">
+          <span class="icon">${item.icon}</span> ${item.label}
+        </a>`;
+      }
+      return `<a href="#" data-page="${item.page}">
+        <span class="icon">${item.icon}</span> ${item.label}
+      </a>`;
+    }).join('');
+
+    // Guarda moreItems pra uso no toggle
+    this._moreItems = moreItems;
+  },
+
+  _toggleMoreMenu() {
+    let menu = document.getElementById('bottom-nav-more');
+    if (menu) { menu.remove(); return; }
+
+    menu = document.createElement('div');
+    menu.id = 'bottom-nav-more';
+    menu.className = 'bottom-nav-more';
+    menu.innerHTML = (this._moreItems || []).map(item =>
+      `<a href="#" data-page="${item.page}" onclick="event.preventDefault(); APP.loadPage('${item.page}'); document.getElementById('bottom-nav-more')?.remove();">
+        <span class="icon">${item.icon}</span> ${item.label}
+      </a>`
+    ).join('');
+    document.body.appendChild(menu);
+
+    // Fecha ao clicar fora
+    const fechar = (e) => {
+      if (!menu.contains(e.target)) {
+        menu.remove();
+        document.removeEventListener('click', fechar);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', fechar), 10);
   },
 
   toast(msg, tipo = 'success') {

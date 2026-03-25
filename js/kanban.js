@@ -12,11 +12,20 @@ const KANBAN = {
 
   _draggedCard: null,
 
+  _mobileTab: 'todos',
+  _cachedGrupos: null,
+  _cachedIsDono: false,
+
+  _isMobile() {
+    return window.innerWidth <= 768;
+  },
+
   async carregar() {
     const container = document.getElementById('kanban-board');
     if (!container) return;
 
     const isDono = ['dono', 'gerente'].includes(APP.profile.role);
+    this._cachedIsDono = isDono;
 
     // Busca todas OS ativas
     const { data: ordens } = await db
@@ -37,6 +46,7 @@ const KANBAN = {
     filtradas.forEach(os => {
       if (grupos[os.status]) grupos[os.status].push(os);
     });
+    this._cachedGrupos = grupos;
 
     // Busca mecânicos pra filtro
     const { data: mecanicos } = await db
@@ -53,12 +63,24 @@ const KANBAN = {
       <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;">
         <select class="form-control" id="kanban-filtro-mecanico" onchange="KANBAN.filtrar()" style="max-width:220px;">
           <option value="">Todos os mecanicos</option>
-          ${(mecanicos || []).map(m => `<option value="${m.id}">${m.nome}</option>`).join('')}
+          ${(mecanicos || []).map(m => `<option value="${esc(m.id)}">${esc(m.nome)}</option>`).join('')}
         </select>
         <span style="font-size:13px;color:var(--text-secondary);" id="kanban-total">${filtradas.length} veiculos no patio</span>
       </div>` : ''}
 
-      <!-- Board -->
+      <!-- MOBILE: Tabs + Lista -->
+      <div class="kanban-mobile-tabs" id="kanban-mobile-tabs">
+        <button class="kanban-tab${this._mobileTab === 'todos' ? ' active' : ''}" onclick="KANBAN.setTab('todos')">Todos <span class="tab-count">${filtradas.length}</span></button>
+        ${this.colunas.map(col => {
+          const cnt = (grupos[col.status] || []).length;
+          return `<button class="kanban-tab${this._mobileTab === col.status ? ' active' : ''}" onclick="KANBAN.setTab('${col.status}')">${col.icon} ${esc(col.label)} <span class="tab-count">${cnt}</span></button>`;
+        }).join('')}
+      </div>
+      <div class="kanban-mobile-list" id="kanban-mobile-list">
+        ${this._renderMobileList(grupos, isDono)}
+      </div>
+
+      <!-- DESKTOP: Board horizontal -->
       <div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:16px;min-height:calc(100vh - 180px);" id="kanban-colunas">
         ${this.colunas.map(col => {
           const cards = grupos[col.status] || [];
@@ -70,7 +92,7 @@ const KANBAN = {
                ondrop="KANBAN.drop(event, '${col.status}')"
                style="min-width:220px;max-width:220px;flex-shrink:0;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);display:flex;flex-direction:column;${mostrarEntregue ? 'opacity:0.6;' : ''}">
             <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-size:13px;font-weight:700;">${col.icon} ${col.label}</span>
+              <span style="font-size:13px;font-weight:700;">${col.icon} ${esc(col.label)}</span>
               <span style="background:var(--bg-input);padding:2px 8px;border-radius:12px;font-size:12px;font-weight:700;color:var(--text-secondary);">${cards.length}</span>
             </div>
             <div style="padding:8px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;" data-status="${col.status}">
@@ -81,6 +103,86 @@ const KANBAN = {
         }).join('')}
       </div>
     `;
+  },
+
+  // Mobile: troca tab e re-renderiza lista
+  setTab(status) {
+    this._mobileTab = status;
+    // Atualiza tabs ativas
+    document.querySelectorAll('.kanban-tab').forEach(btn => {
+      const tabStatus = btn.getAttribute('onclick').match(/'([^']+)'/)?.[1];
+      btn.classList.toggle('active', tabStatus === status);
+    });
+    // Re-renderiza lista
+    const listEl = document.getElementById('kanban-mobile-list');
+    if (listEl && this._cachedGrupos) {
+      listEl.innerHTML = this._renderMobileList(this._cachedGrupos, this._cachedIsDono);
+    }
+  },
+
+  _renderMobileList(grupos, isDono) {
+    const tab = this._mobileTab;
+    let cards = [];
+
+    if (tab === 'todos') {
+      this.colunas.forEach(col => {
+        (grupos[col.status] || []).forEach(os => cards.push(os));
+      });
+    } else {
+      cards = grupos[tab] || [];
+    }
+
+    if (!cards.length) {
+      return '<div style="text-align:center;padding:30px 16px;font-size:13px;color:var(--text-muted);">Nenhum veiculo neste status</div>';
+    }
+
+    return cards.map(os => this._renderMobileCard(os, isDono, tab === 'todos')).join('');
+  },
+
+  _renderMobileCard(os, isDono, showBadge) {
+    const agora = Date.now();
+    const entrada = new Date(os.data_entrada).getTime();
+    const diffMs = agora - entrada;
+    const horas = Math.floor(diffMs / 3600000);
+    const dias = Math.floor(horas / 24);
+    const tempoTexto = dias > 0 ? dias + 'd' : horas + 'h';
+
+    let cardBorder = 'var(--border)';
+    let cardBg = 'var(--bg-card)';
+    if (os.status === 'pronto') {
+      cardBorder = 'var(--success)';
+      cardBg = 'rgba(63,185,80,0.06)';
+    } else if (horas >= 72) {
+      cardBorder = 'var(--danger)';
+      cardBg = 'rgba(248,81,73,0.06)';
+    } else if (horas >= 24) {
+      cardBorder = 'var(--warning)';
+      cardBg = 'rgba(240,136,62,0.06)';
+    }
+
+    const col = this.colunas.find(c => c.status === os.status);
+    const badgeHtml = showBadge ? `<span class="card-status-badge badge-${esc(os.status)}">${col ? col.icon + ' ' + esc(col.label) : esc(os.status)}</span>` : '';
+
+    return `
+      <div class="kanban-card" onclick="OS.abrirDetalhes('${os.id}')"
+           data-os-id="${os.id}" data-mecanico-id="${os.mecanico_id || ''}" data-status="${esc(os.status)}"
+           style="background:${cardBg};border:1px solid ${cardBorder};border-radius:var(--radius);padding:12px 14px;">
+        ${badgeHtml}
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-weight:800;font-size:17px;color:var(--primary);">${esc(os.veiculos?.placa)}</span>
+          <span style="font-size:12px;color:${horas >= 72 ? 'var(--danger)' : horas >= 24 ? 'var(--warning)' : 'var(--text-secondary)'};font-weight:600;">${horas >= 24 ? '⚠ ' : ''}${tempoTexto}</span>
+        </div>
+        <div style="font-size:13px;color:var(--text);margin-bottom:4px;">${esc(os.veiculos?.marca)} ${esc(os.veiculos?.modelo)}${os.veiculos?.cor ? ' — ' + esc(os.veiculos.cor) : ''}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="font-size:12px;color:var(--text-secondary);">👤 ${esc(os.clientes?.nome)}</span>
+          <span style="font-size:12px;color:var(--text-muted);">🔧 ${esc(os.profiles?.nome) || 'Sem mecanico'}</span>
+        </div>
+        ${isDono && os.valor_total ? `<div style="font-size:13px;font-weight:700;color:var(--success);margin-bottom:8px;">R$ ${(os.valor_total || 0).toFixed(0)}</div>` : ''}
+        <div style="display:flex;gap:6px;border-top:1px solid var(--border);padding-top:8px;">
+          ${this._btnVoltar(os.status, os.id)}
+          ${this._btnAvancar(os.status, os.id)}
+        </div>
+      </div>`;
   },
 
   _renderCard(os, isDono) {

@@ -456,6 +456,116 @@ textarea.form-control { resize: vertical; min-height: 80px; }
   .data-table th, .data-table td { padding: 10px 12px; }
 
   .modal { width: 95%; }
+
+  /* KANBAN MOBILE — tabs + lista vertical */
+  .kanban-mobile-tabs {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .kanban-mobile-tabs::-webkit-scrollbar { display: none; }
+
+  .kanban-tab {
+    flex-shrink: 0;
+    padding: 8px 14px;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+
+  .kanban-tab.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+  }
+
+  .kanban-tab .tab-count {
+    display: inline-block;
+    background: rgba(255,255,255,0.2);
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 11px;
+    margin-left: 4px;
+  }
+
+  .kanban-tab.active .tab-count {
+    background: rgba(255,255,255,0.3);
+  }
+
+  .kanban-mobile-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .kanban-mobile-list .kanban-card {
+    cursor: pointer;
+  }
+
+  .kanban-mobile-list .kanban-card .card-status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  /* Botoes maiores pra toque no mobile */
+  .kanban-mobile-list .btn-sm {
+    padding: 10px 12px;
+    font-size: 13px;
+    min-height: 44px;
+  }
+
+  /* Esconde colunas horizontais no mobile */
+  #kanban-colunas { display: none !important; }
+
+  /* Bottom nav — overflow menu */
+  .bottom-nav-more {
+    position: fixed;
+    bottom: 70px;
+    right: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 0;
+    z-index: 200;
+    min-width: 160px;
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.4);
+  }
+
+  .bottom-nav-more a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .bottom-nav-more a:hover,
+  .bottom-nav-more a.active {
+    background: rgba(255,69,0,0.08);
+    color: var(--primary);
+  }
+}
+
+@media (min-width: 769px) {
+  .kanban-mobile-tabs { display: none !important; }
+  .kanban-mobile-list { display: none !important; }
 }
 
 @media (min-width: 769px) {
