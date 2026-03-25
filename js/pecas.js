@@ -179,7 +179,7 @@ const PECAS = {
 
     let error;
     if (id) {
-      ({ error } = await db.from('pecas').update(dados).eq('id', id));
+      ({ error } = await db.from('pecas').update(dados).eq('id', id).eq('oficina_id', APP.profile.oficina_id));
     } else {
       ({ error } = await db.from('pecas').insert(dados));
     }
@@ -191,13 +191,13 @@ const PECAS = {
   },
 
   async editar(id) {
-    const { data } = await db.from('pecas').select('*').eq('id', id).single();
+    const { data } = await db.from('pecas').select('*').eq('id', id).eq('oficina_id', APP.profile.oficina_id).single();
     if (data) this.abrirModal(data);
   },
 
   async excluir(id, nome) {
     if (!confirm(`Excluir a peca "${nome}"?`)) return;
-    const { error } = await db.from('pecas').delete().eq('id', id);
+    const { error } = await db.from('pecas').delete().eq('id', id).eq('oficina_id', APP.profile.oficina_id);
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
     APP.toast('Peca excluida');
     this.carregar();
@@ -254,7 +254,7 @@ const PECAS = {
     else novaQtd = qtd; // ajuste = define valor exato
 
     // Atualiza quantidade
-    await db.from('pecas').update({ quantidade: novaQtd }).eq('id', pecaId);
+    await db.from('pecas').update({ quantidade: novaQtd }).eq('id', pecaId).eq('oficina_id', APP.profile.oficina_id);
 
     // Registra movimento
     await db.from('estoque_movimentos').insert({

@@ -47,7 +47,7 @@ const EQUIPE = {
               <td>${m.comissao_percent ? m.comissao_percent + '%' : '-'}</td>
               <td><span class="badge badge-${m.ativo ? 'pronto' : 'entregue'}">${m.ativo ? 'Ativo' : 'Inativo'}</span></td>
               <td>
-                <button class="btn btn-secondary btn-sm" onclick="EQUIPE.editar('${m.id}')">Editar</button>
+                ${['dono','gerente'].includes(APP.profile.role) ? `<button class="btn btn-secondary btn-sm" onclick="EQUIPE.editar('${m.id}')">Editar</button>` : ''}
               </td>
             </tr>
           `).join('')}
@@ -121,7 +121,7 @@ const EQUIPE = {
 
     if (id) {
       // Edita membro existente
-      const { error } = await db.from('profiles').update(dados).eq('id', id);
+      const { error } = await db.from('profiles').update(dados).eq('id', id).eq('oficina_id', APP.profile.oficina_id);
       if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
     } else {
       // Novo membro — usa RPC pra criar sem FK do auth

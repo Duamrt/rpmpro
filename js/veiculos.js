@@ -159,7 +159,7 @@ const VEICULOS = {
 
     let error;
     if (id) {
-      ({ error } = await db.from('veiculos').update(dados).eq('id', id));
+      ({ error } = await db.from('veiculos').update(dados).eq('id', id).eq('oficina_id', APP.profile.oficina_id));
     } else {
       ({ error } = await db.from('veiculos').insert(dados));
     }
@@ -172,13 +172,13 @@ const VEICULOS = {
   },
 
   async editar(id) {
-    const { data } = await db.from('veiculos').select('*').eq('id', id).single();
+    const { data } = await db.from('veiculos').select('*').eq('id', id).eq('oficina_id', APP.profile.oficina_id).single();
     if (data) this.abrirModal(data);
   },
 
   async excluir(id, placa) {
     if (!confirm(`Excluir o veiculo ${placa}? Isso vai remover o historico de OS vinculado.`)) return;
-    const { error } = await db.from('veiculos').delete().eq('id', id);
+    const { error } = await db.from('veiculos').delete().eq('id', id).eq('oficina_id', APP.profile.oficina_id);
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
     APP.toast('Veiculo excluido');
     this.carregar();

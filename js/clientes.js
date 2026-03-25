@@ -238,7 +238,7 @@ const CLIENTES = {
     let error;
 
     if (id) {
-      ({ error } = await db.from('clientes').update(dadosCliente).eq('id', id));
+      ({ error } = await db.from('clientes').update(dadosCliente).eq('id', id).eq('oficina_id', oficina_id));
     } else {
       // Checa duplicata por nome na mesma oficina
       const { data: existe } = await db.from('clientes')
@@ -291,7 +291,7 @@ const CLIENTES = {
 
   async excluirVeiculo(veiculoId, placa, clienteId) {
     if (!confirm(`Excluir o veiculo ${placa}?`)) return;
-    const { error } = await db.from('veiculos').delete().eq('id', veiculoId);
+    const { error } = await db.from('veiculos').delete().eq('id', veiculoId).eq('oficina_id', APP.profile.oficina_id);
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
     APP.toast('Veiculo excluido');
     // Reabre o modal do cliente pra atualizar a lista
