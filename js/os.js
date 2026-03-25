@@ -706,15 +706,16 @@ const OS = {
   },
 
   // Adicionar serviço na OS aberta
-  mostrarAddServico(tipo) {
+  async mostrarAddServico(tipo) {
     const container = document.getElementById('det-add-servico');
     container.classList.remove('hidden');
 
     if (tipo === 'catalogo') {
+      const opcoes = typeof SERVICOS !== 'undefined' ? await SERVICOS.optionsServicosOficina() : optionsServicos();
       container.innerHTML = `
         <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Adicionar servico do catalogo</div>
         <select class="form-control" id="det-servico-select" onchange="OS._preencherServicoCatalogo()" style="margin-bottom:8px;">
-          ${optionsServicos()}
+          ${opcoes}
         </select>
         <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;">
           <div class="form-group" style="margin:0;">
@@ -745,7 +746,9 @@ const OS = {
     const sel = document.getElementById('det-servico-select');
     const nome = sel.value;
     if (!nome || nome === '__outro') return;
-    const valor = getValorServico(nome);
+    // Prioriza valor da oficina, fallback pro catálogo fixo
+    const opt = sel.selectedOptions[0];
+    const valor = opt?.dataset?.valor ? parseFloat(opt.dataset.valor) : (typeof SERVICOS !== 'undefined' ? SERVICOS.getValorServico(nome) : getValorServico(nome));
     document.getElementById('det-servico-valor').value = valor.toFixed(2);
   },
 
