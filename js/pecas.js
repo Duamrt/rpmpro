@@ -45,7 +45,7 @@ const PECAS = {
               p.quantidade <= p.estoque_minimo ? 'color:var(--warning);font-weight:700;' : '';
             return `
             <tr data-busca="${esc(p.nome).toLowerCase()} ${esc(p.codigo || '').toLowerCase()} ${esc(p.marca || '').toLowerCase()}">
-              <td><strong>${esc(p.nome)}</strong>${p.localizacao ? '<br><span style="font-size:11px;color:var(--text-secondary);">' + esc(p.localizacao) + '</span>' : ''}</td>
+              <td><strong>${esc(p.nome)}</strong>${p.compatibilidade && p.compatibilidade.length ? '<br><span style="font-size:10px;color:var(--info);">' + p.compatibilidade.map(c => esc(c.marca) + (c.modelos?.length ? ' (' + c.modelos.map(m => esc(m)).join(', ') + ')' : '')).join(' | ') + '</span>' : ''}${p.localizacao ? '<br><span style="font-size:11px;color:var(--text-secondary);">' + esc(p.localizacao) + '</span>' : ''}</td>
               <td style="font-size:13px;">${esc(p.codigo) || '-'}</td>
               <td style="font-size:13px;">${esc(p.marca) || '-'}</td>
               <td style="${estoqueClass}">${p.quantidade}${p.estoque_minimo ? ' <span style="font-size:11px;color:var(--text-muted);">(min: ' + p.estoque_minimo + ')</span>' : ''}</td>
@@ -125,6 +125,33 @@ const PECAS = {
             </div>
           </div>
           <div id="peca-lucro-info" style="font-size:12px;color:var(--text-secondary);margin-top:-8px;margin-bottom:12px;"></div>
+
+          <!-- COMPATIBILIDADE -->
+          <div style="border-top:1px solid var(--border);margin-top:8px;padding-top:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <label style="font-size:13px;font-weight:700;margin:0;">Veiculos compativeis</label>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="PECAS._addCompatibilidade()">+ Adicionar</button>
+            </div>
+            <div id="peca-compat-lista"></div>
+            <div id="peca-compat-add" class="hidden" style="margin-top:8px;background:var(--bg);padding:12px;border-radius:var(--radius);">
+              <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;">
+                <div class="form-group" style="margin:0;">
+                  <label style="font-size:11px;">Marca</label>
+                  <select class="form-control" id="peca-compat-marca" onchange="PECAS._carregarModelosCompat()">
+                    ${optionsMarcas()}
+                  </select>
+                </div>
+                <div class="form-group" style="margin:0;">
+                  <label style="font-size:11px;">Modelo</label>
+                  <select class="form-control" id="peca-compat-modelo">
+                    <option value="">Todos os modelos</option>
+                  </select>
+                </div>
+                <button type="button" class="btn btn-primary btn-sm" onclick="PECAS._confirmarCompat()">Add</button>
+              </div>
+            </div>
+          </div>
+
           <div class="modal-footer" style="padding:16px 0 0;border:0;">
             <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
             <button type="submit" class="btn btn-primary">Salvar</button>
@@ -132,6 +159,66 @@ const PECAS = {
         </form>
       </div>
     `);
+    this._initCompat(dados);
+  },
+
+  _compatTemp: [],
+
+  _initCompat(dados) {
+    this._compatTemp = dados.compatibilidade ? JSON.parse(JSON.stringify(dados.compatibilidade)) : [];
+    this._renderCompat();
+  },
+
+  _renderCompat() {
+    const container = document.getElementById('peca-compat-lista');
+    if (!container) return;
+    if (!this._compatTemp.length) {
+      container.innerHTML = '<div style="font-size:12px;color:var(--text-muted);padding:4px 0;">Compativel com todos os veiculos (sem filtro)</div>';
+      return;
+    }
+    container.innerHTML = this._compatTemp.map((c, i) => `
+      <div style="display:inline-flex;align-items:center;gap:6px;background:var(--bg);padding:4px 10px;border-radius:16px;margin:2px 4px 2px 0;font-size:12px;">
+        <strong style="color:var(--primary);">${esc(c.marca)}</strong>
+        ${c.modelos && c.modelos.length ? '<span style="color:var(--text-secondary);">' + c.modelos.map(m => esc(m)).join(', ') + '</span>' : '<span style="color:var(--text-muted);">Todos</span>'}
+        <button type="button" onclick="PECAS._removerCompat(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;padding:0;">&times;</button>
+      </div>
+    `).join('');
+  },
+
+  _addCompatibilidade() {
+    document.getElementById('peca-compat-add').classList.remove('hidden');
+  },
+
+  _carregarModelosCompat() {
+    const marca = document.getElementById('peca-compat-marca').value;
+    const sel = document.getElementById('peca-compat-modelo');
+    const modelos = getModelos(marca);
+    sel.innerHTML = '<option value="">Todos os modelos</option>' + modelos.map(m => `<option value="${m}">${m}</option>`).join('');
+  },
+
+  _confirmarCompat() {
+    const marca = document.getElementById('peca-compat-marca').value;
+    if (!marca) { APP.toast('Selecione a marca', 'error'); return; }
+    const modelo = document.getElementById('peca-compat-modelo').value;
+
+    // Verifica se já tem essa marca
+    let entry = this._compatTemp.find(c => c.marca === marca);
+    if (entry) {
+      if (modelo && !entry.modelos.includes(modelo)) {
+        entry.modelos.push(modelo);
+      }
+    } else {
+      this._compatTemp.push({ marca, modelos: modelo ? [modelo] : [] });
+    }
+
+    this._renderCompat();
+    document.getElementById('peca-compat-marca').value = '';
+    document.getElementById('peca-compat-modelo').innerHTML = '<option value="">Todos os modelos</option>';
+  },
+
+  _removerCompat(i) {
+    this._compatTemp.splice(i, 1);
+    this._renderCompat();
   },
 
   _calcularVenda() {
@@ -174,7 +261,8 @@ const PECAS = {
       estoque_minimo: parseFloat(document.getElementById('peca-min').value) || 0,
       custo: parseFloat(document.getElementById('peca-custo').value) || 0,
       preco_venda: parseFloat(document.getElementById('peca-venda').value) || 0,
-      localizacao: document.getElementById('peca-local').value.trim()
+      localizacao: document.getElementById('peca-local').value.trim(),
+      compatibilidade: this._compatTemp.length ? this._compatTemp : []
     };
 
     let error;

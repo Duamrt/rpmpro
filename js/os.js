@@ -526,6 +526,9 @@ const OS = {
 
     this._osAtualId = id;
     this._osAtualOficinaId = os.oficina_id;
+    this._osVeiculoMarca = os.veiculos?.marca || '';
+    this._osVeiculoModelo = os.veiculos?.modelo || '';
+    this._pecasEstoque = null; // limpa cache pra recarregar com compatibilidade
 
     const statusOptions = ['entrada','diagnostico','orcamento','aprovada','aguardando_peca','execucao','pronto','entregue','cancelada'];
     const statusLabel = {
@@ -800,7 +803,7 @@ const OS = {
     // Carrega peças do estoque sob demanda (com cache)
     if (tipo === 'estoque' && !this._pecasEstoque) {
       const { data } = await db.from('pecas')
-        .select('id, nome, codigo, marca, preco_venda, quantidade')
+        .select('id, nome, codigo, marca, preco_venda, quantidade, compatibilidade')
         .eq('oficina_id', APP.profile.oficina_id)
         .order('nome');
       this._pecasEstoque = data || [];
@@ -855,11 +858,25 @@ const OS = {
     const sugEl = document.getElementById('det-peca-sugestoes');
     if (termo.length < 2) { sugEl.classList.add('hidden'); return; }
 
-    const resultados = this._pecasEstoque.filter(p =>
+    // Filtra por termo
+    let resultados = this._pecasEstoque.filter(p =>
       (p.nome || '').toLowerCase().includes(termo) ||
       (p.codigo || '').toLowerCase().includes(termo) ||
       (p.marca || '').toLowerCase().includes(termo)
-    ).slice(0, 10);
+    );
+
+    // Ordena: compatíveis com o veículo da OS primeiro
+    if (this._osVeiculoMarca) {
+      const marca = this._osVeiculoMarca;
+      const modelo = this._osVeiculoModelo;
+      resultados.sort((a, b) => {
+        const aCompat = this._pecaCompativel(a, marca, modelo) ? 0 : 1;
+        const bCompat = this._pecaCompativel(b, marca, modelo) ? 0 : 1;
+        return aCompat - bCompat;
+      });
+    }
+
+    resultados = resultados.slice(0, 15);
 
     if (!resultados.length) {
       sugEl.innerHTML = '<div style="padding:8px 12px;font-size:13px;color:var(--text-secondary);">Nenhuma peca encontrada</div>';
@@ -867,15 +884,30 @@ const OS = {
       return;
     }
 
-    sugEl.innerHTML = resultados.map(p => `
-      <div style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px;"
-           onmouseover="this.style.background='rgba(255,69,0,0.1)'" onmouseout="this.style.background=''"
+    const marca = this._osVeiculoMarca;
+    const modelo = this._osVeiculoModelo;
+
+    sugEl.innerHTML = resultados.map(p => {
+      const compat = marca && this._pecaCompativel(p, marca, modelo);
+      return `
+      <div style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px;${compat ? 'background:rgba(63,185,80,0.06);' : ''}"
+           onmouseover="this.style.background='rgba(255,69,0,0.1)'" onmouseout="this.style.background='${compat ? 'rgba(63,185,80,0.06)' : ''}'"
            onclick="OS._selecionarPecaEstoque('${p.id}','${(p.nome || '').replace(/'/g, '')}',${p.preco_venda || 0},${p.quantidade || 0})">
+        ${compat ? '<span style="color:var(--success);font-size:11px;">✓ Compativel</span> ' : ''}
         <strong>${esc(p.nome)}</strong>${p.marca ? ' — ' + esc(p.marca) : ''}${p.codigo ? ' (' + esc(p.codigo) + ')' : ''}
         <div style="color:var(--text-secondary);font-size:11px;">Estoque: ${p.quantidade} | R$ ${(p.preco_venda || 0).toFixed(2)}</div>
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
     sugEl.classList.remove('hidden');
+  },
+
+  _pecaCompativel(peca, marca, modelo) {
+    if (!peca.compatibilidade || !peca.compatibilidade.length) return false;
+    return peca.compatibilidade.some(c => {
+      if (c.marca !== marca) return false;
+      if (!c.modelos || !c.modelos.length) return true; // todos os modelos da marca
+      return c.modelos.includes(modelo);
+    });
   },
 
   _selecionarPecaEstoque(id, nome, preco, qtdEstoque) {
