@@ -834,20 +834,36 @@ const OS = {
       `;
     } else {
       container.innerHTML = `
-        <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Adicionar item avulso (fora do estoque)</div>
-        <div class="form-group" style="margin:0 0 8px;">
-          <input type="text" class="form-control" id="det-avulso-nome" placeholder="Ex: Oleo Mobil 5W30 (comprado na loja)">
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Adicionar item avulso</div>
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;margin-bottom:8px;">
+          <div class="form-group" style="margin:0;">
+            <label style="font-size:11px;">Nome da peca *</label>
+            <input type="text" class="form-control" id="det-avulso-nome" placeholder="Ex: Filtro de oleo Mann W71251">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label style="font-size:11px;">Marca</label>
+            <input type="text" class="form-control" id="det-avulso-marca" placeholder="Mann, Fram...">
+          </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end;">
           <div class="form-group" style="margin:0;">
             <label style="font-size:11px;">Qtd</label>
             <input type="number" class="form-control" id="det-avulso-qtd" value="1" min="1" step="1">
           </div>
           <div class="form-group" style="margin:0;">
-            <label style="font-size:11px;">Valor unit.</label>
+            <label style="font-size:11px;">Custo unit.</label>
+            <input type="number" class="form-control" id="det-avulso-custo" value="0" min="0" step="0.01">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label style="font-size:11px;">Venda unit.</label>
             <input type="number" class="form-control" id="det-avulso-valor" value="0" min="0" step="0.01">
           </div>
           <button type="button" class="btn btn-primary btn-sm" onclick="OS.addPecaAvulso()">Add</button>
+        </div>
+        <div style="margin-top:8px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);cursor:pointer;">
+            <input type="checkbox" id="det-avulso-salvar" checked> Salvar no estoque pra proxima vez
+          </label>
         </div>
       `;
     }
@@ -975,17 +991,79 @@ const OS = {
 
   async addPecaAvulso() {
     const nome = document.getElementById('det-avulso-nome').value.trim();
-    if (!nome) { APP.toast('Digite o nome do item', 'error'); return; }
+    if (!nome) { APP.toast('Digite o nome da peca', 'error'); return; }
 
+    const marcaPeca = (document.getElementById('det-avulso-marca')?.value || '').trim();
     const qtd = parseFloat(document.getElementById('det-avulso-qtd').value) || 1;
+    const custo = parseFloat(document.getElementById('det-avulso-custo')?.value) || 0;
     const valorUnit = parseFloat(document.getElementById('det-avulso-valor').value) || 0;
+    const salvarEstoque = document.getElementById('det-avulso-salvar')?.checked;
 
+    const oficina_id = this._osAtualOficinaId;
+    let pecaId = null;
+
+    // Se marcou "salvar no estoque", cria a peça e vincula
+    if (salvarEstoque) {
+      // Verifica se já existe peça com esse nome
+      const { data: existe } = await db.from('pecas')
+        .select('id')
+        .eq('oficina_id', oficina_id)
+        .ilike('nome', nome)
+        .maybeSingle();
+
+      if (existe) {
+        pecaId = existe.id;
+        // Incrementa quantidade (comprou mais)
+        await db.rpc('devolver_estoque', { p_peca_id: pecaId, p_quantidade: qtd });
+      } else {
+        // Cria peça nova no estoque com compatibilidade do veículo da OS
+        const compat = [];
+        if (this._osVeiculoMarca) {
+          compat.push({
+            marca: this._osVeiculoMarca,
+            modelos: this._osVeiculoModelo ? [this._osVeiculoModelo] : []
+          });
+        }
+
+        const margem = APP.oficina?.margem_padrao || 30;
+        const { data: novaPeca, error: pecaErr } = await db.from('pecas').insert({
+          oficina_id,
+          nome,
+          marca: marcaPeca,
+          quantidade: 0, // vai pra OS direto, estoque fica 0 (ou negativo)
+          custo,
+          preco_venda: valorUnit || (custo * (1 + margem / 100)),
+          compatibilidade: compat
+        }).select().single();
+
+        if (!pecaErr && novaPeca) pecaId = novaPeca.id;
+      }
+
+      // Baixa do estoque (vai ficar negativo se não tinha, tá ok — registra a saída)
+      if (pecaId) {
+        await db.rpc('baixar_estoque', { p_peca_id: pecaId, p_quantidade: qtd });
+
+        // Registra movimento
+        await db.from('estoque_movimentos').insert({
+          oficina_id,
+          peca_id: pecaId,
+          os_id: this._osAtualId,
+          tipo: 'saida',
+          quantidade: qtd,
+          custo_unitario: valorUnit,
+          observacao: 'Aplicado na OS (item novo)',
+          created_by: APP.profile.id
+        });
+      }
+    }
+
+    // Insere item na OS
     const { error } = await db.from('itens_os').insert({
-      oficina_id: this._osAtualOficinaId,
+      oficina_id,
       os_id: this._osAtualId,
       tipo: 'peca',
-      descricao: nome + ' (avulso)',
-      peca_id: null,
+      descricao: nome + (marcaPeca ? ' — ' + marcaPeca : '') + (!salvarEstoque ? ' (avulso)' : ''),
+      peca_id: pecaId,
       quantidade: qtd,
       valor_unitario: valorUnit,
       valor_total: qtd * valorUnit
@@ -993,7 +1071,8 @@ const OS = {
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
 
     await this._recalcularTotaisOS(this._osAtualId);
-    APP.toast('Item avulso adicionado');
+    this._pecasEstoque = null; // limpa cache
+    APP.toast(salvarEstoque ? 'Peca adicionada e salva no estoque' : 'Item avulso adicionado');
     this.abrirDetalhes(this._osAtualId);
   },
 
