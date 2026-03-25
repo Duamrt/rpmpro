@@ -1,15 +1,27 @@
 #!/bin/bash
-# RPM Pro — Deploy com cache busting
+# RPM Pro — Deploy com cache busting (padrão EDR/NaRegua)
 MSG="${1:-deploy}"
-TIMESTAMP=$(date +%s)
+VERSION=$(date +%m%d%H%M)
 
-# Cache busting nos HTML
+echo "RPM Pro — Deploy v$VERSION"
+echo "=========================="
+
+# Cache busting: atualiza ?v= em todos os HTML
 for f in *.html; do
-  [ -f "$f" ] && sed -i "s/\.js\"/\.js?v=$TIMESTAMP\"/g; s/\.css\"/\.css?v=$TIMESTAMP\"/g" "$f"
+  if [ -f "$f" ]; then
+    # Atualiza versão existente ou adiciona
+    sed -i "s/\.js?v=[0-9]*/\.js?v=$VERSION/g" "$f"
+    sed -i "s/\.css?v=[0-9]*/\.css?v=$VERSION/g" "$f"
+    # Adiciona ?v= onde não tem (primeira vez)
+    sed -i "s/\.js\"/\.js?v=$VERSION\"/g" "$f"
+    sed -i "s/\.css\"/\.css?v=$VERSION\"/g" "$f"
+    echo "  ✓ $f"
+  fi
 done
 
+# Git
 git add -A
-git commit -m "$MSG"
+git commit -m "$MSG — v$VERSION"
 git push origin dev
 
 # Merge dev → main
@@ -19,4 +31,6 @@ git push origin main
 git checkout dev
 
 echo ""
-echo "RPM Pro atualizado e no ar!"
+echo "=========================="
+echo "RPM Pro v$VERSION no ar!"
+echo "https://rpmpro.com.br"

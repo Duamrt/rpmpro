@@ -21,6 +21,12 @@ const APP = {
     const elUser = document.getElementById('user-nome');
     if (elUser) elUser.textContent = this.profile.nome;
 
+    // Verifica super admin
+    const isAdmin = await SUPER_ADMIN.verificar();
+    if (isAdmin) {
+      document.querySelectorAll('.nav-super-admin').forEach(el => el.style.display = '');
+    }
+
     // Ajusta bottom nav por perfil
     this._setupBottomNav();
 
