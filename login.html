@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro — Login</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+  .login-container { width: 100%; max-width: 400px; padding: 24px; }
+  .login-logo { text-align: center; margin-bottom: 40px; }
+  .login-logo h1 { font-size: 48px; font-weight: 900; letter-spacing: -2px; }
+  .login-logo h1 .rpm { color: var(--primary); }
+  .login-logo h1 .pro { color: #fff; }
+  .login-logo p { color: var(--text-secondary); font-size: 14px; margin-top: 4px; }
+  .login-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 32px; }
+  .login-card h2 { font-size: 20px; margin-bottom: 24px; text-align: center; }
+  .login-btn { width: 100%; padding: 12px; font-size: 15px; margin-top: 8px; }
+  .login-footer { text-align: center; margin-top: 20px; font-size: 13px; color: var(--text-secondary); }
+  .login-footer a { color: var(--primary); text-decoration: none; font-weight: 600; }
+  .login-error { background: var(--danger-bg); color: var(--danger); padding: 10px 14px; border-radius: var(--radius); font-size: 13px; margin-bottom: 16px; display: none; }
+  .tab-switch { display: flex; gap: 0; margin-bottom: 24px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
+  .tab-switch button { flex: 1; padding: 10px; background: var(--bg-input); color: var(--text-secondary); border: none; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .tab-switch button.active { background: var(--primary); color: #fff; }
+</style>
+</head>
+<body>
+
+<div class="login-container">
+  <div class="login-logo">
+    <h1><span class="rpm">RPM</span><span class="pro">PRO</span></h1>
+    <p>Gestao inteligente para oficinas</p>
+  </div>
+
+  <div class="login-card">
+    <div class="tab-switch">
+      <button class="active" onclick="showTab('login')">Entrar</button>
+      <button onclick="showTab('cadastro')">Criar conta</button>
+    </div>
+
+    <div class="login-error" id="login-error"></div>
+
+    <!-- LOGIN -->
+    <form id="form-login" onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" class="form-control" id="login-email" required placeholder="seu@email.com">
+      </div>
+      <div class="form-group">
+        <label>Senha</label>
+        <input type="password" class="form-control" id="login-senha" required placeholder="Sua senha">
+      </div>
+      <button type="submit" class="btn btn-primary login-btn" id="btn-login">Entrar</button>
+    </form>
+
+    <!-- CADASTRO -->
+    <form id="form-cadastro" class="hidden" onsubmit="handleCadastro(event)">
+      <div class="form-group">
+        <label>Nome da oficina</label>
+        <input type="text" class="form-control" id="cad-oficina" required placeholder="Ex: Carbon Car Service">
+      </div>
+      <div class="form-group">
+        <label>Seu nome</label>
+        <input type="text" class="form-control" id="cad-nome" required placeholder="Seu nome completo">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" class="form-control" id="cad-email" required placeholder="seu@email.com">
+      </div>
+      <div class="form-group">
+        <label>Senha</label>
+        <input type="password" class="form-control" id="cad-senha" required minlength="6" placeholder="Minimo 6 caracteres">
+      </div>
+      <button type="submit" class="btn btn-primary login-btn" id="btn-cadastro">Criar minha conta</button>
+    </form>
+  </div>
+
+  <div class="login-footer">
+    <p>RPM Pro &copy; 2026 — Todos os direitos reservados</p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  // Checa se ja ta logado
+  (async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) window.location.href = 'index.html';
+  })();
+
+  function showTab(tab) {
+    document.querySelectorAll('.tab-switch button').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('form-login').classList.toggle('hidden', tab !== 'login');
+    document.getElementById('form-cadastro').classList.toggle('hidden', tab !== 'cadastro');
+    document.getElementById('login-error').style.display = 'none';
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('login-error');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  async function handleLogin(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btn-login');
+    btn.disabled = true;
+    btn.textContent = 'Entrando...';
+
+    try {
+      await AUTH.login(
+        document.getElementById('login-email').value,
+        document.getElementById('login-senha').value
+      );
+      window.location.href = 'index.html';
+    } catch (err) {
+      showError(err.message === 'Invalid login credentials'
+        ? 'Email ou senha incorretos'
+        : err.message);
+      btn.disabled = false;
+      btn.textContent = 'Entrar';
+    }
+  }
+
+  async function handleCadastro(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btn-cadastro');
+    btn.disabled = true;
+    btn.textContent = 'Criando conta...';
+
+    try {
+      await AUTH.cadastrar(
+        document.getElementById('cad-email').value,
+        document.getElementById('cad-senha').value,
+        document.getElementById('cad-oficina').value,
+        document.getElementById('cad-nome').value
+      );
+      window.location.href = 'index.html';
+    } catch (err) {
+      showError(err.message);
+      btn.disabled = false;
+      btn.textContent = 'Criar minha conta';
+    }
+  }
+</script>
+</body>
+</html>

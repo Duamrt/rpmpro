@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro — Gestao de Oficina</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app-layout">
+  <!-- SIDEBAR DESKTOP -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <h1><span class="rpm">RPM</span><span class="pro">PRO</span></h1>
+      <div class="oficina-name" id="oficina-nome">Carregando...</div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="#" data-page="dashboard" class="active">
+        <span class="icon">📊</span> Dashboard
+      </a>
+      <a href="#" data-page="os">
+        <span class="icon">🔧</span> Ordens de Servico
+      </a>
+      <a href="#" data-page="clientes">
+        <span class="icon">👤</span> Clientes
+      </a>
+      <a href="#" data-page="veiculos">
+        <span class="icon">🚗</span> Veiculos
+      </a>
+      <a href="#" data-page="pecas">
+        <span class="icon">📦</span> Pecas / Estoque
+      </a>
+      <a href="#" data-page="equipe">
+        <span class="icon">👥</span> Equipe
+      </a>
+      <a href="#" data-page="financeiro">
+        <span class="icon">💰</span> Financeiro
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="avatar" id="user-avatar">D</div>
+        <div>
+          <div class="user-name" id="user-nome">...</div>
+          <div class="user-role" id="user-role">Dono</div>
+        </div>
+      </div>
+      <button class="btn btn-secondary btn-sm" style="width:100%;margin-top:10px;" onclick="AUTH.logout()">Sair</button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+    <!-- Menu toggle mobile -->
+    <button class="btn btn-secondary menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')" style="margin-bottom:16px;">
+      ☰ Menu
+    </button>
+
+    <!-- DASHBOARD -->
+    <section id="page-dashboard" class="page-content">
+      <div class="page-header">
+        <h2>Dashboard</h2>
+        <button class="btn btn-primary" onclick="APP.loadPage('os')">+ Nova OS</button>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="label">OS Abertas</div>
+          <div class="value primary" id="kpi-os-abertas">-</div>
+        </div>
+        <div class="kpi-card">
+          <div class="label">Aguardando Orcamento</div>
+          <div class="value warning" id="kpi-aguardando">-</div>
+        </div>
+        <div class="kpi-card">
+          <div class="label">Prontas p/ Entrega</div>
+          <div class="value success" id="kpi-prontas">-</div>
+        </div>
+        <div class="kpi-card">
+          <div class="label">Faturado no Mes</div>
+          <div class="value" id="kpi-faturamento">-</div>
+        </div>
+      </div>
+
+      <!-- Fila do dia -->
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+          <h3 style="font-size:15px;">Fila de Hoje</h3>
+          <span style="font-size:12px;color:var(--text-secondary);" id="dash-total-fila"></span>
+        </div>
+        <div id="dash-fila">
+          <div class="empty-state">
+            <div class="icon">🔧</div>
+            <h3>Nenhuma OS aberta</h3>
+            <p>Clique em "+ Nova OS" para comecar</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- OS -->
+    <section id="page-os" class="page-content hidden">
+      <div class="page-header">
+        <h2>Ordens de Servico</h2>
+        <button class="btn btn-primary" onclick="OS.abrirModal()">+ Nova OS</button>
+      </div>
+      <div id="os-lista">
+        <div class="loading">Carregando...</div>
+      </div>
+    </section>
+
+    <!-- CLIENTES -->
+    <section id="page-clientes" class="page-content hidden">
+      <div class="page-header">
+        <h2>Clientes</h2>
+        <button class="btn btn-primary" onclick="CLIENTES.abrirModal()">+ Novo Cliente</button>
+      </div>
+      <div id="clientes-lista">
+        <div class="loading">Carregando...</div>
+      </div>
+    </section>
+
+    <!-- VEICULOS -->
+    <section id="page-veiculos" class="page-content hidden">
+      <div class="page-header">
+        <h2>Veiculos</h2>
+        <button class="btn btn-primary" onclick="VEICULOS.abrirModal()">+ Novo Veiculo</button>
+      </div>
+      <div id="veiculos-lista">
+        <div class="loading">Carregando...</div>
+      </div>
+    </section>
+
+    <!-- PECAS -->
+    <section id="page-pecas" class="page-content hidden">
+      <div class="page-header">
+        <h2>Pecas / Estoque</h2>
+        <button class="btn btn-primary" onclick="PECAS.abrirModal()">+ Nova Peca</button>
+      </div>
+      <div id="pecas-lista">
+        <div class="loading">Carregando...</div>
+      </div>
+    </section>
+
+    <!-- EQUIPE -->
+    <section id="page-equipe" class="page-content hidden">
+      <div class="page-header">
+        <h2>Equipe</h2>
+      </div>
+      <div id="equipe-lista">
+        <div class="loading">Carregando...</div>
+      </div>
+    </section>
+
+    <!-- FINANCEIRO -->
+    <section id="page-financeiro" class="page-content hidden">
+      <div class="page-header">
+        <h2>Financeiro</h2>
+      </div>
+      <div id="financeiro-content">
+        <div class="loading">Carregando...</div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- BOTTOM NAV MOBILE -->
+<nav class="bottom-nav">
+  <a href="#" data-page="dashboard" class="active">
+    <span class="icon">📊</span> Inicio
+  </a>
+  <a href="#" data-page="os">
+    <span class="icon">🔧</span> OS
+  </a>
+  <a href="#" data-page="clientes">
+    <span class="icon">👤</span> Clientes
+  </a>
+  <a href="#" data-page="pecas">
+    <span class="icon">📦</span> Estoque
+  </a>
+  <a href="#" data-page="equipe">
+    <span class="icon">👥</span> Equipe
+  </a>
+</nav>
+
+<!-- Modais -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" id="modal-content"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/os.js"></script>
+<script src="js/clientes.js"></script>
+<script src="js/veiculos.js"></script>
+<script>
+  // Modal helpers
+  function openModal(html) {
+    document.getElementById('modal-content').innerHTML = html;
+    document.getElementById('modal-overlay').classList.add('show');
+  }
+
+  function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('show');
+  }
+
+  document.getElementById('modal-overlay').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeModal();
+  });
+
+  // Init
+  APP.init();
+</script>
+</body>
+</html>
