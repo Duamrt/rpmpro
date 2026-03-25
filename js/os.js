@@ -602,6 +602,13 @@ const OS = {
               </div>
             </div>
           `).join('') : '<div style="font-size:13px;color:var(--text-muted);padding:4px 0;">Nenhum servico</div>'}
+
+          <!-- ADICIONAR SERVICO -->
+          <div style="margin-top:10px;display:flex;gap:6px;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="OS.mostrarAddServico('catalogo')">+ Do catalogo</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="OS.mostrarAddServico('manual')">+ Servico manual</button>
+          </div>
+          <div id="det-add-servico" class="hidden" style="margin-top:10px;background:var(--bg-input);padding:12px;border-radius:var(--radius);"></div>
         </div>
 
         <!-- PECAS / MATERIAIS -->
@@ -696,6 +703,93 @@ const OS = {
       </div>
     `);
 
+  },
+
+  // Adicionar serviço na OS aberta
+  mostrarAddServico(tipo) {
+    const container = document.getElementById('det-add-servico');
+    container.classList.remove('hidden');
+
+    if (tipo === 'catalogo') {
+      container.innerHTML = `
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Adicionar servico do catalogo</div>
+        <select class="form-control" id="det-servico-select" onchange="OS._preencherServicoCatalogo()" style="margin-bottom:8px;">
+          ${optionsServicos()}
+        </select>
+        <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;">
+          <div class="form-group" style="margin:0;">
+            <label style="font-size:11px;">Valor (R$)</label>
+            <input type="number" class="form-control" id="det-servico-valor" value="0" min="0" step="0.01">
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" onclick="OS.addServicoCatalogo()">Add</button>
+        </div>
+      `;
+    } else {
+      container.innerHTML = `
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Adicionar servico manual</div>
+        <div class="form-group" style="margin:0 0 8px;">
+          <input type="text" class="form-control" id="det-servico-nome" placeholder="Descricao do servico">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;">
+          <div class="form-group" style="margin:0;">
+            <label style="font-size:11px;">Valor (R$)</label>
+            <input type="number" class="form-control" id="det-servico-valor-manual" value="0" min="0" step="0.01">
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" onclick="OS.addServicoManual()">Add</button>
+        </div>
+      `;
+    }
+  },
+
+  _preencherServicoCatalogo() {
+    const sel = document.getElementById('det-servico-select');
+    const nome = sel.value;
+    if (!nome || nome === '__outro') return;
+    const valor = getValorServico(nome);
+    document.getElementById('det-servico-valor').value = valor.toFixed(2);
+  },
+
+  async addServicoCatalogo() {
+    const sel = document.getElementById('det-servico-select');
+    const nome = sel.value;
+    if (!nome || nome === '__outro') { APP.toast('Selecione um servico', 'error'); return; }
+    const valor = parseFloat(document.getElementById('det-servico-valor').value) || 0;
+
+    const { error } = await db.from('itens_os').insert({
+      oficina_id: this._osAtualOficinaId,
+      os_id: this._osAtualId,
+      tipo: 'servico',
+      descricao: nome,
+      quantidade: 1,
+      valor_unitario: valor,
+      valor_total: valor
+    });
+    if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
+
+    await this._recalcularTotaisOS(this._osAtualId);
+    APP.toast('Servico adicionado');
+    this.abrirDetalhes(this._osAtualId);
+  },
+
+  async addServicoManual() {
+    const nome = document.getElementById('det-servico-nome').value.trim();
+    if (!nome) { APP.toast('Digite a descricao do servico', 'error'); return; }
+    const valor = parseFloat(document.getElementById('det-servico-valor-manual').value) || 0;
+
+    const { error } = await db.from('itens_os').insert({
+      oficina_id: this._osAtualOficinaId,
+      os_id: this._osAtualId,
+      tipo: 'servico',
+      descricao: nome,
+      quantidade: 1,
+      valor_unitario: valor,
+      valor_total: valor
+    });
+    if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
+
+    await this._recalcularTotaisOS(this._osAtualId);
+    APP.toast('Servico adicionado');
+    this.abrirDetalhes(this._osAtualId);
   },
 
   // Adicionar peça (do estoque ou avulso)
