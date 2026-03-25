@@ -1,7 +1,7 @@
 // RPM Pro — Veiculos
 const VEICULOS = {
   async carregar() {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('veiculos')
       .select('*, clientes(nome)')
       .eq('oficina_id', APP.profile.oficina_id)
@@ -41,8 +41,10 @@ const VEICULOS = {
               <td>${v.marca || ''} ${v.modelo || ''} ${v.ano || ''}</td>
               <td>${v.clientes?.nome || '-'}</td>
               <td>${v.km_atual ? v.km_atual.toLocaleString('pt-BR') + ' km' : '-'}</td>
-              <td>
+              <td style="display:flex;gap:4px;flex-wrap:wrap;">
+                <button class="btn btn-secondary btn-sm" onclick="VEICULOS.abrirHistorico('${v.id}','${esc(v.placa)}')">Historico</button>
                 <button class="btn btn-secondary btn-sm" onclick="VEICULOS.editar('${v.id}')">Editar</button>
+                <button class="btn btn-danger btn-sm" onclick="VEICULOS.excluir('${v.id}','${v.placa}')">Excluir</button>
               </td>
             </tr>
           `).join('')}
@@ -52,7 +54,7 @@ const VEICULOS = {
 
   async abrirModal(dados = {}) {
     // Busca clientes pra dropdown
-    const { data: clientes } = await supabase
+    const { data: clientes } = await db
       .from('clientes')
       .select('id, nome')
       .eq('oficina_id', APP.profile.oficina_id)
@@ -75,7 +77,7 @@ const VEICULOS = {
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
             <div class="form-group">
               <label>Placa *</label>
-              <input type="text" class="form-control" id="vei-placa" required value="${dados.placa || ''}" placeholder="ABC-1D23" style="text-transform:uppercase">
+              <input type="text" class="form-control" id="vei-placa" required value="${dados.placa || ''}" placeholder="ABC-1234 ou ABC1D23" maxlength="8" style="text-transform:uppercase" oninput="CLIENTES.formatarPlaca(this)">
             </div>
             <div class="form-group">
               <label>Ano</label>
@@ -85,11 +87,15 @@ const VEICULOS = {
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
             <div class="form-group">
               <label>Marca</label>
-              <input type="text" class="form-control" id="vei-marca" value="${dados.marca || ''}" placeholder="Fiat, VW, Hyundai...">
+              <select class="form-control" id="vei-marca" onchange="VEICULOS._atualizarModelos()">
+                ${optionsMarcas(dados.marca)}
+              </select>
             </div>
             <div class="form-group">
               <label>Modelo</label>
-              <input type="text" class="form-control" id="vei-modelo" value="${dados.modelo || ''}" placeholder="Gol, HB20, Civic...">
+              <select class="form-control" id="vei-modelo">
+                ${dados.marca ? optionsModelos(dados.marca, dados.modelo) : '<option value="">Selecione a marca primeiro</option>'}
+              </select>
             </div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
@@ -115,12 +121,34 @@ const VEICULOS = {
     `);
   },
 
+  _atualizarModelos() {
+    const marca = document.getElementById('vei-marca').value;
+    const sel = document.getElementById('vei-modelo');
+    sel.innerHTML = optionsModelos(marca);
+    sel.onchange = function() {
+      if (this.value === '__outro') {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'form-control';
+        input.id = 'vei-modelo';
+        input.placeholder = 'Digite o modelo';
+        this.replaceWith(input);
+        input.focus();
+      }
+    };
+  },
+
   async salvar(e, id) {
     e.preventDefault();
+    const placaVal = document.getElementById('vei-placa').value.trim().toUpperCase();
+    if (!CLIENTES.validarPlaca(placaVal)) {
+      APP.toast('Placa invalida. Use formato ABC-1234 ou ABC1D23', 'error');
+      return;
+    }
     const dados = {
       oficina_id: APP.profile.oficina_id,
       cliente_id: document.getElementById('vei-cliente').value,
-      placa: document.getElementById('vei-placa').value.trim().toUpperCase(),
+      placa: placaVal,
       marca: document.getElementById('vei-marca').value.trim(),
       modelo: document.getElementById('vei-modelo').value.trim(),
       ano: document.getElementById('vei-ano').value ? parseInt(document.getElementById('vei-ano').value) : null,
@@ -131,9 +159,9 @@ const VEICULOS = {
 
     let error;
     if (id) {
-      ({ error } = await supabase.from('veiculos').update(dados).eq('id', id));
+      ({ error } = await db.from('veiculos').update(dados).eq('id', id));
     } else {
-      ({ error } = await supabase.from('veiculos').insert(dados));
+      ({ error } = await db.from('veiculos').insert(dados));
     }
 
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
@@ -144,13 +172,73 @@ const VEICULOS = {
   },
 
   async editar(id) {
-    const { data } = await supabase.from('veiculos').select('*').eq('id', id).single();
+    const { data } = await db.from('veiculos').select('*').eq('id', id).single();
     if (data) this.abrirModal(data);
+  },
+
+  async excluir(id, placa) {
+    if (!confirm(`Excluir o veiculo ${placa}? Isso vai remover o historico de OS vinculado.`)) return;
+    const { error } = await db.from('veiculos').delete().eq('id', id);
+    if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
+    APP.toast('Veiculo excluido');
+    this.carregar();
+  },
+
+  // Historico de OS do veiculo
+  async abrirHistorico(veiculoId, placa) {
+    const { data: osList, error } = await db
+      .from('ordens_servico')
+      .select('*, profiles!ordens_servico_mecanico_id_fkey(nome)')
+      .eq('oficina_id', APP.profile.oficina_id)
+      .eq('veiculo_id', veiculoId)
+      .order('data_entrada', { ascending: false });
+
+    if (error) { APP.toast('Erro ao carregar historico', 'error'); return; }
+
+    const statusLabel = {
+      entrada: 'Entrada', diagnostico: 'Diagnostico', orcamento: 'Orcamento',
+      aprovada: 'Aprovada', aguardando_peca: 'Aguardando Peca', execucao: 'Em execucao',
+      pronto: 'Pronto', entregue: 'Entregue', cancelada: 'Cancelada'
+    };
+
+    const lista = osList || [];
+    const conteudo = lista.length
+      ? lista.map(os => `
+        <div style="background:var(--bg-input);border-radius:var(--radius);padding:12px;margin-bottom:8px;cursor:pointer;" onclick="closeModal();setTimeout(()=>OS.abrirDetalhes('${os.id}'),200)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <strong style="color:var(--primary);">OS #${esc(os.numero || '-')}</strong>
+            <span class="badge badge-${os.status}">${statusLabel[os.status] || os.status}</span>
+          </div>
+          <div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px;">${APP.formatDate(os.data_entrada)}</div>
+          <div style="font-size:13px;">${esc(os.descricao || 'Sem descricao')}</div>
+          <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:13px;">
+            <span style="color:var(--text-secondary);">Mecanico: ${esc(os.profiles?.nome || 'Nao definido')}</span>
+            <span style="font-weight:700;color:var(--success);">${APP.formatMoney(os.valor_total)}</span>
+          </div>
+        </div>
+      `).join('')
+      : '<div style="text-align:center;padding:40px 20px;color:var(--text-secondary);"><div style="font-size:36px;margin-bottom:12px;">🔧</div><p>Nenhum servico registrado para este veiculo</p></div>';
+
+    const totalGasto = lista.reduce((s, os) => s + (os.valor_total || 0), 0);
+
+    openModal(`
+      <div class="modal-header">
+        <h3>Historico — ${esc(placa)}</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        ${lista.length ? `<div style="display:flex;justify-content:space-between;margin-bottom:12px;padding:10px 14px;background:var(--bg-input);border-radius:var(--radius);">
+          <span style="font-size:13px;color:var(--text-secondary);">${lista.length} OS registrada${lista.length > 1 ? 's' : ''}</span>
+          <span style="font-size:13px;font-weight:700;color:var(--success);">Total: ${APP.formatMoney(totalGasto)}</span>
+        </div>` : ''}
+        ${conteudo}
+      </div>
+    `);
   },
 
   // Busca veiculo por placa (usado na OS)
   async buscarPorPlaca(placa) {
-    const { data } = await supabase
+    const { data } = await db
       .from('veiculos')
       .select('*, clientes(id, nome, whatsapp)')
       .eq('oficina_id', APP.profile.oficina_id)

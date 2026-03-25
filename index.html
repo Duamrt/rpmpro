@@ -17,7 +17,10 @@
     </div>
 
     <nav class="sidebar-nav">
-      <a href="#" data-page="dashboard" class="active">
+      <a href="#" data-page="kanban" class="active">
+        <span class="icon">🏗️</span> Patio
+      </a>
+      <a href="#" data-page="dashboard">
         <span class="icon">📊</span> Dashboard
       </a>
       <a href="#" data-page="os">
@@ -35,8 +38,12 @@
       <a href="#" data-page="equipe">
         <span class="icon">👥</span> Equipe
       </a>
-      <a href="#" data-page="financeiro">
+      <!-- Financeiro: fase 2 -->
+      <!--<a href="#" data-page="financeiro">
         <span class="icon">💰</span> Financeiro
+      </a>-->
+      <a href="#" data-page="config">
+        <span class="icon">⚙️</span> Configuracoes
       </a>
     </nav>
 
@@ -59,11 +66,22 @@
       ☰ Menu
     </button>
 
+    <!-- KANBAN / PATIO -->
+    <section id="page-kanban" class="page-content">
+      <div class="page-header">
+        <h2>Patio da Oficina</h2>
+        <button class="btn btn-primary" onclick="OS.abrirModal()">+ Nova OS</button>
+      </div>
+      <div id="kanban-board">
+        <div class="loading">Carregando...</div>
+      </div>
+    </section>
+
     <!-- DASHBOARD -->
-    <section id="page-dashboard" class="page-content">
+    <section id="page-dashboard" class="page-content hidden">
       <div class="page-header">
         <h2>Dashboard</h2>
-        <button class="btn btn-primary" onclick="APP.loadPage('os')">+ Nova OS</button>
+        <button class="btn btn-primary" onclick="OS.abrirModal()">+ Nova OS</button>
       </div>
 
       <div class="kpi-grid">
@@ -149,6 +167,7 @@
     <section id="page-equipe" class="page-content hidden">
       <div class="page-header">
         <h2>Equipe</h2>
+        <button class="btn btn-primary" onclick="EQUIPE.abrirModal()">+ Novo Membro</button>
       </div>
       <div id="equipe-lista">
         <div class="loading">Carregando...</div>
@@ -164,13 +183,23 @@
         <div class="loading">Carregando...</div>
       </div>
     </section>
+
+    <!-- CONFIGURACOES -->
+    <section id="page-config" class="page-content hidden">
+      <div class="page-header">
+        <h2>Configuracoes</h2>
+      </div>
+      <div id="config-content">
+        <div class="loading">Carregando...</div>
+      </div>
+    </section>
   </main>
 </div>
 
 <!-- BOTTOM NAV MOBILE -->
 <nav class="bottom-nav">
-  <a href="#" data-page="dashboard" class="active">
-    <span class="icon">📊</span> Inicio
+  <a href="#" data-page="kanban" class="active">
+    <span class="icon">🏗️</span> Patio
   </a>
   <a href="#" data-page="os">
     <span class="icon">🔧</span> OS
@@ -192,26 +221,42 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<script src="js/utils.js"></script>
 <script src="js/config.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/app.js"></script>
 <script src="js/dashboard.js"></script>
 <script src="js/os.js"></script>
 <script src="js/clientes.js"></script>
+<script src="js/catalogo-veiculos.js"></script>
+<script src="js/catalogo-servicos.js"></script>
 <script src="js/veiculos.js"></script>
+<script src="js/pecas.js"></script>
+<script src="js/equipe.js"></script>
+<script src="js/kanban.js"></script>
+<script src="js/config-oficina.js"></script>
+<script src="js/pdf-os.js"></script>
 <script>
   // Modal helpers
   function openModal(html) {
     document.getElementById('modal-content').innerHTML = html;
     document.getElementById('modal-overlay').classList.add('show');
+    document.body.style.overflow = 'hidden';
   }
 
   function closeModal() {
     document.getElementById('modal-overlay').classList.remove('show');
+    document.body.style.overflow = '';
   }
 
   document.getElementById('modal-overlay').addEventListener('click', (e) => {
     if (e.target === e.currentTarget) closeModal();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeModal();
   });
 
   // Init

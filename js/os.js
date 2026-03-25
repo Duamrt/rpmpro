@@ -1,7 +1,7 @@
 // RPM Pro — Ordens de Servico
 const OS = {
   async carregar() {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('ordens_servico')
       .select('*, veiculos(placa, marca, modelo), clientes(nome), profiles!ordens_servico_mecanico_id_fkey(nome)')
       .eq('oficina_id', APP.profile.oficina_id)
@@ -63,8 +63,9 @@ const OS = {
   },
 
   async abrirModal() {
+    this._servicosSelecionados = [];
     // Busca mecanicos
-    const { data: mecanicos } = await supabase
+    const { data: mecanicos } = await db
       .from('profiles')
       .select('id, nome')
       .eq('oficina_id', APP.profile.oficina_id)
@@ -81,7 +82,7 @@ const OS = {
         <form id="form-os" onsubmit="OS.salvar(event)">
           <div class="form-group">
             <label>Placa do veiculo *</label>
-            <input type="text" class="form-control" id="os-placa" required placeholder="ABC-1D23" style="text-transform:uppercase" oninput="OS.buscarPlaca(this.value)">
+            <input type="text" class="form-control" id="os-placa" required placeholder="ABC-1234 ou ABC1D23" maxlength="8" style="text-transform:uppercase" oninput="CLIENTES.formatarPlaca(this); OS.buscarPlaca(this.value)">
             <div id="os-placa-info" style="font-size:12px;color:var(--text-secondary);margin-top:4px;"></div>
           </div>
 
@@ -104,11 +105,29 @@ const OS = {
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
               <div class="form-group">
                 <label>Marca</label>
-                <input type="text" class="form-control" id="os-novo-marca">
+                <select class="form-control" id="os-novo-marca" onchange="OS._atualizarModelos()">
+                  ${optionsMarcas()}
+                </select>
               </div>
               <div class="form-group">
                 <label>Modelo</label>
-                <input type="text" class="form-control" id="os-novo-modelo">
+                <select class="form-control" id="os-novo-modelo">
+                  <option value="">Selecione a marca primeiro</option>
+                </select>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+              <div class="form-group">
+                <label>Ano</label>
+                <input type="number" class="form-control" id="os-novo-ano" placeholder="2020">
+              </div>
+              <div class="form-group">
+                <label>Cor</label>
+                <input type="text" class="form-control" id="os-novo-cor" placeholder="Branco, Prata...">
+              </div>
+              <div class="form-group">
+                <label>KM Atual</label>
+                <input type="number" class="form-control" id="os-novo-km-atual" placeholder="50000">
               </div>
             </div>
           </div>
@@ -122,9 +141,24 @@ const OS = {
           </div>
 
           <div class="form-group">
-            <label>Descricao do servico *</label>
-            <textarea class="form-control" id="os-descricao" required placeholder="Ex: Troca de embreagem + revisao dos freios"></textarea>
+            <label>Tipo de servico</label>
+            <select class="form-control" id="os-servico-tipo" onchange="OS._selecionarServico(this.value)">
+              ${optionsServicos()}
+            </select>
           </div>
+
+          <div class="form-group">
+            <label>Descricao / detalhes</label>
+            <textarea class="form-control" id="os-descricao" placeholder="Detalhes adicionais, observacoes do cliente, etc."></textarea>
+          </div>
+
+          <div id="os-servicos-lista" style="margin-bottom:12px;"></div>
+          <div id="os-servico-manual" class="hidden" style="display:none;gap:8px;align-items:center;margin-bottom:16px;">
+            <input type="text" class="form-control" id="os-servico-manual-input" placeholder="Digite o servico" style="flex:1;">
+            <button type="button" class="btn btn-primary btn-sm" onclick="OS._confirmarServicoManual()">Add</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="OS._fecharServicoManual()">X</button>
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm" id="os-btn-add-servico" onclick="OS._abrirServicoManual()" style="margin-bottom:16px;">+ Adicionar outro servico</button>
 
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
             <div class="form-group">
@@ -150,38 +184,174 @@ const OS = {
     `);
   },
 
-  // Busca automatica ao digitar placa
+  _servicosSelecionados: [], // [{nome, valor}]
+
+  _selecionarServico(nome) {
+    if (!nome || nome === '__outro') return;
+    if (this._servicosSelecionados.find(s => s.nome === nome)) {
+      APP.toast('Servico ja adicionado', 'warning');
+      document.getElementById('os-servico-tipo').value = '';
+      return;
+    }
+    const valor = getValorServico(nome);
+    this._servicosSelecionados.push({ nome, valor });
+    this._renderServicos();
+    document.getElementById('os-servico-tipo').value = '';
+  },
+
+  _abrirServicoManual() {
+    const div = document.getElementById('os-servico-manual');
+    div.classList.remove('hidden');
+    div.style.display = 'flex';
+    document.getElementById('os-btn-add-servico').classList.add('hidden');
+    document.getElementById('os-servico-manual-input').focus();
+  },
+
+  _fecharServicoManual() {
+    document.getElementById('os-servico-manual').style.display = 'none';
+    document.getElementById('os-btn-add-servico').classList.remove('hidden');
+    document.getElementById('os-servico-manual-input').value = '';
+  },
+
+  _confirmarServicoManual() {
+    const input = document.getElementById('os-servico-manual-input');
+    const val = input.value.trim();
+    if (!val) return;
+    this._servicosSelecionados.push({ nome: val, valor: 0 });
+    this._renderServicos();
+    input.value = '';
+    input.focus();
+  },
+
+  _renderServicos() {
+    const container = document.getElementById('os-servicos-lista');
+    if (!this._servicosSelecionados.length) {
+      container.innerHTML = '';
+      return;
+    }
+    const total = this._servicosSelecionados.reduce((s, x) => s + x.valor, 0);
+    container.innerHTML = this._servicosSelecionados.map((s, i) => `
+      <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg-input);padding:8px 12px;border-radius:var(--radius);margin-bottom:4px;">
+        <span style="font-size:13px;flex:1;">${s.nome}</span>
+        <input type="number" value="${s.valor}" min="0" step="0.01" style="width:90px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:4px 8px;font-size:13px;text-align:right;font-family:inherit;" onchange="OS._atualizarValorServico(${i}, this.value)">
+        <button type="button" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:16px;padding:0 4px;margin-left:4px;" onclick="OS._removerServico(${i})">&times;</button>
+      </div>
+    `).join('') + `
+      <div style="text-align:right;padding:8px 12px;font-size:14px;font-weight:700;color:var(--success);">
+        Mão de obra: R$ ${total.toFixed(2)}
+      </div>`;
+  },
+
+  _atualizarValorServico(i, val) {
+    this._servicosSelecionados[i].valor = parseFloat(val) || 0;
+    this._renderServicos();
+  },
+
+  _removerServico(i) {
+    this._servicosSelecionados.splice(i, 1);
+    this._renderServicos();
+  },
+
+  _atualizarModelos() {
+    const marca = document.getElementById('os-novo-marca').value;
+    const sel = document.getElementById('os-novo-modelo');
+    sel.innerHTML = optionsModelos(marca);
+    sel.onchange = function() {
+      if (this.value === '__outro') {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'form-control';
+        input.id = 'os-novo-modelo';
+        input.placeholder = 'Digite o modelo';
+        this.replaceWith(input);
+        input.focus();
+      }
+    };
+  },
+
+  // Busca automatica ao digitar placa (autocomplete)
   _buscarTimeout: null,
   buscarPlaca(val) {
     clearTimeout(this._buscarTimeout);
     const placa = val.trim().toUpperCase();
-    if (placa.length < 7) {
-      document.getElementById('os-placa-info').textContent = '';
-      document.getElementById('os-novo-registro').classList.add('hidden');
+    const infoEl = document.getElementById('os-placa-info');
+    const novoEl = document.getElementById('os-novo-registro');
+    const sugEl = document.getElementById('os-sugestoes') || this._criarSugestoes();
+
+    if (placa.length < 2) {
+      infoEl.textContent = '';
+      novoEl.classList.add('hidden');
+      sugEl.classList.add('hidden');
       return;
     }
 
     this._buscarTimeout = setTimeout(async () => {
-      const veiculo = await VEICULOS.buscarPorPlaca(placa);
-      const infoEl = document.getElementById('os-placa-info');
-      const novoEl = document.getElementById('os-novo-registro');
+      // Busca veiculos que começam com o que digitou
+      const { data: veiculos } = await db
+        .from('veiculos')
+        .select('*, clientes(id, nome, whatsapp)')
+        .eq('oficina_id', APP.profile.oficina_id)
+        .ilike('placa', placa + '%')
+        .order('placa')
+        .limit(8);
 
-      if (veiculo) {
-        document.getElementById('os-veiculo-id').value = veiculo.id;
-        document.getElementById('os-cliente-id').value = veiculo.clientes?.id || '';
-        infoEl.innerHTML = `<span style="color:var(--success)">✓ ${veiculo.marca} ${veiculo.modelo} — ${veiculo.clientes?.nome || 'Sem dono'}</span>`;
+      if (veiculos && veiculos.length) {
+        sugEl.innerHTML = veiculos.map(v => `
+          <div style="padding:10px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);"
+               onmouseover="this.style.background='rgba(255,69,0,0.1)'" onmouseout="this.style.background=''"
+               onclick="OS.selecionarVeiculo('${v.id}','${v.clientes?.id || ''}','${(v.placa || '').replace(/'/g,'')}','${(v.marca || '').replace(/'/g,'')}','${(v.modelo || '').replace(/'/g,'')}','${(v.clientes?.nome || '').replace(/'/g,'')}')">
+            <div>
+              <strong style="color:var(--primary);">${v.placa}</strong>
+              <span style="color:var(--text-secondary);font-size:13px;margin-left:8px;">${v.marca || ''} ${v.modelo || ''} ${v.ano || ''} ${v.cor ? '— ' + v.cor : ''}</span>
+            </div>
+            <span style="font-size:12px;color:var(--text-secondary);">${v.clientes?.nome || ''}</span>
+          </div>
+        `).join('');
+        sugEl.classList.remove('hidden');
         novoEl.classList.add('hidden');
-      } else {
+        infoEl.textContent = '';
+      } else if (placa.length >= 7) {
+        // Placa completa e nao achou
+        sugEl.classList.add('hidden');
         document.getElementById('os-veiculo-id').value = '';
         document.getElementById('os-cliente-id').value = '';
         infoEl.textContent = '';
         novoEl.classList.remove('hidden');
+      } else {
+        sugEl.innerHTML = '<div style="padding:10px 14px;color:var(--text-secondary);font-size:13px;">Nenhum veiculo encontrado com "' + placa + '"</div>';
+        sugEl.classList.remove('hidden');
       }
-    }, 400);
+    }, 300);
+  },
+
+  _criarSugestoes() {
+    const input = document.getElementById('os-placa');
+    const div = document.createElement('div');
+    div.id = 'os-sugestoes';
+    div.className = 'hidden';
+    div.style.cssText = 'background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);max-height:200px;overflow-y:auto;margin-top:4px;';
+    input.parentElement.appendChild(div);
+    return div;
+  },
+
+  selecionarVeiculo(veiculoId, clienteId, placa, marca, modelo, clienteNome) {
+    document.getElementById('os-placa').value = placa;
+    document.getElementById('os-veiculo-id').value = veiculoId;
+    document.getElementById('os-cliente-id').value = clienteId;
+    document.getElementById('os-placa-info').innerHTML = `<span style="color:var(--success)">✓ ${marca} ${modelo} — ${clienteNome}</span>`;
+    document.getElementById('os-novo-registro').classList.add('hidden');
+    const sugEl = document.getElementById('os-sugestoes');
+    if (sugEl) sugEl.classList.add('hidden');
   },
 
   async salvar(e) {
     e.preventDefault();
+    const placaOS = document.getElementById('os-placa').value.trim().toUpperCase();
+    if (!CLIENTES.validarPlaca(placaOS)) {
+      APP.toast('Placa invalida. Use formato ABC-1234 ou ABC1D23', 'error');
+      return;
+    }
+
     const oficina_id = APP.profile.oficina_id;
     let veiculo_id = document.getElementById('os-veiculo-id').value;
     let cliente_id = document.getElementById('os-cliente-id').value;
@@ -192,7 +362,7 @@ const OS = {
       if (!nomeCliente) { APP.toast('Preencha o nome do cliente', 'error'); return; }
 
       // Cria cliente
-      const { data: cli, error: cliErr } = await supabase
+      const { data: cli, error: cliErr } = await db
         .from('clientes')
         .insert({
           oficina_id,
@@ -205,14 +375,17 @@ const OS = {
       cliente_id = cli.id;
 
       // Cria veiculo
-      const { data: vei, error: veiErr } = await supabase
+      const { data: vei, error: veiErr } = await db
         .from('veiculos')
         .insert({
           oficina_id,
           cliente_id: cli.id,
           placa: document.getElementById('os-placa').value.trim().toUpperCase(),
           marca: document.getElementById('os-novo-marca').value.trim(),
-          modelo: document.getElementById('os-novo-modelo').value.trim()
+          modelo: document.getElementById('os-novo-modelo').value.trim(),
+          ano: document.getElementById('os-novo-ano').value ? parseInt(document.getElementById('os-novo-ano').value) : null,
+          cor: (document.getElementById('os-novo-cor').value || '').trim(),
+          km_atual: document.getElementById('os-novo-km-atual').value ? parseInt(document.getElementById('os-novo-km-atual').value) : null
         })
         .select()
         .single();
@@ -220,21 +393,48 @@ const OS = {
       veiculo_id = vei.id;
     }
 
+    // Monta descrição e valores
+    const servicos = this._servicosSelecionados.map(s => s.nome);
+    const descLivre = document.getElementById('os-descricao').value.trim();
+    if (descLivre) servicos.push(descLivre);
+    const descricaoFinal = servicos.join(' | ');
+    const totalMaoObra = this._servicosSelecionados.reduce((s, x) => s + x.valor, 0);
+
+    if (!descricaoFinal) { APP.toast('Selecione ou descreva pelo menos um servico', 'error'); return; }
+
     // Cria OS
     const mecanico = document.getElementById('os-mecanico').value;
-    const { error } = await supabase
+    const { data: osData, error } = await db
       .from('ordens_servico')
       .insert({
         oficina_id,
         veiculo_id,
         cliente_id,
         mecanico_id: mecanico || null,
-        descricao: document.getElementById('os-descricao').value.trim(),
+        descricao: descricaoFinal,
+        valor_mao_obra: totalMaoObra,
+        valor_total: totalMaoObra,
         km_entrada: document.getElementById('os-km').value ? parseInt(document.getElementById('os-km').value) : null,
         status: document.getElementById('os-status').value
-      });
+      })
+      .select()
+      .single();
 
     if (error) { APP.toast('Erro ao criar OS: ' + error.message, 'error'); return; }
+
+    // Salva itens de serviço na tabela itens_os
+    if (this._servicosSelecionados.length && osData) {
+      const itens = this._servicosSelecionados.map(s => ({
+        oficina_id,
+        os_id: osData.id,
+        tipo: 'servico',
+        descricao: s.nome,
+        quantidade: 1,
+        valor_unitario: s.valor,
+        valor_total: s.valor
+      }));
+      await db.from('itens_os').insert(itens);
+    }
 
     closeModal();
     APP.toast('OS aberta com sucesso');
@@ -243,20 +443,53 @@ const OS = {
   },
 
   async abrirDetalhes(id) {
-    const { data: os } = await supabase
-      .from('ordens_servico')
-      .select('*, veiculos(placa, marca, modelo, km_atual), clientes(nome, whatsapp), profiles!ordens_servico_mecanico_id_fkey(nome)')
-      .eq('id', id)
-      .single();
+    // Busca OS + itens + peças + checklists em paralelo
+    const [osRes, itensRes, pecasRes, chkEntradaRes, chkSaidaRes] = await Promise.all([
+      db.from('ordens_servico')
+        .select('*, veiculos(placa, marca, modelo, km_atual), clientes(nome, whatsapp), profiles!ordens_servico_mecanico_id_fkey(nome)')
+        .eq('id', id).single(),
+      db.from('itens_os')
+        .select('*, pecas(nome)')
+        .eq('os_id', id)
+        .order('tipo', { ascending: false })
+        .order('created_at'),
+      db.from('pecas')
+        .select('id, nome, codigo, marca, preco_venda, quantidade')
+        .eq('oficina_id', APP.profile.oficina_id)
+        .order('nome'),
+      db.from('checklists_entrada')
+        .select('*')
+        .eq('os_id', id)
+        .maybeSingle(),
+      db.from('checklists_saida')
+        .select('*')
+        .eq('os_id', id)
+        .maybeSingle()
+    ]);
 
+    const os = osRes.data;
     if (!os) return;
+    const itens = itensRes.data || [];
+    const pecasEstoque = pecasRes.data || [];
+    const chkEntrada = chkEntradaRes.data || null;
+    const chkSaida = chkSaidaRes.data || null;
 
-    const statusOptions = ['entrada','diagnostico','orcamento','aprovada','execucao','pronto','entregue','cancelada'];
+    this._osAtualId = id;
+    this._osAtualOficinaId = os.oficina_id;
+
+    const statusOptions = ['entrada','diagnostico','orcamento','aprovada','aguardando_peca','execucao','pronto','entregue','cancelada'];
     const statusLabel = {
       entrada: 'Entrada', diagnostico: 'Diagnostico', orcamento: 'Orcamento',
-      aprovada: 'Aprovada', execucao: 'Em execucao', pronto: 'Pronto',
+      aprovada: 'Aprovada', aguardando_peca: 'Aguardando Peça', execucao: 'Em execucao', pronto: 'Pronto',
       entregue: 'Entregue', cancelada: 'Cancelada'
     };
+
+    const itensServico = itens.filter(i => i.tipo === 'servico');
+    const itensPeca = itens.filter(i => i.tipo === 'peca');
+    const totalServicos = itensServico.reduce((s, i) => s + (i.valor_total || 0), 0);
+    const totalPecas = itensPeca.reduce((s, i) => s + (i.valor_total || 0), 0);
+    const desconto = os.desconto || 0;
+    const totalGeral = totalServicos + totalPecas - desconto;
 
     openModal(`
       <div class="modal-header">
@@ -264,39 +497,36 @@ const OS = {
         <button class="modal-close" onclick="closeModal()">&times;</button>
       </div>
       <div class="modal-body">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+        <!-- INFO -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
           <div>
-            <div style="font-size:12px;color:var(--text-secondary);">Veiculo</div>
-            <div style="font-weight:600;">${os.veiculos?.marca} ${os.veiculos?.modelo}</div>
+            <div style="font-size:11px;color:var(--text-secondary);">Veiculo</div>
+            <div style="font-weight:600;font-size:14px;"><a href="#" onclick="event.preventDefault();closeModal();setTimeout(()=>VEICULOS.abrirHistorico('${os.veiculo_id}','${esc(os.veiculos?.placa)}'),200)" style="color:var(--primary);text-decoration:none;">${esc(os.veiculos?.placa)}</a> — ${esc(os.veiculos?.marca || '')} ${esc(os.veiculos?.modelo || '')}</div>
           </div>
           <div>
-            <div style="font-size:12px;color:var(--text-secondary);">Cliente</div>
-            <div style="font-weight:600;">${os.clientes?.nome}</div>
+            <div style="font-size:11px;color:var(--text-secondary);">Cliente</div>
+            <div style="font-weight:600;font-size:14px;">${os.clientes?.nome}</div>
           </div>
           <div>
-            <div style="font-size:12px;color:var(--text-secondary);">Mecanico</div>
-            <div style="font-weight:600;">${os.profiles?.nome || 'Nao definido'}</div>
+            <div style="font-size:11px;color:var(--text-secondary);">Mecanico</div>
+            <div style="font-weight:600;font-size:14px;">${os.profiles?.nome || 'Nao definido'}</div>
           </div>
           <div>
-            <div style="font-size:12px;color:var(--text-secondary);">Entrada</div>
-            <div style="font-weight:600;">${APP.formatDateTime(os.data_entrada)}</div>
+            <div style="font-size:11px;color:var(--text-secondary);">Entrada</div>
+            <div style="font-weight:600;font-size:14px;">${APP.formatDateTime(os.data_entrada)}${os.km_entrada ? ' — ' + os.km_entrada.toLocaleString('pt-BR') + ' km' : ''}</div>
           </div>
         </div>
 
-        <div class="form-group">
-          <label>Descricao</label>
-          <div style="background:var(--bg-input);padding:10px 14px;border-radius:var(--radius);font-size:14px;">${os.descricao || '-'}</div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-          <div class="form-group">
+        <!-- STATUS + PAGAMENTO -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+          <div class="form-group" style="margin:0;">
             <label>Status</label>
             <select class="form-control" id="det-status" onchange="OS.atualizarStatus('${os.id}', this.value)">
               ${statusOptions.map(s => `<option value="${s}" ${s === os.status ? 'selected' : ''}>${statusLabel[s]}</option>`).join('')}
             </select>
           </div>
-          <div class="form-group">
-            <label>Forma de pagamento</label>
+          <div class="form-group" style="margin:0;">
+            <label>Pagamento</label>
             <select class="form-control" id="det-pagamento" onchange="OS.atualizarPagamento('${os.id}', this.value)">
               <option value="pendente" ${os.forma_pagamento === 'pendente' ? 'selected' : ''}>Pendente</option>
               <option value="dinheiro" ${os.forma_pagamento === 'dinheiro' ? 'selected' : ''}>Dinheiro</option>
@@ -307,19 +537,94 @@ const OS = {
           </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
-          <div class="form-group">
-            <label>Pecas (R$)</label>
-            <input type="number" class="form-control" id="det-pecas" value="${os.valor_pecas || 0}" step="0.01" onchange="OS.atualizarValores('${os.id}')">
+        <!-- SERVICOS -->
+        <div style="border-top:1px solid var(--border);padding-top:12px;margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <label style="font-size:13px;font-weight:700;color:var(--text-secondary);margin:0;">SERVICOS (Mao de obra)</label>
+            <span style="font-size:13px;font-weight:700;color:var(--success);">R$ ${totalServicos.toFixed(2)}</span>
           </div>
-          <div class="form-group">
-            <label>Mao de obra (R$)</label>
-            <input type="number" class="form-control" id="det-mao" value="${os.valor_mao_obra || 0}" step="0.01" onchange="OS.atualizarValores('${os.id}')">
+          ${itensServico.length ? itensServico.map(i => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px;">
+              <span>${i.descricao}</span>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="color:var(--text-secondary);">R$ ${(i.valor_total || 0).toFixed(2)}</span>
+                <button onclick="OS.removerItem('${i.id}','${os.id}')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;">&times;</button>
+              </div>
+            </div>
+          `).join('') : '<div style="font-size:13px;color:var(--text-muted);padding:4px 0;">Nenhum servico</div>'}
+        </div>
+
+        <!-- PECAS / MATERIAIS -->
+        <div style="border-top:1px solid var(--border);padding-top:12px;margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <label style="font-size:13px;font-weight:700;color:var(--text-secondary);margin:0;">PECAS / MATERIAIS</label>
+            <span style="font-size:13px;font-weight:700;color:var(--warning);">R$ ${totalPecas.toFixed(2)}</span>
           </div>
-          <div class="form-group">
-            <label>Total</label>
-            <div style="background:var(--bg-input);padding:10px 14px;border-radius:var(--radius);font-size:16px;font-weight:700;color:var(--success);" id="det-total">${APP.formatMoney(os.valor_total)}</div>
+          ${itensPeca.length ? itensPeca.map(i => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px;">
+              <span>${i.descricao} ${i.peca_id ? '<span style="color:var(--info);font-size:11px;">(estoque)</span>' : '<span style="color:var(--text-muted);font-size:11px;">(avulso)</span>'}</span>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="color:var(--text-secondary);">${i.quantidade}x R$ ${(i.valor_unitario || 0).toFixed(2)} = R$ ${(i.valor_total || 0).toFixed(2)}</span>
+                <button onclick="OS.removerItem('${i.id}','${os.id}','${i.peca_id || ''}',${i.quantidade})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;">&times;</button>
+              </div>
+            </div>
+          `).join('') : '<div style="font-size:13px;color:var(--text-muted);padding:4px 0;">Nenhuma peca</div>'}
+
+          <!-- ADICIONAR PECA -->
+          <div style="margin-top:10px;display:flex;gap:6px;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="OS.mostrarAddPeca('estoque')">+ Do estoque</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="OS.mostrarAddPeca('avulso')">+ Item avulso</button>
           </div>
+
+          <div id="det-add-peca" class="hidden" style="margin-top:10px;background:var(--bg-input);padding:12px;border-radius:var(--radius);"></div>
+        </div>
+
+        <!-- TOTAIS -->
+        <div style="border-top:1px solid var(--border);padding-top:12px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:8px;">
+            <div>
+              <div style="font-size:11px;color:var(--text-secondary);">Servicos</div>
+              <div style="font-weight:600;">R$ ${totalServicos.toFixed(2)}</div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--text-secondary);">Pecas</div>
+              <div style="font-weight:600;">R$ ${totalPecas.toFixed(2)}</div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--text-secondary);">Desconto</div>
+              <input type="number" class="form-control" id="det-desconto" value="${desconto}" min="0" step="0.01" style="padding:6px 10px;font-size:14px;" onchange="OS.atualizarDesconto('${os.id}', ${totalServicos}, ${totalPecas})">
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--bg-input);border-radius:var(--radius);">
+            <span style="font-size:16px;font-weight:700;">TOTAL</span>
+            <span style="font-size:20px;font-weight:800;color:var(--success);" id="det-total">R$ ${totalGeral.toFixed(2)}</span>
+          </div>
+        </div>
+
+        <!-- CHECKLIST DE ENTRADA -->
+        <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <label style="font-size:13px;font-weight:700;color:var(--text-secondary);margin:0;">
+              ${chkEntrada ? '✅' : '📋'} CHECKLIST DE ENTRADA
+            </label>
+            <button class="btn ${chkEntrada ? 'btn-secondary' : 'btn-primary'} btn-sm" onclick="OS.abrirChecklistEntrada('${os.id}')">
+              ${chkEntrada ? 'Ver / Editar' : 'Preencher'}
+            </button>
+          </div>
+          ${chkEntrada ? this._resumoChecklist(chkEntrada, 'entrada') : '<div style="font-size:12px;color:var(--warning);">Pendente — preencha antes de mover para diagnostico</div>'}
+        </div>
+
+        <!-- CHECKLIST DE SAIDA -->
+        <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <label style="font-size:13px;font-weight:700;color:var(--text-secondary);margin:0;">
+              ${chkSaida ? '✅' : '📋'} CHECKLIST DE SAIDA
+            </label>
+            <button class="btn ${chkSaida ? 'btn-secondary' : 'btn-primary'} btn-sm" onclick="OS.abrirChecklistSaida('${os.id}')">
+              ${chkSaida ? 'Ver / Editar' : 'Preencher'}
+            </button>
+          </div>
+          ${chkSaida ? this._resumoChecklist(chkSaida, 'saida') : '<div style="font-size:12px;color:var(--text-muted);">Preencha antes de marcar como Pronto</div>'}
         </div>
 
         ${os.clientes?.whatsapp ? `
@@ -327,22 +632,284 @@ const OS = {
             💬 Avisar cliente pelo WhatsApp
           </button>
         ` : ''}
+
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <button class="btn btn-secondary" style="flex:1;" onclick="PDF_OS.gerar('${os.id}')">🖨️ Imprimir OS</button>
+          <button class="btn btn-secondary" style="flex:1;" onclick="PDF_OS.recibo('${os.id}')">🧾 Gerar Recibo</button>
+        </div>
+
+        ${os.descricao ? `
+          <div style="margin-top:12px;padding:10px 14px;background:var(--bg-input);border-radius:var(--radius);font-size:13px;color:var(--text-secondary);">
+            <strong>Obs:</strong> ${esc(os.descricao)}
+          </div>
+        ` : ''}
       </div>
     `);
+
+    // Guarda peças do estoque pro modal
+    this._pecasEstoque = pecasEstoque;
+  },
+
+  // Adicionar peça (do estoque ou avulso)
+  mostrarAddPeca(tipo) {
+    const container = document.getElementById('det-add-peca');
+    container.classList.remove('hidden');
+
+    if (tipo === 'estoque') {
+      container.innerHTML = `
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Adicionar do estoque</div>
+        <div style="position:relative;margin-bottom:8px;">
+          <input type="text" class="form-control" id="det-peca-busca" placeholder="Digite pra buscar peca..." oninput="OS._buscarPecaEstoque(this.value)" autocomplete="off">
+          <input type="hidden" id="det-peca-id">
+          <div id="det-peca-sugestoes" class="hidden" style="position:absolute;left:0;right:0;top:100%;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);max-height:180px;overflow-y:auto;z-index:10;"></div>
+        </div>
+        <div id="det-peca-estoque-info" style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;">
+          <div class="form-group" style="margin:0;">
+            <label style="font-size:11px;">Qtd</label>
+            <input type="number" class="form-control" id="det-peca-qtd" value="1" min="1" step="1">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label style="font-size:11px;">Valor unit.</label>
+            <input type="number" class="form-control" id="det-peca-valor" value="0" min="0" step="0.01">
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" onclick="OS.addPecaEstoque()">Add</button>
+        </div>
+      `;
+    } else {
+      container.innerHTML = `
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Adicionar item avulso (fora do estoque)</div>
+        <div class="form-group" style="margin:0 0 8px;">
+          <input type="text" class="form-control" id="det-avulso-nome" placeholder="Ex: Oleo Mobil 5W30 (comprado na loja)">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;">
+          <div class="form-group" style="margin:0;">
+            <label style="font-size:11px;">Qtd</label>
+            <input type="number" class="form-control" id="det-avulso-qtd" value="1" min="1" step="1">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label style="font-size:11px;">Valor unit.</label>
+            <input type="number" class="form-control" id="det-avulso-valor" value="0" min="0" step="0.01">
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" onclick="OS.addPecaAvulso()">Add</button>
+        </div>
+      `;
+    }
+  },
+
+  _buscarPecaEstoque(val) {
+    const termo = val.trim().toLowerCase();
+    const sugEl = document.getElementById('det-peca-sugestoes');
+    if (termo.length < 2) { sugEl.classList.add('hidden'); return; }
+
+    const resultados = this._pecasEstoque.filter(p =>
+      (p.nome || '').toLowerCase().includes(termo) ||
+      (p.codigo || '').toLowerCase().includes(termo) ||
+      (p.marca || '').toLowerCase().includes(termo)
+    ).slice(0, 10);
+
+    if (!resultados.length) {
+      sugEl.innerHTML = '<div style="padding:8px 12px;font-size:13px;color:var(--text-secondary);">Nenhuma peca encontrada</div>';
+      sugEl.classList.remove('hidden');
+      return;
+    }
+
+    sugEl.innerHTML = resultados.map(p => `
+      <div style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px;"
+           onmouseover="this.style.background='rgba(255,69,0,0.1)'" onmouseout="this.style.background=''"
+           onclick="OS._selecionarPecaEstoque('${p.id}','${(p.nome || '').replace(/'/g, '')}',${p.preco_venda || 0},${p.quantidade || 0})">
+        <strong>${p.nome}</strong>${p.marca ? ' — ' + p.marca : ''}${p.codigo ? ' (' + p.codigo + ')' : ''}
+        <div style="color:var(--text-secondary);font-size:11px;">Estoque: ${p.quantidade} | R$ ${(p.preco_venda || 0).toFixed(2)}</div>
+      </div>
+    `).join('');
+    sugEl.classList.remove('hidden');
+  },
+
+  _selecionarPecaEstoque(id, nome, preco, qtdEstoque) {
+    document.getElementById('det-peca-id').value = id;
+    document.getElementById('det-peca-busca').value = nome;
+    document.getElementById('det-peca-valor').value = preco;
+    document.getElementById('det-peca-sugestoes').classList.add('hidden');
+    document.getElementById('det-peca-estoque-info').innerHTML = `<span style="color:var(--success);">✓ ${nome}</span> — ${qtdEstoque} em estoque`;
+    this._pecaSelecionadaQtd = qtdEstoque;
+    this._pecaSelecionadaNome = nome;
+  },
+
+  _pecaSelecionadaQtd: 0,
+  _pecaSelecionadaNome: '',
+
+  async addPecaEstoque() {
+    const pecaId = document.getElementById('det-peca-id').value;
+    if (!pecaId) { APP.toast('Busque e selecione uma peca', 'error'); return; }
+
+    const qtd = parseFloat(document.getElementById('det-peca-qtd').value) || 1;
+    const valorUnit = parseFloat(document.getElementById('det-peca-valor').value) || 0;
+    const estoqueDisp = this._pecaSelecionadaQtd;
+
+    if (qtd > estoqueDisp) {
+      if (!confirm(`So tem ${estoqueDisp} em estoque. Usar ${qtd} mesmo assim? O estoque vai ficar negativo.`)) return;
+    }
+
+    const oficina_id = this._osAtualOficinaId;
+    const os_id = this._osAtualId;
+
+    // 1. Insere item na OS
+    const { error: itemErr } = await db.from('itens_os').insert({
+      oficina_id,
+      os_id,
+      tipo: 'peca',
+      descricao: this._pecaSelecionadaNome,
+      peca_id: pecaId,
+      quantidade: qtd,
+      valor_unitario: valorUnit,
+      valor_total: qtd * valorUnit
+    });
+    if (itemErr) { APP.toast('Erro: ' + itemErr.message, 'error'); return; }
+
+    // 2. Baixa do estoque (atômica via RPC)
+    await db.rpc('baixar_estoque', { p_peca_id: pecaId, p_quantidade: qtd });
+
+    // 3. Registra movimento
+    await db.from('estoque_movimentos').insert({
+      oficina_id,
+      peca_id: pecaId,
+      os_id,
+      tipo: 'saida',
+      quantidade: qtd,
+      custo_unitario: valorUnit,
+      observacao: 'Aplicado na OS #' + os_id.slice(0, 8),
+      created_by: APP.profile.id
+    });
+
+    // 4. Atualiza totais da OS
+    await this._recalcularTotaisOS(os_id);
+
+    APP.toast('Peca adicionada e baixada do estoque');
+    this.abrirDetalhes(os_id); // recarrega modal
+  },
+
+  async addPecaAvulso() {
+    const nome = document.getElementById('det-avulso-nome').value.trim();
+    if (!nome) { APP.toast('Digite o nome do item', 'error'); return; }
+
+    const qtd = parseFloat(document.getElementById('det-avulso-qtd').value) || 1;
+    const valorUnit = parseFloat(document.getElementById('det-avulso-valor').value) || 0;
+
+    const { error } = await db.from('itens_os').insert({
+      oficina_id: this._osAtualOficinaId,
+      os_id: this._osAtualId,
+      tipo: 'peca',
+      descricao: nome + ' (avulso)',
+      peca_id: null,
+      quantidade: qtd,
+      valor_unitario: valorUnit,
+      valor_total: qtd * valorUnit
+    });
+    if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
+
+    await this._recalcularTotaisOS(this._osAtualId);
+    APP.toast('Item avulso adicionado');
+    this.abrirDetalhes(this._osAtualId);
+  },
+
+  async removerItem(itemId, osId, pecaId, quantidade) {
+    if (!confirm('Remover este item?')) return;
+
+    // Se era do estoque, devolve
+    if (pecaId) {
+      const { data: peca } = await db.from('pecas').select('quantidade').eq('id', pecaId).single();
+      if (peca) {
+        await db.from('pecas').update({ quantidade: (peca.quantidade || 0) + quantidade }).eq('id', pecaId);
+        await db.from('estoque_movimentos').insert({
+          oficina_id: this._osAtualOficinaId,
+          peca_id: pecaId,
+          os_id: osId,
+          tipo: 'entrada',
+          quantidade: quantidade,
+          observacao: 'Devolvido da OS (item removido)',
+          created_by: APP.profile.id
+        });
+      }
+    }
+
+    await db.from('itens_os').delete().eq('id', itemId);
+    await this._recalcularTotaisOS(osId);
+    APP.toast('Item removido');
+    this.abrirDetalhes(osId);
+  },
+
+  async _recalcularTotaisOS(osId) {
+    const { data: itens } = await db.from('itens_os').select('tipo, valor_total').eq('os_id', osId);
+    const totalMao = (itens || []).filter(i => i.tipo === 'servico').reduce((s, i) => s + (i.valor_total || 0), 0);
+    const totalPecas = (itens || []).filter(i => i.tipo === 'peca').reduce((s, i) => s + (i.valor_total || 0), 0);
+
+    const { data: os } = await db.from('ordens_servico').select('desconto').eq('id', osId).single();
+    const desconto = os?.desconto || 0;
+
+    await db.from('ordens_servico').update({
+      valor_mao_obra: totalMao,
+      valor_pecas: totalPecas,
+      valor_total: totalMao + totalPecas - desconto,
+      updated_at: new Date().toISOString()
+    }).eq('id', osId);
+  },
+
+  async atualizarDesconto(osId, totalServicos, totalPecas) {
+    const desconto = parseFloat(document.getElementById('det-desconto').value) || 0;
+    const total = totalServicos + totalPecas - desconto;
+    document.getElementById('det-total').textContent = 'R$ ' + total.toFixed(2);
+
+    await db.from('ordens_servico').update({
+      desconto,
+      valor_total: total,
+      updated_at: new Date().toISOString()
+    }).eq('id', osId);
+    APP.toast('Desconto aplicado');
   },
 
   async atualizarStatus(id, status) {
+    // Busca status atual pra validar transicoes
+    const { data: osAtual } = await db.from('ordens_servico').select('status').eq('id', id).single();
+    const statusAtual = osAtual?.status;
+
+    // Bloqueio: sair de "entrada" sem checklist de entrada
+    if (statusAtual === 'entrada' && status !== 'entrada' && status !== 'cancelada') {
+      const temEntrada = await this._temChecklistEntrada(id);
+      if (!temEntrada) {
+        APP.toast('Preencha o checklist de entrada antes de mover a OS', 'error');
+        document.getElementById('det-status').value = statusAtual;
+        return;
+      }
+    }
+
+    // Bloqueio: ir pra "execucao" sem ter passado por "aprovada"
+    if (status === 'execucao' && statusAtual !== 'aprovada' && statusAtual !== 'aguardando_peca' && statusAtual !== 'execucao') {
+      APP.toast('A OS precisa estar aprovada antes de ir pra execucao', 'error');
+      document.getElementById('det-status').value = statusAtual;
+      return;
+    }
+
+    // Bloqueio: ir pra "pronto" sem checklist de saida
+    if (status === 'pronto') {
+      const temSaida = await this._temChecklistSaida(id);
+      if (!temSaida) {
+        APP.toast('Preencha o checklist de saida antes de marcar como Pronto', 'error');
+        document.getElementById('det-status').value = statusAtual;
+        return;
+      }
+    }
+
     const update = { status, updated_at: new Date().toISOString() };
     if (status === 'aprovada') update.data_aprovacao = new Date().toISOString();
     if (status === 'pronto') update.data_conclusao = new Date().toISOString();
     if (status === 'entregue') update.data_entrega = new Date().toISOString();
 
-    await supabase.from('ordens_servico').update(update).eq('id', id);
+    await db.from('ordens_servico').update(update).eq('id', id);
     APP.toast('Status atualizado');
   },
 
   async atualizarPagamento(id, forma) {
-    await supabase.from('ordens_servico').update({
+    await db.from('ordens_servico').update({
       forma_pagamento: forma,
       pago: forma !== 'pendente',
       updated_at: new Date().toISOString()
@@ -350,19 +917,216 @@ const OS = {
     APP.toast('Pagamento atualizado');
   },
 
-  async atualizarValores(id) {
-    const pecas = parseFloat(document.getElementById('det-pecas').value) || 0;
-    const mao = parseFloat(document.getElementById('det-mao').value) || 0;
-    const total = pecas + mao;
+  // ==========================================
+  // CHECKLISTS
+  // ==========================================
 
-    document.getElementById('det-total').textContent = APP.formatMoney(total);
+  _itensEntrada: [
+    { key: 'amassados', label: 'Amassados e riscos pre-existentes', temCampo: true },
+    { key: 'vidros', label: 'Vidros e retrovisores OK', temCampo: false },
+    { key: 'pneus', label: 'Pneus (condicao visivel)', temCampo: true },
+    { key: 'combustivel', label: 'Nivel de combustivel', tipo: 'select', opcoes: ['vazio','1/4','meio','3/4','cheio'] },
+    { key: 'interior', label: 'Itens no interior (pertences, documentos)', temCampo: true },
+    { key: 'travas', label: 'Travas e vidros eletricos', temCampo: false },
+    { key: 'sintoma', label: 'Sintoma confirmado pelo mecanico', temCampo: true },
+    { key: 'scanner', label: 'Scanner realizado', temCampo: true }
+  ],
 
-    await supabase.from('ordens_servico').update({
-      valor_pecas: pecas,
-      valor_mao_obra: mao,
-      valor_total: total,
-      updated_at: new Date().toISOString()
-    }).eq('id', id);
+  _itensSaida: [
+    { key: 'itens_executados', label: 'Todos os itens da OS executados', temCampo: false },
+    { key: 'pecas_registradas', label: 'Pecas substituidas registradas', temCampo: false },
+    { key: 'sem_vazamentos', label: 'Sem vazamentos visiveis', temCampo: false },
+    { key: 'sem_ruidos', label: 'Sem ruidos anormais', temCampo: false },
+    { key: 'test_drive', label: 'Test drive realizado', temCampo: true },
+    { key: 'interior_limpo', label: 'Interior limpo', temCampo: false },
+    { key: 'sem_ferramentas', label: 'Sem ferramentas esquecidas', temCampo: false },
+    { key: 'documentos_devolvidos', label: 'Documentos devolvidos', temCampo: false }
+  ],
+
+  _resumoChecklist(chk, tipo) {
+    const itens = chk.itens || {};
+    const defs = tipo === 'entrada' ? this._itensEntrada : this._itensSaida;
+    const marcados = defs.filter(d => d.tipo === 'select' ? !!itens[d.key]?.valor : itens[d.key]?.checked).length;
+    const total = defs.length;
+    const cor = marcados === total ? 'var(--success)' : 'var(--warning)';
+    let html = `<div style="font-size:12px;color:${cor};margin-bottom:4px;">${marcados}/${total} itens verificados</div>`;
+    if (chk.observacoes) {
+      html += `<div style="font-size:12px;color:var(--text-secondary);font-style:italic;">${esc(chk.observacoes)}</div>`;
+    }
+    return html;
+  },
+
+  async abrirChecklistEntrada(osId) {
+    const { data: existente } = await db.from('checklists_entrada')
+      .select('*').eq('os_id', osId).maybeSingle();
+    const itens = existente?.itens || {};
+    const obs = existente?.observacoes || '';
+
+    const campos = this._itensEntrada.map(item => {
+      const val = itens[item.key] || {};
+      if (item.tipo === 'select') {
+        return `
+          <div style="padding:10px 0;border-bottom:1px solid var(--border);">
+            <label style="font-size:13px;font-weight:600;">${esc(item.label)}</label>
+            <select class="form-control" id="chk-e-${item.key}" style="margin-top:4px;">
+              <option value="">Selecione</option>
+              ${item.opcoes.map(op => `<option value="${op}" ${val.valor === op ? 'selected' : ''}>${op}</option>`).join('')}
+            </select>
+          </div>`;
+      }
+      return `
+        <div style="padding:10px 0;border-bottom:1px solid var(--border);">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+            <input type="checkbox" id="chk-e-${item.key}" ${val.checked ? 'checked' : ''}>
+            <span style="font-size:13px;">${esc(item.label)}</span>
+          </label>
+          ${item.temCampo ? `<input type="text" class="form-control" id="chk-e-${item.key}-obs" value="${esc(val.obs || '')}" placeholder="Detalhes..." style="margin-top:6px;font-size:12px;">` : ''}
+        </div>`;
+    }).join('');
+
+    openModal(`
+      <div class="modal-header">
+        <h3>Checklist de Entrada</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        ${campos}
+        <div class="form-group" style="margin-top:12px;">
+          <label>Observacoes gerais</label>
+          <textarea class="form-control" id="chk-e-obs" placeholder="Observacoes adicionais...">${esc(obs)}</textarea>
+        </div>
+        <div class="modal-footer" style="padding:16px 0 0;border:0;">
+          <button class="btn btn-secondary" onclick="OS.abrirDetalhes('${osId}')">Voltar</button>
+          <button class="btn btn-primary" onclick="OS.salvarChecklistEntrada('${osId}')">Salvar checklist</button>
+        </div>
+      </div>
+    `);
+  },
+
+  async salvarChecklistEntrada(osId) {
+    const itens = {};
+    this._itensEntrada.forEach(item => {
+      if (item.tipo === 'select') {
+        const el = document.getElementById('chk-e-' + item.key);
+        itens[item.key] = { valor: el?.value || '' };
+      } else {
+        const el = document.getElementById('chk-e-' + item.key);
+        const obsEl = document.getElementById('chk-e-' + item.key + '-obs');
+        itens[item.key] = {
+          checked: el?.checked || false,
+          obs: obsEl?.value?.trim() || ''
+        };
+      }
+    });
+    const observacoes = document.getElementById('chk-e-obs')?.value?.trim() || '';
+
+    const { data: existente } = await db.from('checklists_entrada')
+      .select('id').eq('os_id', osId).maybeSingle();
+
+    if (existente) {
+      const { error } = await db.from('checklists_entrada')
+        .update({ itens, observacoes })
+        .eq('id', existente.id);
+      if (error) { APP.toast('Erro ao salvar: ' + error.message, 'error'); return; }
+    } else {
+      const { error } = await db.from('checklists_entrada')
+        .insert({
+          oficina_id: APP.profile.oficina_id,
+          os_id: osId,
+          itens,
+          observacoes,
+          created_by: APP.profile.id
+        });
+      if (error) { APP.toast('Erro ao salvar: ' + error.message, 'error'); return; }
+    }
+
+    APP.toast('Checklist de entrada salvo');
+    this.abrirDetalhes(osId);
+  },
+
+  async abrirChecklistSaida(osId) {
+    const { data: existente } = await db.from('checklists_saida')
+      .select('*').eq('os_id', osId).maybeSingle();
+    const itens = existente?.itens || {};
+    const obs = existente?.observacoes || '';
+
+    const campos = this._itensSaida.map(item => {
+      const val = itens[item.key] || {};
+      return `
+        <div style="padding:10px 0;border-bottom:1px solid var(--border);">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+            <input type="checkbox" id="chk-s-${item.key}" ${val.checked ? 'checked' : ''}>
+            <span style="font-size:13px;">${esc(item.label)}</span>
+          </label>
+          ${item.temCampo ? `<input type="text" class="form-control" id="chk-s-${item.key}-obs" value="${esc(val.obs || '')}" placeholder="Detalhes..." style="margin-top:6px;font-size:12px;">` : ''}
+        </div>`;
+    }).join('');
+
+    openModal(`
+      <div class="modal-header">
+        <h3>Checklist de Saida</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        ${campos}
+        <div class="form-group" style="margin-top:12px;">
+          <label>Observacoes gerais</label>
+          <textarea class="form-control" id="chk-s-obs" placeholder="Observacoes adicionais...">${esc(obs)}</textarea>
+        </div>
+        <div class="modal-footer" style="padding:16px 0 0;border:0;">
+          <button class="btn btn-secondary" onclick="OS.abrirDetalhes('${osId}')">Voltar</button>
+          <button class="btn btn-primary" onclick="OS.salvarChecklistSaida('${osId}')">Salvar checklist</button>
+        </div>
+      </div>
+    `);
+  },
+
+  async salvarChecklistSaida(osId) {
+    const itens = {};
+    this._itensSaida.forEach(item => {
+      const el = document.getElementById('chk-s-' + item.key);
+      const obsEl = document.getElementById('chk-s-' + item.key + '-obs');
+      itens[item.key] = {
+        checked: el?.checked || false,
+        obs: obsEl?.value?.trim() || ''
+      };
+    });
+    const observacoes = document.getElementById('chk-s-obs')?.value?.trim() || '';
+
+    const { data: existente } = await db.from('checklists_saida')
+      .select('id').eq('os_id', osId).maybeSingle();
+
+    if (existente) {
+      const { error } = await db.from('checklists_saida')
+        .update({ itens, observacoes })
+        .eq('id', existente.id);
+      if (error) { APP.toast('Erro ao salvar: ' + error.message, 'error'); return; }
+    } else {
+      const { error } = await db.from('checklists_saida')
+        .insert({
+          oficina_id: APP.profile.oficina_id,
+          os_id: osId,
+          itens,
+          observacoes,
+          created_by: APP.profile.id
+        });
+      if (error) { APP.toast('Erro ao salvar: ' + error.message, 'error'); return; }
+    }
+
+    APP.toast('Checklist de saida salvo');
+    this.abrirDetalhes(osId);
+  },
+
+  async _temChecklistEntrada(osId) {
+    const { data } = await db.from('checklists_entrada')
+      .select('id').eq('os_id', osId).maybeSingle();
+    return !!data;
+  },
+
+  async _temChecklistSaida(osId) {
+    const { data } = await db.from('checklists_saida')
+      .select('id').eq('os_id', osId).maybeSingle();
+    return !!data;
   },
 
   enviarWhatsApp(whatsapp, placa, status) {
