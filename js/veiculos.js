@@ -37,9 +37,9 @@ const VEICULOS = {
         <tbody>
           ${lista.map(v => `
             <tr>
-              <td><strong>${v.placa}</strong></td>
-              <td>${v.marca || ''} ${v.modelo || ''} ${v.ano || ''}</td>
-              <td>${v.clientes?.nome || '-'}</td>
+              <td><strong>${esc(v.placa)}</strong></td>
+              <td>${esc(v.marca || '')} ${esc(v.modelo || '')} ${v.ano || ''}</td>
+              <td>${esc(v.clientes?.nome || '-')}</td>
               <td>${v.km_atual ? v.km_atual.toLocaleString('pt-BR') + ' km' : '-'}</td>
               <td style="display:flex;gap:4px;flex-wrap:wrap;">
                 <button class="btn btn-secondary btn-sm" onclick="VEICULOS.abrirHistorico('${v.id}','${esc(v.placa)}')">Historico</button>
@@ -71,13 +71,13 @@ const VEICULOS = {
             <label>Cliente *</label>
             <select class="form-control" id="vei-cliente" required>
               <option value="">Selecione o cliente</option>
-              ${(clientes || []).map(c => `<option value="${c.id}" ${c.id === dados.cliente_id ? 'selected' : ''}>${c.nome}</option>`).join('')}
+              ${(clientes || []).map(c => `<option value="${c.id}" ${c.id === dados.cliente_id ? 'selected' : ''}>${esc(c.nome)}</option>`).join('')}
             </select>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
             <div class="form-group">
               <label>Placa *</label>
-              <input type="text" class="form-control" id="vei-placa" required value="${dados.placa || ''}" placeholder="ABC-1234 ou ABC1D23" maxlength="8" style="text-transform:uppercase" oninput="CLIENTES.formatarPlaca(this)">
+              <input type="text" class="form-control" id="vei-placa" required value="${esc(dados.placa || '')}" placeholder="ABC-1234 ou ABC1D23" maxlength="8" style="text-transform:uppercase" oninput="CLIENTES.formatarPlaca(this)">
             </div>
             <div class="form-group">
               <label>Ano</label>
@@ -101,7 +101,7 @@ const VEICULOS = {
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
             <div class="form-group">
               <label>Cor</label>
-              <input type="text" class="form-control" id="vei-cor" value="${dados.cor || ''}">
+              <input type="text" class="form-control" id="vei-cor" value="${esc(dados.cor || '')}">
             </div>
             <div class="form-group">
               <label>KM Atual</label>
@@ -110,7 +110,7 @@ const VEICULOS = {
           </div>
           <div class="form-group">
             <label>Observacoes</label>
-            <textarea class="form-control" id="vei-obs">${dados.observacoes || ''}</textarea>
+            <textarea class="form-control" id="vei-obs">${esc(dados.observacoes || '')}</textarea>
           </div>
           <div class="modal-footer" style="padding:16px 0 0;border:0;">
             <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>

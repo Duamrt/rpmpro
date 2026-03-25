@@ -24,6 +24,11 @@ const APP = {
     // Ajusta bottom nav por perfil
     this._setupBottomNav();
 
+    // Sidebar: esconde itens restritos a dono/gerente
+    if (!['dono', 'gerente'].includes(this.profile.role)) {
+      document.querySelectorAll('.nav-dono-gerente').forEach(el => el.style.display = 'none');
+    }
+
     // Carrega pagina salva ou kanban (patio)
     this.loadPage(localStorage.getItem('rpmpro-page') || 'kanban');
 
@@ -109,6 +114,7 @@ const APP = {
     const moreItems = [
       { page: 'veiculos', icon: '🚗', label: 'Veiculos' },
       { page: 'equipe', icon: '👥', label: 'Equipe' },
+      { page: 'comissao', icon: '💰', label: 'Comissao' },
       { page: 'dashboard', icon: '📊', label: 'Dashboard' },
       { page: 'config', icon: '⚙️', label: 'Config' },
     ];

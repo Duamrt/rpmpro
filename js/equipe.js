@@ -40,8 +40,8 @@ const EQUIPE = {
           ${lista.map(m => `
             <tr>
               <td>
-                <strong>${m.nome}</strong>
-                <br><span style="font-size:12px;color:var(--text-secondary)">${m.email || ''}</span>
+                <strong>${esc(m.nome)}</strong>
+                <br><span style="font-size:12px;color:var(--text-secondary)">${esc(m.email || '')}</span>
               </td>
               <td>${roleLabel[m.role] || m.role}</td>
               <td>${m.comissao_percent ? m.comissao_percent + '%' : '-'}</td>
@@ -65,16 +65,16 @@ const EQUIPE = {
         <form id="form-equipe" onsubmit="EQUIPE.salvar(event, '${dados.id || ''}')">
           <div class="form-group">
             <label>Nome *</label>
-            <input type="text" class="form-control" id="eq-nome" required value="${dados.nome || ''}">
+            <input type="text" class="form-control" id="eq-nome" required value="${esc(dados.nome || '')}">
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
             <div class="form-group">
               <label>Email</label>
-              <input type="email" class="form-control" id="eq-email" value="${dados.email || ''}">
+              <input type="email" class="form-control" id="eq-email" value="${esc(dados.email || '')}">
             </div>
             <div class="form-group">
               <label>Telefone</label>
-              <input type="text" class="form-control" id="eq-telefone" value="${dados.telefone || ''}">
+              <input type="text" class="form-control" id="eq-telefone" value="${esc(dados.telefone || '')}">
             </div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">

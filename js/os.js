@@ -1,20 +1,58 @@
 // RPM Pro — Ordens de Servico
 const OS = {
-  async carregar() {
-    const { data, error } = await db
-      .from('ordens_servico')
-      .select('*, veiculos(placa, marca, modelo), clientes(nome), profiles!ordens_servico_mecanico_id_fkey(nome)')
-      .eq('oficina_id', APP.profile.oficina_id)
-      .order('created_at', { ascending: false })
-      .limit(50);
+  _pagina: 0,
+  _porPagina: 20,
+  _totalOS: 0,
+  _listaCompleta: [],
+  _busca: '',
+  _filtroStatus: '',
 
+  async carregar() {
+    this._pagina = 0;
+
+    // Busca total e dados
+    let query = db
+      .from('ordens_servico')
+      .select('*, veiculos(placa, marca, modelo), clientes(nome), profiles!ordens_servico_mecanico_id_fkey(nome)', { count: 'exact' })
+      .eq('oficina_id', APP.profile.oficina_id)
+      .order('created_at', { ascending: false });
+
+    if (this._filtroStatus) {
+      query = query.eq('status', this._filtroStatus);
+    }
+
+    const { data, error, count } = await query;
     if (error) { APP.toast('Erro ao carregar OS', 'error'); return; }
-    this.render(data || []);
+
+    this._totalOS = count || 0;
+    this._listaCompleta = data || [];
+    this.render();
   },
 
-  render(lista) {
+  _filtrar() {
+    let lista = this._listaCompleta;
+    const busca = this._busca.toLowerCase().trim();
+    if (busca) {
+      lista = lista.filter(os => {
+        const placa = (os.veiculos?.placa || '').toLowerCase();
+        const cliente = (os.clientes?.nome || '').toLowerCase();
+        const numero = String(os.numero || '').toLowerCase();
+        const desc = (os.descricao || '').toLowerCase();
+        return placa.includes(busca) || cliente.includes(busca) || numero.includes(busca) || desc.includes(busca);
+      });
+    }
+    return lista;
+  },
+
+  render() {
     const container = document.getElementById('os-lista');
-    if (!lista.length) {
+    const listaFiltrada = this._filtrar();
+    const inicio = 0;
+    const fim = (this._pagina + 1) * this._porPagina;
+    const paginada = listaFiltrada.slice(inicio, fim);
+    const temMais = fim < listaFiltrada.length;
+
+    if (!this._listaCompleta.length && !this._busca && !this._filtroStatus) {
       container.innerHTML = `
         <div class="empty-state">
           <div class="icon">🔧</div>
@@ -26,11 +64,22 @@ const OS = {
 
     const statusLabel = {
       entrada: 'Entrada', diagnostico: 'Diagnostico', orcamento: 'Orcamento',
-      aprovada: 'Aprovada', execucao: 'Em execucao', pronto: 'Pronto',
+      aprovada: 'Aprovada', aguardando_peca: 'Aguardando Peca', execucao: 'Em execucao', pronto: 'Pronto',
       entregue: 'Entregue', cancelada: 'Cancelada'
     };
 
     container.innerHTML = `
+      <!-- Busca e filtros -->
+      <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+        <input type="text" class="form-control" id="os-busca" placeholder="Buscar por placa, cliente, numero, descricao..." value="${esc(this._busca)}" oninput="OS._busca=this.value;OS._pagina=0;OS.render()" style="flex:1;min-width:200px;">
+        <select class="form-control" id="os-filtro-status" onchange="OS._filtroStatus=this.value;OS.carregar()" style="max-width:200px;">
+          <option value="">Todos os status</option>
+          ${Object.entries(statusLabel).map(([k,v]) => `<option value="${k}" ${k === this._filtroStatus ? 'selected' : ''}>${v}</option>`).join('')}
+        </select>
+      </div>
+      <div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">Mostrando ${paginada.length} de ${listaFiltrada.length} ordens${this._busca ? ' (filtrado)' : ''}</div>
+
+      ${paginada.length ? `
       <table class="data-table">
         <thead>
           <tr>
@@ -44,22 +93,25 @@ const OS = {
           </tr>
         </thead>
         <tbody>
-          ${lista.map(os => `
+          ${paginada.map(os => `
             <tr style="cursor:pointer" onclick="OS.abrirDetalhes('${os.id}')">
-              <td><strong>${os.numero || '-'}</strong></td>
+              <td><strong>${esc(os.numero || '-')}</strong></td>
               <td>
-                <strong>${os.veiculos?.placa || '-'}</strong><br>
-                <span style="font-size:12px;color:var(--text-secondary)">${os.veiculos?.marca || ''} ${os.veiculos?.modelo || ''}</span>
+                <strong>${esc(os.veiculos?.placa || '-')}</strong><br>
+                <span style="font-size:12px;color:var(--text-secondary)">${esc(os.veiculos?.marca || '')} ${esc(os.veiculos?.modelo || '')}</span>
               </td>
-              <td>${os.clientes?.nome || '-'}</td>
-              <td>${os.profiles?.nome || '-'}</td>
+              <td>${esc(os.clientes?.nome || '-')}</td>
+              <td>${esc(os.profiles?.nome || '-')}</td>
               <td>${APP.formatMoney(os.valor_total)}</td>
-              <td><span class="badge badge-${os.status}">${statusLabel[os.status]}</span></td>
+              <td><span class="badge badge-${os.status}">${statusLabel[os.status] || esc(os.status)}</span></td>
               <td style="font-size:12px;color:var(--text-secondary)">${APP.formatDate(os.data_entrada)}</td>
             </tr>
           `).join('')}
         </tbody>
-      </table>`;
+      </table>
+      ${temMais ? `<div style="text-align:center;margin-top:14px;"><button class="btn btn-secondary" onclick="OS._pagina++;OS.render()">Carregar mais (${listaFiltrada.length - fim} restantes)</button></div>` : ''}
+      ` : `<div class="empty-state"><div class="icon">🔍</div><h3>Nenhuma OS encontrada</h3><p>Tente alterar os filtros de busca</p></div>`}
+    `;
   },
 
   async abrirModal() {
@@ -136,7 +188,7 @@ const OS = {
             <label>Mecanico responsavel</label>
             <select class="form-control" id="os-mecanico">
               <option value="">Sem mecanico (definir depois)</option>
-              ${(mecanicos || []).map(m => `<option value="${m.id}">${m.nome}</option>`).join('')}
+              ${(mecanicos || []).map(m => `<option value="${m.id}">${esc(m.nome)}</option>`).join('')}
             </select>
           </div>
 
@@ -232,7 +284,7 @@ const OS = {
     const total = this._servicosSelecionados.reduce((s, x) => s + x.valor, 0);
     container.innerHTML = this._servicosSelecionados.map((s, i) => `
       <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg-input);padding:8px 12px;border-radius:var(--radius);margin-bottom:4px;">
-        <span style="font-size:13px;flex:1;">${s.nome}</span>
+        <span style="font-size:13px;flex:1;">${esc(s.nome)}</span>
         <input type="number" value="${s.valor}" min="0" step="0.01" style="width:90px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:4px 8px;font-size:13px;text-align:right;font-family:inherit;" onchange="OS._atualizarValorServico(${i}, this.value)">
         <button type="button" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:16px;padding:0 4px;margin-left:4px;" onclick="OS._removerServico(${i})">&times;</button>
       </div>
@@ -301,10 +353,10 @@ const OS = {
                onmouseover="this.style.background='rgba(255,69,0,0.1)'" onmouseout="this.style.background=''"
                onclick="OS.selecionarVeiculo('${v.id}','${v.clientes?.id || ''}','${(v.placa || '').replace(/'/g,'')}','${(v.marca || '').replace(/'/g,'')}','${(v.modelo || '').replace(/'/g,'')}','${(v.clientes?.nome || '').replace(/'/g,'')}')">
             <div>
-              <strong style="color:var(--primary);">${v.placa}</strong>
-              <span style="color:var(--text-secondary);font-size:13px;margin-left:8px;">${v.marca || ''} ${v.modelo || ''} ${v.ano || ''} ${v.cor ? '— ' + v.cor : ''}</span>
+              <strong style="color:var(--primary);">${esc(v.placa)}</strong>
+              <span style="color:var(--text-secondary);font-size:13px;margin-left:8px;">${esc(v.marca || '')} ${esc(v.modelo || '')} ${v.ano || ''} ${v.cor ? '— ' + esc(v.cor) : ''}</span>
             </div>
-            <span style="font-size:12px;color:var(--text-secondary);">${v.clientes?.nome || ''}</span>
+            <span style="font-size:12px;color:var(--text-secondary);">${esc(v.clientes?.nome || '')}</span>
           </div>
         `).join('');
         sugEl.classList.remove('hidden');
@@ -318,7 +370,7 @@ const OS = {
         infoEl.textContent = '';
         novoEl.classList.remove('hidden');
       } else {
-        sugEl.innerHTML = '<div style="padding:10px 14px;color:var(--text-secondary);font-size:13px;">Nenhum veiculo encontrado com "' + placa + '"</div>';
+        sugEl.innerHTML = '<div style="padding:10px 14px;color:var(--text-secondary);font-size:13px;">Nenhum veiculo encontrado com "' + esc(placa) + '"</div>';
         sugEl.classList.remove('hidden');
       }
     }, 300);
@@ -338,7 +390,7 @@ const OS = {
     document.getElementById('os-placa').value = placa;
     document.getElementById('os-veiculo-id').value = veiculoId;
     document.getElementById('os-cliente-id').value = clienteId;
-    document.getElementById('os-placa-info').innerHTML = `<span style="color:var(--success)">✓ ${marca} ${modelo} — ${clienteNome}</span>`;
+    document.getElementById('os-placa-info').innerHTML = `<span style="color:var(--success)">✓ ${esc(marca)} ${esc(modelo)} — ${esc(clienteNome)}</span>`;
     document.getElementById('os-novo-registro').classList.add('hidden');
     const sugEl = document.getElementById('os-sugestoes');
     if (sugEl) sugEl.classList.add('hidden');
@@ -493,7 +545,7 @@ const OS = {
 
     openModal(`
       <div class="modal-header">
-        <h3>OS #${os.numero || '-'} — ${os.veiculos?.placa}</h3>
+        <h3>OS #${esc(os.numero || '-')} — ${esc(os.veiculos?.placa)}</h3>
         <button class="modal-close" onclick="closeModal()">&times;</button>
       </div>
       <div class="modal-body">
@@ -505,11 +557,11 @@ const OS = {
           </div>
           <div>
             <div style="font-size:11px;color:var(--text-secondary);">Cliente</div>
-            <div style="font-weight:600;font-size:14px;">${os.clientes?.nome}</div>
+            <div style="font-weight:600;font-size:14px;">${esc(os.clientes?.nome)}</div>
           </div>
           <div>
             <div style="font-size:11px;color:var(--text-secondary);">Mecanico</div>
-            <div style="font-weight:600;font-size:14px;">${os.profiles?.nome || 'Nao definido'}</div>
+            <div style="font-weight:600;font-size:14px;">${esc(os.profiles?.nome || 'Nao definido')}</div>
           </div>
           <div>
             <div style="font-size:11px;color:var(--text-secondary);">Entrada</div>
@@ -545,7 +597,7 @@ const OS = {
           </div>
           ${itensServico.length ? itensServico.map(i => `
             <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px;">
-              <span>${i.descricao}</span>
+              <span>${esc(i.descricao)}</span>
               <div style="display:flex;align-items:center;gap:6px;">
                 <span style="color:var(--text-secondary);">R$ ${(i.valor_total || 0).toFixed(2)}</span>
                 <button onclick="OS.removerItem('${i.id}','${os.id}')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;">&times;</button>
@@ -562,7 +614,7 @@ const OS = {
           </div>
           ${itensPeca.length ? itensPeca.map(i => `
             <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px;">
-              <span>${i.descricao} ${i.peca_id ? '<span style="color:var(--info);font-size:11px;">(estoque)</span>' : '<span style="color:var(--text-muted);font-size:11px;">(avulso)</span>'}</span>
+              <span>${esc(i.descricao)} ${i.peca_id ? '<span style="color:var(--info);font-size:11px;">(estoque)</span>' : '<span style="color:var(--text-muted);font-size:11px;">(avulso)</span>'}</span>
               <div style="display:flex;align-items:center;gap:6px;">
                 <span style="color:var(--text-secondary);">${i.quantidade}x R$ ${(i.valor_unitario || 0).toFixed(2)} = R$ ${(i.valor_total || 0).toFixed(2)}</span>
                 <button onclick="OS.removerItem('${i.id}','${os.id}','${i.peca_id || ''}',${i.quantidade})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;">&times;</button>
@@ -718,7 +770,7 @@ const OS = {
       <div style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px;"
            onmouseover="this.style.background='rgba(255,69,0,0.1)'" onmouseout="this.style.background=''"
            onclick="OS._selecionarPecaEstoque('${p.id}','${(p.nome || '').replace(/'/g, '')}',${p.preco_venda || 0},${p.quantidade || 0})">
-        <strong>${p.nome}</strong>${p.marca ? ' — ' + p.marca : ''}${p.codigo ? ' (' + p.codigo + ')' : ''}
+        <strong>${esc(p.nome)}</strong>${p.marca ? ' — ' + esc(p.marca) : ''}${p.codigo ? ' (' + esc(p.codigo) + ')' : ''}
         <div style="color:var(--text-secondary);font-size:11px;">Estoque: ${p.quantidade} | R$ ${(p.preco_venda || 0).toFixed(2)}</div>
       </div>
     `).join('');
@@ -730,7 +782,7 @@ const OS = {
     document.getElementById('det-peca-busca').value = nome;
     document.getElementById('det-peca-valor').value = preco;
     document.getElementById('det-peca-sugestoes').classList.add('hidden');
-    document.getElementById('det-peca-estoque-info').innerHTML = `<span style="color:var(--success);">✓ ${nome}</span> — ${qtdEstoque} em estoque`;
+    document.getElementById('det-peca-estoque-info').innerHTML = `<span style="color:var(--success);">✓ ${esc(nome)}</span> — ${qtdEstoque} em estoque`;
     this._pecaSelecionadaQtd = qtdEstoque;
     this._pecaSelecionadaNome = nome;
   },

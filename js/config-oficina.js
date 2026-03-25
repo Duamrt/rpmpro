@@ -20,40 +20,40 @@ const CONFIG = {
           <form id="form-config-dados" onsubmit="CONFIG.salvarDados(event)">
             <div class="form-group">
               <label>Nome da oficina</label>
-              <input type="text" class="form-control" id="cfg-nome" value="${oficina.nome || ''}">
+              <input type="text" class="form-control" id="cfg-nome" value="${esc(oficina.nome || '')}">
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
               <div class="form-group">
                 <label>CNPJ</label>
-                <input type="text" class="form-control" id="cfg-cnpj" value="${oficina.cnpj || ''}">
+                <input type="text" class="form-control" id="cfg-cnpj" value="${esc(oficina.cnpj || '')}">
               </div>
               <div class="form-group">
                 <label>Telefone</label>
-                <input type="text" class="form-control" id="cfg-telefone" value="${oficina.telefone || ''}">
+                <input type="text" class="form-control" id="cfg-telefone" value="${esc(oficina.telefone || '')}">
               </div>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
               <div class="form-group">
                 <label>WhatsApp</label>
-                <input type="text" class="form-control" id="cfg-whatsapp" value="${oficina.whatsapp || ''}">
+                <input type="text" class="form-control" id="cfg-whatsapp" value="${esc(oficina.whatsapp || '')}">
               </div>
               <div class="form-group">
                 <label>Email</label>
-                <input type="email" class="form-control" id="cfg-email" value="${oficina.email || ''}">
+                <input type="email" class="form-control" id="cfg-email" value="${esc(oficina.email || '')}">
               </div>
             </div>
             <div class="form-group">
               <label>Endereco</label>
-              <input type="text" class="form-control" id="cfg-endereco" value="${oficina.endereco || ''}">
+              <input type="text" class="form-control" id="cfg-endereco" value="${esc(oficina.endereco || '')}">
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
               <div class="form-group">
                 <label>Cidade</label>
-                <input type="text" class="form-control" id="cfg-cidade" value="${oficina.cidade || ''}">
+                <input type="text" class="form-control" id="cfg-cidade" value="${esc(oficina.cidade || '')}">
               </div>
               <div class="form-group">
                 <label>Estado</label>
-                <input type="text" class="form-control" id="cfg-estado" value="${oficina.estado || ''}" maxlength="2" style="text-transform:uppercase">
+                <input type="text" class="form-control" id="cfg-estado" value="${esc(oficina.estado || '')}" maxlength="2" style="text-transform:uppercase">
               </div>
             </div>
             <button type="submit" class="btn btn-primary" style="margin-top:8px;">Salvar dados</button>

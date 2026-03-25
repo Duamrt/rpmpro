@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro — Gestao de Oficina</title>
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=1774474022">
 </head>
 <body>
 
@@ -37,6 +37,9 @@
       </a>
       <a href="#" data-page="equipe">
         <span class="icon">👥</span> Equipe
+      </a>
+      <a href="#" data-page="comissao" class="nav-dono-gerente">
+        <span class="icon">💰</span> Comissao
       </a>
       <!-- Financeiro: fase 2 -->
       <!--<a href="#" data-page="financeiro">
@@ -174,6 +177,16 @@
       </div>
     </section>
 
+    <!-- COMISSAO -->
+    <section id="page-comissao" class="page-content hidden">
+      <div class="page-header">
+        <h2>Relatorio de Comissao</h2>
+      </div>
+      <div id="comissao-content">
+        <div class="loading">Carregando...</div>
+      </div>
+    </section>
+
     <!-- FINANCEIRO -->
     <section id="page-financeiro" class="page-content hidden">
       <div class="page-header">
@@ -221,23 +234,24 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-<script src="js/utils.js"></script>
-<script src="js/config.js"></script>
-<script src="js/auth.js"></script>
-<script src="js/app.js"></script>
-<script src="js/dashboard.js"></script>
-<script src="js/os.js"></script>
-<script src="js/clientes.js"></script>
-<script src="js/catalogo-veiculos.js"></script>
-<script src="js/catalogo-servicos.js"></script>
-<script src="js/veiculos.js"></script>
-<script src="js/pecas.js"></script>
-<script src="js/equipe.js"></script>
-<script src="js/kanban.js"></script>
-<script src="js/config-oficina.js"></script>
-<script src="js/pdf-os.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=1774474022"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=1774474022"></script>
+<script src="js/utils.js?v=1774474022"></script>
+<script src="js/config.js?v=1774474022"></script>
+<script src="js/auth.js?v=1774474022"></script>
+<script src="js/app.js?v=1774474022"></script>
+<script src="js/dashboard.js?v=1774474022"></script>
+<script src="js/os.js?v=1774474022"></script>
+<script src="js/clientes.js?v=1774474022"></script>
+<script src="js/catalogo-veiculos.js?v=1774474022"></script>
+<script src="js/catalogo-servicos.js?v=1774474022"></script>
+<script src="js/veiculos.js?v=1774474022"></script>
+<script src="js/pecas.js?v=1774474022"></script>
+<script src="js/equipe.js?v=1774474022"></script>
+<script src="js/kanban.js?v=1774474022"></script>
+<script src="js/config-oficina.js?v=1774474022"></script>
+<script src="js/comissao.js?v=1774474022"></script>
+<script src="js/pdf-os.js?v=1774474022"></script>
 <script>
   // Modal helpers
   function openModal(html) {

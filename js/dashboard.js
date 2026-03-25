@@ -91,11 +91,11 @@ const DASHBOARD = {
           ${lista.map(os => `
             <tr style="cursor:pointer" onclick="OS.abrirDetalhes('${os.id}')">
               <td>
-                <strong>${os.veiculos?.placa || '-'}</strong><br>
-                <span style="font-size:12px;color:var(--text-secondary)">${os.veiculos?.marca || ''} ${os.veiculos?.modelo || ''}</span>
+                <strong>${esc(os.veiculos?.placa || '-')}</strong><br>
+                <span style="font-size:12px;color:var(--text-secondary)">${esc(os.veiculos?.marca || '')} ${esc(os.veiculos?.modelo || '')}</span>
               </td>
-              <td>${os.clientes?.nome || '-'}</td>
-              <td>${os.profiles?.nome || 'Sem mecanico'}</td>
+              <td>${esc(os.clientes?.nome || '-')}</td>
+              <td>${esc(os.profiles?.nome || 'Sem mecanico')}</td>
               <td><span class="badge badge-${os.status}">${statusLabel[os.status] || os.status}</span></td>
             </tr>
           `).join('')}

@@ -39,8 +39,8 @@ const CLIENTES = {
         <tbody>
           ${lista.map(c => `
             <tr>
-              <td><strong>${c.nome}</strong></td>
-              <td>${c.whatsapp || c.telefone || '-'}</td>
+              <td><strong>${esc(c.nome)}</strong></td>
+              <td>${esc(c.whatsapp || c.telefone || '-')}</td>
               <td>${c.veiculos?.[0]?.count || 0}</td>
               <td><span class="badge badge-${c.score === 'ativo' ? 'pronto' : c.score === 'risco' ? 'orcamento' : 'entregue'}">${c.score}</span></td>
               <td>
@@ -71,25 +71,25 @@ const CLIENTES = {
         <form id="form-cliente" onsubmit="CLIENTES.salvar(event, '${dados.id || ''}')">
           <div class="form-group">
             <label>Nome *</label>
-            <input type="text" class="form-control" id="cli-nome" required value="${dados.nome || ''}">
+            <input type="text" class="form-control" id="cli-nome" required value="${esc(dados.nome || '')}">
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
             <div class="form-group">
               <label>WhatsApp</label>
-              <input type="text" class="form-control" id="cli-whatsapp" value="${dados.whatsapp || ''}" placeholder="(00) 00000-0000">
+              <input type="text" class="form-control" id="cli-whatsapp" value="${esc(dados.whatsapp || '')}" placeholder="(00) 00000-0000">
             </div>
             <div class="form-group">
               <label>CPF/CNPJ</label>
-              <input type="text" class="form-control" id="cli-cpf" value="${dados.cpf_cnpj || ''}">
+              <input type="text" class="form-control" id="cli-cpf" value="${esc(dados.cpf_cnpj || '')}">
             </div>
           </div>
           <div class="form-group">
             <label>Email</label>
-            <input type="email" class="form-control" id="cli-email" value="${dados.email || ''}">
+            <input type="email" class="form-control" id="cli-email" value="${esc(dados.email || '')}">
           </div>
           <div class="form-group">
             <label>Endereco</label>
-            <input type="text" class="form-control" id="cli-endereco" value="${dados.endereco || ''}">
+            <input type="text" class="form-control" id="cli-endereco" value="${esc(dados.endereco || '')}">
           </div>
 
           <!-- VEICULOS -->
@@ -101,8 +101,8 @@ const CLIENTES = {
             ${veiculosExistentes.map(v => `
               <div style="background:var(--bg-input);padding:12px;border-radius:var(--radius);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
                 <div>
-                  <strong>${v.placa}</strong>
-                  <span style="color:var(--text-secondary);font-size:13px;margin-left:8px;">${v.marca || ''} ${v.modelo || ''} ${v.ano || ''}</span>
+                  <strong>${esc(v.placa)}</strong>
+                  <span style="color:var(--text-secondary);font-size:13px;margin-left:8px;">${esc(v.marca || '')} ${esc(v.modelo || '')} ${v.ano || ''}</span>
                 </div>
                 <div style="display:flex;gap:4px;">
                   <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal(); VEICULOS.editar('${v.id}')">Editar</button>
@@ -115,7 +115,7 @@ const CLIENTES = {
 
           <div class="form-group" style="margin-top:16px;">
             <label>Observacoes</label>
-            <textarea class="form-control" id="cli-obs">${dados.observacoes || ''}</textarea>
+            <textarea class="form-control" id="cli-obs">${esc(dados.observacoes || '')}</textarea>
           </div>
           <div class="modal-footer" style="padding:16px 0 0;border:0;">
             <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>

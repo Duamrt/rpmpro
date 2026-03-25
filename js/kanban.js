@@ -217,13 +217,13 @@ const KANBAN = {
            data-mecanico-id="${os.mecanico_id || ''}"
            style="background:${cardBg};border:1px solid ${cardBorder};border-radius:var(--radius);padding:10px 12px;cursor:grab;transition:transform 0.1s;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-          <span style="font-weight:800;font-size:15px;color:var(--primary);">${os.veiculos?.placa || '-'}</span>
+          <span style="font-weight:800;font-size:15px;color:var(--primary);">${esc(os.veiculos?.placa || '-')}</span>
           <span style="font-size:11px;color:${horas >= 72 ? 'var(--danger)' : horas >= 24 ? 'var(--warning)' : 'var(--text-secondary)'};font-weight:600;">${horas >= 24 ? '⚠ ' : ''}${tempoTexto}</span>
         </div>
-        <div style="font-size:12px;color:var(--text);margin-bottom:4px;">${os.veiculos?.marca || ''} ${os.veiculos?.modelo || ''}${os.veiculos?.cor ? ' — ' + os.veiculos.cor : ''}</div>
-        <div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px;">👤 ${os.clientes?.nome || '-'}</div>
+        <div style="font-size:12px;color:var(--text);margin-bottom:4px;">${esc(os.veiculos?.marca || '')} ${esc(os.veiculos?.modelo || '')}${os.veiculos?.cor ? ' — ' + esc(os.veiculos.cor) : ''}</div>
+        <div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px;">👤 ${esc(os.clientes?.nome || '-')}</div>
         <div style="display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:11px;color:var(--text-muted);">🔧 ${os.profiles?.nome || 'Sem mecânico'}</span>
+          <span style="font-size:11px;color:var(--text-muted);">🔧 ${esc(os.profiles?.nome || 'Sem mecânico')}</span>
           ${isDono && os.valor_total ? `<span style="font-size:11px;font-weight:700;color:var(--success);">R$ ${(os.valor_total || 0).toFixed(0)}</span>` : ''}
         </div>
         <div class="kanban-card-actions" style="display:flex;gap:4px;margin-top:8px;border-top:1px solid var(--border);padding-top:8px;">
