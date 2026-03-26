@@ -423,6 +423,8 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 
 /* MOBILE */
 @media (max-width: 768px) {
+  #admin-barra { left: 0 !important; }
+
   .sidebar {
     transform: translateX(-100%);
   }

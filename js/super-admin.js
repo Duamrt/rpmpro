@@ -444,17 +444,25 @@ const SUPER_ADMIN = {
       }
     });
 
-    // Badge de admin pra voltar
-    let badge = document.getElementById('admin-badge');
-    if (!badge) {
-      badge = document.createElement('div');
-      badge.id = 'admin-badge';
-      badge.style.cssText = 'background:var(--primary);color:#fff;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;margin:10px 16px 0;text-align:center;';
-      badge.onclick = () => this.voltarAdmin();
-      const logoDiv = document.querySelector('.sidebar-logo');
-      if (logoDiv) logoDiv.after(badge);
+    // Barra fixa no topo — mostra qual oficina tá acessando
+    let barra = document.getElementById('admin-barra');
+    if (!barra) {
+      barra = document.createElement('div');
+      barra.id = 'admin-barra';
+      barra.style.cssText = 'position:fixed;top:0;left:var(--sidebar-width);right:0;background:var(--primary);color:#fff;padding:10px 24px;font-size:13px;font-weight:700;z-index:150;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,0.3);';
+      document.body.appendChild(barra);
+      // Empurra o conteúdo pra baixo
+      document.querySelector('.main-content').style.paddingTop = '56px';
     }
-    badge.textContent = '← Voltar ao Admin';
+    const nomeOficina = oficina?.nome || nome;
+    const cidadeUF = [oficina?.cidade, oficina?.estado].filter(Boolean).join('/');
+    barra.innerHTML = `
+      <div>
+        <span style="font-size:15px;">🏢 ${esc(nomeOficina)}</span>
+        ${cidadeUF ? `<span style="opacity:0.7;margin-left:8px;font-size:12px;font-weight:400;">${esc(cidadeUF)}</span>` : ''}
+      </div>
+      <button onclick="SUPER_ADMIN.voltarAdmin()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;padding:6px 16px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">← Voltar ao Admin</button>
+    `;
 
     APP.toast('Acessando: ' + (oficina?.nome || nome));
     APP.loadPage('kanban');
@@ -464,8 +472,9 @@ const SUPER_ADMIN = {
     if (this._oficinaOriginal) APP.profile.oficina_id = this._oficinaOriginal;
     this._acessandoOutra = false;
 
-    const badge = document.getElementById('admin-badge');
-    if (badge) badge.remove();
+    const barra = document.getElementById('admin-barra');
+    if (barra) barra.remove();
+    document.querySelector('.main-content').style.paddingTop = '';
 
     const elNome = document.getElementById('oficina-nome');
     if (elNome) elNome.textContent = 'RPM Pro Admin';
