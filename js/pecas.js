@@ -367,9 +367,9 @@ const PECAS = {
     const oficinaNome = APP.oficina?.nome || 'Oficina';
     const hoje = new Date();
 
-    // Cores RPM Pro
-    const AZUL = '1E3A5F';
-    const AZUL_CLARO = '2D5F8A';
+    // Cores RPM Pro (paleta do sistema)
+    const LARANJA = 'FF4500';
+    const CINZA_ESCURO = '1A1D23';
     const BRANCO = 'FFFFFF';
 
     // Largura das colunas
@@ -391,9 +391,9 @@ const PECAS = {
     const h1 = ws.getCell('A1');
     h1.value = oficinaNome.toUpperCase();
     h1.font = { name: 'Arial', size: 20, bold: true, color: { argb: BRANCO } };
-    h1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: AZUL } };
+    h1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: CINZA_ESCURO } };
     h1.alignment = { horizontal: 'center', vertical: 'middle' };
-    for (let c = 2; c <= 9; c++) ws.getRow(1).getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: AZUL } };
+    for (let c = 2; c <= 9; c++) ws.getRow(1).getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: CINZA_ESCURO } };
 
     // Subtitulo
     ws.getRow(2).height = 26;
@@ -401,9 +401,9 @@ const PECAS = {
     const h2 = ws.getCell('A2');
     h2.value = 'INVENTARIO DE ESTOQUE — CONTAGEM FISICA';
     h2.font = { name: 'Arial', size: 11, bold: true, color: { argb: BRANCO } };
-    h2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: AZUL_CLARO } };
+    h2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: LARANJA } };
     h2.alignment = { horizontal: 'center', vertical: 'middle' };
-    for (let c = 2; c <= 9; c++) ws.getRow(2).getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: AZUL_CLARO } };
+    for (let c = 2; c <= 9; c++) ws.getRow(2).getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: LARANJA } };
 
     // Info
     ws.getRow(3).height = 22;
@@ -492,7 +492,7 @@ const PECAS = {
     // Rodape
     ws.addRow([]);
     const totRow = ws.addRow(['', '', `TOTAL DE PECAS: ${sorted.length}`, '', '', '', '', '', '']);
-    totRow.getCell(3).font = { name: 'Arial', size: 10, bold: true, color: { argb: AZUL } };
+    totRow.getCell(3).font = { name: 'Arial', size: 10, bold: true, color: { argb: LARANJA } };
 
     const negRow = ws.addRow(['', '', `SEM ESTOQUE: ${sorted.filter(p => p.quantidade <= 0).length}  |  ESTOQUE BAIXO: ${sorted.filter(p => p.quantidade > 0 && p.quantidade <= (p.estoque_minimo || 0)).length}`, '', '', '', '', '', '']);
     negRow.getCell(3).font = { name: 'Arial', size: 9, color: { argb: 'CC0000' } };
