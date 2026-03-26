@@ -430,7 +430,7 @@ const SUPER_ADMIN = {
     const logoEl = document.getElementById('sidebar-logo-img');
     if (logoEl) {
       logoEl.innerHTML = oficina?.logo_url
-        ? `<img src="${oficina.logo_url}" style="max-height:56px;max-width:180px;object-fit:contain;display:block;">`
+        ? `<img src="${oficina.logo_url}" style="max-height:44px;max-width:60px;object-fit:contain;display:block;border-radius:6px;">`
         : '';
     }
 
