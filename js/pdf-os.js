@@ -35,6 +35,80 @@ const PDF_OS = {
     return { os: osRes.data, itens: itensRes.data || [], oficina };
   },
 
+  _formatMoney(val) {
+    return (val || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  },
+
+  _montarHeader(oficina, titulo) {
+    // Monta endereço sem duplicar cidade/estado
+    let endereco = '';
+    if (oficina.endereco) {
+      endereco = oficina.endereco;
+      // Só adiciona cidade/estado se não estiver já no endereço
+      if (oficina.cidade && !oficina.endereco.toLowerCase().includes(oficina.cidade.toLowerCase())) {
+        endereco += ' — ' + oficina.cidade + (oficina.estado ? '/' + oficina.estado : '');
+      }
+    } else if (oficina.cidade) {
+      endereco = oficina.cidade + (oficina.estado ? '/' + oficina.estado : '');
+    }
+
+    const headerLeft = [];
+    if (oficina.logo_url && this._logoBase64) {
+      headerLeft.push({ image: this._logoBase64, width: 80, margin: [0, 0, 0, 4] });
+    }
+    headerLeft.push({ text: oficina.nome || 'Oficina', fontSize: 16, bold: true, color: '#1a1a1a' });
+
+    const infoLines = [];
+    if (oficina.cnpj) infoLines.push({ text: 'CNPJ: ' + oficina.cnpj, style: 'headerInfo' });
+    if (oficina.telefone) infoLines.push({ text: 'Tel: ' + oficina.telefone, style: 'headerInfo' });
+    if (oficina.whatsapp) infoLines.push({ text: 'WhatsApp: ' + oficina.whatsapp, style: 'headerInfo' });
+    if (endereco) infoLines.push({ text: endereco, style: 'headerInfo' });
+
+    return [
+      {
+        columns: [
+          { stack: headerLeft, width: '*' },
+          { stack: infoLines, alignment: 'right', width: 'auto' }
+        ],
+        margin: [0, 0, 0, 8]
+      },
+      { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1.5, lineColor: '#FF4500' }], margin: [0, 0, 0, 12] },
+      titulo ? { text: titulo, fontSize: 16, bold: true, alignment: 'center', color: '#1a1a1a', margin: [0, 0, 0, 14] } : {}
+    ];
+  },
+
+  _footer() {
+    return {
+      text: 'Powered by RPM Pro — rpmpro.com.br',
+      alignment: 'center',
+      fontSize: 8,
+      color: '#999999',
+      margin: [40, 10, 40, 0]
+    };
+  },
+
+  _styles() {
+    return {
+      headerInfo: { fontSize: 9, color: '#666666' },
+      infoLabel: { fontSize: 11, bold: true, color: '#1a1a1a' },
+      infoVal: { fontSize: 10, color: '#444444' },
+      sectionTitle: { fontSize: 11, bold: true, color: '#1a1a1a', fillColor: '#f0f0f0' },
+      tableColHeader: { fontSize: 9, bold: true, color: '#666666', fillColor: '#fafafa' },
+      tableCell: { fontSize: 10, color: '#333333' },
+      tableCellRight: { fontSize: 10, color: '#333333', alignment: 'right' },
+      tableEmpty: { fontSize: 10, color: '#999999', italics: true },
+      tableSubtotal: { fontSize: 10, bold: true, color: '#1a1a1a', fillColor: '#f5f5f5' },
+      tableSubtotalRight: { fontSize: 10, bold: true, color: '#1a1a1a', alignment: 'right', fillColor: '#f5f5f5' },
+      totalLabel: { fontSize: 10, color: '#555555' },
+      totalVal: { fontSize: 10, color: '#333333', alignment: 'right' },
+      totalValDesconto: { fontSize: 10, color: '#e63e00', alignment: 'right' },
+      totalFinal: { fontSize: 14, bold: true, color: '#1a1a1a' },
+      totalFinalVal: { fontSize: 14, bold: true, color: '#2e7d32', alignment: 'right' },
+      obs: { fontSize: 9, color: '#666666' }
+    };
+  },
+
+  // ========== OS ==========
   async gerar(osId) {
     await this._carregarLogo();
     const dados = await this._buscarDados(osId);
@@ -50,7 +124,7 @@ const PDF_OS = {
 
     const statusLabel = {
       entrada: 'Entrada', diagnostico: 'Diagnostico', orcamento: 'Orcamento',
-      aprovada: 'Aprovada', aguardando_peca: 'Aguardando Peca', execucao: 'Em execucao',
+      aprovada: 'Aprovada', aguardando_peca: 'Aguardando Peca', execucao: 'Em Execucao',
       pronto: 'Pronto', entregue: 'Entregue', cancelada: 'Cancelada'
     };
 
@@ -59,45 +133,25 @@ const PDF_OS = {
       credito: 'Credito', boleto: 'Boleto', pendente: 'Pendente'
     };
 
-    // Header — logo da oficina como protagonista
-    const headerLeft = [];
-    if (oficina.logo_url && this._logoBase64) {
-      headerLeft.push({ image: this._logoBase64, width: 80, margin: [0, 0, 0, 4] });
-    }
-    headerLeft.push({ text: oficina.nome || 'Oficina', style: 'headerOficina' });
-
-    const header = {
-      columns: [
-        { stack: headerLeft, width: '*' },
-        {
-          stack: [
-            oficina.cnpj ? { text: 'CNPJ: ' + oficina.cnpj, style: 'headerInfo' } : {},
-            oficina.telefone ? { text: 'Tel: ' + oficina.telefone, style: 'headerInfo' } : {},
-            oficina.whatsapp ? { text: 'WhatsApp: ' + oficina.whatsapp, style: 'headerInfo' } : {},
-            oficina.endereco ? { text: oficina.endereco + (oficina.cidade ? ' — ' + oficina.cidade + '/' + (oficina.estado || 'PE') : ''), style: 'headerInfo' } : {}
-          ],
-          alignment: 'right'
-        }
-      ],
-      margin: [0, 0, 0, 15]
-    };
+    const header = this._montarHeader(oficina);
 
     // Dados da OS
+    const veiculo = [os.veiculos?.marca, os.veiculos?.modelo, os.veiculos?.ano].filter(Boolean).join(' ');
     const infoOS = {
       table: {
         widths: ['*', '*', '*', '*'],
         body: [
           [
-            { text: 'OS #' + (os.numero || '-'), style: 'infoLabel', colSpan: 1 },
+            { text: 'OS #' + (os.numero || '-'), style: 'infoLabel' },
             { text: 'Data: ' + APP.formatDate(os.data_entrada), style: 'infoVal' },
             { text: 'Status: ' + (statusLabel[os.status] || os.status), style: 'infoVal' },
-            { text: 'KM: ' + (os.km_entrada ? os.km_entrada.toLocaleString('pt-BR') : '-'), style: 'infoVal' }
+            { text: os.km_entrada ? 'KM: ' + os.km_entrada.toLocaleString('pt-BR') : '', style: 'infoVal' }
           ],
           [
             { text: 'Placa: ' + (os.veiculos?.placa || '-'), style: 'infoVal' },
-            { text: 'Veiculo: ' + [os.veiculos?.marca, os.veiculos?.modelo, os.veiculos?.ano].filter(Boolean).join(' '), style: 'infoVal', colSpan: 2 },
+            { text: veiculo ? 'Veiculo: ' + veiculo : '', style: 'infoVal', colSpan: 2 },
             {},
-            { text: 'Cor: ' + (os.veiculos?.cor || '-'), style: 'infoVal' }
+            { text: os.veiculos?.cor ? 'Cor: ' + os.veiculos.cor : '', style: 'infoVal' }
           ],
           [
             { text: 'Cliente: ' + (os.clientes?.nome || '-'), style: 'infoVal', colSpan: 2 },
@@ -114,30 +168,27 @@ const PDF_OS = {
         vLineColor: () => '#cccccc',
         paddingLeft: () => 6,
         paddingRight: () => 6,
-        paddingTop: () => 4,
-        paddingBottom: () => 4
+        paddingTop: () => 5,
+        paddingBottom: () => 5
       },
-      margin: [0, 0, 0, 12]
+      margin: [0, 0, 0, 14]
     };
 
-    // Tabela de servicos
+    // Tabela servicos
     const tabelaServicos = {
       table: {
         headerRows: 1,
-        widths: ['*', 80],
+        widths: ['*', 90],
         body: [
-          [
-            { text: 'SERVICOS (Mao de obra)', style: 'tableHeader', colSpan: 2 },
-            {}
-          ],
+          [{ text: 'SERVICOS (Mao de obra)', style: 'sectionTitle', colSpan: 2 }, {}],
           ...servicos.map(s => [
             { text: s.descricao, style: 'tableCell' },
-            { text: 'R$ ' + (s.valor_total || 0).toFixed(2), style: 'tableCellRight' }
+            { text: this._formatMoney(s.valor_total), style: 'tableCellRight' }
           ]),
-          ...(servicos.length === 0 ? [[{ text: 'Nenhum servico', style: 'tableEmpty', colSpan: 2 }, {}]] : []),
+          ...(servicos.length === 0 ? [[{ text: 'Nenhum servico registrado', style: 'tableEmpty', colSpan: 2 }, {}]] : []),
           [
             { text: 'Subtotal Servicos', style: 'tableSubtotal' },
-            { text: 'R$ ' + totalServicos.toFixed(2), style: 'tableSubtotalRight' }
+            { text: this._formatMoney(totalServicos), style: 'tableSubtotalRight' }
           ]
         ]
       },
@@ -146,24 +197,19 @@ const PDF_OS = {
         vLineWidth: () => 0.5,
         hLineColor: () => '#cccccc',
         vLineColor: () => '#cccccc',
-        paddingLeft: () => 6,
-        paddingRight: () => 6,
-        paddingTop: () => 3,
-        paddingBottom: () => 3
+        paddingLeft: () => 6, paddingRight: () => 6,
+        paddingTop: () => 4, paddingBottom: () => 4
       },
       margin: [0, 0, 0, 10]
     };
 
-    // Tabela de pecas
+    // Tabela pecas
     const tabelaPecas = {
       table: {
-        headerRows: 1,
-        widths: ['*', 35, 65, 70],
+        headerRows: 2,
+        widths: ['*', 35, 70, 80],
         body: [
-          [
-            { text: 'PECAS / MATERIAIS', style: 'tableHeader', colSpan: 4 },
-            {}, {}, {}
-          ],
+          [{ text: 'PECAS / MATERIAIS', style: 'sectionTitle', colSpan: 4 }, {}, {}, {}],
           [
             { text: 'Descricao', style: 'tableColHeader' },
             { text: 'Qtd', style: 'tableColHeader', alignment: 'center' },
@@ -173,14 +219,13 @@ const PDF_OS = {
           ...pecas.map(p => [
             { text: p.descricao, style: 'tableCell' },
             { text: String(p.quantidade || 1), style: 'tableCell', alignment: 'center' },
-            { text: 'R$ ' + (p.valor_unitario || 0).toFixed(2), style: 'tableCellRight' },
-            { text: 'R$ ' + (p.valor_total || 0).toFixed(2), style: 'tableCellRight' }
+            { text: this._formatMoney(p.valor_unitario), style: 'tableCellRight' },
+            { text: this._formatMoney(p.valor_total), style: 'tableCellRight' }
           ]),
-          ...(pecas.length === 0 ? [[{ text: 'Nenhuma peca', style: 'tableEmpty', colSpan: 4 }, {}, {}, {}]] : []),
+          ...(pecas.length === 0 ? [[{ text: 'Nenhuma peca registrada', style: 'tableEmpty', colSpan: 4 }, {}, {}, {}]] : []),
           [
-            { text: 'Subtotal Pecas', style: 'tableSubtotal', colSpan: 3 },
-            {}, {},
-            { text: 'R$ ' + totalPecas.toFixed(2), style: 'tableSubtotalRight' }
+            { text: 'Subtotal Pecas', style: 'tableSubtotal', colSpan: 3 }, {}, {},
+            { text: this._formatMoney(totalPecas), style: 'tableSubtotalRight' }
           ]
         ]
       },
@@ -189,102 +234,99 @@ const PDF_OS = {
         vLineWidth: () => 0.5,
         hLineColor: () => '#cccccc',
         vLineColor: () => '#cccccc',
-        paddingLeft: () => 6,
-        paddingRight: () => 6,
-        paddingTop: () => 3,
-        paddingBottom: () => 3
+        paddingLeft: () => 6, paddingRight: () => 6,
+        paddingTop: () => 4, paddingBottom: () => 4
       },
       margin: [0, 0, 0, 10]
     };
 
     // Totais
+    const linhasTotais = [
+      [{ text: 'Servicos', style: 'totalLabel' }, { text: this._formatMoney(totalServicos), style: 'totalVal' }],
+      [{ text: 'Pecas', style: 'totalLabel' }, { text: this._formatMoney(totalPecas), style: 'totalVal' }]
+    ];
+    if (desconto > 0) {
+      linhasTotais.push([{ text: 'Desconto', style: 'totalLabel' }, { text: '- ' + this._formatMoney(desconto), style: 'totalValDesconto' }]);
+    }
+    linhasTotais.push([
+      { text: 'TOTAL', style: 'totalFinal' },
+      { text: this._formatMoney(totalGeral), style: 'totalFinalVal' }
+    ]);
+
     const blocoTotais = {
-      table: {
-        widths: ['*', 120],
-        body: [
-          [{ text: 'Servicos', style: 'totalLabel' }, { text: 'R$ ' + totalServicos.toFixed(2), style: 'totalVal' }],
-          [{ text: 'Pecas', style: 'totalLabel' }, { text: 'R$ ' + totalPecas.toFixed(2), style: 'totalVal' }],
-          ...(desconto > 0 ? [[{ text: 'Desconto', style: 'totalLabel' }, { text: '- R$ ' + desconto.toFixed(2), style: 'totalValDesconto' }]] : []),
-          [
-            { text: 'TOTAL', style: 'totalFinal' },
-            { text: 'R$ ' + totalGeral.toFixed(2), style: 'totalFinalVal' }
-          ]
-        ]
-      },
+      table: { widths: ['*', 120], body: linhasTotais },
       layout: {
         hLineWidth: (i, node) => i === node.table.body.length - 1 ? 1 : 0.3,
         vLineWidth: () => 0,
         hLineColor: () => '#333333',
-        paddingLeft: () => 6,
-        paddingRight: () => 6,
-        paddingTop: () => 4,
-        paddingBottom: () => 4
+        paddingLeft: () => 6, paddingRight: () => 6,
+        paddingTop: () => 5, paddingBottom: () => 5
       },
-      margin: [0, 0, 0, 12]
+      margin: [0, 0, 0, 14]
     };
 
     // Pagamento
     const infoPagamento = os.forma_pagamento && os.forma_pagamento !== 'pendente'
-      ? { text: 'Forma de pagamento: ' + (pagLabel[os.forma_pagamento] || os.forma_pagamento), style: 'obs', margin: [0, 0, 0, 6] }
-      : { text: 'Pagamento: Pendente', style: 'obs', color: '#e63e00', margin: [0, 0, 0, 6] };
+      ? { text: 'Forma de pagamento: ' + (pagLabel[os.forma_pagamento] || os.forma_pagamento), fontSize: 10, bold: true, margin: [0, 0, 0, 6] }
+      : { text: 'Pagamento: Pendente', fontSize: 10, bold: true, color: '#e63e00', margin: [0, 0, 0, 6] };
 
-    // Observacoes
-    const obs = os.observacoes || os.descricao
-      ? { text: 'Obs: ' + (os.observacoes || os.descricao), style: 'obs', margin: [0, 0, 0, 12] }
-      : {};
+    // Observações
+    const obsText = os.observacoes || os.descricao;
+    const obs = obsText ? { text: 'Obs: ' + obsText, style: 'obs', margin: [0, 0, 0, 20] } : { text: '', margin: [0, 0, 0, 20] };
+
+    // Assinaturas
+    const assinaturas = {
+      columns: [
+        {
+          stack: [
+            { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.5, lineColor: '#999' }] },
+            { text: 'Assinatura do cliente', fontSize: 8, color: '#999', alignment: 'center', margin: [0, 4, 0, 0] }
+          ],
+          width: 220
+        },
+        { text: '', width: '*' },
+        {
+          stack: [
+            { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.5, lineColor: '#999' }] },
+            { text: 'Assinatura da oficina', fontSize: 8, color: '#999', alignment: 'center', margin: [0, 4, 0, 0] }
+          ],
+          width: 220
+        }
+      ],
+      margin: [0, 10, 0, 0]
+    };
 
     const docDef = {
       pageSize: 'A4',
       pageMargins: [40, 30, 40, 50],
       content: [
-        header,
-        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: '#FF4500' }], margin: [0, 0, 0, 12] },
+        ...header,
         infoOS,
         tabelaServicos,
         tabelaPecas,
         blocoTotais,
         infoPagamento,
-        obs
+        obs,
+        assinaturas
       ],
-      footer: {
-        text: 'Powered by RPM Pro — rpmpro.com.br',
-        alignment: 'center',
-        style: 'footer'
-      },
-      styles: {
-        headerRpm: { fontSize: 22, bold: true, color: '#FF4500' },
-        headerPro: { fontSize: 22, bold: true, color: '#333333' },
-        headerOficina: { fontSize: 14, bold: true, color: '#333333' },
-        headerInfo: { fontSize: 9, color: '#666666' },
-        infoLabel: { fontSize: 11, bold: true, color: '#333333' },
-        infoVal: { fontSize: 10, color: '#444444' },
-        tableHeader: { fontSize: 11, bold: true, color: '#333333', fillColor: '#f5f5f5' },
-        tableColHeader: { fontSize: 9, bold: true, color: '#666666' },
-        tableCell: { fontSize: 10, color: '#333333' },
-        tableCellRight: { fontSize: 10, color: '#333333', alignment: 'right' },
-        tableEmpty: { fontSize: 10, color: '#999999', italics: true },
-        tableSubtotal: { fontSize: 10, bold: true, color: '#333333', fillColor: '#f9f9f9' },
-        tableSubtotalRight: { fontSize: 10, bold: true, color: '#333333', alignment: 'right', fillColor: '#f9f9f9' },
-        totalLabel: { fontSize: 10, color: '#555555' },
-        totalVal: { fontSize: 10, color: '#333333', alignment: 'right' },
-        totalValDesconto: { fontSize: 10, color: '#e63e00', alignment: 'right' },
-        totalFinal: { fontSize: 14, bold: true, color: '#000000' },
-        totalFinalVal: { fontSize: 14, bold: true, color: '#2e7d32', alignment: 'right' },
-        obs: { fontSize: 9, color: '#666666' },
-        footer: { fontSize: 8, color: '#999999', margin: [40, 10, 40, 0] }
-      }
+      footer: this._footer(),
+      styles: this._styles()
     };
 
     pdfMake.createPdf(docDef).open();
   },
 
+  // ========== RECIBO ==========
   async recibo(osId) {
+    await this._carregarLogo();
     const dados = await this._buscarDados(osId);
     if (!dados) return;
 
     const { os, itens, oficina } = dados;
-    const totalServicos = itens.filter(i => i.tipo === 'servico').reduce((s, i) => s + (i.valor_total || 0), 0);
-    const totalPecas = itens.filter(i => i.tipo === 'peca').reduce((s, i) => s + (i.valor_total || 0), 0);
+    const servicos = itens.filter(i => i.tipo === 'servico');
+    const pecas = itens.filter(i => i.tipo === 'peca');
+    const totalServicos = servicos.reduce((s, i) => s + (i.valor_total || 0), 0);
+    const totalPecas = pecas.reduce((s, i) => s + (i.valor_total || 0), 0);
     const desconto = os.desconto || 0;
     const totalGeral = totalServicos + totalPecas - desconto;
 
@@ -293,92 +335,181 @@ const PDF_OS = {
       credito: 'Credito', boleto: 'Boleto', pendente: 'Pendente'
     };
 
+    const header = this._montarHeader(oficina, 'RECIBO DE SERVICO');
+
+    // Info OS + Cliente + Veículo
+    const veiculo = [os.veiculos?.marca, os.veiculos?.modelo, os.veiculos?.ano].filter(Boolean).join(' ');
+    const infoRecibo = {
+      table: {
+        widths: ['*', '*'],
+        body: [
+          [
+            { text: 'OS #' + (os.numero || '-'), fontSize: 11, bold: true },
+            { text: 'Data: ' + APP.formatDate(os.data_entrada), fontSize: 11, alignment: 'right' }
+          ],
+          [
+            { text: 'Cliente: ' + (os.clientes?.nome || '-'), fontSize: 11 },
+            { text: os.clientes?.whatsapp ? 'WhatsApp: ' + os.clientes.whatsapp : (os.clientes?.telefone ? 'Tel: ' + os.clientes.telefone : ''), fontSize: 10, alignment: 'right', color: '#666' }
+          ],
+          [
+            { text: 'Veiculo: ' + (os.veiculos?.placa || '') + (veiculo ? ' — ' + veiculo : ''), fontSize: 11 },
+            { text: os.veiculos?.cor ? 'Cor: ' + os.veiculos.cor : '', fontSize: 10, alignment: 'right', color: '#666' }
+          ],
+          ...(os.km_entrada ? [[
+            { text: 'KM: ' + os.km_entrada.toLocaleString('pt-BR'), fontSize: 10, color: '#666' },
+            { text: os.profiles?.nome ? 'Mecanico: ' + os.profiles.nome : '', fontSize: 10, alignment: 'right', color: '#666' }
+          ]] : (os.profiles?.nome ? [[
+            { text: 'Mecanico: ' + os.profiles.nome, fontSize: 10, color: '#666', colSpan: 2 }, {}
+          ]] : []))
+        ]
+      },
+      layout: {
+        hLineWidth: () => 0.3,
+        vLineWidth: () => 0,
+        hLineColor: () => '#dddddd',
+        paddingTop: () => 5, paddingBottom: () => 5,
+        paddingLeft: () => 4, paddingRight: () => 4
+      },
+      margin: [0, 0, 0, 16]
+    };
+
+    // Tabela de servicos detalhada
+    const tabelaServicos = servicos.length ? {
+      table: {
+        headerRows: 1,
+        widths: ['*', 90],
+        body: [
+          [{ text: 'SERVICOS', style: 'sectionTitle', colSpan: 2 }, {}],
+          ...servicos.map(s => [
+            { text: s.descricao, style: 'tableCell' },
+            { text: this._formatMoney(s.valor_total), style: 'tableCellRight' }
+          ]),
+          [
+            { text: 'Subtotal', style: 'tableSubtotal' },
+            { text: this._formatMoney(totalServicos), style: 'tableSubtotalRight' }
+          ]
+        ]
+      },
+      layout: {
+        hLineWidth: (i, node) => (i === 0 || i === 1 || i === node.table.body.length) ? 0.5 : 0.3,
+        vLineWidth: () => 0.5,
+        hLineColor: () => '#cccccc',
+        vLineColor: () => '#cccccc',
+        paddingLeft: () => 6, paddingRight: () => 6,
+        paddingTop: () => 4, paddingBottom: () => 4
+      },
+      margin: [0, 0, 0, 10]
+    } : {};
+
+    // Tabela de pecas detalhada
+    const tabelaPecas = pecas.length ? {
+      table: {
+        headerRows: 2,
+        widths: ['*', 35, 70, 80],
+        body: [
+          [{ text: 'PECAS / MATERIAIS', style: 'sectionTitle', colSpan: 4 }, {}, {}, {}],
+          [
+            { text: 'Descricao', style: 'tableColHeader' },
+            { text: 'Qtd', style: 'tableColHeader', alignment: 'center' },
+            { text: 'Valor Unit.', style: 'tableColHeader', alignment: 'right' },
+            { text: 'Total', style: 'tableColHeader', alignment: 'right' }
+          ],
+          ...pecas.map(p => [
+            { text: p.descricao, style: 'tableCell' },
+            { text: String(p.quantidade || 1), style: 'tableCell', alignment: 'center' },
+            { text: this._formatMoney(p.valor_unitario), style: 'tableCellRight' },
+            { text: this._formatMoney(p.valor_total), style: 'tableCellRight' }
+          ]),
+          [
+            { text: 'Subtotal', style: 'tableSubtotal', colSpan: 3 }, {}, {},
+            { text: this._formatMoney(totalPecas), style: 'tableSubtotalRight' }
+          ]
+        ]
+      },
+      layout: {
+        hLineWidth: (i, node) => (i <= 2 || i === node.table.body.length) ? 0.5 : 0.3,
+        vLineWidth: () => 0.5,
+        hLineColor: () => '#cccccc',
+        vLineColor: () => '#cccccc',
+        paddingLeft: () => 6, paddingRight: () => 6,
+        paddingTop: () => 4, paddingBottom: () => 4
+      },
+      margin: [0, 0, 0, 10]
+    } : {};
+
+    // Totais
+    const linhasTotais = [];
+    if (servicos.length) linhasTotais.push([{ text: 'Servicos', style: 'totalLabel' }, { text: this._formatMoney(totalServicos), style: 'totalVal' }]);
+    if (pecas.length) linhasTotais.push([{ text: 'Pecas', style: 'totalLabel' }, { text: this._formatMoney(totalPecas), style: 'totalVal' }]);
+    if (desconto > 0) linhasTotais.push([{ text: 'Desconto', style: 'totalLabel' }, { text: '- ' + this._formatMoney(desconto), style: 'totalValDesconto' }]);
+    linhasTotais.push([
+      { text: 'TOTAL', style: 'totalFinal' },
+      { text: this._formatMoney(totalGeral), style: 'totalFinalVal' }
+    ]);
+
+    const blocoTotais = {
+      table: { widths: ['*', 120], body: linhasTotais },
+      layout: {
+        hLineWidth: (i, node) => i === node.table.body.length - 1 ? 1 : 0.3,
+        vLineWidth: () => 0,
+        hLineColor: () => '#333333',
+        paddingLeft: () => 6, paddingRight: () => 6,
+        paddingTop: () => 5, paddingBottom: () => 5
+      },
+      margin: [0, 0, 0, 14]
+    };
+
+    // Pagamento
+    const formaPag = pagLabel[os.forma_pagamento] || 'Pendente';
+    const isPendente = !os.forma_pagamento || os.forma_pagamento === 'pendente';
+    const infoPagamento = {
+      text: 'Forma de pagamento: ' + formaPag,
+      fontSize: 11, bold: true,
+      color: isPendente ? '#e63e00' : '#1a1a1a',
+      margin: [0, 0, 0, 8]
+    };
+
+    // Observações
+    const obsText = os.observacoes || os.descricao;
+    const obs = obsText ? { text: 'Obs: ' + obsText, style: 'obs', margin: [0, 0, 0, 30] } : { text: '', margin: [0, 0, 0, 30] };
+
+    // Assinaturas
+    const assinaturas = {
+      columns: [
+        {
+          stack: [
+            { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.5, lineColor: '#999' }] },
+            { text: 'Assinatura do cliente', fontSize: 8, color: '#999', alignment: 'center', margin: [0, 4, 0, 0] }
+          ],
+          width: 220
+        },
+        { text: '', width: '*' },
+        {
+          stack: [
+            { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.5, lineColor: '#999' }] },
+            { text: 'Assinatura da oficina', fontSize: 8, color: '#999', alignment: 'center', margin: [0, 4, 0, 0] }
+          ],
+          width: 220
+        }
+      ],
+      margin: [0, 10, 0, 0]
+    };
+
     const docDef = {
       pageSize: 'A4',
       pageMargins: [40, 30, 40, 50],
       content: [
-        {
-          columns: [
-            { text: [{ text: 'RPM ', bold: true, color: '#FF4500', fontSize: 18 }, { text: 'PRO', bold: true, fontSize: 18 }], width: 'auto' },
-            { text: oficina.nome || 'Oficina', alignment: 'right', fontSize: 12, bold: true }
-          ],
-          margin: [0, 0, 0, 8]
-        },
-        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: '#FF4500' }], margin: [0, 0, 0, 15] },
-        { text: 'RECIBO DE SERVICO', fontSize: 16, bold: true, alignment: 'center', margin: [0, 0, 0, 15] },
-        {
-          table: {
-            widths: ['*', '*'],
-            body: [
-              [{ text: 'OS #' + (os.numero || '-'), fontSize: 11, bold: true }, { text: 'Data: ' + APP.formatDate(os.data_entrada), fontSize: 11, alignment: 'right' }],
-              [{ text: 'Cliente: ' + (os.clientes?.nome || '-'), fontSize: 11, colSpan: 2 }, {}],
-              [{ text: 'Veiculo: ' + (os.veiculos?.placa || '') + ' — ' + [os.veiculos?.marca, os.veiculos?.modelo].filter(Boolean).join(' '), fontSize: 11, colSpan: 2 }, {}]
-            ]
-          },
-          layout: {
-            hLineWidth: () => 0.3,
-            vLineWidth: () => 0,
-            hLineColor: () => '#dddddd',
-            paddingTop: () => 5,
-            paddingBottom: () => 5,
-            paddingLeft: () => 4,
-            paddingRight: () => 4
-          },
-          margin: [0, 0, 0, 20]
-        },
-        {
-          table: {
-            widths: ['*', 100],
-            body: [
-              [{ text: 'Servicos', fontSize: 11 }, { text: 'R$ ' + totalServicos.toFixed(2), fontSize: 11, alignment: 'right' }],
-              [{ text: 'Pecas / Materiais', fontSize: 11 }, { text: 'R$ ' + totalPecas.toFixed(2), fontSize: 11, alignment: 'right' }],
-              ...(desconto > 0 ? [[{ text: 'Desconto', fontSize: 11 }, { text: '- R$ ' + desconto.toFixed(2), fontSize: 11, alignment: 'right', color: '#e63e00' }]] : []),
-              [
-                { text: 'TOTAL', fontSize: 14, bold: true },
-                { text: 'R$ ' + totalGeral.toFixed(2), fontSize: 14, bold: true, alignment: 'right', color: '#2e7d32' }
-              ]
-            ]
-          },
-          layout: {
-            hLineWidth: (i, node) => i === node.table.body.length - 1 ? 1 : 0.3,
-            vLineWidth: () => 0,
-            hLineColor: () => '#cccccc',
-            paddingTop: () => 6,
-            paddingBottom: () => 6,
-            paddingLeft: () => 4,
-            paddingRight: () => 4
-          },
-          margin: [0, 0, 0, 15]
-        },
-        {
-          text: 'Forma de pagamento: ' + (pagLabel[os.forma_pagamento] || 'Pendente'),
-          fontSize: 11,
-          bold: true,
-          margin: [0, 0, 0, 30]
-        },
-        {
-          columns: [
-            { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.5 }], width: 220 },
-            { text: '', width: '*' },
-            { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.5 }], width: 220 }
-          ],
-          margin: [0, 0, 0, 4]
-        },
-        {
-          columns: [
-            { text: 'Assinatura do cliente', fontSize: 9, color: '#999999', alignment: 'center', width: 220 },
-            { text: '', width: '*' },
-            { text: 'Assinatura da oficina', fontSize: 9, color: '#999999', alignment: 'center', width: 220 }
-          ]
-        }
+        ...header,
+        infoRecibo,
+        tabelaServicos,
+        tabelaPecas,
+        blocoTotais,
+        infoPagamento,
+        obs,
+        assinaturas
       ],
-      footer: {
-        text: 'Powered by RPM Pro — rpmpro.com.br',
-        alignment: 'center',
-        fontSize: 8,
-        color: '#999999',
-        margin: [40, 10, 40, 0]
-      }
+      footer: this._footer(),
+      styles: this._styles()
     };
 
     pdfMake.createPdf(docDef).open();
