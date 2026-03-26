@@ -292,6 +292,21 @@ const KANBAN = {
       }
     }
 
+    // Bloqueio: ir pra "entregue" sem checklist de saida
+    if (novoStatus === 'entregue') {
+      const temSaida = await OS._temChecklistSaida(osId);
+      if (!temSaida) {
+        APP.toast('Preencha o checklist de saida antes de entregar', 'error');
+        return;
+      }
+      // Verifica se tem valor
+      const { data: osCheck } = await db.from('ordens_servico').select('valor_total').eq('id', osId).single();
+      if (!osCheck || !osCheck.valor_total || osCheck.valor_total <= 0) {
+        APP.toast('OS sem valor. Adicione servicos ou pecas antes de entregar.', 'error');
+        return;
+      }
+    }
+
     const update = { status: novoStatus, updated_at: new Date().toISOString() };
     if (novoStatus === 'pronto') update.data_conclusao = new Date().toISOString();
     if (novoStatus === 'entregue') update.data_entrega = new Date().toISOString();
@@ -368,6 +383,20 @@ const KANBAN = {
       const temSaida = await OS._temChecklistSaida(osId);
       if (!temSaida) {
         APP.toast('Preencha o checklist de saida antes de marcar como Pronto', 'error');
+        return;
+      }
+    }
+
+    // Bloqueio: ir pra "entregue" sem checklist de saida e sem valor
+    if (novoStatus === 'entregue') {
+      const temSaida = await OS._temChecklistSaida(osId);
+      if (!temSaida) {
+        APP.toast('Preencha o checklist de saida antes de entregar', 'error');
+        return;
+      }
+      const { data: osCheck } = await db.from('ordens_servico').select('valor_total').eq('id', osId).single();
+      if (!osCheck || !osCheck.valor_total || osCheck.valor_total <= 0) {
+        APP.toast('OS sem valor. Adicione servicos ou pecas antes de entregar.', 'error');
         return;
       }
     }
