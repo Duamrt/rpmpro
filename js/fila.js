@@ -53,6 +53,7 @@ const FILA = {
                 ${f.veiculo_info ? `<span style="margin-left:4px;font-size:12px;color:var(--text-secondary);">${esc(f.veiculo_info)}</span>` : ''}
               </div>
               <div style="display:flex;gap:6px;align-items:center;">
+                <span style="font-size:12px;font-weight:700;color:var(--text-secondary);background:var(--bg-input);padding:2px 8px;border-radius:6px;">${FILA._tempoAtras(f.created_at)}</span>
                 <span style="font-size:11px;font-weight:700;color:${urgenciaCor[f.urgencia]};">${esc(urgenciaLabel[f.urgencia])}</span>
                 <span class="badge badge-${statusBadge[f.status] || 'orcamento'}">${esc(f.status)}</span>
               </div>
@@ -203,6 +204,19 @@ const FILA = {
 
     // Marca como agendado na fila
     this.mudarStatus(filaId, 'agendado');
+  },
+
+  _tempoAtras(data) {
+    const agora = Date.now();
+    const diff = agora - new Date(data).getTime();
+    const min = Math.floor(diff / 60000);
+    if (min < 1) return 'agora';
+    if (min < 60) return min + ' min';
+    const horas = Math.floor(min / 60);
+    if (horas < 24) return horas + 'h';
+    const dias = Math.floor(horas / 24);
+    if (dias === 1) return 'ontem';
+    return dias + 'd';
   },
 
   async mudarStatus(id, novoStatus) {
