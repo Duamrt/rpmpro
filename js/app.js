@@ -28,10 +28,10 @@ const APP = {
     const elAvatar = document.getElementById('user-avatar');
     if (elAvatar) elAvatar.textContent = (this.profile.nome || '?')[0].toUpperCase();
 
-    // Logo da oficina na sidebar
+    // Logo da oficina na sidebar — grande e centralizada
     if (this.oficina?.logo_url) {
       const logoEl = document.getElementById('sidebar-logo-img');
-      if (logoEl) logoEl.innerHTML = `<img src="${this.oficina.logo_url}" style="max-height:32px;max-width:120px;object-fit:contain;">`;
+      if (logoEl) logoEl.innerHTML = `<img src="${this.oficina.logo_url}" style="max-height:56px;max-width:180px;object-fit:contain;display:block;">`;
     }
 
     // Verifica super admin
