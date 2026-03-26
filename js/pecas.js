@@ -23,9 +23,17 @@ const PECAS = {
       return;
     }
 
+    this._lista = lista;
     container.innerHTML = `
-      <div style="margin-bottom:12px;">
-        <input type="text" class="form-control" id="pecas-busca" placeholder="Buscar peca por nome, codigo ou marca..." oninput="PECAS.filtrar(this.value)" style="max-width:400px;">
+      <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+        <input type="text" class="form-control" id="pecas-busca" placeholder="Buscar peca por nome, codigo ou marca..." oninput="PECAS.filtrar()" style="max-width:400px;flex:1;">
+        <select class="form-control" id="pecas-filtro-estoque" onchange="PECAS.filtrar()" style="width:auto;min-width:160px;">
+          <option value="todos">Todos</option>
+          <option value="negativo">Sem estoque / Negativo</option>
+          <option value="baixo">Estoque baixo</option>
+          <option value="ok">Estoque OK</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="PECAS.exportarExcel()" style="white-space:nowrap;">Exportar Excel</button>
       </div>
       <table class="data-table" id="pecas-tabela">
         <thead>
@@ -44,7 +52,7 @@ const PECAS = {
             const estoqueClass = p.quantidade <= 0 ? 'color:var(--danger);font-weight:700;' :
               p.quantidade <= p.estoque_minimo ? 'color:var(--warning);font-weight:700;' : '';
             return `
-            <tr data-busca="${esc(p.nome).toLowerCase()} ${esc(p.codigo || '').toLowerCase()} ${esc(p.marca || '').toLowerCase()}">
+            <tr data-busca="${esc(p.nome).toLowerCase()} ${esc(p.codigo || '').toLowerCase()} ${esc(p.marca || '').toLowerCase()}" data-qtd="${p.quantidade}" data-min="${p.estoque_minimo || 0}">
               <td><strong>${esc(p.nome)}</strong>${p.compatibilidade && p.compatibilidade.length ? '<br><span style="font-size:10px;color:var(--info);">' + p.compatibilidade.map(c => esc(c.marca) + (c.modelos?.length ? ' (' + c.modelos.map(m => esc(m)).join(', ') + ')' : '')).join(' | ') + '</span>' : ''}${p.localizacao ? '<br><span style="font-size:11px;color:var(--text-secondary);">' + esc(p.localizacao) + '</span>' : ''}</td>
               <td style="font-size:13px;">${esc(p.codigo) || '-'}</td>
               <td style="font-size:13px;">${esc(p.marca) || '-'}</td>
@@ -67,10 +75,18 @@ const PECAS = {
       </div>`;
   },
 
-  filtrar(termo) {
-    const t = termo.toLowerCase();
+  filtrar() {
+    const t = (document.getElementById('pecas-busca')?.value || '').toLowerCase();
+    const filtro = document.getElementById('pecas-filtro-estoque')?.value || 'todos';
     document.querySelectorAll('#pecas-tabela tbody tr').forEach(tr => {
-      tr.style.display = tr.dataset.busca.includes(t) ? '' : 'none';
+      const buscaOk = !t || tr.dataset.busca.includes(t);
+      const qtd = parseFloat(tr.dataset.qtd);
+      const min = parseFloat(tr.dataset.min);
+      let estoqueOk = true;
+      if (filtro === 'negativo') estoqueOk = qtd <= 0;
+      else if (filtro === 'baixo') estoqueOk = qtd > 0 && qtd <= min;
+      else if (filtro === 'ok') estoqueOk = qtd > min || (min === 0 && qtd > 0);
+      tr.style.display = buscaOk && estoqueOk ? '' : 'none';
     });
   },
 
@@ -328,6 +344,179 @@ const PECAS = {
         </form>
       </div>
     `);
+  },
+
+  async exportarExcel() {
+    if (!this._lista || !this._lista.length) { APP.toast('Nenhuma peca para exportar', 'error'); return; }
+    APP.toast('Gerando planilha...');
+
+    // Carregar ExcelJS
+    if (!window.ExcelJS) {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js';
+        s.onload = resolve; s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+    if (!window.ExcelJS) { APP.toast('Erro ao carregar exportacao', 'error'); return; }
+
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'RPM Pro';
+    const ws = wb.addWorksheet('Estoque', { properties: { defaultColWidth: 18 } });
+    const oficinaNome = APP.oficina?.nome || 'Oficina';
+    const hoje = new Date();
+
+    // Cores RPM Pro
+    const AZUL = '1E3A5F';
+    const AZUL_CLARO = '2D5F8A';
+    const BRANCO = 'FFFFFF';
+
+    // Largura das colunas
+    ws.columns = [
+      { width: 7 },   // #
+      { width: 18 },  // Codigo
+      { width: 45 },  // Peca
+      { width: 14 },  // Marca
+      { width: 12 },  // Custo
+      { width: 12 },  // Venda
+      { width: 14 },  // Saldo Sistema
+      { width: 14 },  // Contagem Real
+      { width: 14 },  // Diferenca
+    ];
+
+    // Header
+    ws.getRow(1).height = 45;
+    ws.mergeCells('A1:I1');
+    const h1 = ws.getCell('A1');
+    h1.value = oficinaNome.toUpperCase();
+    h1.font = { name: 'Arial', size: 20, bold: true, color: { argb: BRANCO } };
+    h1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: AZUL } };
+    h1.alignment = { horizontal: 'center', vertical: 'middle' };
+    for (let c = 2; c <= 9; c++) ws.getRow(1).getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: AZUL } };
+
+    // Subtitulo
+    ws.getRow(2).height = 26;
+    ws.mergeCells('A2:I2');
+    const h2 = ws.getCell('A2');
+    h2.value = 'INVENTARIO DE ESTOQUE — CONTAGEM FISICA';
+    h2.font = { name: 'Arial', size: 11, bold: true, color: { argb: BRANCO } };
+    h2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: AZUL_CLARO } };
+    h2.alignment = { horizontal: 'center', vertical: 'middle' };
+    for (let c = 2; c <= 9; c++) ws.getRow(2).getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: AZUL_CLARO } };
+
+    // Info
+    ws.getRow(3).height = 22;
+    ws.mergeCells('A3:I3');
+    const h3 = ws.getCell('A3');
+    h3.value = `Data: ${hoje.toLocaleDateString('pt-BR')}  •  Gerado por RPM Pro — rpmpro.com.br`;
+    h3.font = { name: 'Arial', size: 9, italic: true, color: { argb: '666666' } };
+    h3.alignment = { horizontal: 'center', vertical: 'middle' };
+
+    ws.addRow([]);
+
+    // Cabecalho colunas
+    const bordaFina = { style: 'thin', color: { argb: 'CCCCCC' } };
+    const bordas = { top: bordaFina, left: bordaFina, bottom: bordaFina, right: bordaFina };
+
+    const colRow = ws.addRow(['#', 'CODIGO', 'PECA', 'MARCA', 'CUSTO', 'VENDA', 'SALDO SISTEMA', 'CONTAGEM REAL', 'DIFERENCA']);
+    colRow.height = 24;
+    colRow.eachCell(c => {
+      c.font = { name: 'Arial', size: 9, bold: true, color: { argb: '333333' } };
+      c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'E8E8E8' } };
+      c.alignment = { horizontal: 'center', vertical: 'middle' };
+      c.border = bordas;
+    });
+
+    // Dados
+    const sorted = [...this._lista].sort((a, b) => a.nome.localeCompare(b.nome));
+    sorted.forEach((p, i) => {
+      const row = ws.addRow([
+        i + 1,
+        p.codigo || '—',
+        p.nome,
+        p.marca || '—',
+        p.custo || 0,
+        p.preco_venda || 0,
+        p.quantidade,
+        '',
+        ''
+      ]);
+      row.height = 20;
+
+      row.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+      row.getCell(1).font = { name: 'Arial', size: 9, color: { argb: '999999' } };
+      row.getCell(2).font = { name: 'Arial', size: 9, color: { argb: '666666' } };
+      row.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
+      row.getCell(3).font = { name: 'Arial', size: 10 };
+      row.getCell(3).alignment = { vertical: 'middle', indent: 1 };
+      row.getCell(4).font = { name: 'Arial', size: 9 };
+      row.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' };
+      row.getCell(5).font = { name: 'Arial', size: 9 };
+      row.getCell(5).alignment = { horizontal: 'center', vertical: 'middle' };
+      row.getCell(5).numFmt = '#,##0.00';
+      row.getCell(6).font = { name: 'Arial', size: 9, bold: true };
+      row.getCell(6).alignment = { horizontal: 'center', vertical: 'middle' };
+      row.getCell(6).numFmt = '#,##0.00';
+      row.getCell(7).font = { name: 'Arial', size: 10, bold: true };
+      row.getCell(7).alignment = { horizontal: 'center', vertical: 'middle' };
+
+      // Contagem real — fundo amarelo (preencher na mao)
+      row.getCell(8).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDE7' } };
+      row.getCell(8).alignment = { horizontal: 'center', vertical: 'middle' };
+      row.getCell(8).font = { name: 'Arial', size: 10 };
+
+      // Formula diferenca
+      const r = row.number;
+      row.getCell(9).value = { formula: `IF(H${r}="","",H${r}-G${r})` };
+      row.getCell(9).alignment = { horizontal: 'center', vertical: 'middle' };
+      row.getCell(9).font = { name: 'Arial', size: 10 };
+
+      // Destaque negativo/baixo
+      if (p.quantidade <= 0) {
+        row.getCell(7).font = { name: 'Arial', size: 10, bold: true, color: { argb: 'CC0000' } };
+      } else if (p.quantidade <= (p.estoque_minimo || 0)) {
+        row.getCell(7).font = { name: 'Arial', size: 10, bold: true, color: { argb: 'CC8800' } };
+      }
+
+      row.eachCell(c => { c.border = bordas; });
+
+      // Zebra
+      if (i % 2 === 1) {
+        [1,2,3,4,5,6,7,9].forEach(ci => {
+          row.getCell(ci).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F9F9F9' } };
+        });
+      }
+    });
+
+    // Rodape
+    ws.addRow([]);
+    const totRow = ws.addRow(['', '', `TOTAL DE PECAS: ${sorted.length}`, '', '', '', '', '', '']);
+    totRow.getCell(3).font = { name: 'Arial', size: 10, bold: true, color: { argb: AZUL } };
+
+    const negRow = ws.addRow(['', '', `SEM ESTOQUE: ${sorted.filter(p => p.quantidade <= 0).length}  |  ESTOQUE BAIXO: ${sorted.filter(p => p.quantidade > 0 && p.quantidade <= (p.estoque_minimo || 0)).length}`, '', '', '', '', '', '']);
+    negRow.getCell(3).font = { name: 'Arial', size: 9, color: { argb: 'CC0000' } };
+
+    ws.addRow([]);
+    const respRow = ws.addRow(['', '', 'Responsavel pela contagem: _______________________________', '', '', '', '', '', '']);
+    respRow.getCell(3).font = { name: 'Arial', size: 9, color: { argb: '666666' } };
+    const assinRow = ws.addRow(['', '', 'Assinatura: _______________________________  Data: ___/___/______', '', '', '', '', '', '']);
+    assinRow.getCell(3).font = { name: 'Arial', size: 9, color: { argb: '666666' } };
+
+    // Configurar impressao
+    ws.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9 };
+    ws.headerFooter = { oddFooter: oficinaNome + ' — Inventario de Estoque — Pagina &P de &N' };
+
+    // Gerar e baixar
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `estoque-${oficinaNome.toLowerCase().replace(/\s+/g, '-')}-${hoje.toISOString().slice(0,10)}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+    APP.toast('Planilha exportada!');
   },
 
   async salvarAjuste(e, pecaId, qtdAtual) {
