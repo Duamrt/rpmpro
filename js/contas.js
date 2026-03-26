@@ -1,7 +1,6 @@
 // RPM Pro — Contas a Pagar / Receber
 const CONTAS = {
-  _filtroTipo: 'todos',
-  _filtroStatus: 'pendente',
+  _filtro: 'pagar',
 
   async carregar() {
     const container = document.getElementById('contas-content');
@@ -11,10 +10,10 @@ const CONTAS = {
 
     let query = db.from('contas').select('*').eq('oficina_id', oficina_id).order('vencimento');
 
-    if (this._filtroTipo !== 'todos') query = query.eq('tipo', this._filtroTipo);
-    if (this._filtroStatus === 'pendente') query = query.eq('status', 'pendente');
-    else if (this._filtroStatus === 'pago') query = query.eq('status', 'pago');
-    else if (this._filtroStatus === 'vencido') query = query.eq('status', 'pendente').lt('vencimento', hoje);
+    if (this._filtro === 'pagar') query = query.eq('tipo', 'pagar').eq('status', 'pendente');
+    else if (this._filtro === 'receber') query = query.eq('tipo', 'receber').eq('status', 'pendente');
+    else if (this._filtro === 'vencidas') query = query.eq('status', 'pendente').lt('vencimento', hoje);
+    else if (this._filtro === 'pagas') query = query.eq('status', 'pago');
 
     const { data } = await query;
     const lista = data || [];
@@ -58,17 +57,16 @@ const CONTAS = {
       </div>
 
       <!-- Filtros -->
-      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
-        <div style="display:flex;gap:4px;">
-          ${['todos','pagar','receber'].map(f => `
-            <button class="btn ${this._filtroTipo === f ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="CONTAS._filtroTipo='${f}'; CONTAS.carregar();">${f === 'todos' ? 'Todos' : f === 'pagar' ? 'A pagar' : 'A receber'}</button>
-          `).join('')}
-        </div>
-        <div style="display:flex;gap:4px;">
-          ${['pendente','vencido','pago','todos'].map(f => `
-            <button class="btn ${this._filtroStatus === f ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="CONTAS._filtroStatus='${f}'; CONTAS.carregar();">${f.charAt(0).toUpperCase() + f.slice(1)}${f === 'todos' ? '' : f === 'pendente' ? 's' : f === 'vencido' ? 's' : 's'}</button>
-          `).join('')}
-        </div>
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+        ${[
+          ['pagar', 'A pagar'],
+          ['receber', 'A receber'],
+          ['vencidas', 'Vencidas'],
+          ['pagas', 'Pagas'],
+          ['todas', 'Todas']
+        ].map(([f, label]) => `
+          <button class="btn ${this._filtro === f ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="CONTAS._filtro='${f}'; CONTAS.carregar();">${label}</button>
+        `).join('')}
         <div style="flex:1;"></div>
         <button class="btn btn-primary btn-sm" onclick="CONTAS.abrirModal('receber')">+ A receber</button>
         <button class="btn btn-danger btn-sm" onclick="CONTAS.abrirModal('pagar')">+ A pagar</button>
