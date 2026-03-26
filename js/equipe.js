@@ -48,8 +48,8 @@ const EQUIPE = {
               <td><span class="badge badge-${m.ativo ? 'pronto' : 'entregue'}">${m.ativo ? 'Ativo' : 'Inativo'}</span></td>
               <td>
                 ${['dono','gerente'].includes(APP.profile.role) || SUPER_ADMIN.isSuperAdmin ? `<button class="btn btn-secondary btn-sm" onclick="EQUIPE.editar('${m.id}')">Editar</button>` : ''}
-                ${(['dono','gerente'].includes(APP.profile.role) || SUPER_ADMIN.isSuperAdmin) && !m.email ? `<button class="btn btn-primary btn-sm" onclick="EQUIPE.criarLogin('${m.id}','${esc(m.nome)}')">Criar login</button>` : ''}
-                ${(['dono','gerente'].includes(APP.profile.role) || SUPER_ADMIN.isSuperAdmin) && m.email ? `<button class="btn btn-secondary btn-sm" onclick="EQUIPE.gerenciarLogin('${m.id}','${esc(m.nome)}','${esc(m.email)}','${esc(m.senha_texto || '')}')">Login</button>` : ''}
+                ${(['dono','gerente'].includes(APP.profile.role) || SUPER_ADMIN.isSuperAdmin) && !m.senha_texto ? `<button class="btn btn-primary btn-sm" onclick="EQUIPE.criarLogin('${m.id}','${esc(m.nome)}','${esc(m.email || '')}')">Criar login</button>` : ''}
+                ${(['dono','gerente'].includes(APP.profile.role) || SUPER_ADMIN.isSuperAdmin) && m.senha_texto ? `<button class="btn btn-secondary btn-sm" onclick="EQUIPE.gerenciarLogin('${m.id}','${esc(m.nome)}','${esc(m.email)}','${esc(m.senha_texto || '')}')">Login</button>` : ''}
                 ${(['dono','gerente'].includes(APP.profile.role) || SUPER_ADMIN.isSuperAdmin) && m.id !== APP.profile.id && m.role !== 'dono' ? `<button class="btn btn-danger btn-sm" onclick="EQUIPE.excluir('${m.id}','${esc(m.nome)}')">Excluir</button>` : ''}
               </td>
             </tr>
@@ -153,7 +153,7 @@ const EQUIPE = {
     if (data) this.abrirModal(data);
   },
 
-  criarLogin(profileId, nome) {
+  criarLogin(profileId, nome, emailAtual) {
     openModal(`
       <div class="modal-header">
         <h3>Criar login — ${esc(nome)}</h3>
@@ -163,7 +163,7 @@ const EQUIPE = {
         <form onsubmit="EQUIPE.salvarLogin(event, '${profileId}')">
           <div class="form-group">
             <label>Email *</label>
-            <input type="email" class="form-control" id="login-email" required placeholder="email@exemplo.com">
+            <input type="email" class="form-control" id="login-email" required placeholder="email@exemplo.com" value="${esc(emailAtual || '')}"">
           </div>
           <div class="form-group">
             <label>Senha *</label>
