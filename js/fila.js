@@ -121,7 +121,7 @@ const FILA = {
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
             <div class="form-group" style="position:relative;">
               <label>Veiculo</label>
-              <input type="text" class="form-control" id="fila-veiculo" placeholder="Digite marca ou modelo..." autocomplete="off" oninput="FILA._buscarVeiculo(this.value)" onfocus="FILA._buscarVeiculo(this.value)">
+              <input type="text" class="form-control" id="fila-veiculo" placeholder="Digite marca ou modelo..." autocomplete="off" oninput="FILA._buscarVeiculo(document.getElementById('fila-veiculo').value)" onfocus="FILA._buscarVeiculo(document.getElementById('fila-veiculo').value)">
               <div id="fila-veiculo-lista" style="position:absolute;top:100%;left:0;right:0;z-index:100;background:var(--bg-card);border:1px solid var(--border);border-radius:0 0 var(--radius) var(--radius);max-height:200px;overflow-y:auto;display:none;box-shadow:0 4px 12px rgba(0,0,0,0.3);"></div>
             </div>
             <div class="form-group">
