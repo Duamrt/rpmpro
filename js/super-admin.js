@@ -82,6 +82,7 @@ const SUPER_ADMIN = {
                 <td style="display:flex;gap:4px;flex-wrap:nowrap;">
                   <button class="btn btn-primary btn-sm" onclick="SUPER_ADMIN.acessarOficina('${o.id}','${esc(o.nome)}')">Acessar</button>
                   <button class="btn btn-secondary btn-sm" onclick="SUPER_ADMIN.editarPlano('${o.id}','${esc(o.nome)}','${o.plano || 'trial'}','${o.trial_ate || ''}')">Plano</button>
+                  <button class="btn btn-secondary btn-sm" onclick="SUPER_ADMIN.verUsuarios('${o.id}','${esc(o.nome)}')">Usuarios</button>
                 </td>
               </tr>`;
             }).join('')}
@@ -167,6 +168,66 @@ const SUPER_ADMIN = {
     closeModal();
     APP.toast('Plano atualizado');
     this.carregar();
+  },
+
+  async verUsuarios(oficinaId, nome) {
+    const { data, error } = await db.rpc('admin_listar_usuarios', { p_oficina_id: oficinaId });
+
+    if (error || !data || !data.ok) {
+      APP.toast('Erro ao carregar usuarios', 'error');
+      return;
+    }
+
+    const usuarios = data.usuarios || [];
+
+    openModal(`
+      <div class="modal-header">
+        <h3>Usuarios — ${esc(nome)}</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        ${usuarios.length ? `
+        <table class="data-table">
+          <thead>
+            <tr><th>Nome</th><th>Email</th><th>Perfil</th><th>Ultimo login</th><th></th></tr>
+          </thead>
+          <tbody>
+            ${usuarios.map(u => `
+              <tr>
+                <td><strong>${esc(u.nome)}</strong></td>
+                <td>
+                  <span style="font-size:13px;">${esc(u.auth_email || u.email)}</span>
+                  <button style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--primary);margin-left:4px;" onclick="navigator.clipboard.writeText('${esc(u.auth_email || u.email)}'); APP.toast('Email copiado');">copiar</button>
+                </td>
+                <td><span class="badge badge-${u.role === 'dono' ? 'pronto' : u.role === 'gerente' ? 'aprovada' : u.role === 'mecanico' ? 'orcamento' : 'entregue'}">${esc(u.role)}</span></td>
+                <td style="font-size:12px;color:var(--text-secondary);">${u.last_sign_in ? APP.formatDateTime(u.last_sign_in) : 'Nunca'}</td>
+                <td>
+                  <button class="btn btn-secondary btn-sm" onclick="SUPER_ADMIN.resetarSenha('${u.id}','${esc(u.nome)}')">Resetar senha</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>` : '<div style="padding:20px;text-align:center;color:var(--text-muted);">Nenhum usuario encontrado</div>'}
+      </div>
+    `);
+  },
+
+  async resetarSenha(userId, nome) {
+    const novaSenha = prompt(`Nova senha para ${nome}:`);
+    if (!novaSenha || novaSenha.length < 6) {
+      if (novaSenha !== null) APP.toast('Senha precisa ter pelo menos 6 caracteres', 'error');
+      return;
+    }
+
+    const { data, error } = await db.rpc('admin_reset_senha', {
+      p_user_id: userId,
+      p_nova_senha: novaSenha
+    });
+
+    if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
+    if (data && !data.ok) { APP.toast(data.erro, 'error'); return; }
+
+    APP.toast('Senha alterada pra: ' + novaSenha);
   },
 
   voltarAdmin() {
