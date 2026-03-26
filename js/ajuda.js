@@ -1,180 +1,319 @@
-// RPM Pro — Sistema de Ajuda (?)
+// RPM Pro — Sistema de Ajuda (padrão EDR System)
 const AJUDA = {
   conteudo: {
     kanban: {
       titulo: 'Patio da Oficina',
-      itens: [
-        'Cada card e um veiculo na oficina. Mostra placa, cliente, mecanico e tempo em aberto.',
-        'Use os botoes <strong>← Voltar</strong> e <strong>Avancar →</strong> pra mover o veiculo entre etapas.',
-        'O fluxo correto e: <strong>Entrada → Diagnostico → Orcamento → Aprovada → Execucao → Pronto → Entregue</strong>.',
-        'A OS nao pode ir pra Execucao sem ser Aprovada primeiro.',
-        'A OS nao pode sair de Entrada sem o <strong>Checklist de Entrada</strong> preenchido.',
-        'A OS nao pode ir pra Pronto sem o <strong>Checklist de Saida</strong> preenchido.',
-        'Card <strong style="color:var(--warning);">amarelo</strong> = mais de 24h sem mover. Card <strong style="color:var(--danger);">vermelho</strong> = mais de 3 dias.',
-        'Ao mover pra "Orcamento" ou "Pronto", o sistema oferece enviar <strong>WhatsApp automatico</strong> pro cliente.',
-        'No celular, use as <strong>abas</strong> no topo pra filtrar por status.',
-        'Clique no card pra abrir os detalhes completos da OS.',
+      perfis: ['dono','gerente','mecanico','atendente'],
+      secoes: [
+        { titulo: 'Visao geral', info: 'Painel visual com todos os veiculos na oficina. Cada card mostra placa, cliente, mecanico e tempo em aberto.' },
+        { titulo: 'Movimentar veiculo', passos: [
+          'Use os botoes Avancar e Voltar em cada card',
+          'O fluxo e: Entrada → Diagnostico → Orcamento → Aprovada → Execucao → Pronto → Entregue',
+          'A OS nao vai pra Execucao sem ser Aprovada primeiro',
+          'A OS nao sai de Entrada sem o Checklist de Entrada',
+          'A OS nao vai pra Pronto sem o Checklist de Saida'
+        ]},
+        { titulo: 'Cores dos cards', passos: [
+          'Normal = sem destaque',
+          'Amarelo = mais de 24h sem movimentar',
+          'Vermelho = mais de 3 dias parado'
+        ]},
+        { titulo: 'WhatsApp automatico', passos: [
+          'Ao mover pra Orcamento, oferece enviar orcamento pro cliente',
+          'Ao mover pra Pronto, oferece avisar que o carro ta pronto'
+        ]},
+        { perfil: 'mecanico', dica: 'No celular, use as abas no topo pra filtrar por status.' },
+        { dica: 'Clique no card pra abrir os detalhes completos da OS.' }
       ]
     },
+
     os: {
       titulo: 'Ordens de Servico',
-      itens: [
-        'Clique em <strong>"+ Nova OS"</strong> pra abrir uma ordem de servico.',
-        'Digite a <strong>placa</strong> e o sistema busca o veiculo automaticamente. Se nao encontrar, cadastra na hora.',
-        'Adicione servicos pelo <strong>autocomplete</strong> — digite o nome e selecione. O valor ja vem preenchido.',
-        'Voce pode adicionar <strong>varios servicos</strong> na mesma OS.',
-        'Use a <strong>busca</strong> no topo pra encontrar OS por placa, cliente, numero ou descricao.',
-        'Use o <strong>filtro por status</strong> pra ver so as abertas, entregues, etc.',
-        'Clique numa OS pra ver detalhes, adicionar pecas e servicos, mudar status e gerar PDF.',
+      perfis: ['dono','gerente','mecanico','atendente'],
+      secoes: [
+        { titulo: 'Criar nova OS', passos: [
+          'Clique em + Nova OS',
+          'Digite a placa — o sistema busca o veiculo automaticamente',
+          'Se nao encontrar, cadastra veiculo e cliente na hora',
+          'Adicione servicos pelo autocomplete — valor ja vem preenchido',
+          'Voce pode adicionar varios servicos na mesma OS'
+        ]},
+        { titulo: 'Buscar e filtrar', passos: [
+          'Use a busca no topo pra encontrar por placa, cliente, numero ou descricao',
+          'Use o filtro por status pra ver so abertas, entregues, etc.'
+        ]},
+        { titulo: 'Detalhes da OS', passos: [
+          'Clique numa OS pra ver tudo: servicos, pecas, valores',
+          'Adicione pecas e servicos mesmo depois de aberta',
+          'Mude status, gere PDF ou recibo'
+        ]},
+        { dica: 'Pecas compativeis com o veiculo aparecem primeiro, com badge verde.' }
       ]
     },
+
     clientes: {
       titulo: 'Clientes',
-      itens: [
-        'Cadastre clientes com nome, WhatsApp, CPF/CNPJ e endereco.',
-        'Ao cadastrar cliente, ja pode <strong>adicionar veiculos</strong> direto no mesmo formulario.',
-        'A placa aceita formato <strong>antigo (ABC-1234)</strong> e <strong>Mercosul (ABC1D23)</strong>.',
-        'Se tentar cadastrar um cliente com nome repetido, o sistema avisa antes.',
-        'Use a <strong>busca</strong> pra encontrar por nome, WhatsApp ou CPF.',
+      perfis: ['dono','gerente','atendente'],
+      secoes: [
+        { titulo: 'Cadastrar cliente', passos: [
+          'Clique em + Novo Cliente',
+          'Preencha nome, WhatsApp, CPF/CNPJ e endereco',
+          'Ja pode adicionar veiculos direto no mesmo formulario'
+        ]},
+        { titulo: 'Buscar cliente', passos: [
+          'Use a barra de busca pra encontrar por nome, WhatsApp ou CPF'
+        ]},
+        { alerta: 'Se tentar cadastrar nome repetido, o sistema avisa antes.' },
+        { dica: 'A placa aceita formato antigo (ABC-1234) e Mercosul (ABC1D23).' }
       ]
     },
+
     veiculos: {
       titulo: 'Veiculos',
-      itens: [
-        'Lista todos os veiculos cadastrados com placa, marca/modelo, dono e KM.',
-        'Clique em <strong>"Historico"</strong> pra ver todas as OS daquele veiculo — servicos, valores e datas.',
-        'Marca e modelo vem de um <strong>catalogo com 27 marcas</strong> pre-cadastradas.',
-        'A validacao de placa <strong>bloqueia</strong> formatos invalidos.',
-        'Nao e possivel cadastrar a mesma placa duas vezes na mesma oficina.',
+      perfis: ['dono','gerente','atendente'],
+      secoes: [
+        { titulo: 'Visao geral', info: 'Lista todos os veiculos cadastrados com placa, marca/modelo, dono e KM.' },
+        { titulo: 'Ver historico', passos: [
+          'Clique em Historico pra ver todas as OS daquele veiculo',
+          'Mostra servicos, valores e datas'
+        ]},
+        { titulo: 'Catalogo de marcas', info: '27 marcas pre-cadastradas com modelos. Se nao encontrar, selecione "Outro" e digite.' },
+        { alerta: 'Nao e possivel cadastrar a mesma placa duas vezes na mesma oficina.' }
       ]
     },
+
     servicos: {
       titulo: 'Servicos',
-      itens: [
-        'Aqui voce cadastra os <strong>servicos que sua oficina oferece</strong> com os precos que voce pratica.',
-        'Se ainda nao tem nenhum, clique em <strong>"Importar catalogo padrao"</strong> pra carregar 100+ servicos com precos sugeridos.',
-        'Depois de importar, <strong>edite os precos</strong> conforme a sua realidade.',
-        'Organize por <strong>categoria</strong> (Motor, Freios, Suspensao, etc).',
-        'Servicos inativos nao aparecem na hora de abrir OS.',
-        'Na OS, o autocomplete puxa daqui automaticamente.',
+      perfis: ['dono','gerente'],
+      secoes: [
+        { titulo: 'Visao geral', info: 'Cadastre os servicos que sua oficina oferece com seus precos. Na OS, o autocomplete puxa daqui.' },
+        { titulo: 'Importar catalogo padrao', passos: [
+          'Se ainda nao tem nenhum, clique em Importar catalogo padrao',
+          'Carrega 100+ servicos com precos sugeridos',
+          'Depois edite os precos conforme sua realidade'
+        ]},
+        { titulo: 'Organizar', passos: [
+          'Organize por categoria: Motor, Freios, Suspensao, etc.',
+          'Servicos inativos nao aparecem no autocomplete da OS'
+        ]},
+        { dica: 'O autocomplete na OS busca pelo nome do servico — quanto mais claro o nome, mais facil de encontrar.' }
       ]
     },
+
     pecas: {
       titulo: 'Pecas / Estoque',
-      itens: [
-        'Cadastre pecas com nome, codigo, marca, custo, margem e preco de venda.',
-        'A <strong>margem</strong> calcula o preco de venda automaticamente. Ex: custo R$100 + margem 30% = venda R$130.',
-        'Defina <strong>estoque minimo</strong> — pecas abaixo ficam em amarelo, zeradas ficam em vermelho.',
-        'Use <strong>"Ajustar"</strong> pra dar entrada (compra), saida (uso/perda) ou ajuste de inventario.',
-        'Ao usar peca numa OS, a <strong>baixa do estoque e automatica</strong>.',
-        'Se adicionar peca avulsa na OS com "Salvar no estoque" marcado, ela entra no catalogo automaticamente.',
-        'Marque <strong>veiculos compativeis</strong> na peca — na OS, pecas compativeis aparecem primeiro com badge verde.',
-        'Todo movimento de estoque fica registrado pra auditoria.',
+      perfis: ['dono','gerente'],
+      secoes: [
+        { titulo: 'Cadastrar peca', passos: [
+          'Clique em + Nova Peca',
+          'Preencha nome, codigo, marca, custo e margem',
+          'A margem calcula o preco de venda automaticamente (ex: custo R$100 + 30% = R$130)'
+        ]},
+        { titulo: 'Controle de estoque', passos: [
+          'Defina estoque minimo — abaixo fica amarelo, zerado fica vermelho',
+          'Use Ajustar pra entrada (compra), saida (uso/perda) ou inventario',
+          'Ao usar peca numa OS, a baixa e automatica'
+        ]},
+        { titulo: 'Peca avulsa na OS', passos: [
+          'Ao adicionar peca na OS que nao existe no estoque',
+          'Marque "Salvar no estoque" pra ela entrar no catalogo automaticamente',
+          'A compatibilidade com o veiculo e preenchida automaticamente'
+        ]},
+        { titulo: 'Compatibilidade', info: 'Marque veiculos compativeis na peca. Na OS, pecas compativeis aparecem primeiro com badge verde.' },
+        { dica: 'Todo movimento de estoque fica registrado pra auditoria.' }
       ]
     },
+
     equipe: {
       titulo: 'Equipe',
-      itens: [
-        'Cadastre os mecanicos, atendentes e gerentes da oficina.',
-        'Defina a <strong>funcao</strong> (mecanico, atendente, gerente) e a <strong>comissao %</strong>.',
-        'A comissao padrao vem das <strong>Configuracoes</strong> da oficina.',
-        'Membros inativos nao aparecem na lista de mecanicos ao abrir OS.',
-        'Somente <strong>dono e gerente</strong> podem editar dados da equipe.',
+      perfis: ['dono','gerente'],
+      secoes: [
+        { titulo: 'Cadastrar membro', passos: [
+          'Clique em + Novo Membro',
+          'Defina funcao (mecanico, atendente, gerente) e comissao %',
+          'A comissao padrao vem das Configuracoes'
+        ]},
+        { alerta: 'Somente dono e gerente podem editar dados da equipe.' },
+        { dica: 'Membros inativos nao aparecem na lista de mecanicos ao abrir OS.' }
       ]
     },
+
     financeiro: {
       titulo: 'Financeiro',
-      itens: [
-        'Mostra <strong>entradas e saidas</strong> do caixa da oficina.',
-        'Filtre por <strong>Hoje, Semana ou Mes</strong>.',
-        'As OS entregues e pagas <strong>entram no caixa automaticamente</strong> — nao precisa lancar manual.',
-        'Use <strong>"+ Entrada"</strong> pra aportes e outras receitas.',
-        'Use <strong>"+ Saida"</strong> pra despesas (aluguel, luz, material) e retiradas.',
-        'Veja os recebimentos por <strong>forma de pagamento</strong> (Pix, dinheiro, credito, etc).',
-        'Clique em <strong>"Gerar Relatorio PDF"</strong> pra imprimir ou enviar.',
-        'Clique numa OS na lista pra ver os detalhes.',
+      perfis: ['dono','gerente'],
+      secoes: [
+        { titulo: 'Visao geral', info: 'Caixa da oficina: entradas, saidas e saldo. OS entregues e pagas entram automaticamente — nao precisa lancar manual.' },
+        { titulo: 'Registrar movimentacao', passos: [
+          'Use + Entrada pra aportes e outras receitas',
+          'Use + Saida pra despesas (aluguel, luz, material) e retiradas'
+        ]},
+        { titulo: 'Filtrar e analisar', passos: [
+          'Filtre por Hoje, Semana ou Mes',
+          'Veja recebimentos por forma de pagamento (Pix, dinheiro, credito)',
+          'Clique numa OS na lista pra ver os detalhes'
+        ]},
+        { titulo: 'Gerar relatorio', passos: [
+          'Clique em Gerar Relatorio PDF',
+          'O PDF mostra resumo, OS pagas e movimentacoes do periodo'
+        ]},
+        { dica: 'OS entregues + pagas lancam no caixa automaticamente. Nao lance manual pra evitar duplicata.' }
       ]
     },
-    comissao: {
-      titulo: 'Comissao',
-      itens: [
-        'Relatorio de comissao dos mecanicos por periodo.',
-        'Selecione o <strong>mes e ano</strong> pra ver.',
-        'Mostra: mecanico, quantidade de OS, valor total e valor da comissao.',
-        'A comissao % vem do <strong>cadastro do mecanico</strong> na aba Equipe.',
-        'Clique em <strong>"Gerar PDF"</strong> pra imprimir a folha de comissao.',
-      ]
-    },
-    config: {
-      titulo: 'Configuracoes',
-      itens: [
-        '<strong>Dados da oficina:</strong> nome, CNPJ, telefone, WhatsApp, endereco — aparecem no PDF das OS.',
-        '<strong>Valor da hora:</strong> usado como referencia no calculo de mao de obra.',
-        '<strong>Comissao padrao:</strong> ja vem preenchido ao cadastrar novo mecanico.',
-        '<strong>Margem padrao:</strong> ja vem preenchida ao cadastrar nova peca (ex: 30%).',
-        '<strong>Plano:</strong> mostra seu plano atual e validade do trial.',
-      ]
-    },
-    dashboard: {
-      titulo: 'Dashboard',
-      itens: [
-        'Visao geral da oficina: OS abertas, aguardando orcamento, prontas e faturamento do mes.',
-        'A <strong>fila de hoje</strong> mostra os veiculos em andamento com status e mecanico.',
-        'Clique num veiculo na fila pra abrir os detalhes da OS.',
-      ]
-    },
-    crm: {
-      titulo: 'CRM de Reativacao',
-      itens: [
-        'Mostra <strong>clientes inativos</strong> agrupados por tempo sem vir a oficina.',
-        'Faixas: <strong>Atencao</strong> (30-60 dias), <strong>Risco</strong> (60-90), <strong>Inativos</strong> (90-180), <strong>Perdidos</strong> (180+).',
-        'Clique em <strong>"WhatsApp"</strong> pra enviar mensagem personalizada pro cliente. O texto ja vem pronto.',
-        'A mensagem muda conforme o tempo de inatividade — mais urgente pra quem ta sumido ha mais tempo.',
-        'Clique em <strong>"Agendar"</strong> pra criar um agendamento de retorno direto.',
-        'Clientes que fizeram OS nos ultimos 30 dias sao considerados <strong>ativos</strong> e nao aparecem aqui.',
-      ]
-    },
-    agendamentos: {
-      titulo: 'Agendamentos',
-      itens: [
-        'Agende <strong>manutencoes preventivas</strong> vinculadas a um veiculo e cliente.',
-        'Tipos disponiveis: revisao, troca de oleo, pneus, filtros, correia, freios, alinhamento, bateria.',
-        'Filtre por <strong>Pendentes, Vencidos, Realizados</strong> ou veja todos.',
-        'Agendamentos vencidos ficam <strong>destacados em vermelho</strong>.',
-        'Clique em <strong>"WhatsApp"</strong> pra notificar o cliente que esta chegando a hora.',
-        'Fluxo: Pendente → Notificado (enviou WhatsApp) → Confirmado → Realizado.',
-      ]
-    },
+
     contas: {
       titulo: 'Contas a Pagar / Receber',
-      itens: [
-        'Registre contas <strong>a pagar</strong> (despesas) e <strong>a receber</strong> (receitas futuras).',
-        'Veja o resumo do mes: total a pagar, a receber e saldo previsto.',
-        'Contas <strong>vencidas</strong> ficam em vermelho, as que vencem <strong>hoje</strong> ficam em amarelo.',
-        'Clique em <strong>"Pagar"</strong> pra marcar como paga.',
-        'Marque como <strong>recorrente</strong> pra identificar contas mensais fixas.',
-        'Categorias: aluguel, energia, agua, internet, fornecedor, funcionario, imposto.',
+      perfis: ['dono','gerente'],
+      secoes: [
+        { titulo: 'Visao geral', info: 'Controle contas com vencimento. Veja o saldo previsto do mes: total a pagar vs total a receber.' },
+        { titulo: 'Cadastrar conta', passos: [
+          'Clique em + A receber ou + A pagar',
+          'Preencha descricao, valor, vencimento e categoria',
+          'Marque como recorrente se for conta mensal fixa'
+        ]},
+        { titulo: 'Gerenciar contas', passos: [
+          'Filtre por tipo (pagar/receber) e status (pendente/vencido/pago)',
+          'Clique em Pagar pra marcar como paga (registra data automatica)',
+          'Clique em Editar pra alterar dados'
+        ]},
+        { alerta: 'Contas vencidas ficam em vermelho. As que vencem hoje ficam em amarelo.' },
+        { dica: 'Categorias disponiveis: aluguel, energia, agua, internet, fornecedor, funcionario, imposto.' }
       ]
     },
+
+    crm: {
+      titulo: 'CRM de Reativacao',
+      perfis: ['dono','gerente'],
+      secoes: [
+        { titulo: 'Visao geral', info: 'Identifica clientes inativos e ajuda a trazê-los de volta. Agrupados por tempo sem vir à oficina.' },
+        { titulo: 'Faixas de inatividade', passos: [
+          'Atencao (30-60 dias) — hora de lembrar que voce existe',
+          'Risco (60-90 dias) — cliente esfriando',
+          'Inativos (90-180 dias) — ofereca check-up ou desconto',
+          'Perdidos (180+ dias) — pode ter ido pra outra oficina',
+          'Sem OS — cadastrados mas nunca trouxeram o carro'
+        ]},
+        { titulo: 'Reativar cliente', passos: [
+          'Clique em WhatsApp — a mensagem ja vem pronta e personalizada',
+          'A mensagem muda conforme o tempo de inatividade',
+          'Clique em Agendar pra criar um agendamento de retorno'
+        ]},
+        { dica: 'Clientes que fizeram OS nos ultimos 30 dias sao ativos e nao aparecem aqui.' }
+      ]
+    },
+
+    agendamentos: {
+      titulo: 'Agendamentos',
+      perfis: ['dono','gerente','atendente'],
+      secoes: [
+        { titulo: 'Visao geral', info: 'Agende manutencoes preventivas vinculadas a veiculo e cliente. O sistema avisa quando ta chegando a hora.' },
+        { titulo: 'Criar agendamento', passos: [
+          'Clique em + Novo Agendamento',
+          'Selecione cliente e veiculo',
+          'Escolha o tipo: revisao, troca de oleo, pneus, filtros, correia, freios, alinhamento, bateria',
+          'Defina a data prevista e KM previsto (opcional)',
+          'Clique em Agendar'
+        ]},
+        { titulo: 'Fluxo do agendamento', passos: [
+          'Pendente — agendamento criado, aguardando',
+          'Notificado — voce enviou WhatsApp pro cliente',
+          'Confirmado — cliente confirmou que vem',
+          'Realizado — servico feito',
+          'Cancelado — nao vai mais acontecer'
+        ]},
+        { titulo: 'Notificar cliente', passos: [
+          'Clique em WhatsApp — envia mensagem lembrando da data',
+          'O sistema marca automaticamente como Notificado'
+        ]},
+        { titulo: 'Editar agendamento', passos: [
+          'Clique em Editar pra mudar tipo, data, KM ou observacoes',
+          'Cliente e veiculo nao podem ser alterados depois de criado'
+        ]},
+        { alerta: 'Agendamentos vencidos ficam em vermelho. Fique atento!' },
+        { dica: 'Voce tambem pode criar agendamentos direto do CRM, clicando em Agendar no cliente inativo.' }
+      ]
+    },
+
     pesquisa: {
       titulo: 'Pesquisa de Satisfacao',
-      itens: [
-        'Ao entregar uma OS, o sistema pode enviar um <strong>link de avaliacao pelo WhatsApp</strong>.',
-        'O cliente avalia de <strong>1 a 5 estrelas</strong> + comentario — sem precisar de login.',
-        'Veja a <strong>nota media</strong>, taxa de resposta e distribuicao de notas.',
-        'Clique em <strong>"Reenviar"</strong> pra mandar de novo pra quem nao respondeu.',
-        'Use esse feedback pra <strong>melhorar o servico</strong> e fidelizar clientes.',
+      perfis: ['dono','gerente'],
+      secoes: [
+        { titulo: 'Visao geral', info: 'Ao entregar uma OS, envie um link de avaliacao pelo WhatsApp. O cliente avalia de 1 a 5 sem precisar de login.' },
+        { titulo: 'Como funciona', passos: [
+          'Ao entregar a OS, o sistema oferece enviar pesquisa via WhatsApp',
+          'O cliente recebe um link unico (rpmpro.com.br/pesquisa.html?t=token)',
+          'Ele avalia de 1 a 5 com emoji + comentario opcional',
+          'A resposta aparece aqui automaticamente'
+        ]},
+        { titulo: 'Analisar resultados', passos: [
+          'Veja a nota media, taxa de resposta e distribuicao de notas',
+          'Notas baixas (1-2) indicam problemas a resolver',
+          'Leia os comentarios pra entender o que melhorar'
+        ]},
+        { titulo: 'Reenviar pesquisa', passos: [
+          'Se o cliente nao respondeu, clique em Reenviar',
+          'Manda uma mensagem diferente pedindo de novo'
+        ]},
+        { dica: 'Use as avaliacoes positivas como depoimento nas redes sociais (com autorizacao do cliente).' }
       ]
     },
+
+    comissao: {
+      titulo: 'Comissao',
+      perfis: ['dono','gerente'],
+      secoes: [
+        { titulo: 'Visao geral', info: 'Relatorio de comissao dos mecanicos por periodo. A comissao % vem do cadastro do mecanico na aba Equipe.' },
+        { titulo: 'Gerar relatorio', passos: [
+          'Selecione o mes e ano',
+          'Veja: mecanico, quantidade de OS, valor total e comissao'
+        ]},
+        { titulo: 'Exportar', passos: [
+          'Clique em Gerar PDF pra imprimir a folha de comissao'
+        ]}
+      ]
+    },
+
+    config: {
+      titulo: 'Configuracoes',
+      perfis: ['dono','gerente'],
+      secoes: [
+        { titulo: 'Dados da oficina', info: 'Nome, CNPJ, telefone, WhatsApp, endereco — aparecem no PDF das OS.' },
+        { titulo: 'Parametros', passos: [
+          'Valor da hora — referencia no calculo de mao de obra',
+          'Comissao padrao — ja vem preenchido ao cadastrar mecanico',
+          'Margem padrao — ja vem preenchida ao cadastrar peca (ex: 30%)'
+        ]},
+        { dica: 'Plano e validade do trial aparecem aqui tambem.' }
+      ]
+    },
+
+    dashboard: {
+      titulo: 'Dashboard',
+      perfis: ['dono','gerente'],
+      secoes: [
+        { titulo: 'Visao geral', info: 'Resumo da oficina: OS abertas, aguardando orcamento, prontas e faturamento do mes.' },
+        { titulo: 'Fila de hoje', passos: [
+          'Mostra veiculos em andamento com status e mecanico',
+          'Clique num veiculo pra abrir os detalhes da OS'
+        ]}
+      ]
+    },
+
     admin: {
       titulo: 'Super Admin',
-      itens: [
-        'Painel exclusivo pra administradores da plataforma.',
-        'Veja todas as oficinas cadastradas, usuarios e OS.',
-        'Clique em <strong>"Acessar"</strong> pra entrar no contexto de uma oficina e ver/editar como se fosse o dono.',
-        'Clique em <strong>"Plano"</strong> pra mudar o plano de uma oficina (trial, essencial, profissional, rede, beta).',
-        'Oficinas com <strong>trial expirado</strong> ficam bloqueadas ate voce ativar um plano.',
-        'O <strong>badge laranja</strong> no canto mostra qual oficina voce esta acessando. Clique nele pra voltar.',
+      perfis: ['dono'],
+      secoes: [
+        { titulo: 'Visao geral', info: 'Painel exclusivo pra administradores da plataforma. Veja todas as oficinas, usuarios e OS.' },
+        { titulo: 'Acessar oficina', passos: [
+          'Clique em Acessar pra entrar no contexto de uma oficina',
+          'Voce ve e edita como se fosse o dono',
+          'O badge laranja mostra qual oficina — clique nele pra voltar'
+        ]},
+        { titulo: 'Gerenciar planos', passos: [
+          'Clique em Plano pra mudar: trial, essencial, profissional, rede, beta',
+          'Defina a data de validade se necessario',
+          'Oficinas com trial expirado ficam bloqueadas ate voce ativar'
+        ]},
+        { dica: 'Voce (super admin) nunca e bloqueado, mesmo que a oficina esteja em trial expirado.' }
       ]
     }
   },
@@ -182,30 +321,106 @@ const AJUDA = {
   abrir() {
     const pagina = localStorage.getItem('rpmpro-page') || 'kanban';
     const ajuda = this.conteudo[pagina];
+    if (!ajuda) { APP.toast('Sem ajuda pra essa tela', 'warning'); return; }
 
-    if (!ajuda) {
-      APP.toast('Sem ajuda pra essa tela', 'warning');
-      return;
+    // Remove painel existente
+    const existing = document.getElementById('ajuda-painel');
+    if (existing) { existing.remove(); return; }
+
+    const role = APP.profile?.role || 'dono';
+    const conteudo = this._renderSecoes(ajuda.secoes, role);
+
+    const painel = document.createElement('div');
+    painel.id = 'ajuda-painel';
+    painel.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="font-weight:700;font-size:14px;color:var(--primary);letter-spacing:1px;">? AJUDA</div>
+        <button onclick="AJUDA.fechar()" style="background:none;border:none;color:var(--text-secondary);font-size:22px;cursor:pointer;padding:4px 8px;line-height:1;">&times;</button>
+      </div>
+      <div style="font-weight:800;font-size:16px;color:var(--text);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);">${esc(ajuda.titulo)}</div>
+      ${conteudo}
+      <div style="margin-top:20px;padding-top:12px;border-top:1px solid var(--border);text-align:center;">
+        <span style="font-size:11px;color:var(--text-muted);">RPM Pro — rpmpro.com.br</span>
+      </div>
+    `;
+    document.body.appendChild(painel);
+
+    // Fechar ao clicar fora
+    setTimeout(() => {
+      document.addEventListener('click', this._fecharFora);
+    }, 100);
+  },
+
+  fechar() {
+    const p = document.getElementById('ajuda-painel');
+    if (p) p.remove();
+    document.removeEventListener('click', AJUDA._fecharFora);
+  },
+
+  _fecharFora(e) {
+    const painel = document.getElementById('ajuda-painel');
+    if (!painel) return;
+    if (!painel.contains(e.target) && !e.target.closest('[onclick*="AJUDA.abrir"]')) {
+      AJUDA.fechar();
     }
+  },
 
-    openModal(`
-      <div class="modal-header">
-        <h3>? ${esc(ajuda.titulo)}</h3>
-        <button class="modal-close" onclick="closeModal()">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div style="display:flex;flex-direction:column;gap:10px;">
-          ${ajuda.itens.map(item => `
-            <div style="display:flex;gap:10px;align-items:flex-start;">
-              <span style="color:var(--primary);font-weight:700;flex-shrink:0;">•</span>
-              <span style="font-size:14px;line-height:1.5;">${item}</span>
-            </div>
-          `).join('')}
-        </div>
-        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);text-align:center;">
-          <span style="font-size:12px;color:var(--text-muted);">RPM Pro — rpmpro.com.br</span>
-        </div>
-      </div>
-    `);
+  _renderSecoes(secoes, role) {
+    let html = '';
+    secoes.forEach(s => {
+      // Filtro por perfil
+      if (s.perfil && s.perfil !== role && role !== 'dono') return;
+
+      // Bloco info (azul)
+      if (s.info) {
+        html += `<div style="background:var(--info-bg);border:1px solid rgba(56,139,253,0.3);border-radius:8px;padding:10px 12px;margin:10px 0;font-size:13px;color:var(--info);">
+          ${s.titulo ? `<div style="font-weight:700;margin-bottom:4px;">${esc(s.titulo)}</div>` : ''}${s.info}</div>`;
+      }
+
+      // Passos numerados
+      if (s.passos) {
+        html += `<div style="margin:12px 0;">
+          <div style="font-weight:700;color:var(--primary);font-size:12px;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">${esc(s.titulo)}${s.perfil ? ' <span style="font-size:9px;background:var(--warning-bg);color:var(--warning);padding:1px 6px;border-radius:3px;margin-left:6px;">' + s.perfil.toUpperCase() + '</span>' : ''}</div>`;
+        s.passos.forEach((p, i) => {
+          html += `<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:6px;">
+            <span style="min-width:20px;height:20px;background:var(--primary);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">${i + 1}</span>
+            <span style="font-size:13px;color:var(--text-secondary);line-height:1.5;">${p}</span>
+          </div>`;
+        });
+        html += '</div>';
+      }
+
+      // Dica (amarelo)
+      if (s.dica) {
+        html += `<div style="background:var(--warning-bg);border:1px solid rgba(240,136,62,0.3);border-radius:8px;padding:8px 12px;margin:8px 0;font-size:12px;color:var(--warning);">💡 ${s.dica}</div>`;
+      }
+
+      // Alerta (vermelho)
+      if (s.alerta) {
+        html += `<div style="background:var(--danger-bg);border:1px solid rgba(248,81,73,0.3);border-radius:8px;padding:8px 12px;margin:8px 0;font-size:12px;color:var(--danger);">⚠ ${s.alerta}</div>`;
+      }
+    });
+    return html;
   }
 };
+
+// CSS do painel lateral
+(function() {
+  if (document.getElementById('ajuda-css')) return;
+  const style = document.createElement('style');
+  style.id = 'ajuda-css';
+  style.textContent = `
+    @keyframes ajudaSlideIn { from { transform:translateX(100%);opacity:0; } to { transform:translateX(0);opacity:1; } }
+    #ajuda-painel { position:fixed;top:0;right:0;width:340px;max-width:90vw;height:100vh;background:var(--bg-card);border-left:1px solid var(--border);z-index:9999;overflow-y:auto;padding:20px;animation:ajudaSlideIn .2s ease;box-shadow:-4px 0 24px rgba(0,0,0,0.4); }
+    @media(max-width:768px) { #ajuda-painel { width:100vw !important;max-width:100vw !important; } }
+  `;
+  document.head.appendChild(style);
+})();
+
+// Fechar com ESC
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('ajuda-painel')) {
+    AJUDA.fechar();
+    e.stopPropagation();
+  }
+}, true);
