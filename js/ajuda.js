@@ -354,51 +354,144 @@ const AJUDA = {
     }
   },
 
-  abrir() {
-    const pagina = localStorage.getItem('rpmpro-page') || 'kanban';
-    const ajuda = this.conteudo[pagina];
-    if (!ajuda) { APP.toast('Sem ajuda pra essa tela', 'warning'); return; }
+  _msgs: [],
 
-    // Remove painel existente
+  abrir() {
     const existing = document.getElementById('ajuda-painel');
     if (existing) { existing.remove(); return; }
 
-    const role = APP.profile?.role || 'dono';
-    const conteudo = this._renderSecoes(ajuda.secoes, role);
+    const pagina = localStorage.getItem('rpmpro-page') || 'kanban';
+    const ajuda = this.conteudo[pagina];
+    this._msgs = [];
 
     const painel = document.createElement('div');
     painel.id = 'ajuda-painel';
     painel.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-        <div style="font-weight:700;font-size:14px;color:var(--primary);letter-spacing:1px;">AJUDA</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:32px;height:32px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:#fff;">R</div>
+          <div>
+            <div style="font-weight:700;font-size:14px;">Assistente RPM Pro</div>
+            <div style="font-size:11px;color:var(--success);">Online</div>
+          </div>
+        </div>
         <button onclick="AJUDA.fechar()" style="background:none;border:none;color:var(--text-secondary);font-size:22px;cursor:pointer;padding:4px 8px;line-height:1;">&times;</button>
       </div>
-      <div style="font-weight:800;font-size:16px;color:var(--text);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);">${esc(ajuda.titulo)}</div>
-      ${conteudo}
-      <div style="margin-top:20px;padding-top:12px;border-top:1px solid var(--border);text-align:center;">
-        <span style="font-size:11px;color:var(--text-muted);">RPM Pro — rpmpro.com.br</span>
+      <div id="ajuda-chat" style="flex:1;overflow-y:auto;padding:8px 0;display:flex;flex-direction:column;gap:10px;"></div>
+      <div style="display:flex;gap:8px;padding-top:10px;border-top:1px solid var(--border);">
+        <input type="text" class="form-control" id="ajuda-input" placeholder="Digite sua duvida..." style="font-size:13px;" onkeydown="if(event.key==='Enter'){AJUDA.enviar();event.preventDefault();}">
+        <button class="btn btn-primary btn-sm" onclick="AJUDA.enviar()" style="padding:8px 14px;">Enviar</button>
       </div>
     `;
     document.body.appendChild(painel);
 
-    // Fechar ao clicar fora
-    setTimeout(() => {
-      document.addEventListener('click', this._fecharFora);
-    }, 100);
+    // Mensagem inicial com sugestões baseadas na tela
+    const saudacao = `Ola, ${(APP.profile?.nome || '').split(' ')[0] || 'tudo bem'}! Sou o assistente do RPM Pro. Como posso te ajudar?`;
+    this._addMsg('bot', saudacao);
+
+    if (ajuda) {
+      const sugestoes = ajuda.secoes.filter(s => s.titulo && !s.perfil).slice(0, 4).map(s => s.titulo);
+      if (sugestoes.length) {
+        const btns = sugestoes.map(s => `<button class="btn btn-secondary btn-sm" style="font-size:11px;margin:2px;" onclick="AJUDA._perguntaRapida('${esc(s)}')">${esc(s)}</button>`).join('');
+        this._addMsg('bot', `Voce ta na tela <strong>${esc(ajuda.titulo)}</strong>. Algumas duvidas comuns:<br><div style="margin-top:6px;">${btns}</div>`);
+      }
+    }
+
+    setTimeout(() => document.getElementById('ajuda-input')?.focus(), 200);
   },
 
   fechar() {
     const p = document.getElementById('ajuda-painel');
     if (p) p.remove();
-    document.removeEventListener('click', AJUDA._fecharFora);
   },
 
-  _fecharFora(e) {
-    const painel = document.getElementById('ajuda-painel');
-    if (!painel) return;
-    if (!painel.contains(e.target) && !e.target.closest('[onclick*="AJUDA.abrir"]')) {
-      AJUDA.fechar();
+  _addMsg(tipo, texto) {
+    const chat = document.getElementById('ajuda-chat');
+    if (!chat) return;
+    const isBot = tipo === 'bot';
+    const div = document.createElement('div');
+    div.style.cssText = `max-width:85%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.5;${isBot ? 'background:var(--bg-input);color:var(--text);align-self:flex-start;border-bottom-left-radius:4px;' : 'background:var(--primary);color:#fff;align-self:flex-end;border-bottom-right-radius:4px;'}`;
+    div.innerHTML = texto;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+  },
+
+  _perguntaRapida(titulo) {
+    const input = document.getElementById('ajuda-input');
+    if (input) input.value = titulo;
+    this.enviar();
+  },
+
+  enviar() {
+    const input = document.getElementById('ajuda-input');
+    if (!input) return;
+    const pergunta = input.value.trim();
+    if (!pergunta) return;
+    input.value = '';
+
+    this._addMsg('user', esc(pergunta));
+
+    // Busca resposta
+    const resposta = this._buscarResposta(pergunta);
+    setTimeout(() => this._addMsg('bot', resposta), 300);
+  },
+
+  _buscarResposta(pergunta) {
+    const p = pergunta.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const pagina = localStorage.getItem('rpmpro-page') || 'kanban';
+
+    // Base de respostas por palavra-chave
+    const respostas = [
+      { keys: ['os', 'ordem', 'servico', 'abrir os', 'criar os', 'nova os'], resp: 'Pra abrir uma OS, va no <strong>Patio</strong> e clique em <strong>"+ Nova OS"</strong>. Selecione o cliente, veiculo, e descreva o problema. A OS vai aparecer no Kanban como "Entrada".' },
+      { keys: ['mover', 'avancar', 'status', 'mudar status'], resp: 'No Patio (Kanban), use os botoes <strong>Avancar</strong> e <strong>Voltar</strong> em cada card. O fluxo e: Entrada → Diagnostico → Orcamento → Aprovada → Execucao → Pronto → Entregue.' },
+      { keys: ['checklist', 'entrada', 'saida', 'vistoria'], resp: 'O <strong>checklist de entrada</strong> deve ser preenchido antes de mover o veiculo pra diagnostico. O <strong>checklist de saida</strong> antes de marcar como Pronto. Ambos estao nos detalhes da OS.' },
+      { keys: ['whatsapp', 'mensagem', 'avisar cliente', 'notificar'], resp: 'O sistema envia WhatsApp automatico pro cliente a cada mudanca de status. A mensagem vai com nome do cliente, veiculo e nome da oficina. Voce pode enviar manualmente pelo botao "Avisar cliente" nos detalhes da OS.' },
+      { keys: ['pdf', 'imprimir', 'recibo', 'impressao'], resp: 'Nos detalhes da OS tem dois botoes: <strong>Imprimir OS</strong> (documento completo) e <strong>Gerar Recibo</strong> (pra entregar pro cliente). Os dois saem em PDF com logo da oficina e dados completos.' },
+      { keys: ['pix', 'qr code', 'pagamento', 'cobranca'], resp: 'Configure sua chave Pix em <strong>Configuracoes</strong>. Depois disso, o recibo (PDF) vai sair com QR Code Pix pro cliente pagar na hora pelo celular.' },
+      { keys: ['cliente', 'cadastrar cliente', 'novo cliente'], resp: 'Va em <strong>Clientes</strong> e clique em <strong>"+ Novo Cliente"</strong>. Preencha nome, WhatsApp e adicione pelo menos um veiculo. Tambem e possivel cadastrar direto pela Fila de Espera ou Agendamento.' },
+      { keys: ['veiculo', 'carro', 'placa', 'cadastrar veiculo'], resp: 'Veiculos sao cadastrados junto com o cliente. Edite o cliente e clique em <strong>"+ Veiculo"</strong>. Cada veiculo precisa de placa unica.' },
+      { keys: ['agendamento', 'agendar', 'agenda', 'calendario', 'marcar'], resp: 'Va em <strong>Agendamentos</strong> e clique em <strong>"+ Novo Agendamento"</strong>. Selecione cliente, veiculo, tipo e data. O painel mostra vagas disponiveis por dia.' },
+      { keys: ['fila', 'espera', 'fila de espera', 'telefone', 'ligou'], resp: 'A <strong>Fila de Espera</strong> e pra quando o cliente liga ou manda WhatsApp pedindo atendimento. Registre nome, veiculo e o que ele disse. Depois voce pode mover pra Agendamento.' },
+      { keys: ['equipe', 'mecanico', 'funcionario', 'membro'], resp: 'Va em <strong>Equipe</strong> e clique em <strong>"+ Novo Membro"</strong>. Defina funcao (mecanico, atendente, gerente) e comissao. Pra criar login, clique no botao "Criar login" no card do membro.' },
+      { keys: ['comissao', 'quanto ganho', 'porcentagem'], resp: 'A comissao e calculada sobre as OS entregues. O percentual e definido no cadastro de cada membro. Veja o relatorio em <strong>Comissao</strong>.' },
+      { keys: ['estoque', 'peca', 'pecas', 'inventario'], resp: 'Va em <strong>Pecas / Estoque</strong> pra gerenciar. Voce pode filtrar por nivel de estoque, exportar inventario pro Excel, e o sistema alerta quando uma peca ta abaixo do minimo.' },
+      { keys: ['financeiro', 'caixa', 'faturamento', 'dinheiro'], resp: 'O <strong>Caixa</strong> mostra entradas e saidas do dia. As <strong>Contas a Pagar</strong> controlam despesas. O <strong>Dashboard</strong> mostra faturamento do mes, ticket medio e ranking de mecanicos.' },
+      { keys: ['config', 'configuracao', 'logo', 'dados oficina'], resp: 'Em <strong>Configuracoes</strong> voce define: dados da oficina, CNPJ, endereco, logo, chave Pix, valor da hora, margem sobre pecas e capacidade diaria.' },
+      { keys: ['historico', 'manutencao', 'consultar'], resp: 'Cada veiculo tem um link publico de historico. Nos detalhes da OS, clique em <strong>"Enviar historico do veiculo"</strong> pra mandar pro cliente por WhatsApp.' },
+      { keys: ['crm', 'reativacao', 'cliente sumiu', 'retorno'], resp: 'O <strong>CRM</strong> mostra clientes inativos — quem nao volta ha muito tempo. Voce pode enviar WhatsApp de reativacao direto de la.' },
+      { keys: ['satisfacao', 'pesquisa', 'avaliacao', 'nota'], resp: 'A <strong>Pesquisa de Satisfacao</strong> envia um link pro cliente avaliar o servico apos a entrega. As respostas aparecem no painel.' },
+      { keys: ['plano', 'trial', 'preco', 'valor', 'assinatura'], resp: 'O trial dura 14 dias. Os planos sao: Essencial R$ 189, Profissional R$ 324 e Rede R$ 494. Pra ativar, fale pelo WhatsApp (87) 98145-6565.' },
+      { keys: ['kanban', 'patio', 'quadro'], resp: 'O <strong>Patio</strong> e o quadro Kanban — mostra todos os veiculos na oficina organizados por status. Ele atualiza em tempo real quando alguem muda o status de uma OS.' },
+      { keys: ['dashboard', 'metricas', 'indicadores', 'relatorio'], resp: 'O <strong>Dashboard</strong> mostra: OS abertas, faturamento, ticket medio, tempo medio de permanencia e ranking de mecanicos do mes.' },
+      { keys: ['foto', 'camera', 'imagem'], resp: 'Voce pode tirar fotos do veiculo no <strong>checklist de entrada</strong>. As fotos ficam salvas na OS pra registro e protecao da oficina.' },
+      { keys: ['login', 'senha', 'acesso', 'entrar'], resp: 'Pra criar login pra um membro da equipe, va em <strong>Equipe</strong>, clique no membro e depois em <strong>"Criar login"</strong>. Defina email e senha.' },
+    ];
+
+    // Busca melhor match
+    let melhorResp = null;
+    let melhorScore = 0;
+
+    for (const r of respostas) {
+      let score = 0;
+      for (const key of r.keys) {
+        if (p.includes(key)) score += key.length;
+      }
+      if (score > melhorScore) {
+        melhorScore = score;
+        melhorResp = r.resp;
+      }
     }
+
+    if (melhorResp) return melhorResp;
+
+    // Resposta da tela atual se não encontrou match
+    const ajuda = this.conteudo[pagina];
+    if (ajuda) {
+      const info = ajuda.secoes.find(s => s.info);
+      if (info) return info.info + '<br><br>Tente perguntar algo mais especifico, como "como abrir OS" ou "como agendar".';
+    }
+
+    return 'Nao entendi sua duvida. Tente perguntar sobre: <strong>OS, agendamento, cliente, peca, financeiro, config, checklist, WhatsApp</strong>, ou qualquer funcao do sistema.';
   },
 
   _renderSecoes(secoes, role) {
@@ -447,7 +540,7 @@ const AJUDA = {
   style.id = 'ajuda-css';
   style.textContent = `
     @keyframes ajudaSlideIn { from { transform:translateX(100%);opacity:0; } to { transform:translateX(0);opacity:1; } }
-    #ajuda-painel { position:fixed;top:0;right:0;width:340px;max-width:90vw;height:100vh;background:var(--bg-card);border-left:1px solid var(--border);z-index:9999;overflow-y:auto;padding:20px;animation:ajudaSlideIn .2s ease;box-shadow:-4px 0 24px rgba(0,0,0,0.4); }
+    #ajuda-painel { position:fixed;top:0;right:0;width:380px;max-width:90vw;height:100vh;background:var(--bg-card);border-left:1px solid var(--border);z-index:9999;padding:20px;animation:ajudaSlideIn .2s ease;box-shadow:-4px 0 24px rgba(0,0,0,0.4);display:flex;flex-direction:column; }
     @media(max-width:768px) { #ajuda-painel { width:100vw !important;max-width:100vw !important; } }
   `;
   document.head.appendChild(style);
