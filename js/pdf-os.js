@@ -52,12 +52,14 @@ const PDF_OS = {
       endereco = oficina.cidade + (oficina.estado ? '/' + oficina.estado : '');
     }
 
+    // Coluna esquerda: logo oficina + nome
     const headerLeft = [];
     if (oficina.logo_url && this._logoBase64) {
       headerLeft.push({ image: this._logoBase64, width: 80, margin: [0, 0, 0, 4] });
     }
     headerLeft.push({ text: oficina.nome || 'Oficina', fontSize: 16, bold: true, color: '#1a1a1a' });
 
+    // Coluna direita: dados da oficina + RPM PRO
     const infoLines = [];
     if (oficina.cnpj) infoLines.push({ text: 'CNPJ: ' + oficina.cnpj, style: 'headerInfo' });
     if (oficina.telefone) infoLines.push({ text: 'Tel: ' + oficina.telefone, style: 'headerInfo' });
@@ -65,10 +67,18 @@ const PDF_OS = {
     if (endereco) infoLines.push({ text: endereco, style: 'headerInfo' });
 
     return [
+      // RPM PRO marca — topo direito, discreto mas visível
       {
         columns: [
           { stack: headerLeft, width: '*' },
-          { stack: infoLines, alignment: 'right', width: 'auto' }
+          {
+            stack: [
+              { text: [{ text: 'RPM ', bold: true, color: '#FF4500', fontSize: 11 }, { text: 'PRO', bold: true, color: '#666666', fontSize: 11 }], alignment: 'right', margin: [0, 0, 0, 6] },
+              ...infoLines
+            ],
+            alignment: 'right',
+            width: 'auto'
+          }
         ],
         margin: [0, 0, 0, 8]
       },
