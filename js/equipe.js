@@ -195,21 +195,29 @@ const EQUIPE = {
 
     // Cria auth user pelo fluxo oficial do Supabase
     const { data: authData, error: authError } = await tempDb.auth.signUp({
-      email, password: senha
+      email, password: senha,
+      options: { data: { created_by_team: true } }
     });
 
-    if (authError) { APP.toast('Erro: ' + authError.message, 'error'); return; }
-    if (!authData.user) { APP.toast('Erro ao criar usuario', 'error'); return; }
+    if (authError) { APP.toast('Erro ao criar login: ' + authError.message, 'error'); return; }
 
-    // Vincula o auth user ao profile existente
+    // Supabase retorna user sem identities se email já existe
+    if (!authData.user || !authData.user.identities || authData.user.identities.length === 0) {
+      APP.toast('Esse email ja esta cadastrado no sistema', 'error');
+      return;
+    }
+
+    const userId = authData.user.id;
+
+    // Confirma email automaticamente via RPC
     const { data, error } = await db.rpc('vincular_login_membro', {
       p_profile_id: profileId,
-      p_user_id: authData.user.id,
+      p_user_id: userId,
       p_email: email,
       p_senha: senha
     });
 
-    if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
+    if (error) { APP.toast('Erro ao vincular: ' + error.message, 'error'); return; }
     if (data && !data.ok) { APP.toast(data.erro, 'error'); return; }
 
     closeModal();
