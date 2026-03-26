@@ -180,6 +180,27 @@ const AJUDA = {
       ]
     },
 
+    fila: {
+      titulo: 'Fila de Espera',
+      perfis: ['dono','gerente','atendente'],
+      secoes: [
+        { titulo: 'Visao geral', info: 'Registre contatos de clientes que ligaram ou mandaram WhatsApp. Organize a fila antes de agendar.' },
+        { titulo: 'Adicionar na fila', passos: [
+          'Clique em + Novo',
+          'Preencha: nome, WhatsApp, placa (se souber), o que o cliente disse',
+          'Defina a urgencia: Normal, Urgente ou Pode esperar',
+          'Clique em Adicionar na fila'
+        ]},
+        { titulo: 'Atender da fila', passos: [
+          'Clique em WhatsApp pra contatar o cliente (mensagem pronta)',
+          'Quando confirmar disponibilidade, clique em Agendar',
+          'Se o cliente ja esta cadastrado com placa, o agendamento e pre-preenchido',
+          'Se nao, cadastre cliente e veiculo antes'
+        ]},
+        { alerta: 'Itens urgentes ficam com borda vermelha pra chamar atencao.' },
+        { dica: 'Use a fila pra nao perder nenhum contato. Mesmo que nao consiga atender agora, registre.' }
+      ]
+    },
     crm: {
       titulo: 'CRM de Reativacao',
       perfis: ['dono','gerente'],
