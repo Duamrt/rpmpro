@@ -456,9 +456,66 @@ const KANBAN = {
     if (confirm(`Enviar WhatsApp pro cliente?\n\n"${msg}"`)) {
       window.open(`https://wa.me/${fone}?text=${encodeURIComponent(msg)}`, '_blank');
     }
+  },
+
+  // ========== REALTIME ==========
+  _realtimeChannel: null,
+
+  iniciarRealtime() {
+    // Evita duplicar
+    if (this._realtimeChannel) return;
+
+    const oficina_id = APP.profile.oficina_id;
+    if (!oficina_id) return;
+
+    this._realtimeChannel = db
+      .channel('kanban-os-' + oficina_id)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'ordens_servico',
+        filter: 'oficina_id=eq.' + oficina_id
+      }, (payload) => {
+        // Só recarrega se tá na página do kanban
+        const paginaAtual = localStorage.getItem('rpmpro-page');
+        if (paginaAtual === 'kanban' || paginaAtual === 'dashboard') {
+          // Debounce pra não recarregar 10x seguidas
+          clearTimeout(this._realtimeTimer);
+          this._realtimeTimer = setTimeout(() => {
+            // Mostra indicador discreto
+            this._mostrarIndicadorSync();
+            if (paginaAtual === 'kanban') this.carregar();
+            if (paginaAtual === 'dashboard') DASHBOARD.carregar();
+          }, 500);
+        }
+      })
+      .subscribe();
+  },
+
+  pararRealtime() {
+    if (this._realtimeChannel) {
+      db.removeChannel(this._realtimeChannel);
+      this._realtimeChannel = null;
+    }
+  },
+
+  _mostrarIndicadorSync() {
+    // Flash discreto no header do kanban
+    const header = document.querySelector('#page-kanban .page-header h2');
+    if (!header) return;
+    const original = header.style.color;
+    header.style.color = 'var(--success)';
+    header.textContent = 'Patio da Oficina ·';
+    setTimeout(() => {
+      header.style.color = original || '';
+      header.textContent = 'Patio da Oficina';
+    }, 1500);
   }
 };
 
 document.addEventListener('pageLoad', (e) => {
-  if (e.detail.page === 'kanban') KANBAN.carregar();
+  if (e.detail.page === 'kanban') {
+    KANBAN.carregar();
+    KANBAN.iniciarRealtime();
+  }
 });
