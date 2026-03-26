@@ -163,7 +163,10 @@ const EQUIPE = {
         <form onsubmit="EQUIPE.salvarLogin(event, '${profileId}')">
           <div class="form-group">
             <label>Email *</label>
-            <input type="email" class="form-control" id="login-email" required placeholder="email@exemplo.com" value="${esc(emailAtual || '')}"">
+            <div style="display:flex;align-items:center;gap:0;">
+              <input type="text" class="form-control" id="login-email-user" required placeholder="nome" value="${emailAtual ? esc(emailAtual.split('@')[0]) : esc(nome.toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/\\s+/g,'.'))}" style="border-radius:var(--radius) 0 0 var(--radius);border-right:0;">
+              <span style="background:var(--bg-input);border:1px solid var(--border);padding:8px 12px;font-size:13px;color:var(--text-secondary);white-space:nowrap;border-radius:0 var(--radius) var(--radius) 0;">@rpmpro.com.br</span>
+            </div>
           </div>
           <div class="form-group">
             <label>Senha *</label>
@@ -183,7 +186,9 @@ const EQUIPE = {
 
   async salvarLogin(e, profileId) {
     e.preventDefault();
-    const email = document.getElementById('login-email').value.trim();
+    const emailUser = document.getElementById('login-email-user').value.trim().toLowerCase().replace(/\s+/g, '.');
+    if (!emailUser) { APP.toast('Preencha o nome de usuario', 'error'); return; }
+    const email = emailUser + '@rpmpro.com.br';
     const senha = document.getElementById('login-senha').value;
 
     if (senha.length < 6) { APP.toast('Senha precisa ter pelo menos 6 caracteres', 'error'); return; }
