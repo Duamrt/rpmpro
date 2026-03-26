@@ -175,27 +175,22 @@ const SUPER_ADMIN = {
       </div>
       <div class="modal-body">
         ${usuarios.length ? `
-        <table class="data-table">
-          <thead>
-            <tr><th>Nome</th><th>Email</th><th>Perfil</th><th>Ultimo login</th><th></th></tr>
-          </thead>
-          <tbody>
-            ${usuarios.map(u => `
-              <tr>
-                <td><strong>${esc(u.nome)}</strong></td>
-                <td>
-                  <span style="font-size:13px;">${esc(u.auth_email || u.email)}</span>
-                  <button style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--primary);margin-left:4px;" onclick="navigator.clipboard.writeText('${esc(u.auth_email || u.email)}'); APP.toast('Email copiado');">copiar</button>
-                </td>
-                <td><span class="badge badge-${u.role === 'dono' ? 'pronto' : u.role === 'gerente' ? 'aprovada' : u.role === 'mecanico' ? 'orcamento' : 'entregue'}">${esc(u.role)}</span></td>
-                <td style="font-size:12px;color:var(--text-secondary);">${u.last_sign_in ? APP.formatDateTime(u.last_sign_in) : 'Nunca'}</td>
-                <td>
-                  <button class="btn btn-secondary btn-sm" onclick="SUPER_ADMIN.resetarSenha('${u.id}','${esc(u.nome)}')">Resetar senha</button>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>` : '<div style="padding:20px;text-align:center;color:var(--text-muted);">Nenhum usuario encontrado</div>'}
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          ${usuarios.map(u => `
+            <div style="background:var(--bg-input);border-radius:var(--radius);padding:14px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <strong style="font-size:15px;">${esc(u.nome)}</strong>
+                <span class="badge badge-${u.role === 'dono' ? 'pronto' : u.role === 'gerente' ? 'aprovada' : u.role === 'mecanico' ? 'orcamento' : 'entregue'}">${esc(u.role)}</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+                <span style="font-size:13px;color:var(--text-secondary);">${esc(u.auth_email || u.email)}</span>
+                <button style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--primary);" onclick="navigator.clipboard.writeText('${esc(u.auth_email || u.email)}'); APP.toast('Email copiado');">copiar</button>
+              </div>
+              <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Ultimo login: ${u.last_sign_in ? APP.formatDateTime(u.last_sign_in) : 'Nunca'}</div>
+              <button class="btn btn-secondary btn-sm" onclick="SUPER_ADMIN.resetarSenha('${u.id}','${esc(u.nome)}')">Resetar senha</button>
+            </div>
+          `).join('')}
+        </div>` : '<div style="padding:20px;text-align:center;color:var(--text-muted);">Nenhum usuario encontrado</div>'}
       </div>
     `);
   },
