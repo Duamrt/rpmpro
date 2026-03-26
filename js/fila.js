@@ -88,10 +88,16 @@ const FILA = {
 
   _cliCache: [],
 
+  _veiCache: [],
+
   async abrirModal() {
-    // Carrega clientes pra autocomplete
-    const { data } = await db.from('clientes').select('id, nome, whatsapp').eq('oficina_id', APP.profile.oficina_id).order('nome');
-    this._cliCache = data || [];
+    // Carrega clientes e veículos pra autocomplete
+    const [cliRes, veiRes] = await Promise.all([
+      db.from('clientes').select('id, nome, whatsapp').eq('oficina_id', APP.profile.oficina_id).order('nome'),
+      db.from('veiculos').select('id, placa, marca, modelo, cliente_id').eq('oficina_id', APP.profile.oficina_id).order('placa')
+    ]);
+    this._cliCache = cliRes.data || [];
+    this._veiCache = veiRes.data || [];
 
     openModal(`
       <div class="modal-header">
@@ -113,9 +119,10 @@ const FILA = {
             </div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-            <div class="form-group">
+            <div class="form-group" style="position:relative;">
               <label>Placa</label>
-              <input type="text" class="form-control" id="fila-placa" placeholder="Se souber" style="text-transform:uppercase" maxlength="8">
+              <input type="text" class="form-control" id="fila-placa" placeholder="Se souber" style="text-transform:uppercase" maxlength="8" autocomplete="off" oninput="FILA._buscarPlaca(this.value)">
+              <div id="fila-placa-lista" style="position:absolute;top:100%;left:0;right:0;z-index:100;background:var(--bg-card);border:1px solid var(--border);border-radius:0 0 var(--radius) var(--radius);max-height:200px;overflow-y:auto;display:none;box-shadow:0 4px 12px rgba(0,0,0,0.3);"></div>
             </div>
             <div class="form-group">
               <label>Veiculo</label>
@@ -295,6 +302,40 @@ const FILA = {
     document.getElementById('fila-cli-lista').style.display = 'none';
     if (whatsapp && !document.getElementById('fila-whatsapp').value) {
       document.getElementById('fila-whatsapp').value = whatsapp;
+    }
+  },
+
+  _buscarPlaca(termo) {
+    const lista = document.getElementById('fila-placa-lista');
+    if (!lista) return;
+    const t = termo.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (t.length < 2) { lista.style.display = 'none'; return; }
+
+    const filtrados = this._veiCache.filter(v => v.placa.replace(/[^A-Z0-9]/gi, '').includes(t));
+    if (!filtrados.length) { lista.style.display = 'none'; return; }
+
+    lista.style.display = 'block';
+    lista.innerHTML = filtrados.slice(0, 10).map(v => {
+      const label = `${v.placa} — ${v.marca || ''} ${v.modelo || ''}`;
+      const cli = this._cliCache.find(c => c.id === v.cliente_id);
+      return `<div style="padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);" onmousedown="FILA._selecionarPlaca('${v.id}','${esc(v.placa)}','${esc((v.marca || '') + ' ' + (v.modelo || ''))}','${v.cliente_id}','${esc(cli?.nome || '')}','${esc(cli?.whatsapp || '')}')" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">
+        <strong>${esc(v.placa)}</strong> ${esc(v.marca || '')} ${esc(v.modelo || '')}
+        ${cli ? `<span style="font-size:11px;color:var(--text-muted);margin-left:6px;">(${esc(cli.nome)})</span>` : ''}
+      </div>`;
+    }).join('');
+  },
+
+  _selecionarPlaca(veiId, placa, veiInfo, clienteId, clienteNome, clienteWhats) {
+    document.getElementById('fila-placa').value = placa;
+    document.getElementById('fila-veiculo').value = veiInfo.trim();
+    document.getElementById('fila-placa-lista').style.display = 'none';
+    // Preenche cliente se estiver vazio
+    if (clienteNome && !document.getElementById('fila-nome').value) {
+      document.getElementById('fila-nome').value = clienteNome;
+      document.getElementById('fila-cliente-id').value = clienteId;
+    }
+    if (clienteWhats && !document.getElementById('fila-whatsapp').value) {
+      document.getElementById('fila-whatsapp').value = clienteWhats;
     }
   },
 
