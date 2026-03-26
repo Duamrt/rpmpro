@@ -1690,6 +1690,23 @@ const OS = {
     }
 
     APP.toast('Checklist de saida salvo');
+
+    // Verifica status atual — se não tá pronto/entregue, oferece marcar como pronto
+    const { data: osAtual } = await db.from('ordens_servico').select('status').eq('id', osId).single();
+    if (osAtual && !['pronto', 'entregue'].includes(osAtual.status)) {
+      if (confirm('Checklist de saida salvo! Marcar esta OS como Pronto?')) {
+        await db.from('ordens_servico').update({
+          status: 'pronto',
+          data_conclusao: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }).eq('id', osId);
+        APP.toast('OS marcada como Pronto');
+        closeModal();
+        if (typeof KANBAN !== 'undefined') KANBAN.carregar();
+        return;
+      }
+    }
+
     this.abrirDetalhes(osId);
   },
 
