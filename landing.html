@@ -8,7 +8,7 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Inter', -apple-system, sans-serif; background: #0d1117; color: #e6edf3; line-height: 1.6; }
+  body { font-family: 'Inter', -apple-system, sans-serif; background: #0d1117; color: #e6edf3; line-height: 1.6; scroll-behavior: smooth; }
   a { color: #FF4500; text-decoration: none; }
 
   /* NAV */
@@ -17,46 +17,65 @@
   .nav-logo { font-size: 24px; font-weight: 900; letter-spacing: -1px; }
   .nav-logo .rpm { color: #FF4500; }
   .nav-logo .pro { color: #fff; }
+  .nav-links { display: flex; align-items: center; gap: 24px; }
+  .nav-links a.nav-link { color: #8b949e; font-size: 14px; font-weight: 500; transition: color 0.2s; }
+  .nav-links a.nav-link:hover { color: #e6edf3; }
   .nav-btns { display: flex; gap: 12px; }
-  .btn { display: inline-block; padding: 10px 24px; border-radius: 10px; font-weight: 700; font-size: 14px; border: none; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+  .btn { display: inline-block; padding: 10px 24px; border-radius: 10px; font-weight: 700; font-size: 14px; border: none; cursor: pointer; font-family: inherit; transition: all 0.2s; text-align: center; }
   .btn-ghost { background: transparent; color: #e6edf3; border: 1px solid #21262d; }
   .btn-ghost:hover { border-color: #FF4500; color: #FF4500; }
   .btn-primary { background: #FF4500; color: #fff; }
   .btn-primary:hover { background: #e63e00; transform: translateY(-1px); }
   .btn-lg { padding: 14px 36px; font-size: 16px; }
+  .btn-success { background: #3fb950; color: #fff; }
+  .btn-success:hover { background: #2ea043; }
 
   /* HERO */
   .hero { padding: 140px 24px 80px; text-align: center; max-width: 800px; margin: 0 auto; }
-  .hero-badge { display: inline-block; background: #FF450022; color: #FF4500; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; margin-bottom: 24px; border: 1px solid #FF450044; }
   .hero h1 { font-size: clamp(32px, 5vw, 56px); font-weight: 900; line-height: 1.1; margin-bottom: 20px; letter-spacing: -2px; }
   .hero h1 em { color: #FF4500; font-style: normal; }
   .hero p { font-size: 18px; color: #8b949e; max-width: 600px; margin: 0 auto 32px; }
   .hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 
-  /* SOCIAL PROOF */
+  /* PROOF */
   .proof { text-align: center; padding: 40px 24px; border-top: 1px solid #21262d; border-bottom: 1px solid #21262d; }
   .proof-items { display: flex; justify-content: center; gap: 40px; flex-wrap: wrap; }
   .proof-item { font-size: 14px; color: #8b949e; }
   .proof-item strong { color: #e6edf3; font-size: 24px; display: block; }
 
-  /* FEATURES */
-  .features { max-width: 1100px; margin: 0 auto; padding: 80px 24px; }
-  .features h2 { text-align: center; font-size: 32px; font-weight: 800; margin-bottom: 12px; }
-  .features .sub { text-align: center; color: #8b949e; font-size: 16px; margin-bottom: 48px; }
-  .feat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+  /* SECTION COMUM */
+  .section { max-width: 1100px; margin: 0 auto; padding: 80px 24px; }
+  .section h2 { text-align: center; font-size: 32px; font-weight: 800; margin-bottom: 12px; }
+  .section .sub { text-align: center; color: #8b949e; font-size: 16px; margin-bottom: 48px; }
+
+  /* COMO FUNCIONA */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; max-width: 900px; margin: 0 auto; }
+  .step { text-align: center; position: relative; }
+  .step-num { width: 56px; height: 56px; border-radius: 50%; background: #FF4500; color: #fff; font-size: 24px; font-weight: 900; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+  .step h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  .step p { font-size: 14px; color: #8b949e; }
+  .step-arrow { display: none; position: absolute; right: -20px; top: 28px; color: #21262d; font-size: 24px; }
+
+  /* FEATURES — 3 destaques + 6 menores */
+  .feat-main { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 32px; }
   .feat-card { background: #161b22; border: 1px solid #21262d; border-radius: 16px; padding: 28px; transition: border-color 0.3s; }
   .feat-card:hover { border-color: #FF4500; }
+  .feat-card.big { padding: 32px; }
+  .feat-card.big .feat-icon { font-size: 40px; }
   .feat-icon { font-size: 32px; margin-bottom: 12px; }
   .feat-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
   .feat-card p { font-size: 14px; color: #8b949e; line-height: 1.6; }
+  .feat-secondary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .feat-mini { background: #161b22; border: 1px solid #21262d; border-radius: 12px; padding: 20px; display: flex; gap: 12px; align-items: flex-start; transition: border-color 0.3s; }
+  .feat-mini:hover { border-color: #FF4500; }
+  .feat-mini .feat-icon { font-size: 24px; margin: 0; flex-shrink: 0; }
+  .feat-mini h3 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .feat-mini p { font-size: 13px; color: #8b949e; line-height: 1.5; }
 
   /* PRICING */
-  .pricing { max-width: 900px; margin: 0 auto; padding: 80px 24px; }
-  .pricing h2 { text-align: center; font-size: 32px; font-weight: 800; margin-bottom: 12px; }
-  .pricing .sub { text-align: center; color: #8b949e; font-size: 16px; margin-bottom: 48px; }
-  .price-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+  .price-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 960px; margin: 0 auto; }
   .price-card { background: #161b22; border: 1px solid #21262d; border-radius: 16px; padding: 32px; text-align: center; }
-  .price-card.destaque { border-color: #FF4500; position: relative; }
+  .price-card.destaque { border-color: #FF4500; position: relative; transform: scale(1.03); }
   .price-card.destaque::before { content: 'Mais popular'; position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #FF4500; color: #fff; padding: 4px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; }
   .price-card h3 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
   .price-card .price { font-size: 40px; font-weight: 900; margin: 16px 0; }
@@ -64,6 +83,19 @@
   .price-card ul { list-style: none; text-align: left; margin: 20px 0; }
   .price-card li { padding: 6px 0; font-size: 14px; color: #8b949e; }
   .price-card li::before { content: '✓ '; color: #3fb950; font-weight: 700; }
+  .price-card li.no::before { content: '— '; color: #484f58; }
+  .price-card li.no { color: #484f58; }
+
+  /* FAQ */
+  .faq-list { max-width: 700px; margin: 0 auto; }
+  .faq-item { border-bottom: 1px solid #21262d; }
+  .faq-q { padding: 20px 0; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: color 0.2s; }
+  .faq-q:hover { color: #FF4500; }
+  .faq-q::after { content: '+'; font-size: 20px; color: #8b949e; transition: transform 0.2s; }
+  .faq-item.open .faq-q::after { content: '−'; color: #FF4500; }
+  .faq-a { max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding 0.3s; padding: 0; }
+  .faq-item.open .faq-a { max-height: 200px; padding: 0 0 20px; }
+  .faq-a p { font-size: 14px; color: #8b949e; line-height: 1.7; }
 
   /* CTA */
   .cta { text-align: center; padding: 80px 24px; background: linear-gradient(180deg, transparent, #FF450011); }
@@ -71,12 +103,26 @@
   .cta p { color: #8b949e; font-size: 16px; margin-bottom: 32px; }
 
   /* FOOTER */
-  .footer { text-align: center; padding: 40px 24px; border-top: 1px solid #21262d; color: #484f58; font-size: 13px; }
+  .footer { border-top: 1px solid #21262d; padding: 40px 24px; }
+  .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; justify-content: space-between; align-items: flex-start; gap: 40px; flex-wrap: wrap; }
+  .footer-col h4 { font-size: 13px; font-weight: 700; color: #e6edf3; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+  .footer-col p, .footer-col a { font-size: 13px; color: #484f58; line-height: 2; display: block; }
+  .footer-col a:hover { color: #FF4500; }
+  .footer-bottom { text-align: center; padding: 20px 24px; color: #484f58; font-size: 12px; border-top: 1px solid #21262d; }
 
-  @media (max-width: 600px) {
-    .nav-btns .btn-ghost { display: none; }
-    .proof-items { gap: 24px; }
+  @media (max-width: 768px) {
+    .nav-links { display: none; }
+    .steps { grid-template-columns: 1fr; gap: 24px; }
+    .feat-main { grid-template-columns: 1fr; }
+    .feat-secondary { grid-template-columns: 1fr; }
+    .price-cards { grid-template-columns: 1fr; }
+    .price-card.destaque { transform: none; }
+    .proof-items { gap: 20px; }
     .hero { padding: 120px 20px 60px; }
+    .footer-inner { flex-direction: column; gap: 24px; }
+  }
+  @media (min-width: 769px) {
+    .step-arrow { display: block; }
   }
 </style>
 </head>
@@ -86,9 +132,15 @@
 <nav class="nav">
   <div class="nav-inner">
     <div class="nav-logo"><span class="rpm">RPM</span><span class="pro">PRO</span></div>
+    <div class="nav-links">
+      <a href="#como-funciona" class="nav-link">Como funciona</a>
+      <a href="#funcionalidades" class="nav-link">Funcionalidades</a>
+      <a href="#planos" class="nav-link">Planos</a>
+      <a href="#faq" class="nav-link">FAQ</a>
+    </div>
     <div class="nav-btns">
       <a href="login.html" class="btn btn-ghost">Entrar</a>
-      <a href="login.html#cadastro" class="btn btn-primary">Criar conta gratis</a>
+      <a href="login.html#cadastro" class="btn btn-primary">Testar gratis</a>
     </div>
   </div>
 </nav>
@@ -115,77 +167,120 @@
 
 <!-- SCREENSHOT -->
 <section style="max-width:1100px;margin:0 auto;padding:0 24px 40px;text-align:center;">
-  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;overflow:hidden;padding:4px;">
-    <img id="screenshot-demo" src="img/screenshot-kanban.png" alt="Painel RPM Pro" style="width:100%;border-radius:12px;display:block;" onerror="this.parentElement.parentElement.style.display='none'">
+  <div style="background:#161b22;border:1px solid #21262d;border-radius:16px;overflow:hidden;padding:4px;">
+    <img src="img/screenshot-kanban.png" alt="Painel RPM Pro" style="width:100%;border-radius:12px;display:block;" onerror="this.parentElement.parentElement.style.display='none'">
   </div>
-  <p style="font-size:13px;color:var(--text-muted,#484f58);margin-top:12px;">Painel de patio — acompanhe cada veiculo em tempo real</p>
+  <p style="font-size:13px;color:#484f58;margin-top:12px;">Painel de patio — acompanhe cada veiculo em tempo real</p>
 </section>
 
 <!-- SOCIAL PROOF -->
 <section class="proof" style="border-top:none;">
-  <p style="color:#8b949e;font-size:14px;margin-bottom:8px;">Em fase de validacao com oficinas parceiras</p>
+  <p style="color:#8b949e;font-size:14px;margin-bottom:12px;">Em fase de validacao com oficinas parceiras</p>
   <div class="proof-items">
-    <div class="proof-item" style="max-width:400px;text-align:center;font-style:italic;">"Finalmente um sistema que eu consigo usar sem precisar de treinamento. Abri a OS em 30 segundos."<br><strong style="font-size:13px;font-style:normal;display:block;margin-top:6px;">— Beta tester, oficina parceira</strong></div>
+    <div class="proof-item" style="max-width:420px;text-align:center;font-style:italic;font-size:15px;line-height:1.6;">"Finalmente um sistema que eu consigo usar sem precisar de treinamento. Abri a OS em 30 segundos."<br><strong style="font-size:13px;font-style:normal;display:block;margin-top:8px;color:#FF4500;">— Beta tester, oficina parceira</strong></div>
   </div>
 </section>
 
-<!-- FEATURES -->
-<section class="features">
+<!-- COMO FUNCIONA -->
+<section class="section" id="como-funciona">
+  <h2>Simples de comecar</h2>
+  <p class="sub">Em 3 passos sua oficina ja ta rodando</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <h3>Crie sua conta</h3>
+      <p>Cadastro em 30 segundos. So precisa de email e nome da oficina. Sem cartao de credito.</p>
+      <span class="step-arrow">→</span>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <h3>Configure sua oficina</h3>
+      <p>Importe o catalogo de servicos, cadastre sua equipe e comece a registrar clientes.</p>
+      <span class="step-arrow">→</span>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <h3>Abra a primeira OS</h3>
+      <p>Placa do carro, servicos, mecanico e pronto. O patio se organiza sozinho.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FUNCIONALIDADES -->
+<section class="section" id="funcionalidades">
   <h2>Tudo que sua oficina precisa</h2>
   <p class="sub">Sem instalar nada, sem contrato, sem dor de cabeca</p>
-  <div class="feat-grid">
-    <div class="feat-card">
+
+  <!-- 3 destaques -->
+  <div class="feat-main">
+    <div class="feat-card big">
       <div class="feat-icon">🏗️</div>
       <h3>Patio visual (Kanban)</h3>
-      <p>Veja todos os veiculos da oficina num painel. Arraste entre etapas: Entrada, Diagnostico, Orcamento, Execucao, Pronto, Entregue.</p>
+      <p>Veja todos os veiculos da oficina num painel. Mova entre etapas: Entrada, Diagnostico, Orcamento, Execucao, Pronto, Entregue. Cores indicam tempo parado.</p>
     </div>
-    <div class="feat-card">
+    <div class="feat-card big">
       <div class="feat-icon">🔧</div>
       <h3>OS completa</h3>
-      <p>Abra OS em segundos. Servicos do catalogo, pecas do estoque, desconto, mecanico responsavel e PDF automatico.</p>
+      <p>Abra OS em segundos. Servicos do catalogo, pecas do estoque, desconto, mecanico responsavel. PDF e recibo automaticos. Historico por placa.</p>
     </div>
-    <div class="feat-card">
-      <div class="feat-icon">👤</div>
-      <h3>Clientes e veiculos</h3>
-      <p>Cadastro com WhatsApp, historico completo de servicos por placa, e CRM pra reativar clientes inativos.</p>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">📦</div>
-      <h3>Estoque inteligente</h3>
-      <p>Controle pecas com margem automatica, baixa ao usar na OS, alerta de estoque minimo e compatibilidade por veiculo.</p>
-    </div>
-    <div class="feat-card">
+    <div class="feat-card big">
       <div class="feat-icon">💵</div>
-      <h3>Financeiro</h3>
-      <p>Caixa diario, entradas e saidas, contas a pagar/receber, OS lanca no caixa automaticamente. Relatorio PDF.</p>
+      <h3>Financeiro completo</h3>
+      <p>Caixa diario, contas a pagar/receber, comissao por mecanico. OS paga entra no caixa automaticamente. Relatorio PDF por periodo.</p>
     </div>
-    <div class="feat-card">
+  </div>
+
+  <!-- 6 menores -->
+  <div class="feat-secondary">
+    <div class="feat-mini">
+      <div class="feat-icon">👤</div>
+      <div>
+        <h3>Clientes e veiculos</h3>
+        <p>Cadastro com WhatsApp, historico por placa, validacao de placa Mercosul.</p>
+      </div>
+    </div>
+    <div class="feat-mini">
+      <div class="feat-icon">📦</div>
+      <div>
+        <h3>Estoque inteligente</h3>
+        <p>Margem automatica, baixa na OS, alerta de minimo, compatibilidade por veiculo.</p>
+      </div>
+    </div>
+    <div class="feat-mini">
       <div class="feat-icon">📅</div>
-      <h3>Agendamento preventivo</h3>
-      <p>Agende revisoes e trocas de oleo pro futuro. O sistema avisa quando ta chegando a hora. WhatsApp automatico.</p>
+      <div>
+        <h3>Agendamento preventivo</h3>
+        <p>Agende revisoes e trocas. Aviso automatico por WhatsApp quando chega a hora.</p>
+      </div>
     </div>
-    <div class="feat-card">
+    <div class="feat-mini">
       <div class="feat-icon">📋</div>
-      <h3>CRM de reativacao</h3>
-      <p>Saiba quem ta sumido. Clientes inativos agrupados por tempo, com mensagem pronta pro WhatsApp.</p>
+      <div>
+        <h3>CRM de reativacao</h3>
+        <p>Clientes inativos agrupados por tempo. Mensagem pronta pro WhatsApp.</p>
+      </div>
     </div>
-    <div class="feat-card">
+    <div class="feat-mini">
       <div class="feat-icon">⭐</div>
-      <h3>Pesquisa de satisfacao</h3>
-      <p>Ao entregar o carro, o cliente recebe um link pelo WhatsApp pra avaliar o servico. Nota + comentario.</p>
+      <div>
+        <h3>Pesquisa de satisfacao</h3>
+        <p>Link pelo WhatsApp apos entregar. Nota 1-5 + comentario sem login.</p>
+      </div>
     </div>
-    <div class="feat-card">
+    <div class="feat-mini">
       <div class="feat-icon">👥</div>
-      <h3>Equipe e comissao</h3>
-      <p>Cadastre mecanicos, defina comissao %, e gere relatorio mensal de comissao com PDF.</p>
+      <div>
+        <h3>Equipe e comissao</h3>
+        <p>Mecanicos com comissao %. Relatorio mensal com PDF.</p>
+      </div>
     </div>
   </div>
 </section>
 
 <!-- PRICING -->
-<section class="pricing">
+<section class="section" id="planos">
   <h2>Planos simples, sem surpresa</h2>
-  <p class="sub">Comece gratis, pague so quando crescer</p>
+  <p class="sub">Teste 14 dias gratis. Cancele quando quiser.</p>
   <div class="price-cards">
     <div class="price-card">
       <h3>Essencial</h3>
@@ -198,6 +293,8 @@
         <li>Estoque basico</li>
         <li>PDF de OS</li>
         <li>Suporte WhatsApp</li>
+        <li class="no">CRM e agendamento</li>
+        <li class="no">Pesquisa de satisfacao</li>
       </ul>
       <a href="login.html#cadastro" class="btn btn-ghost" style="width:100%;">Testar 14 dias gratis</a>
     </div>
@@ -232,18 +329,82 @@
   </div>
 </section>
 
-<!-- CTA -->
+<!-- FAQ -->
+<section class="section" id="faq">
+  <h2>Perguntas frequentes</h2>
+  <p class="sub">Tire suas duvidas antes de comecar</p>
+  <div class="faq-list">
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-q">Preciso instalar alguma coisa?</div>
+      <div class="faq-a"><p>Nao. O RPM Pro roda direto no navegador, do celular ou computador. So precisa de internet.</p></div>
+    </div>
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-q">Funciona no celular?</div>
+      <div class="faq-a"><p>Sim. O sistema e responsivo e funciona em qualquer celular com navegador. Ideal pra usar no dia a dia da oficina.</p></div>
+    </div>
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-q">Posso cancelar a qualquer momento?</div>
+      <div class="faq-a"><p>Sim. Sem contrato, sem multa, sem fidelidade. Cancele pelo WhatsApp quando quiser.</p></div>
+    </div>
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-q">Meus dados ficam seguros?</div>
+      <div class="faq-a"><p>Sim. Usamos Supabase (infraestrutura AWS) com criptografia, backup diario e controle de acesso por oficina. Nenhuma oficina ve os dados da outra.</p></div>
+    </div>
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-q">Quantas OS posso abrir?</div>
+      <div class="faq-a"><p>Ilimitadas em todos os planos. Sem limite de OS, clientes ou veiculos.</p></div>
+    </div>
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-q">Consigo importar dados de outro sistema?</div>
+      <div class="faq-a"><p>Estamos desenvolvendo importacao automatica. Por enquanto, nossa equipe ajuda na migracao pelo WhatsApp.</p></div>
+    </div>
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-q">O trial tem alguma limitacao?</div>
+      <div class="faq-a"><p>Nao. Durante 14 dias voce tem acesso a todas as funcionalidades do plano Profissional. Sem limitacao nenhuma.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA FINAL -->
 <section class="cta">
   <h2>Pronto pra organizar sua oficina?</h2>
   <p>Cadastro em 30 segundos. Sem cartao de credito. Sem contrato. 14 dias pra testar tudo.</p>
-  <a href="login.html#cadastro" class="btn btn-primary btn-lg">Testar 14 dias gratis</a>
+  <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+    <a href="login.html#cadastro" class="btn btn-primary btn-lg">Testar 14 dias gratis</a>
+    <a href="https://wa.me/5587981456565?text=Oi!%20Quero%20saber%20mais%20sobre%20o%20RPM%20Pro" class="btn btn-success btn-lg" target="_blank">Falar no WhatsApp</a>
+  </div>
 </section>
 
 <!-- FOOTER -->
 <footer class="footer">
-  <p>RPM Pro &copy; 2026 — Todos os direitos reservados</p>
-  <p style="margin-top:4px;">Feito com dedicacao para oficinas que querem crescer</p>
+  <div class="footer-inner">
+    <div class="footer-col">
+      <h4>RPM Pro</h4>
+      <p>Gestao inteligente para oficinas mecanicas.</p>
+      <p>Simples, rapido e sem burocracia.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Produto</h4>
+      <a href="#funcionalidades">Funcionalidades</a>
+      <a href="#planos">Planos e precos</a>
+      <a href="#faq">Perguntas frequentes</a>
+      <a href="login.html">Entrar</a>
+    </div>
+    <div class="footer-col">
+      <h4>Contato</h4>
+      <a href="https://wa.me/5587981456565" target="_blank">WhatsApp: (87) 98145-6565</a>
+      <a href="mailto:contato@rpmpro.com.br">contato@rpmpro.com.br</a>
+    </div>
+    <div class="footer-col">
+      <h4>Empresa</h4>
+      <p>RPM Pro Tecnologia</p>
+      <p>CNPJ: 49.909.440/0001-55</p>
+    </div>
+  </div>
 </footer>
+<div class="footer-bottom">
+  RPM Pro &copy; 2026 — Todos os direitos reservados
+</div>
 
 </body>
 </html>
