@@ -6,7 +6,7 @@ const KANBAN = {
     { status: 'orcamento', label: 'Aguardando Aprovação', icon: '💰', cor: '#dc2626' },
     { status: 'aguardando_peca', label: 'Aguardando Peça', icon: '📦', cor: '#999' },
     { status: 'execucao', label: 'Em Execução', icon: '⚙️', cor: '#16a34a' },
-    { status: 'pronto', label: 'Pronto', icon: '✅', cor: '#1a1d23' },
+    { status: 'pronto', label: 'Pronto', icon: '✅', cor: '#ccc' },
     { status: 'entregue', label: 'Entregue', icon: '🚗', cor: '#8b949e' },
   ],
 
