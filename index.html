@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro — Gestao de Oficina</title>
-<link rel="stylesheet" href="css/style.css?v=03260251">
+<link rel="stylesheet" href="css/style.css?v=03260257">
 </head>
 <body>
 
@@ -254,33 +254,37 @@
   </a>
 </nav>
 
+<!-- Botao Ajuda flutuante -->
+<button onclick="AJUDA.abrir()" style="position:fixed;bottom:24px;right:24px;width:48px;height:48px;border-radius:50%;background:var(--primary);color:#fff;border:none;font-size:22px;font-weight:900;cursor:pointer;z-index:90;box-shadow:0 4px 12px rgba(255,69,0,0.4);display:flex;align-items:center;justify-content:center;">?</button>
+
 <!-- Modais -->
 <div class="modal-overlay" id="modal-overlay">
   <div class="modal" id="modal-content"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=03260251"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=03260251"></script>
-<script src="js/utils.js?v=03260251"></script>
-<script src="js/config.js?v=03260251"></script>
-<script src="js/auth.js?v=03260251"></script>
-<script src="js/app.js?v=03260251"></script>
-<script src="js/dashboard.js?v=03260251"></script>
-<script src="js/os.js?v=03260251"></script>
-<script src="js/clientes.js?v=03260251"></script>
-<script src="js/catalogo-veiculos.js?v=03260251"></script>
-<script src="js/catalogo-servicos.js?v=03260251"></script>
-<script src="js/veiculos.js?v=03260251"></script>
-<script src="js/servicos.js?v=03260251"></script>
-<script src="js/pecas.js?v=03260251"></script>
-<script src="js/equipe.js?v=03260251"></script>
-<script src="js/kanban.js?v=03260251"></script>
-<script src="js/config-oficina.js?v=03260251"></script>
-<script src="js/financeiro.js?v=03260251"></script>
-<script src="js/comissao.js?v=03260251"></script>
-<script src="js/super-admin.js?v=03260251"></script>
-<script src="js/pdf-os.js?v=03260251"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=03260257"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=03260257"></script>
+<script src="js/utils.js?v=03260257"></script>
+<script src="js/config.js?v=03260257"></script>
+<script src="js/auth.js?v=03260257"></script>
+<script src="js/app.js?v=03260257"></script>
+<script src="js/dashboard.js?v=03260257"></script>
+<script src="js/os.js?v=03260257"></script>
+<script src="js/clientes.js?v=03260257"></script>
+<script src="js/catalogo-veiculos.js?v=03260257"></script>
+<script src="js/catalogo-servicos.js?v=03260257"></script>
+<script src="js/veiculos.js?v=03260257"></script>
+<script src="js/servicos.js?v=03260257"></script>
+<script src="js/pecas.js?v=03260257"></script>
+<script src="js/equipe.js?v=03260257"></script>
+<script src="js/kanban.js?v=03260257"></script>
+<script src="js/config-oficina.js?v=03260257"></script>
+<script src="js/financeiro.js?v=03260257"></script>
+<script src="js/comissao.js?v=03260257"></script>
+<script src="js/super-admin.js?v=03260257"></script>
+<script src="js/ajuda.js?v=03260257"></script>
+<script src="js/pdf-os.js?v=03260257"></script>
 <script>
   // Modal helpers
   function openModal(html) {
