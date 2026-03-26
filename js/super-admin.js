@@ -102,11 +102,14 @@ const SUPER_ADMIN = {
     if (!badge) {
       badge = document.createElement('div');
       badge.id = 'admin-badge';
-      badge.style.cssText = 'position:fixed;top:8px;right:8px;background:var(--primary);color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;z-index:999;cursor:pointer;';
+      badge.style.cssText = 'background:var(--primary);color:#fff;padding:6px 14px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;margin:8px 16px 0;text-align:center;';
       badge.onclick = () => this.voltarAdmin();
-      document.body.appendChild(badge);
+      // Insere abaixo do nome da oficina na sidebar
+      const logoDiv = document.querySelector('.sidebar-logo');
+      if (logoDiv) logoDiv.after(badge);
+      else document.body.appendChild(badge);
     }
-    badge.textContent = '🔑 Admin → ' + esc(oficina?.nome || nome) + ' (clique pra voltar)';
+    badge.textContent = '🔑 ' + esc(oficina?.nome || nome) + ' — voltar';
 
     APP.toast('Acessando: ' + (oficina?.nome || nome));
     APP.loadPage('kanban');
