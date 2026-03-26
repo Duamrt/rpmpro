@@ -424,9 +424,15 @@ const SUPER_ADMIN = {
     const { data: oficina } = await db.from('oficinas').select('*').eq('id', oficinaId).single();
     if (oficina) APP.oficina = oficina;
 
-    // Atualiza header
+    // Atualiza header + logo
     const elNome = document.getElementById('oficina-nome');
     if (elNome) elNome.textContent = oficina?.nome || nome;
+    const logoEl = document.getElementById('sidebar-logo-img');
+    if (logoEl) {
+      logoEl.innerHTML = oficina?.logo_url
+        ? `<img src="${oficina.logo_url}" style="max-height:56px;max-width:180px;object-fit:contain;display:block;">`
+        : '';
+    }
 
     // Mostra toda a sidebar de oficina e esconde admin nav
     document.querySelectorAll('.nav-atendimento, .nav-dono-gerente, .nav-contas').forEach(el => el.style.display = '');
@@ -478,6 +484,8 @@ const SUPER_ADMIN = {
 
     const elNome = document.getElementById('oficina-nome');
     if (elNome) elNome.textContent = 'RPM Pro Admin';
+    const logoEl = document.getElementById('sidebar-logo-img');
+    if (logoEl) logoEl.innerHTML = '';
 
     // Restaura sidebar admin: esconde nav de oficina, mostra admin
     const role = APP.profile.role;
