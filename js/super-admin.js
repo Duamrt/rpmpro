@@ -28,28 +28,27 @@ const SUPER_ADMIN = {
     const totalOS = ordens.length;
     const osAbertas = ordens.filter(o => !['entregue', 'cancelada'].includes(o.status)).length;
 
-    container.innerHTML = `
-      <!-- KPIs -->
-      <div class="kpi-grid" style="margin-bottom:20px;">
-        <div class="kpi-card">
-          <div class="label">Oficinas</div>
-          <div class="value primary">${totalOficinas}</div>
-        </div>
-        <div class="kpi-card">
-          <div class="label">Usuarios</div>
-          <div class="value">${totalUsers}</div>
-        </div>
-        <div class="kpi-card">
-          <div class="label">OS Total</div>
-          <div class="value">${totalOS}</div>
-        </div>
-        <div class="kpi-card">
-          <div class="label">OS Abertas</div>
-          <div class="value warning">${osAbertas}</div>
-        </div>
-      </div>
+    // Busca leads
+    const { data: leadsData } = await db.from('leads').select('*').order('created_at', { ascending: false });
+    const leads = leadsData || [];
+    const leadsNovos = leads.filter(l => l.status === 'novo').length;
 
-      <!-- Lista de oficinas -->
+    // Tabs
+    let html = `<div style="display:flex;gap:8px;margin-bottom:20px;">
+      <button class="btn ${this._tab !== 'leads' ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="SUPER_ADMIN._tab='oficinas';SUPER_ADMIN.carregar();">Oficinas (${totalOficinas})</button>
+      <button class="btn ${this._tab === 'leads' ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="SUPER_ADMIN._tab='leads';SUPER_ADMIN.carregar();">Leads ${leadsNovos ? '(' + leadsNovos + ' novos)' : '(' + leads.length + ')'}</button>
+    </div>`;
+
+    if (this._tab === 'leads') {
+      html += this._renderLeads(leads);
+    } else {
+      html += `
+      <div class="kpi-grid" style="margin-bottom:20px;">
+        <div class="kpi-card"><div class="label">Oficinas</div><div class="value primary">${totalOficinas}</div></div>
+        <div class="kpi-card"><div class="label">Usuarios</div><div class="value">${totalUsers}</div></div>
+        <div class="kpi-card"><div class="label">OS Total</div><div class="value">${totalOS}</div></div>
+        <div class="kpi-card"><div class="label">OS Abertas</div><div class="value warning">${osAbertas}</div></div>
+      </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;">
         ${oficinas.map(o => {
           const qtdUsers = users.filter(u => u.oficina_id === o.id).length;
@@ -76,8 +75,60 @@ const SUPER_ADMIN = {
             </div>
           </div>`;
         }).join('')}
+      </div>`;
+    }
+    container.innerHTML = html;
+  },
+
+  _tab: 'oficinas',
+
+  _renderLeads(leads) {
+    const statusCor = { novo: '#388bfd', contato: '#f0883e', negociando: '#eab308', convertido: '#3fb950', perdido: '#8b949e' };
+    return `
+      <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+        ${['todos','novo','contato','negociando','convertido','perdido'].map(f => `
+          <button class="btn ${(this._filtroLead || 'todos') === f ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="SUPER_ADMIN._filtroLead='${f}';SUPER_ADMIN.carregar();">${f === 'todos' ? 'Todos (' + leads.length + ')' : f.charAt(0).toUpperCase() + f.slice(1) + ' (' + leads.filter(l => l.status === f).length + ')'}</button>
+        `).join('')}
       </div>
-    `;
+      ${(this._filtroLead && this._filtroLead !== 'todos' ? leads.filter(l => l.status === this._filtroLead) : leads).map(l => `
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-left:4px solid ${statusCor[l.status] || '#666'};border-radius:var(--radius);padding:16px;margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div>
+              <strong style="font-size:15px;">${esc(l.oficina_nome || '-')}</strong>
+              <span style="font-size:12px;color:var(--text-muted);margin-left:8px;">${esc(l.cidade || '')}${l.estado ? '/' + esc(l.estado) : ''}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:11px;font-weight:700;color:${statusCor[l.status]};">${l.status}</span>
+              <span style="font-size:11px;color:var(--text-muted);">${APP.formatDate(l.created_at)}</span>
+            </div>
+          </div>
+          <div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;">
+            ${l.nome ? '<strong>' + esc(l.nome) + '</strong>' : ''}
+            ${l.whatsapp ? ' — ' + esc(l.whatsapp) : ''}
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            ${l.whatsapp ? `<a href="https://wa.me/55${l.whatsapp.replace(/\\D/g,'')}" target="_blank" class="btn btn-success btn-sm">WhatsApp</a>` : ''}
+            <select class="form-control" style="width:auto;font-size:12px;padding:4px 8px;" onchange="SUPER_ADMIN.mudarStatusLead('${l.id}',this.value)">
+              ${['novo','contato','negociando','convertido','perdido'].map(s => `<option value="${s}" ${l.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+            </select>
+            <button class="btn btn-danger btn-sm" onclick="SUPER_ADMIN.excluirLead('${l.id}')">X</button>
+          </div>
+        </div>
+      `).join('')}
+      ${!leads.length ? '<div style="text-align:center;padding:40px;color:var(--text-muted);">Nenhum lead captado ainda</div>' : ''}`;
+  },
+
+  async mudarStatusLead(id, status) {
+    await db.from('leads').update({ status, updated_at: new Date().toISOString() }).eq('id', id);
+    APP.toast('Lead atualizado');
+    this.carregar();
+  },
+
+  async excluirLead(id) {
+    if (!confirm('Excluir este lead?')) return;
+    await db.from('leads').delete().eq('id', id);
+    APP.toast('Lead excluido');
+    this.carregar();
   },
 
   async acessarOficina(oficinaId, nome) {
