@@ -70,6 +70,7 @@ const FILA = {
                 ${f.whatsapp && f.status === 'aguardando' ? `<button class="btn btn-success btn-sm" onclick="FILA.contatar('${f.id}','${esc(f.whatsapp)}','${esc(f.nome)}')">WhatsApp</button>` : ''}
                 ${f.status === 'aguardando' || f.status === 'contatado' ? `<button class="btn btn-primary btn-sm" onclick="FILA.agendar('${f.id}','${esc(f.nome)}','${esc(f.placa || '')}','${esc(f.sintoma)}')">Agendar</button>` : ''}
                 ${f.status === 'aguardando' ? `<button class="btn btn-secondary btn-sm" onclick="FILA.mudarStatus('${f.id}','contatado')">Contatado</button>` : ''}
+                ${f.status !== 'cancelado' && f.status !== 'agendado' ? `<button class="btn btn-secondary btn-sm" onclick="FILA.editar('${f.id}')">Editar</button>` : ''}
                 ${f.status !== 'cancelado' && f.status !== 'agendado' ? `<button class="btn btn-danger btn-sm" onclick="FILA.mudarStatus('${f.id}','cancelado')">X</button>` : ''}
               </div>
             </div>
@@ -138,6 +139,80 @@ const FILA = {
         </form>
       </div>
     `);
+  },
+
+  async editar(id) {
+    const { data } = await db.from('fila_espera').select('*').eq('id', id).single();
+    if (!data) return;
+
+    openModal(`
+      <div class="modal-header">
+        <h3>Editar — ${esc(data.nome)}</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form onsubmit="FILA.salvarEdicao(event, '${id}')">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="form-group">
+              <label>Nome *</label>
+              <input type="text" class="form-control" id="fila-ed-nome" required value="${esc(data.nome)}">
+            </div>
+            <div class="form-group">
+              <label>WhatsApp</label>
+              <input type="text" class="form-control" id="fila-ed-whatsapp" value="${esc(data.whatsapp || '')}">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="form-group">
+              <label>Placa</label>
+              <input type="text" class="form-control" id="fila-ed-placa" value="${esc(data.placa || '')}" style="text-transform:uppercase" maxlength="8">
+            </div>
+            <div class="form-group">
+              <label>Veiculo</label>
+              <input type="text" class="form-control" id="fila-ed-veiculo" value="${esc(data.veiculo_info || '')}">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>O que o cliente disse? *</label>
+            <textarea class="form-control" id="fila-ed-sintoma" required rows="3">${esc(data.sintoma)}</textarea>
+          </div>
+          <div class="form-group">
+            <label>Urgencia</label>
+            <select class="form-control" id="fila-ed-urgencia">
+              <option value="normal" ${data.urgencia === 'normal' ? 'selected' : ''}>Normal</option>
+              <option value="urgente" ${data.urgencia === 'urgente' ? 'selected' : ''}>Urgente</option>
+              <option value="baixa" ${data.urgencia === 'baixa' ? 'selected' : ''}>Pode esperar</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Observacoes internas</label>
+            <textarea class="form-control" id="fila-ed-obs" rows="2">${esc(data.observacoes || '')}</textarea>
+          </div>
+          <div class="modal-footer" style="padding:16px 0 0;border:0;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Salvar</button>
+          </div>
+        </form>
+      </div>
+    `);
+  },
+
+  async salvarEdicao(e, id) {
+    e.preventDefault();
+    const { error } = await db.from('fila_espera').update({
+      nome: document.getElementById('fila-ed-nome').value.trim(),
+      whatsapp: document.getElementById('fila-ed-whatsapp').value.trim() || null,
+      placa: document.getElementById('fila-ed-placa').value.trim().toUpperCase() || null,
+      veiculo_info: document.getElementById('fila-ed-veiculo').value.trim() || null,
+      sintoma: document.getElementById('fila-ed-sintoma').value.trim(),
+      urgencia: document.getElementById('fila-ed-urgencia').value,
+      observacoes: document.getElementById('fila-ed-obs').value.trim() || null
+    }).eq('id', id).eq('oficina_id', APP.profile.oficina_id);
+
+    if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
+    closeModal();
+    APP.toast('Atualizado');
+    this.carregar();
   },
 
   async salvar(e) {
