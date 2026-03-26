@@ -334,7 +334,7 @@ const AJUDA = {
     painel.id = 'ajuda-painel';
     painel.innerHTML = `
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-        <div style="font-weight:700;font-size:14px;color:var(--primary);letter-spacing:1px;">? AJUDA</div>
+        <div style="font-weight:700;font-size:14px;color:var(--primary);letter-spacing:1px;">AJUDA</div>
         <button onclick="AJUDA.fechar()" style="background:none;border:none;color:var(--text-secondary);font-size:22px;cursor:pointer;padding:4px 8px;line-height:1;">&times;</button>
       </div>
       <div style="font-weight:800;font-size:16px;color:var(--text);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);">${esc(ajuda.titulo)}</div>
