@@ -42,9 +42,18 @@ const APP = {
     // Ajusta bottom nav por perfil
     this._setupBottomNav();
 
-    // Sidebar: esconde itens restritos a dono/gerente
-    if (!['dono', 'gerente'].includes(this.profile.role)) {
+    // Sidebar: permissões por perfil
+    const role = this.profile.role;
+    if (!['dono', 'gerente'].includes(role) && !isAdmin) {
       document.querySelectorAll('.nav-dono-gerente').forEach(el => el.style.display = 'none');
+      // Contas a pagar: visível pra atendente/aux_admin também
+      if (['atendente', 'aux_admin'].includes(role)) {
+        document.querySelectorAll('.nav-contas').forEach(el => el.style.display = '');
+      }
+    }
+    // Mecânico/aux_mecanico: só vê Oficina (Pátio + Dashboard)
+    if (['mecanico', 'aux_mecanico'].includes(role) && !isAdmin) {
+      document.querySelectorAll('.nav-atendimento').forEach(el => el.style.display = 'none');
     }
 
     // aux_mecanico = mesmas permissoes de mecanico
@@ -76,7 +85,25 @@ const APP = {
     });
   },
 
+  // Páginas permitidas por perfil
+  _paginasPermitidas: {
+    mecanico: ['kanban', 'dashboard'],
+    aux_mecanico: ['kanban', 'dashboard'],
+    atendente: ['kanban', 'dashboard', 'fila', 'os', 'clientes', 'veiculos', 'agendamentos', 'servicos', 'pecas', 'contas'],
+    aux_admin: ['kanban', 'dashboard', 'fila', 'os', 'clientes', 'veiculos', 'agendamentos', 'servicos', 'pecas', 'contas'],
+    gerente: ['kanban', 'dashboard', 'fila', 'os', 'clientes', 'veiculos', 'agendamentos', 'servicos', 'pecas', 'financeiro', 'contas', 'comissao', 'crm', 'pesquisa', 'equipe', 'config'],
+    dono: null, // null = tudo
+  },
+
   loadPage(page) {
+    // Trava por perfil (dono e super admin podem tudo)
+    if (this.profile && this.profile.role !== 'dono' && !SUPER_ADMIN.isSuperAdmin) {
+      const permitidas = this._paginasPermitidas[this.profile.role];
+      if (permitidas && !permitidas.includes(page)) {
+        page = 'kanban';
+      }
+    }
+
     // Esconde todas as sections
     document.querySelectorAll('.page-content').forEach(s => s.classList.add('hidden'));
 
