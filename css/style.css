@@ -599,6 +599,13 @@ textarea.form-control { resize: vertical; min-height: 80px; }
   }
 }
 
+@media (max-width: 768px) {
+  /* Admin dashboard: grid em coluna no mobile */
+  #admin-content .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  #admin-content [style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr !important; }
+  #admin-content [style*="grid-template-columns:repeat(auto-fill"] { grid-template-columns: 1fr !important; }
+}
+
 @media (min-width: 769px) {
   .kanban-mobile-tabs { display: none !important; }
   .kanban-mobile-list { display: none !important; }

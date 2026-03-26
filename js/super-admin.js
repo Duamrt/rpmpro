@@ -1,6 +1,10 @@
-// RPM Pro — Super Admin (Painel de Oficinas)
+// RPM Pro — Super Admin (Painel Dedicado)
 const SUPER_ADMIN = {
   isSuperAdmin: false,
+  _tab: 'dashboard',
+  _filtroLead: 'todos',
+  _buscaOficina: '',
+  _dados: null,
 
   async verificar() {
     const { data } = await db.rpc('is_platform_admin');
@@ -8,119 +12,315 @@ const SUPER_ADMIN = {
     return this.isSuperAdmin;
   },
 
-  async carregar() {
-    const container = document.getElementById('admin-content');
-    if (!container) return;
-
-    // Stats globais
-    const [oficinasRes, usersRes, osRes] = await Promise.all([
-      db.from('oficinas').select('id, nome, plano, trial_ate, ativo, cidade, estado, cnpj, created_at').order('created_at', { ascending: false }),
-      db.from('profiles').select('id, oficina_id'),
-      db.from('ordens_servico').select('id, oficina_id, status')
+  // Busca todos os dados de uma vez e cacheia
+  async _fetchDados() {
+    const [oficinasRes, usersRes, osRes, leadsRes] = await Promise.all([
+      db.from('oficinas').select('id, nome, plano, trial_ate, ativo, cidade, estado, cnpj, telefone, whatsapp, created_at').order('created_at', { ascending: false }),
+      db.from('profiles').select('id, oficina_id, nome, role, created_at'),
+      db.from('ordens_servico').select('id, oficina_id, status, valor_total, created_at'),
+      db.from('leads').select('*').order('created_at', { ascending: false })
     ]);
 
     const oficinas = oficinasRes.data || [];
     const users = usersRes.data || [];
     const ordens = osRes.data || [];
+    const leads = leadsRes.data || [];
 
-    const totalOficinas = oficinas.length;
-    const totalUsers = users.length;
-    const totalOS = ordens.length;
-    const osAbertas = ordens.filter(o => !['entregue', 'cancelada'].includes(o.status)).length;
+    // Pre-calcula contagens por oficina
+    oficinas.forEach(o => {
+      o._qtdUsers = users.filter(u => u.oficina_id === o.id).length;
+      o._qtdOS = ordens.filter(os => os.oficina_id === o.id).length;
+      o._faturamento = ordens.filter(os => os.oficina_id === o.id && os.status === 'entregue').reduce((s, os) => s + (os.valor_total || 0), 0);
+    });
 
-    // Busca leads
-    const { data: leadsData } = await db.from('leads').select('*').order('created_at', { ascending: false });
-    const leads = leadsData || [];
+    this._dados = { oficinas, users, ordens, leads };
+    return this._dados;
+  },
+
+  async carregar() {
+    const container = document.getElementById('admin-content');
+    if (!container) return;
+
+    container.innerHTML = '<div class="loading">Carregando...</div>';
+
+    if (!this._dados) await this._fetchDados();
+    const { oficinas, users, ordens, leads } = this._dados;
+
+    // Atualiza badge de leads novos na sidebar
     const leadsNovos = leads.filter(l => l.status === 'novo').length;
+    const badge = document.getElementById('admin-leads-badge');
+    if (badge) {
+      if (leadsNovos > 0) {
+        badge.textContent = leadsNovos;
+        badge.style.display = '';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
 
-    // Tabs
-    let html = `<div style="display:flex;gap:8px;margin-bottom:20px;">
-      <button class="btn ${this._tab !== 'leads' ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="SUPER_ADMIN._tab='oficinas';SUPER_ADMIN.carregar();">Oficinas (${totalOficinas})</button>
-      <button class="btn ${this._tab === 'leads' ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="SUPER_ADMIN._tab='leads';SUPER_ADMIN.carregar();">Leads ${leadsNovos ? '(' + leadsNovos + ' novos)' : '(' + leads.length + ')'}</button>
-    </div>`;
+    // Renderiza tab ativa
+    switch (this._tab) {
+      case 'leads': container.innerHTML = this._renderLeads(leads); break;
+      case 'oficinas': container.innerHTML = this._renderOficinas(oficinas); break;
+      default: container.innerHTML = this._renderDashboard(oficinas, users, ordens, leads); break;
+    }
 
-    if (this._tab === 'leads') {
-      html += this._renderLeads(leads);
-    } else {
-      html += `
-      <div class="kpi-grid" style="margin-bottom:20px;">
-        <div class="kpi-card"><div class="label">Oficinas</div><div class="value primary">${totalOficinas}</div></div>
-        <div class="kpi-card"><div class="label">Usuarios</div><div class="value">${totalUsers}</div></div>
-        <div class="kpi-card"><div class="label">OS Total</div><div class="value">${totalOS}</div></div>
-        <div class="kpi-card"><div class="label">OS Abertas</div><div class="value warning">${osAbertas}</div></div>
+    // Marca tab ativa na sidebar
+    document.querySelectorAll('[data-admin-tab]').forEach(el => {
+      el.classList.toggle('active', el.dataset.adminTab === this._tab);
+    });
+  },
+
+  // ========== DASHBOARD ==========
+  _renderDashboard(oficinas, users, ordens, leads) {
+    const leadsNovos = leads.filter(l => l.status === 'novo').length;
+    const leadsConvertidos = leads.filter(l => l.status === 'convertido').length;
+    const taxaConversao = leads.length ? Math.round(leadsConvertidos / leads.length * 100) : 0;
+
+    // MRR estimado
+    const precos = { essencial: 189, profissional: 324, rede: 494 };
+    const mrr = oficinas.reduce((s, o) => s + (precos[o.plano] || 0), 0);
+
+    // OS do mês
+    const mesAtual = new Date().toISOString().slice(0, 7);
+    const osMes = ordens.filter(o => o.created_at && o.created_at.slice(0, 7) === mesAtual).length;
+
+    // Oficinas ativas (não trial expirado)
+    const hoje = new Date().toISOString().split('T')[0];
+    const oficinasAtivas = oficinas.filter(o => {
+      if (['essencial', 'profissional', 'rede', 'beta'].includes(o.plano)) return true;
+      if (o.plano === 'trial' && o.trial_ate && o.trial_ate >= hoje) return true;
+      return false;
+    }).length;
+
+    // Últimas oficinas (5)
+    const ultimas = oficinas.slice(0, 5);
+
+    // Últimos leads (5)
+    const ultimosLeads = leads.slice(0, 5);
+
+    // Pipeline de leads
+    const pipeline = ['novo', 'contato', 'negociando', 'convertido', 'perdido'];
+    const pipelineCores = { novo: 'var(--info)', contato: 'var(--warning)', negociando: '#eab308', convertido: 'var(--success)', perdido: 'var(--text-muted)' };
+    const pipelineLabels = { novo: 'Novos', contato: 'Contato', negociando: 'Negociando', convertido: 'Convertidos', perdido: 'Perdidos' };
+
+    return `
+      <div class="page-header">
+        <h2>Dashboard</h2>
+        <button class="btn btn-secondary btn-sm" onclick="SUPER_ADMIN._dados=null;SUPER_ADMIN.carregar();">Atualizar</button>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;">
-        ${oficinas.map(o => {
-          const qtdUsers = users.filter(u => u.oficina_id === o.id).length;
-          const qtdOS = ordens.filter(os => os.oficina_id === o.id).length;
-          const planoCor = { beta: 'pronto', essencial: 'orcamento', profissional: 'aprovada', rede: 'entregue', trial: 'cancelada' };
+
+      <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));">
+        <div class="kpi-card">
+          <div class="label">Oficinas Ativas</div>
+          <div class="value primary">${oficinasAtivas}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="label">Total Usuarios</div>
+          <div class="value">${users.length}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="label">MRR Estimado</div>
+          <div class="value success">${APP.formatMoney(mrr)}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="label">Leads Novos</div>
+          <div class="value warning">${leadsNovos}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="label">OS no Mes</div>
+          <div class="value">${osMes}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="label">Conversao</div>
+          <div class="value" style="color:${taxaConversao >= 30 ? 'var(--success)' : taxaConversao >= 15 ? 'var(--warning)' : 'var(--danger)'};">${taxaConversao}%</div>
+        </div>
+      </div>
+
+      <!-- Pipeline de Leads -->
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px;">
+        <h3 style="font-size:15px;margin-bottom:16px;">Pipeline de Leads</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${pipeline.map(s => {
+            const qtd = leads.filter(l => l.status === s).length;
+            return `<div style="flex:1;min-width:100px;background:var(--bg-input);border-radius:var(--radius);padding:14px;text-align:center;border-top:3px solid ${pipelineCores[s]};">
+              <div style="font-size:24px;font-weight:800;color:${pipelineCores[s]};">${qtd}</div>
+              <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">${pipelineLabels[s]}</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <!-- Últimos Leads -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;">
+          <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+            <h3 style="font-size:15px;">Leads Recentes</h3>
+            <a href="#" onclick="event.preventDefault();SUPER_ADMIN._tab='leads';SUPER_ADMIN.carregar();" style="font-size:12px;color:var(--primary);text-decoration:none;">Ver todos</a>
+          </div>
+          <div style="padding:12px;">
+            ${ultimosLeads.length ? ultimosLeads.map(l => `
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 8px;border-bottom:1px solid var(--border);">
+                <div>
+                  <div style="font-size:14px;font-weight:600;">${esc(l.oficina_nome || l.nome || '-')}</div>
+                  <div style="font-size:11px;color:var(--text-muted);">${esc(l.cidade || '')} — ${APP.formatDate(l.created_at)}</div>
+                </div>
+                <span style="font-size:11px;font-weight:700;color:${pipelineCores[l.status] || '#666'};background:${pipelineCores[l.status] || '#666'}18;padding:2px 8px;border-radius:10px;">${l.status}</span>
+              </div>
+            `).join('') : '<div style="padding:20px;text-align:center;color:var(--text-muted);">Nenhum lead</div>'}
+          </div>
+        </div>
+
+        <!-- Últimas Oficinas -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;">
+          <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+            <h3 style="font-size:15px;">Oficinas Recentes</h3>
+            <a href="#" onclick="event.preventDefault();SUPER_ADMIN._tab='oficinas';SUPER_ADMIN.carregar();" style="font-size:12px;color:var(--primary);text-decoration:none;">Ver todas</a>
+          </div>
+          <div style="padding:12px;">
+            ${ultimas.map(o => {
+              const planoCor = { beta: 'var(--success)', essencial: 'var(--info)', profissional: '#22d3ee', rede: 'var(--success)', trial: 'var(--warning)' };
+              return `
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 8px;border-bottom:1px solid var(--border);">
+                <div>
+                  <div style="font-size:14px;font-weight:600;">${esc(o.nome)}</div>
+                  <div style="font-size:11px;color:var(--text-muted);">${o._qtdUsers} usuarios — ${o._qtdOS} OS</div>
+                </div>
+                <span style="font-size:11px;font-weight:700;color:${planoCor[o.plano] || '#666'};background:${planoCor[o.plano] || '#666'}18;padding:2px 8px;border-radius:10px;">${o.plano || 'trial'}</span>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>
+      </div>`;
+  },
+
+  // ========== LEADS ==========
+  _renderLeads(leads) {
+    const statusCor = { novo: 'var(--info)', contato: 'var(--warning)', negociando: '#eab308', convertido: 'var(--success)', perdido: 'var(--text-muted)' };
+    const statusLabels = { novo: 'Novos', contato: 'Contato', negociando: 'Negociando', convertido: 'Convertidos', perdido: 'Perdidos' };
+
+    // Filtra
+    const filtrados = this._filtroLead && this._filtroLead !== 'todos' ? leads.filter(l => l.status === this._filtroLead) : leads;
+
+    return `
+      <div class="page-header">
+        <h2>Leads</h2>
+        <span style="font-size:13px;color:var(--text-secondary);">${leads.length} total</span>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
+        ${['todos', 'novo', 'contato', 'negociando', 'convertido', 'perdido'].map(f => {
+          const qtd = f === 'todos' ? leads.length : leads.filter(l => l.status === f).length;
+          const ativo = (this._filtroLead || 'todos') === f;
+          return `<button class="btn ${ativo ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="SUPER_ADMIN._filtroLead='${f}';SUPER_ADMIN.carregar();">${f === 'todos' ? 'Todos' : statusLabels[f] || f} (${qtd})</button>`;
+        }).join('')}
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        ${filtrados.length ? filtrados.map(l => `
+          <div style="background:var(--bg-card);border:1px solid var(--border);border-left:4px solid ${statusCor[l.status] || '#666'};border-radius:var(--radius);padding:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+              <div>
+                <div style="font-size:16px;font-weight:700;">${esc(l.oficina_nome || '-')}</div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${esc(l.cidade || '')}${l.estado ? '/' + esc(l.estado) : ''} — ${APP.formatDate(l.created_at)}</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <select class="form-control" style="width:auto;font-size:12px;padding:4px 8px;" onchange="SUPER_ADMIN.mudarStatusLead('${l.id}',this.value)">
+                  ${['novo', 'contato', 'negociando', 'convertido', 'perdido'].map(s => `<option value="${s}" ${l.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+                </select>
+              </div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+              <div style="font-size:13px;color:var(--text-secondary);">
+                ${l.nome ? '<strong>' + esc(l.nome) + '</strong>' : ''}
+                ${l.whatsapp ? ' — ' + esc(l.whatsapp) : ''}
+              </div>
+              <div style="display:flex;gap:6px;">
+                ${l.whatsapp ? `<a href="https://wa.me/55${l.whatsapp.replace(/\\D/g, '')}" target="_blank" class="btn btn-success btn-sm">WhatsApp</a>` : ''}
+                <button class="btn btn-danger btn-sm" onclick="SUPER_ADMIN.excluirLead('${l.id}')" title="Excluir">X</button>
+              </div>
+            </div>
+          </div>
+        `).join('') : '<div class="empty-state"><div class="icon">🎯</div><h3>Nenhum lead</h3><p>Leads captados pela landing aparecem aqui</p></div>'}
+      </div>`;
+  },
+
+  // ========== OFICINAS ==========
+  _renderOficinas(oficinas) {
+    const busca = (this._buscaOficina || '').toLowerCase();
+    const filtradas = busca ? oficinas.filter(o =>
+      (o.nome || '').toLowerCase().includes(busca) ||
+      (o.cidade || '').toLowerCase().includes(busca) ||
+      (o.cnpj || '').includes(busca) ||
+      (o.plano || '').includes(busca)
+    ) : oficinas;
+
+    const planoCores = { beta: 'var(--success)', essencial: 'var(--info)', profissional: '#22d3ee', rede: 'var(--success)', trial: 'var(--warning)' };
+    const hoje = new Date().toISOString().split('T')[0];
+
+    return `
+      <div class="page-header">
+        <h2>Oficinas</h2>
+        <span style="font-size:13px;color:var(--text-secondary);">${oficinas.length} cadastradas</span>
+      </div>
+
+      <div style="margin-bottom:20px;">
+        <input type="text" class="form-control" placeholder="Buscar oficina por nome, cidade, CNPJ ou plano..." value="${esc(this._buscaOficina || '')}" oninput="SUPER_ADMIN._buscaOficina=this.value;SUPER_ADMIN._renderOficinasDebounce();" style="max-width:480px;">
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;">
+        ${filtradas.map(o => {
+          const trialVencido = o.plano === 'trial' && o.trial_ate && o.trial_ate < hoje;
           return `
-          <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;">
+          <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;${trialVencido ? 'opacity:0.6;' : ''}">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
               <div>
                 <div style="font-weight:700;font-size:16px;">${esc(o.nome)}</div>
-                ${o.cidade ? `<div style="font-size:12px;color:var(--text-secondary);">${esc(o.cidade)}${o.estado ? '/' + esc(o.estado) : ''}</div>` : ''}
+                ${o.cidade ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">${esc(o.cidade)}${o.estado ? '/' + esc(o.estado) : ''}</div>` : ''}
               </div>
-              <span class="badge badge-${planoCor[o.plano] || 'orcamento'}">${esc(o.plano || 'trial')}</span>
+              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+                <span style="font-size:11px;font-weight:700;color:${planoCores[o.plano] || 'var(--warning)'};background:${planoCores[o.plano] || 'var(--warning)'}18;padding:2px 10px;border-radius:10px;">${(o.plano || 'trial').toUpperCase()}</span>
+                ${trialVencido ? '<span style="font-size:10px;color:var(--danger);font-weight:600;">VENCIDO</span>' : ''}
+              </div>
             </div>
-            <div style="display:flex;gap:16px;margin-bottom:14px;font-size:13px;color:var(--text-secondary);">
-              <span>👥 ${qtdUsers} usuarios</span>
-              <span>🔧 ${qtdOS} OS</span>
-              ${o.trial_ate ? `<span>📅 Trial: ${APP.formatDate(o.trial_ate)}</span>` : ''}
+            <div style="display:flex;gap:16px;margin-bottom:14px;font-size:13px;color:var(--text-secondary);flex-wrap:wrap;">
+              <span>👥 ${o._qtdUsers}</span>
+              <span>🔧 ${o._qtdOS} OS</span>
+              ${o._faturamento ? `<span>💰 ${APP.formatMoney(o._faturamento)}</span>` : ''}
+              ${o.trial_ate ? `<span>📅 ${APP.formatDate(o.trial_ate)}</span>` : ''}
             </div>
+            ${o.cnpj ? `<div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">CNPJ: ${esc(o.cnpj)}</div>` : ''}
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
               <button class="btn btn-primary btn-sm" onclick="SUPER_ADMIN.acessarOficina('${o.id}','${esc(o.nome)}')">Acessar</button>
               <button class="btn btn-secondary btn-sm" onclick="SUPER_ADMIN.verUsuarios('${o.id}','${esc(o.nome)}')">Usuarios</button>
               <button class="btn btn-secondary btn-sm" onclick="SUPER_ADMIN.editarPlano('${o.id}','${esc(o.nome)}','${o.plano || 'trial'}','${o.trial_ate || ''}')">Plano</button>
+              ${o.whatsapp ? `<a href="https://wa.me/55${o.whatsapp.replace(/\\D/g, '')}" target="_blank" class="btn btn-success btn-sm">WhatsApp</a>` : ''}
             </div>
           </div>`;
         }).join('')}
-      </div>`;
-    }
-    container.innerHTML = html;
-  },
-
-  _tab: 'oficinas',
-
-  _renderLeads(leads) {
-    const statusCor = { novo: '#388bfd', contato: '#f0883e', negociando: '#eab308', convertido: '#3fb950', perdido: '#8b949e' };
-    return `
-      <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
-        ${['todos','novo','contato','negociando','convertido','perdido'].map(f => `
-          <button class="btn ${(this._filtroLead || 'todos') === f ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="SUPER_ADMIN._filtroLead='${f}';SUPER_ADMIN.carregar();">${f === 'todos' ? 'Todos (' + leads.length + ')' : f.charAt(0).toUpperCase() + f.slice(1) + ' (' + leads.filter(l => l.status === f).length + ')'}</button>
-        `).join('')}
       </div>
-      ${(this._filtroLead && this._filtroLead !== 'todos' ? leads.filter(l => l.status === this._filtroLead) : leads).map(l => `
-        <div style="background:var(--bg-card);border:1px solid var(--border);border-left:4px solid ${statusCor[l.status] || '#666'};border-radius:var(--radius);padding:16px;margin-bottom:10px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <div>
-              <strong style="font-size:15px;">${esc(l.oficina_nome || '-')}</strong>
-              <span style="font-size:12px;color:var(--text-muted);margin-left:8px;">${esc(l.cidade || '')}${l.estado ? '/' + esc(l.estado) : ''}</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;">
-              <span style="font-size:11px;font-weight:700;color:${statusCor[l.status]};">${l.status}</span>
-              <span style="font-size:11px;color:var(--text-muted);">${APP.formatDate(l.created_at)}</span>
-            </div>
-          </div>
-          <div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;">
-            ${l.nome ? '<strong>' + esc(l.nome) + '</strong>' : ''}
-            ${l.whatsapp ? ' — ' + esc(l.whatsapp) : ''}
-          </div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            ${l.whatsapp ? `<a href="https://wa.me/55${l.whatsapp.replace(/\\D/g,'')}" target="_blank" class="btn btn-success btn-sm">WhatsApp</a>` : ''}
-            <select class="form-control" style="width:auto;font-size:12px;padding:4px 8px;" onchange="SUPER_ADMIN.mudarStatusLead('${l.id}',this.value)">
-              ${['novo','contato','negociando','convertido','perdido'].map(s => `<option value="${s}" ${l.status === s ? 'selected' : ''}>${s}</option>`).join('')}
-            </select>
-            <button class="btn btn-danger btn-sm" onclick="SUPER_ADMIN.excluirLead('${l.id}')">X</button>
-          </div>
-        </div>
-      `).join('')}
-      ${!leads.length ? '<div style="text-align:center;padding:40px;color:var(--text-muted);">Nenhum lead captado ainda</div>' : ''}`;
+      ${!filtradas.length ? '<div class="empty-state" style="margin-top:20px;"><div class="icon">🔍</div><h3>Nenhuma oficina encontrada</h3></div>' : ''}`;
   },
 
+  _renderOficinasDebounce() {
+    clearTimeout(this._debounceTimer);
+    this._debounceTimer = setTimeout(() => {
+      if (this._dados) {
+        const container = document.getElementById('admin-content');
+        if (container) container.innerHTML = this._renderOficinas(this._dados.oficinas);
+      }
+    }, 200);
+  },
+
+  // ========== AÇÕES ==========
   async mudarStatusLead(id, status) {
     await db.from('leads').update({ status, updated_at: new Date().toISOString() }).eq('id', id);
     APP.toast('Lead atualizado');
+    // Atualiza dados locais sem re-fetch
+    if (this._dados) {
+      const lead = this._dados.leads.find(l => l.id === id);
+      if (lead) lead.status = status;
+    }
     this.carregar();
   },
 
@@ -128,15 +328,19 @@ const SUPER_ADMIN = {
     if (!confirm('Excluir este lead?')) return;
     await db.from('leads').delete().eq('id', id);
     APP.toast('Lead excluido');
+    if (this._dados) this._dados.leads = this._dados.leads.filter(l => l.id !== id);
     this.carregar();
   },
 
   async acessarOficina(oficinaId, nome) {
-    // Troca o contexto do APP pra essa oficina
+    // Salva oficina original pra voltar
+    this._oficinaOriginal = this._oficinaOriginal || APP.profile.oficina_id;
+    this._acessandoOutra = true;
+
+    // Troca contexto
     APP.profile.oficina_id = oficinaId;
     APP.oficina = { id: oficinaId, nome };
 
-    // Busca dados completos da oficina
     const { data: oficina } = await db.from('oficinas').select('*').eq('id', oficinaId).single();
     if (oficina) APP.oficina = oficina;
 
@@ -144,26 +348,72 @@ const SUPER_ADMIN = {
     const elNome = document.getElementById('oficina-nome');
     if (elNome) elNome.textContent = oficina?.nome || nome;
 
-    // Marca que tá no modo admin acessando outra oficina
-    this._oficinaOriginal = this._oficinaOriginal || APP.profile.oficina_id;
-    this._acessandoOutra = true;
+    // Mostra toda a sidebar de oficina e esconde admin nav
+    document.querySelectorAll('.nav-atendimento, .nav-dono-gerente, .nav-contas').forEach(el => el.style.display = '');
+    const sidebarLabels = document.querySelectorAll('.sidebar-group-label');
+    sidebarLabels.forEach(label => {
+      const group = label.nextElementSibling;
+      if (!group) return;
+      // Expande OFICINA, fecha o resto
+      if (label.textContent.trim() === 'OFICINA') {
+        label.classList.remove('collapsed');
+        group.classList.remove('collapsed');
+      } else if (label.textContent.trim() !== 'PLATAFORMA') {
+        label.classList.add('collapsed');
+        group.classList.add('collapsed');
+      }
+    });
 
-    // Mostra badge de admin
+    // Badge de admin pra voltar
     let badge = document.getElementById('admin-badge');
     if (!badge) {
       badge = document.createElement('div');
       badge.id = 'admin-badge';
-      badge.style.cssText = 'background:var(--primary);color:#fff;padding:6px 14px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;margin:8px 16px 0;text-align:center;';
+      badge.style.cssText = 'background:var(--primary);color:#fff;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;margin:10px 16px 0;text-align:center;';
       badge.onclick = () => this.voltarAdmin();
-      // Insere abaixo do nome da oficina na sidebar
       const logoDiv = document.querySelector('.sidebar-logo');
       if (logoDiv) logoDiv.after(badge);
-      else document.body.appendChild(badge);
     }
-    badge.textContent = '🔑 ' + esc(oficina?.nome || nome) + ' — voltar';
+    badge.textContent = '← Voltar ao Admin';
 
     APP.toast('Acessando: ' + (oficina?.nome || nome));
     APP.loadPage('kanban');
+  },
+
+  voltarAdmin() {
+    if (this._oficinaOriginal) APP.profile.oficina_id = this._oficinaOriginal;
+    this._acessandoOutra = false;
+
+    const badge = document.getElementById('admin-badge');
+    if (badge) badge.remove();
+
+    const elNome = document.getElementById('oficina-nome');
+    if (elNome) elNome.textContent = 'RPM Pro Admin';
+
+    // Restaura sidebar admin: esconde nav de oficina, mostra admin
+    const role = APP.profile.role;
+    if (!['dono', 'gerente'].includes(role)) {
+      document.querySelectorAll('.nav-dono-gerente').forEach(el => el.style.display = 'none');
+    }
+
+    // Colapsa tudo menos PLATAFORMA
+    const sidebarLabels = document.querySelectorAll('.sidebar-group-label');
+    sidebarLabels.forEach(label => {
+      const group = label.nextElementSibling;
+      if (!group) return;
+      if (label.textContent.trim() === 'PLATAFORMA') {
+        label.classList.remove('collapsed');
+        group.classList.remove('collapsed');
+      } else {
+        label.classList.add('collapsed');
+        group.classList.add('collapsed');
+      }
+    });
+
+    this._dados = null; // Re-fetch ao voltar
+    this._tab = 'dashboard';
+    APP.loadPage('admin');
+    APP.toast('Voltou pro painel admin');
   },
 
   editarPlano(oficinaId, nome, planoAtual, trialAte) {
@@ -177,11 +427,11 @@ const SUPER_ADMIN = {
           <div class="form-group">
             <label>Plano</label>
             <select class="form-control" id="adm-plano">
-              ${['trial','essencial','profissional','rede','beta'].map(p => `<option value="${p}" ${planoAtual === p ? 'selected' : ''}>${p.charAt(0).toUpperCase() + p.slice(1)}</option>`).join('')}
+              ${['trial', 'essencial', 'profissional', 'rede', 'beta'].map(p => `<option value="${p}" ${planoAtual === p ? 'selected' : ''}>${p.charAt(0).toUpperCase() + p.slice(1)}</option>`).join('')}
             </select>
           </div>
           <div class="form-group">
-            <label>Trial/Validade ate (deixe vazio pra planos pagos sem vencimento)</label>
+            <label>Trial/Validade ate</label>
             <input type="date" class="form-control" id="adm-trial" value="${trialAte}">
           </div>
           <div class="modal-footer" style="padding:16px 0 0;border:0;">
@@ -209,6 +459,7 @@ const SUPER_ADMIN = {
 
     closeModal();
     APP.toast('Plano atualizado');
+    this._dados = null;
     this.carregar();
   },
 
@@ -265,28 +516,23 @@ const SUPER_ADMIN = {
     if (data && !data.ok) { APP.toast(data.erro, 'error'); return; }
 
     APP.toast('Senha alterada pra: ' + novaSenha);
-  },
-
-  voltarAdmin() {
-    // Restaura oficina original do admin
-    if (this._oficinaOriginal) {
-      APP.profile.oficina_id = this._oficinaOriginal;
-    }
-    this._acessandoOutra = false;
-
-    // Remove badge
-    const badge = document.getElementById('admin-badge');
-    if (badge) badge.remove();
-
-    // Restaura nome
-    const elNome = document.getElementById('oficina-nome');
-    if (elNome) elNome.textContent = 'RPM Pro Admin';
-
-    APP.loadPage('admin');
-    APP.toast('Voltou pro painel admin');
   }
 };
 
+// Listener de navegação
 document.addEventListener('pageLoad', (e) => {
   if (e.detail.page === 'admin') SUPER_ADMIN.carregar();
+});
+
+// Intercepta cliques nos links admin da sidebar
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-admin-tab]');
+  if (!el) return;
+  e.preventDefault();
+  SUPER_ADMIN._tab = el.dataset.adminTab;
+  if (document.getElementById('page-admin')?.classList.contains('hidden')) {
+    APP.loadPage('admin');
+  } else {
+    SUPER_ADMIN.carregar();
+  }
 });

@@ -6,7 +6,7 @@
 <title>RPM Pro — Gestao de Oficina</title>
 <meta name="theme-color" content="#FF4500">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a1d23'/><text x='50' y='68' font-size='48' font-weight='900' font-family='Arial' text-anchor='middle' fill='%23FF4500'>R</text></svg>">
-<link rel="stylesheet" href="css/style.css?v=03261350">
+<link rel="stylesheet" href="css/style.css?v=03261445">
 </head>
 <body>
 
@@ -92,10 +92,16 @@
         </a>
       </div>
 
-      <div class="sidebar-group-label nav-super-admin" style="display:none;" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">ADMIN</div>
+      <div class="sidebar-group-label nav-super-admin" style="display:none;" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">PLATAFORMA</div>
       <div class="sidebar-group nav-super-admin" style="display:none;">
-        <a href="#" data-page="admin">
-          <span class="icon">🔑</span> Super Admin
+        <a href="#" data-page="admin" data-admin-tab="dashboard">
+          <span class="icon">📊</span> Dashboard
+        </a>
+        <a href="#" data-page="admin" data-admin-tab="leads">
+          <span class="icon">🎯</span> Leads <span id="admin-leads-badge" style="display:none;background:var(--danger);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:auto;"></span>
+        </a>
+        <a href="#" data-page="admin" data-admin-tab="oficinas">
+          <span class="icon">🏢</span> Oficinas
         </a>
       </div>
     </nav>
@@ -259,11 +265,8 @@
       </div>
     </section>
 
-    <!-- SUPER ADMIN -->
+    <!-- SUPER ADMIN — Painel Dedicado -->
     <section id="page-admin" class="page-content hidden">
-      <div class="page-header">
-        <h2>Super Admin</h2>
-      </div>
       <div id="admin-content">
         <div class="loading">Carregando...</div>
       </div>
@@ -361,33 +364,33 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=03261350"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=03261350"></script>
-<script src="js/utils.js?v=03261350"></script>
-<script src="js/config.js?v=03261350"></script>
-<script src="js/auth.js?v=03261350"></script>
-<script src="js/app.js?v=03261350"></script>
-<script src="js/dashboard.js?v=03261350"></script>
-<script src="js/os.js?v=03261350"></script>
-<script src="js/clientes.js?v=03261350"></script>
-<script src="js/catalogo-veiculos.js?v=03261350"></script>
-<script src="js/catalogo-servicos.js?v=03261350"></script>
-<script src="js/veiculos.js?v=03261350"></script>
-<script src="js/servicos.js?v=03261350"></script>
-<script src="js/pecas.js?v=03261350"></script>
-<script src="js/equipe.js?v=03261350"></script>
-<script src="js/kanban.js?v=03261350"></script>
-<script src="js/config-oficina.js?v=03261350"></script>
-<script src="js/financeiro.js?v=03261350"></script>
-<script src="js/comissao.js?v=03261350"></script>
-<script src="js/super-admin.js?v=03261350"></script>
-<script src="js/fila.js?v=03261350"></script>
-<script src="js/crm.js?v=03261350"></script>
-<script src="js/agendamentos.js?v=03261350"></script>
-<script src="js/contas.js?v=03261350"></script>
-<script src="js/pesquisa.js?v=03261350"></script>
-<script src="js/ajuda.js?v=03261350"></script>
-<script src="js/pdf-os.js?v=03261350"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=03261445"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=03261445"></script>
+<script src="js/utils.js?v=03261445"></script>
+<script src="js/config.js?v=03261445"></script>
+<script src="js/auth.js?v=03261445"></script>
+<script src="js/app.js?v=03261445"></script>
+<script src="js/dashboard.js?v=03261445"></script>
+<script src="js/os.js?v=03261445"></script>
+<script src="js/clientes.js?v=03261445"></script>
+<script src="js/catalogo-veiculos.js?v=03261445"></script>
+<script src="js/catalogo-servicos.js?v=03261445"></script>
+<script src="js/veiculos.js?v=03261445"></script>
+<script src="js/servicos.js?v=03261445"></script>
+<script src="js/pecas.js?v=03261445"></script>
+<script src="js/equipe.js?v=03261445"></script>
+<script src="js/kanban.js?v=03261445"></script>
+<script src="js/config-oficina.js?v=03261445"></script>
+<script src="js/financeiro.js?v=03261445"></script>
+<script src="js/comissao.js?v=03261445"></script>
+<script src="js/super-admin.js?v=03261445"></script>
+<script src="js/fila.js?v=03261445"></script>
+<script src="js/crm.js?v=03261445"></script>
+<script src="js/agendamentos.js?v=03261445"></script>
+<script src="js/contas.js?v=03261445"></script>
+<script src="js/pesquisa.js?v=03261445"></script>
+<script src="js/ajuda.js?v=03261445"></script>
+<script src="js/pdf-os.js?v=03261445"></script>
 <script>
   // Modal helpers
   function openModal(html) {

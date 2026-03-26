@@ -237,8 +237,8 @@ const APP = {
       const texto = label.textContent.trim();
 
       if (isAdmin) {
-        // Super admin: tudo fechado, só ADMIN aberto
-        if (texto !== 'ADMIN') {
+        // Super admin: tudo fechado, só PLATAFORMA aberto
+        if (texto !== 'PLATAFORMA') {
           label.classList.add('collapsed');
           group.classList.add('collapsed');
         }

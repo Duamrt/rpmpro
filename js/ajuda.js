@@ -320,19 +320,28 @@ const AJUDA = {
     },
 
     admin: {
-      titulo: 'Super Admin',
+      titulo: 'Painel Super Admin',
       perfis: ['dono'],
       secoes: [
-        { titulo: 'Visao geral', info: 'Painel exclusivo pra administradores da plataforma. Veja todas as oficinas, usuarios e OS.' },
-        { titulo: 'Acessar oficina', passos: [
-          'Clique em Acessar pra entrar no contexto de uma oficina',
-          'Voce ve e edita como se fosse o dono',
-          'O badge laranja mostra qual oficina — clique nele pra voltar'
+        { titulo: 'Dashboard', info: 'Visao geral da plataforma com KPIs: oficinas ativas, usuarios, MRR estimado, leads novos, OS no mes e taxa de conversao. Pipeline visual de leads e atividade recente.' },
+        { titulo: 'Leads', passos: [
+          'Todos os leads captados pela landing aparecem aqui',
+          'Filtre por status: novo, contato, negociando, convertido, perdido',
+          'Mude o status direto no dropdown do card',
+          'Botao WhatsApp abre conversa com o lead',
+          'Badge vermelho na sidebar mostra leads novos'
         ]},
-        { titulo: 'Gerenciar planos', passos: [
-          'Clique em Plano pra mudar: trial, essencial, profissional, rede, beta',
-          'Defina a data de validade se necessario',
-          'Oficinas com trial expirado ficam bloqueadas ate voce ativar'
+        { titulo: 'Oficinas', passos: [
+          'Lista todas as oficinas com busca por nome, cidade, CNPJ ou plano',
+          'Cada card mostra usuarios, OS, faturamento e plano',
+          'Acessar: entra no contexto da oficina como dono',
+          'Usuarios: lista membros da oficina, reseta senha',
+          'Plano: troca plano e validade'
+        ]},
+        { titulo: 'Acessar oficina', passos: [
+          'Ao acessar, a sidebar muda pra navegacao da oficina',
+          'O botao "Voltar ao Admin" aparece no topo da sidebar',
+          'Clique nele pra retornar ao painel admin'
         ]},
         { dica: 'Voce (super admin) nunca e bloqueado, mesmo que a oficina esteja em trial expirado.' }
       ]
