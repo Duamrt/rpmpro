@@ -496,7 +496,16 @@ const KANBAN = {
     msg += `Pagamento: ${pagamento}\n`;
     msg += `\nHistórico completo do veículo:\n${link}\n`;
     msg += `\nObrigado pela confiança!`;
-    msg += `\n\nQuando precisar da próxima revisão, é só chamar! Podemos já agendar um horário pra você.`;
+
+    // Link de reagendamento — WhatsApp da oficina
+    const whatsOficina = APP.oficina?.whatsapp;
+    if (whatsOficina) {
+      const numOficina = whatsOficina.replace(/\D/g, '');
+      const foneOficina = numOficina.startsWith('55') ? numOficina : '55' + numOficina;
+      msg += `\n\nQuando precisar da próxima revisão, é só chamar!\n👉 https://wa.me/${foneOficina}?text=Olá! Gostaria de agendar uma revisão para o veículo ${placa}`;
+    } else {
+      msg += `\n\nQuando precisar da próxima revisão, é só chamar! Podemos já agendar um horário pra você.`;
+    }
 
     return msg;
   },

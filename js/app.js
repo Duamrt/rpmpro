@@ -45,7 +45,6 @@ const APP = {
       const oficinaSalva = localStorage.getItem('rpmpro-admin-oficina');
       if (oficinaSalva) {
         await SUPER_ADMIN.acessarOficina(oficinaSalva, '');
-        return; // acessarOficina já carrega tudo
       }
     }
 
