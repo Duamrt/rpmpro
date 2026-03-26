@@ -263,7 +263,7 @@ const KANBAN = {
     // Busca dados pra WhatsApp
     const { data: os } = await db
       .from('ordens_servico')
-      .select('id, status, clientes(nome, whatsapp), veiculos(placa)')
+      .select('id, status, clientes(nome, whatsapp), veiculos(placa, marca, modelo)')
       .eq('id', osId).single();
 
     if (!os || os.status === novoStatus) return;
@@ -343,7 +343,7 @@ const KANBAN = {
     // Busca OS pra pegar status atual e dados do cliente
     const { data: os } = await db
       .from('ordens_servico')
-      .select('id, status, clientes(nome, whatsapp), veiculos(placa)')
+      .select('id, status, clientes(nome, whatsapp), veiculos(placa, marca, modelo)')
       .eq('id', osId)
       .single();
 
@@ -436,6 +436,8 @@ const KANBAN = {
     if (!whats) return;
 
     const placa = os.veiculos?.placa || '';
+    const veiculo = [os.veiculos?.marca, os.veiculos?.modelo].filter(Boolean).join(' ');
+    const nomeVeiculo = veiculo ? `${veiculo} placa ${placa}` : placa;
     const oficina = APP.oficina?.nome || 'a oficina';
     const num = whats.replace(/\D/g, '');
     const fone = num.startsWith('55') ? num : '55' + num;
@@ -443,16 +445,15 @@ const KANBAN = {
     let msg = '';
 
     if (novoStatus === 'entregue') {
-      // Mensagem completa de entrega com resumo + histórico
-      msg = await this._montarMsgEntrega(os, placa, oficina);
+      msg = await this._montarMsgEntrega(os, nomeVeiculo, placa, oficina);
     } else {
       const mensagens = {
-        diagnostico: `Olá! Aqui é da ${oficina}. Seu veículo ${placa} entrou em diagnóstico. Em breve teremos novidades.`,
-        orcamento: `Olá! Aqui é da ${oficina}. O orçamento do seu veículo ${placa} está pronto. Posso enviar os detalhes?`,
-        aprovada: `Olá! Orçamento do veículo ${placa} aprovado! Já vamos iniciar o serviço. Qualquer novidade te aviso.`,
-        aguardando_peca: `Olá! Aqui é da ${oficina}. Seu veículo ${placa} está aguardando uma peça. Te aviso assim que chegar.`,
-        execucao: `Olá! Seu veículo ${placa} já está em execução aqui na ${oficina}. Te aviso quando estiver pronto!`,
-        pronto: `Olá! Seu veículo ${placa} está pronto pra retirada aqui na ${oficina}! Quando pode vir buscar?`
+        diagnostico: `Olá! Aqui é da ${oficina}. Seu ${nomeVeiculo} entrou em diagnóstico. Em breve teremos novidades.`,
+        orcamento: `Olá! Aqui é da ${oficina}. O orçamento do seu ${nomeVeiculo} está pronto. Posso enviar os detalhes?`,
+        aprovada: `Olá! Orçamento do ${nomeVeiculo} aprovado! Já vamos iniciar o serviço. Qualquer novidade te aviso.`,
+        aguardando_peca: `Olá! Aqui é da ${oficina}. Seu ${nomeVeiculo} está aguardando uma peça. Te aviso assim que chegar.`,
+        execucao: `Olá! Seu ${nomeVeiculo} já está em execução aqui na ${oficina}. Te aviso quando estiver pronto!`,
+        pronto: `Olá! Seu ${nomeVeiculo} está pronto pra retirada aqui na ${oficina}! Quando pode vir buscar?`
       };
       msg = mensagens[novoStatus];
     }
@@ -464,17 +465,17 @@ const KANBAN = {
     }
   },
 
-  async _montarMsgEntrega(os, placa, oficina) {
-    // Busca OS completa com itens
+  async _montarMsgEntrega(os, nomeVeiculo, placa, oficina) {
     const { data: osData } = await db.from('ordens_servico')
       .select('id, numero, valor_total, forma_pagamento')
       .eq('id', os.id || '')
       .single();
 
-    // Se não achou por id, monta mensagem simples
+    const placaLimpa = placa.replace(/[^A-Z0-9]/gi, '');
+    const link = 'https://rpmpro.com.br/v?p=' + placaLimpa;
+
     if (!osData) {
-      const link = 'https://rpmpro.com.br/v?p=' + placa.replace(/[^A-Z0-9]/gi, '');
-      return `Olá! Seu veículo ${placa} foi entregue pela ${oficina}.\n\nHistórico completo:\n${link}\n\nObrigado pela confiança!`;
+      return `Olá! Seu ${nomeVeiculo} foi entregue pela ${oficina}.\n\nHistórico completo:\n${link}\n\nObrigado pela confiança!`;
     }
 
     const { data: itens } = await db.from('itens_os')
@@ -482,12 +483,11 @@ const KANBAN = {
       .eq('os_id', osData.id);
 
     const servicos = (itens || []).filter(i => i.tipo === 'servico').map(i => i.descricao);
-    const pagLabels = { dinheiro: 'Dinheiro', pix: 'Pix', debito: 'Debito', credito: 'Credito', boleto: 'Boleto', pendente: 'Pendente' };
+    const pagLabels = { dinheiro: 'Dinheiro', pix: 'Pix', debito: 'Débito', credito: 'Crédito', boleto: 'Boleto', pendente: 'Pendente' };
     const pagamento = pagLabels[osData.forma_pagamento] || 'Pendente';
     const total = (osData.valor_total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    const link = 'https://rpmpro.com.br/v?p=' + placa.replace(/[^A-Z0-9]/gi, '');
 
-    let msg = `Olá! Seu veículo ${placa} foi entregue pela ${oficina}.\n\n`;
+    let msg = `Olá! Seu ${nomeVeiculo} foi entregue pela ${oficina}.\n\n`;
 
     if (servicos.length) {
       msg += `Serviço: ${servicos.join(', ')}\n`;
@@ -497,12 +497,11 @@ const KANBAN = {
     msg += `\nHistórico completo do veículo:\n${link}\n`;
     msg += `\nObrigado pela confiança!`;
 
-    // Link de reagendamento — WhatsApp da oficina
     const whatsOficina = APP.oficina?.whatsapp;
     if (whatsOficina) {
       const numOficina = whatsOficina.replace(/\D/g, '');
       const foneOficina = numOficina.startsWith('55') ? numOficina : '55' + numOficina;
-      msg += `\n\nQuando precisar da próxima revisão, é só chamar!\n👉 https://wa.me/${foneOficina}?text=Olá! Gostaria de agendar uma revisão para o veículo ${placa}`;
+      msg += `\n\nQuando precisar da próxima revisão, é só chamar!\n👉 https://wa.me/${foneOficina}?text=Olá! Gostaria de agendar uma revisão para meu ${nomeVeiculo}`;
     } else {
       msg += `\n\nQuando precisar da próxima revisão, é só chamar! Podemos já agendar um horário pra você.`;
     }
