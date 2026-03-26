@@ -764,6 +764,11 @@ const OS = {
           <button class="btn btn-secondary" style="flex:1;" onclick="PDF_OS.recibo('${os.id}')">🧾 Gerar Recibo</button>
         </div>
 
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button class="btn btn-secondary" style="flex:1;" onclick="OS.editarOS('${os.id}')">Editar OS</button>
+          ${os.status !== 'entregue' ? `<button class="btn btn-danger" style="flex:1;" onclick="OS.excluirOS('${os.id}')">Excluir OS</button>` : ''}
+        </div>
+
         ${os.descricao ? `
           <div style="margin-top:12px;padding:10px 14px;background:var(--bg-input);border-radius:var(--radius);font-size:13px;color:var(--text-secondary);">
             <strong>Obs:</strong> ${esc(os.descricao)}
@@ -1190,6 +1195,95 @@ const OS = {
       updated_at: new Date().toISOString()
     }).eq('id', osId);
     APP.toast('Desconto aplicado');
+  },
+
+  async editarOS(id) {
+    const { data: os } = await db.from('ordens_servico')
+      .select('*, veiculos(placa), profiles!ordens_servico_mecanico_id_fkey(nome)')
+      .eq('id', id).single();
+    if (!os) return;
+
+    // Busca mecanicos
+    const { data: mecanicos } = await db.from('profiles')
+      .select('id, nome')
+      .eq('oficina_id', APP.profile.oficina_id)
+      .in('role', ['mecanico', 'dono', 'gerente'])
+      .order('nome');
+
+    openModal(`
+      <div class="modal-header">
+        <h3>Editar OS #${esc(os.numero)} — ${esc(os.veiculos?.placa)}</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form onsubmit="OS.salvarEdicao(event, '${id}')">
+          <div class="form-group">
+            <label>Mecanico responsavel</label>
+            <select class="form-control" id="edit-mecanico">
+              <option value="">Nao definido</option>
+              ${(mecanicos || []).map(m => `<option value="${m.id}" ${m.id === os.mecanico_id ? 'selected' : ''}>${esc(m.nome)}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Descricao / Observacoes</label>
+            <textarea class="form-control" id="edit-descricao" rows="3">${esc(os.descricao || '')}</textarea>
+          </div>
+          <div class="form-group">
+            <label>KM de entrada</label>
+            <input type="number" class="form-control" id="edit-km" value="${os.km_entrada || ''}">
+          </div>
+          <div class="form-group">
+            <label>Desconto (R$)</label>
+            <input type="number" class="form-control" id="edit-desconto" value="${os.desconto || 0}" min="0" step="0.01">
+          </div>
+          <div class="modal-footer" style="padding:16px 0 0;border:0;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Salvar</button>
+          </div>
+        </form>
+      </div>
+    `);
+  },
+
+  async salvarEdicao(e, id) {
+    e.preventDefault();
+    const mecanicoId = document.getElementById('edit-mecanico').value || null;
+    const { error } = await db.from('ordens_servico').update({
+      mecanico_id: mecanicoId,
+      descricao: document.getElementById('edit-descricao').value.trim(),
+      km_entrada: document.getElementById('edit-km').value ? parseInt(document.getElementById('edit-km').value) : null,
+      desconto: parseFloat(document.getElementById('edit-desconto').value) || 0,
+      updated_at: new Date().toISOString()
+    }).eq('id', id).eq('oficina_id', APP.profile.oficina_id);
+
+    if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
+    closeModal();
+    APP.toast('OS atualizada');
+    this.abrirDetalhes(id);
+  },
+
+  async excluirOS(id) {
+    if (!confirm('Tem certeza que quer excluir esta OS? Essa acao nao pode ser desfeita.')) return;
+
+    const oficina_id = APP.profile.oficina_id;
+
+    // Verifica se não é entregue
+    const { data: os } = await db.from('ordens_servico').select('status').eq('id', id).single();
+    if (os?.status === 'entregue') {
+      APP.toast('OS entregue nao pode ser excluida', 'error');
+      return;
+    }
+
+    // Remove itens, checklists e depois a OS
+    await db.from('itens_os').delete().eq('os_id', id).eq('oficina_id', oficina_id);
+    await db.from('checklists_entrada').delete().eq('os_id', id).eq('oficina_id', oficina_id);
+    await db.from('checklists_saida').delete().eq('os_id', id).eq('oficina_id', oficina_id);
+    const { error } = await db.from('ordens_servico').delete().eq('id', id).eq('oficina_id', oficina_id);
+
+    if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
+    closeModal();
+    APP.toast('OS excluida');
+    this.carregar();
   },
 
   async atualizarStatus(id, status) {
