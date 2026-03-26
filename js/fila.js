@@ -86,7 +86,13 @@ const FILA = {
     `;
   },
 
-  abrirModal() {
+  _cliCache: [],
+
+  async abrirModal() {
+    // Carrega clientes pra autocomplete
+    const { data } = await db.from('clientes').select('id, nome, whatsapp').eq('oficina_id', APP.profile.oficina_id).order('nome');
+    this._cliCache = data || [];
+
     openModal(`
       <div class="modal-header">
         <h3>Novo na fila</h3>
@@ -95,13 +101,15 @@ const FILA = {
       <div class="modal-body">
         <form onsubmit="FILA.salvar(event)">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-            <div class="form-group">
+            <div class="form-group" style="position:relative;">
               <label>Nome do cliente *</label>
-              <input type="text" class="form-control" id="fila-nome" required placeholder="Como ele se identificou">
+              <input type="text" class="form-control" id="fila-nome" required placeholder="Digite pra buscar ou cadastrar novo" autocomplete="off" oninput="FILA._buscarCli(this.value)" onfocus="FILA._buscarCli(this.value)">
+              <input type="hidden" id="fila-cliente-id" value="">
+              <div id="fila-cli-lista" style="position:absolute;top:100%;left:0;right:0;z-index:100;background:var(--bg-card);border:1px solid var(--border);border-radius:0 0 var(--radius) var(--radius);max-height:200px;overflow-y:auto;display:none;box-shadow:0 4px 12px rgba(0,0,0,0.3);"></div>
             </div>
             <div class="form-group">
               <label>WhatsApp</label>
-              <input type="text" class="form-control" id="fila-whatsapp" placeholder="(00) 00000-0000">
+              <input type="text" class="form-control" id="fila-whatsapp" placeholder="(00) 00000-0000" maxlength="15" oninput="FILA._maskFone(this)">
             </div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
@@ -217,12 +225,36 @@ const FILA = {
 
   async salvar(e) {
     e.preventDefault();
+    const oficina_id = APP.profile.oficina_id;
+    const nome = document.getElementById('fila-nome').value.trim();
+    const whatsapp = document.getElementById('fila-whatsapp').value.trim() || null;
+    const placa = document.getElementById('fila-placa').value.trim().toUpperCase() || null;
+    const veiculoInfo = document.getElementById('fila-veiculo').value.trim() || null;
+    const clienteId = document.getElementById('fila-cliente-id').value || null;
+
+    // Se não selecionou cliente existente, cadastra novo automaticamente
+    if (!clienteId && nome) {
+      const { data: novoCli } = await db.from('clientes').insert({
+        oficina_id, nome, whatsapp
+      }).select().single();
+
+      // Se tem placa, cadastra veículo também
+      if (novoCli && placa) {
+        await db.from('veiculos').insert({
+          oficina_id,
+          cliente_id: novoCli.id,
+          placa,
+          modelo: veiculoInfo || null
+        });
+      }
+    }
+
     const { error } = await db.from('fila_espera').insert({
-      oficina_id: APP.profile.oficina_id,
-      nome: document.getElementById('fila-nome').value.trim(),
-      whatsapp: document.getElementById('fila-whatsapp').value.trim() || null,
-      placa: document.getElementById('fila-placa').value.trim().toUpperCase() || null,
-      veiculo_info: document.getElementById('fila-veiculo').value.trim() || null,
+      oficina_id,
+      nome,
+      whatsapp,
+      placa,
+      veiculo_info: veiculoInfo,
       sintoma: document.getElementById('fila-sintoma').value.trim(),
       urgencia: document.getElementById('fila-urgencia').value,
       observacoes: document.getElementById('fila-obs').value.trim() || null,
@@ -231,8 +263,47 @@ const FILA = {
 
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
     closeModal();
-    APP.toast('Adicionado na fila');
+    APP.toast(clienteId ? 'Adicionado na fila' : 'Cliente cadastrado e adicionado na fila');
     this.carregar();
+  },
+
+  _buscarCli(termo) {
+    const lista = document.getElementById('fila-cli-lista');
+    if (!lista) return;
+    const t = termo.toLowerCase();
+    const filtrados = t.length >= 2 ? this._cliCache.filter(c => c.nome.toLowerCase().includes(t)) : [];
+
+    if (!filtrados.length) {
+      lista.style.display = t.length >= 2 ? 'block' : 'none';
+      lista.innerHTML = t.length >= 2 ? `<div style="padding:10px 14px;font-size:12px;color:var(--text-muted);">Nenhum cliente encontrado — será cadastrado automaticamente</div>` : '';
+      document.getElementById('fila-cliente-id').value = '';
+      return;
+    }
+
+    lista.style.display = 'block';
+    lista.innerHTML = filtrados.slice(0, 10).map(c =>
+      `<div style="padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);" onmousedown="FILA._selecionarCli('${c.id}','${esc(c.nome)}','${esc(c.whatsapp || '')}')" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">
+        <strong>${esc(c.nome)}</strong>
+        ${c.whatsapp ? `<span style="font-size:11px;color:var(--text-muted);margin-left:8px;">${esc(c.whatsapp)}</span>` : ''}
+      </div>`
+    ).join('');
+  },
+
+  _selecionarCli(id, nome, whatsapp) {
+    document.getElementById('fila-nome').value = nome;
+    document.getElementById('fila-cliente-id').value = id;
+    document.getElementById('fila-cli-lista').style.display = 'none';
+    if (whatsapp && !document.getElementById('fila-whatsapp').value) {
+      document.getElementById('fila-whatsapp').value = whatsapp;
+    }
+  },
+
+  _maskFone(el) {
+    let v = el.value.replace(/\D/g, '').slice(0, 11);
+    if (v.length > 10) v = v.replace(/^(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+    else if (v.length > 6) v = v.replace(/^(\d{2})(\d{4,5})(\d{0,4})/, '($1) $2-$3');
+    else if (v.length > 2) v = v.replace(/^(\d{2})(\d{0,5})/, '($1) $2');
+    el.value = v;
   },
 
   contatar(id, fone, nome) {
