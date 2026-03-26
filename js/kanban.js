@@ -435,6 +435,13 @@ const KANBAN = {
     const whats = os.clientes?.whatsapp;
     if (!whats) return;
 
+    const osId = os.id;
+
+    // Controle: só envia uma vez por status por OS
+    const chave = 'rpmpro-whats-' + osId;
+    const enviados = JSON.parse(localStorage.getItem(chave) || '[]');
+    if (enviados.includes(novoStatus)) return; // já mandou pra esse status
+
     const placa = os.veiculos?.placa || '';
     const veiculo = [os.veiculos?.marca, os.veiculos?.modelo].filter(Boolean).join(' ');
     const nomeVeiculo = veiculo ? `${veiculo} placa ${placa}` : placa;
@@ -462,6 +469,9 @@ const KANBAN = {
 
     if (confirm(`Enviar WhatsApp pro cliente?\n\n"${msg}"`)) {
       window.open(`https://wa.me/${fone}?text=${encodeURIComponent(msg)}`, '_blank');
+      // Marca como enviado pra não repetir
+      enviados.push(novoStatus);
+      localStorage.setItem(chave, JSON.stringify(enviados));
     }
   },
 
