@@ -496,6 +496,7 @@ const KANBAN = {
     msg += `Pagamento: ${pagamento}\n`;
     msg += `\nHistorico completo do veiculo:\n${link}\n`;
     msg += `\nObrigado pela confianca!`;
+    msg += `\n\n💡 Dica: a proxima revisao do seu veiculo seria em aproximadamente 6 meses ou 10.000 km. Quer que a gente ja agende um horario?`;
 
     return msg;
   },
