@@ -50,12 +50,15 @@ const AUTH = {
 
   async getProfile() {
     const user = await this.getUser();
-    if (!user) return null;
-    const { data } = await db
+    if (!user) { console.error('AUTH: sem user'); return null; }
+    console.log('AUTH: user.id =', user.id);
+    const { data, error } = await db
       .from('profiles')
       .select('*, oficinas(*)')
       .eq('id', user.id)
       .single();
+    if (error) console.error('AUTH: erro getProfile:', error);
+    console.log('AUTH: profile =', data);
     return data;
   },
 
