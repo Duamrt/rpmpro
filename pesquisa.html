@@ -47,7 +47,7 @@
     <div style="text-align:center;padding:30px;color:#8b949e;">Carregando...</div>
   </div>
 
-  <div class="footer">RPM Pro &copy; 2026 — rpmpro.com.br</div>
+  <div class="footer"><a href="https://rpmpro.com.br/landing.html" target="_blank" style="color:#484f58;text-decoration:none;">Powered by <strong style="color:#FF4500;">RPM Pro</strong></a> — Sistema de gestao para oficinas</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -79,6 +79,7 @@
     }
 
     card.innerHTML = `
+      ${data.logo ? `<div style="text-align:center;margin-bottom:16px;"><img src="${esc(data.logo)}" style="max-height:60px;max-width:200px;object-fit:contain;"></div>` : ''}
       <h2>Como foi nosso servico?</h2>
       <p class="sub">Sua avaliacao ajuda a ${esc(data.oficina)} a melhorar</p>
 

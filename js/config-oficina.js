@@ -90,6 +90,22 @@ const CONFIG = {
           </form>
         </div>
 
+        <!-- LOGO -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;">
+          <h3 style="font-size:16px;margin-bottom:16px;">Logo da Oficina</h3>
+          <div style="display:flex;align-items:center;gap:20px;">
+            <div id="cfg-logo-preview" style="width:80px;height:80px;border-radius:var(--radius);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--bg-input);">
+              ${oficina.logo_url ? `<img src="${esc(oficina.logo_url)}" style="width:100%;height:100%;object-fit:contain;">` : '<span style="font-size:28px;color:var(--text-muted);">🏢</span>'}
+            </div>
+            <div>
+              <input type="file" id="cfg-logo-file" accept="image/*" style="display:none;" onchange="CONFIG.uploadLogo(this.files[0])">
+              <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('cfg-logo-file').click()">Enviar logo</button>
+              ${oficina.logo_url ? `<button type="button" class="btn btn-danger btn-sm" style="margin-left:8px;" onclick="CONFIG.removerLogo()">Remover</button>` : ''}
+              <div style="font-size:11px;color:var(--text-secondary);margin-top:8px;">JPG ou PNG, max 500KB. Aparece no sistema, PDFs e pesquisa de satisfacao.</div>
+            </div>
+          </div>
+        </div>
+
         <!-- PLANO -->
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;">
           <h3 style="font-size:16px;margin-bottom:12px;">Plano</h3>
@@ -147,6 +163,57 @@ const CONFIG = {
     APP.oficina.capacidade_diaria = capacidade_diaria;
 
     APP.toast('Valores salvos');
+  },
+
+  async uploadLogo(file) {
+    if (!file) return;
+    if (file.size > 512000) { APP.toast('Imagem muito grande. Max 500KB.', 'error'); return; }
+    if (!file.type.startsWith('image/')) { APP.toast('Selecione uma imagem.', 'error'); return; }
+
+    const oficina_id = APP.profile.oficina_id;
+    const ext = file.name.split('.').pop().toLowerCase();
+    const path = `${oficina_id}/logo.${ext}`;
+
+    // Remove logo anterior se existir
+    await db.storage.from('logos').remove([`${oficina_id}/logo.png`, `${oficina_id}/logo.jpg`, `${oficina_id}/logo.jpeg`, `${oficina_id}/logo.webp`]);
+
+    // Upload
+    const { error: upErr } = await db.storage.from('logos').upload(path, file, { upsert: true });
+    if (upErr) { APP.toast('Erro no upload: ' + upErr.message, 'error'); return; }
+
+    // Gera URL pública
+    const { data: urlData } = db.storage.from('logos').getPublicUrl(path);
+    const logoUrl = urlData.publicUrl + '?t=' + Date.now();
+
+    // Salva URL na oficina
+    const { error } = await db.from('oficinas').update({ logo_url: logoUrl }).eq('id', oficina_id);
+    if (error) { APP.toast('Erro ao salvar: ' + error.message, 'error'); return; }
+
+    APP.oficina.logo_url = logoUrl;
+    APP.toast('Logo atualizado');
+    this.carregar();
+
+    // Atualiza sidebar
+    CONFIG._atualizarLogoSidebar(logoUrl);
+  },
+
+  async removerLogo() {
+    const oficina_id = APP.profile.oficina_id;
+    await db.storage.from('logos').remove([`${oficina_id}/logo.png`, `${oficina_id}/logo.jpg`, `${oficina_id}/logo.jpeg`, `${oficina_id}/logo.webp`]);
+    await db.from('oficinas').update({ logo_url: null }).eq('id', oficina_id);
+    APP.oficina.logo_url = null;
+    APP.toast('Logo removido');
+    this.carregar();
+    CONFIG._atualizarLogoSidebar(null);
+  },
+
+  _atualizarLogoSidebar(url) {
+    const logoEl = document.getElementById('sidebar-logo-img');
+    if (logoEl) {
+      logoEl.innerHTML = url
+        ? `<img src="${url}" style="max-height:32px;max-width:120px;object-fit:contain;">`
+        : '';
+    }
   }
 };
 

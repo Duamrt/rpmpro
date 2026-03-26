@@ -1,5 +1,22 @@
 // RPM Pro — PDF de OS e Recibo (pdfmake)
 const PDF_OS = {
+  _logoBase64: null,
+
+  async _carregarLogo() {
+    const url = APP.oficina?.logo_url;
+    if (!url || this._logoBase64) return;
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      return new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = () => { this._logoBase64 = reader.result; resolve(); };
+        reader.onerror = () => resolve();
+        reader.readAsDataURL(blob);
+      });
+    } catch (e) { /* ignora se não conseguir */ }
+  },
+
   async _buscarDados(osId) {
     const [osRes, itensRes] = await Promise.all([
       db.from('ordens_servico')
@@ -19,6 +36,7 @@ const PDF_OS = {
   },
 
   async gerar(osId) {
+    await this._carregarLogo();
     const dados = await this._buscarDados(osId);
     if (!dados) return;
 
@@ -41,21 +59,21 @@ const PDF_OS = {
       credito: 'Credito', boleto: 'Boleto', pendente: 'Pendente'
     };
 
-    // Header
+    // Header — logo da oficina como protagonista
+    const headerLeft = [];
+    if (oficina.logo_url && this._logoBase64) {
+      headerLeft.push({ image: this._logoBase64, width: 80, margin: [0, 0, 0, 4] });
+    }
+    headerLeft.push({ text: oficina.nome || 'Oficina', style: 'headerOficina' });
+
     const header = {
       columns: [
-        {
-          text: [
-            { text: 'RPM ', style: 'headerRpm' },
-            { text: 'PRO', style: 'headerPro' }
-          ],
-          width: 'auto'
-        },
+        { stack: headerLeft, width: '*' },
         {
           stack: [
-            { text: oficina.nome || 'Oficina', style: 'headerOficina' },
             oficina.cnpj ? { text: 'CNPJ: ' + oficina.cnpj, style: 'headerInfo' } : {},
             oficina.telefone ? { text: 'Tel: ' + oficina.telefone, style: 'headerInfo' } : {},
+            oficina.whatsapp ? { text: 'WhatsApp: ' + oficina.whatsapp, style: 'headerInfo' } : {},
             oficina.endereco ? { text: oficina.endereco + (oficina.cidade ? ' — ' + oficina.cidade + '/' + (oficina.estado || 'PE') : ''), style: 'headerInfo' } : {}
           ],
           alignment: 'right'
@@ -229,7 +247,7 @@ const PDF_OS = {
         obs
       ],
       footer: {
-        text: 'Documento gerado pelo RPM Pro — rpmpro.com.br',
+        text: 'Powered by RPM Pro — rpmpro.com.br',
         alignment: 'center',
         style: 'footer'
       },
@@ -355,7 +373,7 @@ const PDF_OS = {
         }
       ],
       footer: {
-        text: 'Documento gerado pelo RPM Pro — rpmpro.com.br',
+        text: 'Powered by RPM Pro — rpmpro.com.br',
         alignment: 'center',
         fontSize: 8,
         color: '#999999',
