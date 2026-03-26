@@ -47,6 +47,12 @@ const APP = {
       document.querySelectorAll('.nav-dono-gerente').forEach(el => el.style.display = 'none');
     }
 
+    // aux_mecanico = mesmas permissoes de mecanico
+    // aux_admin = mesmas permissoes de atendente
+    if (this.profile.role === 'aux_mecanico') this.profile._roleBase = 'mecanico';
+    else if (this.profile.role === 'aux_admin') this.profile._roleBase = 'atendente';
+    else this.profile._roleBase = this.profile.role;
+
     // Sidebar: colapsa grupos conforme perfil
     this._setupSidebarGroups(isAdmin);
 
@@ -134,7 +140,8 @@ const APP = {
     };
     configs.gerente = configs.dono;
 
-    const items = configs[role] || configs.dono;
+    const baseRole = this.profile._roleBase || role;
+    const items = configs[baseRole] || configs.dono;
 
     // Itens extras pro menu overflow (dono/gerente)
     const moreItems = [

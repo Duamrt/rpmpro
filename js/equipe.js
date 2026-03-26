@@ -23,7 +23,7 @@ const EQUIPE = {
       return;
     }
 
-    const roleLabel = { dono: 'Dono', gerente: 'Gerente', mecanico: 'Mecanico', atendente: 'Atendente' };
+    const roleLabel = { dono: 'Dono', gerente: 'Gerente', mecanico: 'Mecanico', atendente: 'Atendente', aux_mecanico: 'Aux. Mecanico', aux_admin: 'Aux. Administrativo' };
 
     container.innerHTML = `
       <table class="data-table">
@@ -48,6 +48,7 @@ const EQUIPE = {
               <td><span class="badge badge-${m.ativo ? 'pronto' : 'entregue'}">${m.ativo ? 'Ativo' : 'Inativo'}</span></td>
               <td>
                 ${['dono','gerente'].includes(APP.profile.role) ? `<button class="btn btn-secondary btn-sm" onclick="EQUIPE.editar('${m.id}')">Editar</button>` : ''}
+                ${['dono','gerente'].includes(APP.profile.role) && !m.email ? `<button class="btn btn-primary btn-sm" onclick="EQUIPE.criarLogin('${m.id}','${esc(m.nome)}')">Criar login</button>` : ''}
                 ${['dono','gerente'].includes(APP.profile.role) && m.id !== APP.profile.id && m.role !== 'dono' ? `<button class="btn btn-danger btn-sm" onclick="EQUIPE.excluir('${m.id}','${esc(m.nome)}')">Excluir</button>` : ''}
               </td>
             </tr>
@@ -83,7 +84,9 @@ const EQUIPE = {
               <label>Funcao</label>
               <select class="form-control" id="eq-role">
                 <option value="mecanico" ${dados.role === 'mecanico' || !dados.role ? 'selected' : ''}>Mecanico</option>
+                <option value="aux_mecanico" ${dados.role === 'aux_mecanico' ? 'selected' : ''}>Aux. Mecanico</option>
                 <option value="atendente" ${dados.role === 'atendente' ? 'selected' : ''}>Atendente</option>
+                <option value="aux_admin" ${dados.role === 'aux_admin' ? 'selected' : ''}>Aux. Administrativo</option>
                 <option value="gerente" ${dados.role === 'gerente' ? 'selected' : ''}>Gerente</option>
                 <option value="dono" ${dados.role === 'dono' ? 'selected' : ''}>Dono</option>
               </select>
@@ -147,6 +150,55 @@ const EQUIPE = {
   async editar(id) {
     const { data } = await db.from('profiles').select('*').eq('id', id).single();
     if (data) this.abrirModal(data);
+  },
+
+  criarLogin(profileId, nome) {
+    openModal(`
+      <div class="modal-header">
+        <h3>Criar login — ${esc(nome)}</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form onsubmit="EQUIPE.salvarLogin(event, '${profileId}')">
+          <div class="form-group">
+            <label>Email *</label>
+            <input type="email" class="form-control" id="login-email" required placeholder="email@exemplo.com">
+          </div>
+          <div class="form-group">
+            <label>Senha *</label>
+            <input type="text" class="form-control" id="login-senha" required minlength="6" value="" placeholder="Minimo 6 caracteres">
+          </div>
+          <div style="background:var(--bg-input);padding:10px 12px;border-radius:var(--radius);margin-bottom:16px;font-size:12px;color:var(--text-secondary);">
+            Anote a senha! Voce pode resetar depois pelo Super Admin, mas o membro vai precisar dela pra logar.
+          </div>
+          <div class="modal-footer" style="padding:16px 0 0;border:0;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Criar login</button>
+          </div>
+        </form>
+      </div>
+    `);
+  },
+
+  async salvarLogin(e, profileId) {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value.trim();
+    const senha = document.getElementById('login-senha').value;
+
+    if (senha.length < 6) { APP.toast('Senha precisa ter pelo menos 6 caracteres', 'error'); return; }
+
+    const { data, error } = await db.rpc('criar_login_membro', {
+      p_profile_id: profileId,
+      p_email: email,
+      p_senha: senha
+    });
+
+    if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
+    if (data && !data.ok) { APP.toast(data.erro, 'error'); return; }
+
+    closeModal();
+    APP.toast('Login criado! Email: ' + email);
+    this.carregar();
   },
 
   async excluir(id, nome) {
