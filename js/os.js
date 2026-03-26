@@ -121,7 +121,7 @@ const OS = {
       .from('profiles')
       .select('id, nome')
       .eq('oficina_id', APP.profile.oficina_id)
-      .in('role', ['mecanico', 'dono', 'gerente'])
+      .in('role', ['mecanico', 'aux_mecanico', 'dono', 'gerente'])
       .eq('ativo', true)
       .order('nome');
 
@@ -1207,7 +1207,7 @@ const OS = {
     const { data: mecanicos } = await db.from('profiles')
       .select('id, nome')
       .eq('oficina_id', APP.profile.oficina_id)
-      .in('role', ['mecanico', 'dono', 'gerente'])
+      .in('role', ['mecanico', 'aux_mecanico', 'dono', 'gerente'])
       .order('nome');
 
     openModal(`
