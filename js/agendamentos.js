@@ -313,6 +313,9 @@ const AGENDAMENTOS = {
     const dataPadrao = prefill.data_prevista || (() => { const d = new Date(); d.setDate(d.getDate() + 7); return d.toISOString().split('T')[0]; })();
     const isEdit = !!prefill.id;
 
+    const clientePrefill = prefill.cliente_id ? this._clientes.find(c => c.id === prefill.cliente_id) : null;
+    const veiculoPrefill = prefill.veiculo_id ? this._veiculos.find(v => v.id === prefill.veiculo_id) : null;
+
     openModal(`
       <div class="modal-header">
         <h3>${isEdit ? 'Editar Agendamento' : 'Novo Agendamento'}</h3>
@@ -320,18 +323,17 @@ const AGENDAMENTOS = {
       </div>
       <div class="modal-body">
         <form onsubmit="AGENDAMENTOS.salvar(event, '${prefill.id || ''}')">
-          <div class="form-group">
+          <div class="form-group" style="position:relative;">
             <label>Cliente *</label>
-            <select class="form-control" id="ag-cliente" required onchange="AGENDAMENTOS._filtrarVeiculos()" ${isEdit ? 'disabled' : ''}>
-              <option value="">Selecione...</option>
-              ${this._clientes.map(c => `<option value="${c.id}" ${c.id === prefill.cliente_id ? 'selected' : ''}>${esc(c.nome)}</option>`).join('')}
-            </select>
+            <input type="text" class="form-control" id="ag-cliente-busca" placeholder="Digite o nome do cliente..." autocomplete="off" value="${clientePrefill ? esc(clientePrefill.nome) : ''}" oninput="AGENDAMENTOS._buscarCliente(this.value)" onfocus="AGENDAMENTOS._buscarCliente(this.value)" ${isEdit ? 'disabled' : ''}>
+            <input type="hidden" id="ag-cliente" value="${prefill.cliente_id || ''}">
+            <div id="ag-cliente-lista" style="position:absolute;top:100%;left:0;right:0;z-index:100;background:var(--bg-card);border:1px solid var(--border);border-radius:0 0 var(--radius) var(--radius);max-height:200px;overflow-y:auto;display:none;box-shadow:0 4px 12px rgba(0,0,0,0.3);"></div>
           </div>
-          <div class="form-group">
+          <div class="form-group" style="position:relative;">
             <label>Veiculo *</label>
-            <select class="form-control" id="ag-veiculo" required ${isEdit ? 'disabled' : ''}>
-              <option value="">Selecione o cliente primeiro</option>
-            </select>
+            <input type="text" class="form-control" id="ag-veiculo-busca" placeholder="Selecione o cliente primeiro" autocomplete="off" value="${veiculoPrefill ? esc(veiculoPrefill.placa + ' — ' + (veiculoPrefill.marca || '') + ' ' + (veiculoPrefill.modelo || '')) : ''}" oninput="AGENDAMENTOS._buscarVeiculo(this.value)" onfocus="AGENDAMENTOS._buscarVeiculo(this.value)" ${isEdit ? 'disabled' : ''}>
+            <input type="hidden" id="ag-veiculo" value="${prefill.veiculo_id || ''}">
+            <div id="ag-veiculo-lista" style="position:absolute;top:100%;left:0;right:0;z-index:100;background:var(--bg-card);border:1px solid var(--border);border-radius:0 0 var(--radius) var(--radius);max-height:200px;overflow-y:auto;display:none;box-shadow:0 4px 12px rgba(0,0,0,0.3);"></div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
             <div class="form-group">
@@ -361,30 +363,79 @@ const AGENDAMENTOS = {
       </div>
     `);
 
-    if (prefill.cliente_id) {
-      this._filtrarVeiculos();
-      if (prefill.veiculo_id) {
-        setTimeout(() => {
-          const sel = document.getElementById('ag-veiculo');
-          if (sel) sel.value = prefill.veiculo_id;
-        }, 50);
+    // Fecha dropdown ao clicar fora
+    document.addEventListener('click', function _closeDrop(e) {
+      if (!e.target.closest('#ag-cliente-busca, #ag-cliente-lista')) {
+        const l = document.getElementById('ag-cliente-lista');
+        if (l) l.style.display = 'none';
       }
-    }
+      if (!e.target.closest('#ag-veiculo-busca, #ag-veiculo-lista')) {
+        const l = document.getElementById('ag-veiculo-lista');
+        if (l) l.style.display = 'none';
+      }
+    });
+  },
+
+  _buscarCliente(termo) {
+    const lista = document.getElementById('ag-cliente-lista');
+    if (!lista) return;
+    const t = termo.toLowerCase();
+    const filtrados = t ? this._clientes.filter(c => c.nome.toLowerCase().includes(t)) : this._clientes;
+    if (!filtrados.length) { lista.style.display = 'none'; return; }
+    lista.style.display = 'block';
+    lista.innerHTML = filtrados.slice(0, 15).map(c =>
+      `<div style="padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);" onmousedown="AGENDAMENTOS._selecionarCliente('${c.id}','${esc(c.nome)}')" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">${esc(c.nome)}</div>`
+    ).join('');
+  },
+
+  _selecionarCliente(id, nome) {
+    document.getElementById('ag-cliente').value = id;
+    document.getElementById('ag-cliente-busca').value = nome;
+    document.getElementById('ag-cliente-lista').style.display = 'none';
+    // Limpa e habilita veiculo
+    document.getElementById('ag-veiculo').value = '';
+    document.getElementById('ag-veiculo-busca').value = '';
+    document.getElementById('ag-veiculo-busca').placeholder = 'Digite placa ou modelo...';
+    this._buscarVeiculo('');
+  },
+
+  _buscarVeiculo(termo) {
+    const clienteId = document.getElementById('ag-cliente').value;
+    if (!clienteId) return;
+    const lista = document.getElementById('ag-veiculo-lista');
+    if (!lista) return;
+    const t = termo.toLowerCase();
+    const veiculosCliente = this._veiculos.filter(v => v.cliente_id === clienteId);
+    const filtrados = t ? veiculosCliente.filter(v => (v.placa + ' ' + (v.marca || '') + ' ' + (v.modelo || '')).toLowerCase().includes(t)) : veiculosCliente;
+    if (!filtrados.length) { lista.style.display = 'none'; return; }
+    lista.style.display = 'block';
+    lista.innerHTML = filtrados.slice(0, 15).map(v => {
+      const label = `${v.placa} — ${v.marca || ''} ${v.modelo || ''}`;
+      return `<div style="padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);" onmousedown="AGENDAMENTOS._selecionarVeiculo('${v.id}','${esc(label)}')" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">${esc(label)}</div>`;
+    }).join('');
+  },
+
+  _selecionarVeiculo(id, label) {
+    document.getElementById('ag-veiculo').value = id;
+    document.getElementById('ag-veiculo-busca').value = label;
+    document.getElementById('ag-veiculo-lista').style.display = 'none';
   },
 
   _filtrarVeiculos() {
+    // Mantido por compatibilidade
     const clienteId = document.getElementById('ag-cliente').value;
-    const sel = document.getElementById('ag-veiculo');
-    const veiculos = this._veiculos.filter(v => v.cliente_id === clienteId);
-    sel.innerHTML = veiculos.length
-      ? veiculos.map(v => `<option value="${v.id}">${esc(v.placa)} — ${esc(v.marca || '')} ${esc(v.modelo || '')}</option>`).join('')
-      : '<option value="">Nenhum veiculo deste cliente</option>';
+    if (clienteId) this._buscarVeiculo('');
   },
 
   async salvar(e, id) {
     e.preventDefault();
     const oficina_id = APP.profile.oficina_id;
     const dataSel = document.getElementById('ag-data').value;
+
+    if (!id) {
+      if (!document.getElementById('ag-cliente').value) { APP.toast('Selecione o cliente', 'error'); return; }
+      if (!document.getElementById('ag-veiculo').value) { APP.toast('Selecione o veiculo', 'error'); return; }
+    }
 
     // Verifica capacidade do dia (só pra novos ou se mudou a data)
     const capacidade = APP.oficina?.capacidade_diaria || 5;
