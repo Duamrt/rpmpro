@@ -1424,36 +1424,75 @@ const OS = {
   // ==========================================
 
   _itensEntrada: [
-    { key: 'amassados', label: 'Amassados e riscos pre-existentes', temCampo: true },
-    { key: 'vidros', label: 'Vidros e retrovisores OK', temCampo: false },
-    { key: 'pneus', label: 'Pneus (condicao visivel)', temCampo: true },
+    { secao: 'EXTERIOR' },
+    { key: 'amassados', label: 'Amassados e riscos', temCampo: true, dica: 'Descreva lado e local. Ex: porta traseira esquerda, risco 10cm' },
+    { key: 'vidros', label: 'Vidros e retrovisores OK', temCampo: true, dica: 'Trinca, lascado? Qual vidro?' },
+    { key: 'pneus', label: 'Pneus e rodas', temCampo: true, dica: 'Estado, desgaste, calibragem. Ex: dianteiro esq careca' },
+    { key: 'faróis', label: 'Farois e lanternas', temCampo: true, dica: 'Queimado? Trincado? Qual?' },
+    { key: 'pintura', label: 'Pintura e lataria', temCampo: true, dica: 'Descascando, oxidacao, local' },
+    { secao: 'INTERIOR' },
     { key: 'combustivel', label: 'Nivel de combustivel', tipo: 'select', opcoes: ['vazio','1/4','meio','3/4','cheio'] },
-    { key: 'interior', label: 'Itens no interior (pertences, documentos)', temCampo: true },
+    { key: 'interior', label: 'Pertences do cliente', temCampo: true, dica: 'Documentos, ferramentas, objetos no porta-luvas' },
     { key: 'travas', label: 'Travas e vidros eletricos', temCampo: false },
-    { key: 'sintoma', label: 'Sintoma confirmado pelo mecanico', temCampo: true },
-    { key: 'scanner', label: 'Scanner realizado', temCampo: true }
+    { key: 'painel', label: 'Luzes no painel', temCampo: true, dica: 'Quais luzes acesas? ABS, oleo, motor, etc' },
+    { key: 'ar_cond', label: 'Ar condicionado', temCampo: true, dica: 'Funciona? Cheiro ruim? Fraco?' },
+    { secao: 'MECANICO' },
+    { key: 'sintoma', label: 'Sintoma relatado pelo cliente', temCampo: true, dica: 'Descreva o que o cliente disse com as palavras dele' },
+    { key: 'sintoma_confirmado', label: 'Sintoma confirmado pelo mecanico', temCampo: true, dica: 'O mecanico reproduziu o problema? Como?' },
+    { key: 'scanner', label: 'Scanner/diagnostico', temCampo: true, dica: 'Codigos de erro, resultado do scanner' },
+    { key: 'km', label: 'Quilometragem conferida', temCampo: false }
   ],
 
   _itensSaida: [
+    { secao: 'SERVICO' },
     { key: 'itens_executados', label: 'Todos os itens da OS executados', temCampo: false },
     { key: 'pecas_registradas', label: 'Pecas substituidas registradas', temCampo: false },
+    { key: 'torques', label: 'Torques aplicados corretamente', temCampo: false },
+    { secao: 'VERIFICACAO' },
     { key: 'sem_vazamentos', label: 'Sem vazamentos visiveis', temCampo: false },
     { key: 'sem_ruidos', label: 'Sem ruidos anormais', temCampo: false },
-    { key: 'test_drive', label: 'Test drive realizado', temCampo: true },
+    { key: 'test_drive', label: 'Test drive realizado', temCampo: true, dica: 'Km rodado, comportamento do veiculo' },
+    { key: 'scanner_final', label: 'Scanner final sem erros', temCampo: true, dica: 'Apagou codigos? Algum novo?' },
+    { secao: 'ENTREGA' },
     { key: 'interior_limpo', label: 'Interior limpo', temCampo: false },
     { key: 'sem_ferramentas', label: 'Sem ferramentas esquecidas', temCampo: false },
-    { key: 'documentos_devolvidos', label: 'Documentos devolvidos', temCampo: false }
+    { key: 'documentos_devolvidos', label: 'Documentos devolvidos', temCampo: false },
+    { key: 'cliente_orientado', label: 'Cliente orientado sobre o servico', temCampo: true, dica: 'Explicou o que foi feito e cuidados?' }
   ],
 
   _resumoChecklist(chk, tipo) {
-    const itens = chk.itens || {};
+    const itensData = chk.itens || {};
     const defs = tipo === 'entrada' ? this._itensEntrada : this._itensSaida;
-    const marcados = defs.filter(d => d.tipo === 'select' ? !!itens[d.key]?.valor : itens[d.key]?.checked).length;
-    const total = defs.length;
+    const campos = defs.filter(d => !d.secao);
+    const marcados = campos.filter(d => d.tipo === 'select' ? !!itensData[d.key]?.valor : itensData[d.key]?.checked).length;
+    const total = campos.length;
     const cor = marcados === total ? 'var(--success)' : 'var(--warning)';
-    let html = `<div style="font-size:12px;color:${cor};margin-bottom:4px;">${marcados}/${total} itens verificados</div>`;
+
+    let html = `<div style="font-size:12px;color:${cor};margin-bottom:6px;font-weight:600;">${marcados}/${total} itens verificados</div>`;
+
+    // Mostra detalhes preenchidos
+    const detalhes = campos.filter(d => {
+      const val = itensData[d.key];
+      if (!val) return false;
+      if (d.tipo === 'select') return !!val.valor;
+      return val.checked && val.obs;
+    });
+
+    if (detalhes.length) {
+      html += '<div style="font-size:11px;color:var(--text-secondary);line-height:1.6;">';
+      detalhes.forEach(d => {
+        const val = itensData[d.key];
+        if (d.tipo === 'select') {
+          html += `<div>· ${esc(d.label)}: <strong>${esc(val.valor)}</strong></div>`;
+        } else if (val.obs) {
+          html += `<div>· ${esc(d.label)}: ${esc(val.obs)}</div>`;
+        }
+      });
+      html += '</div>';
+    }
+
     if (chk.observacoes) {
-      html += `<div style="font-size:12px;color:var(--text-secondary);font-style:italic;">${esc(chk.observacoes)}</div>`;
+      html += `<div style="font-size:11px;color:var(--text-secondary);font-style:italic;margin-top:4px;">Obs: ${esc(chk.observacoes)}</div>`;
     }
     return html;
   },
@@ -1465,6 +1504,9 @@ const OS = {
     const obs = existente?.observacoes || '';
 
     const campos = this._itensEntrada.map(item => {
+      if (item.secao) {
+        return `<div style="padding:12px 0 6px;margin-top:8px;border-bottom:2px solid var(--primary);font-size:11px;font-weight:800;letter-spacing:1px;color:var(--primary);">${item.secao}</div>`;
+      }
       const val = itens[item.key] || {};
       if (item.tipo === 'select') {
         return `
@@ -1482,7 +1524,7 @@ const OS = {
             <input type="checkbox" id="chk-e-${item.key}" ${val.checked ? 'checked' : ''}>
             <span style="font-size:13px;">${esc(item.label)}</span>
           </label>
-          ${item.temCampo ? `<input type="text" class="form-control" id="chk-e-${item.key}-obs" value="${esc(val.obs || '')}" placeholder="Detalhes..." style="margin-top:6px;font-size:12px;">` : ''}
+          ${item.temCampo ? `<input type="text" class="form-control" id="chk-e-${item.key}-obs" value="${esc(val.obs || '')}" placeholder="${esc(item.dica || 'Detalhes...')}" style="margin-top:6px;font-size:12px;">` : ''}
         </div>`;
     }).join('');
 
@@ -1530,7 +1572,7 @@ const OS = {
 
   async salvarChecklistEntrada(osId) {
     const itens = {};
-    this._itensEntrada.forEach(item => {
+    this._itensEntrada.filter(i => !i.secao).forEach(item => {
       if (item.tipo === 'select') {
         const el = document.getElementById('chk-e-' + item.key);
         itens[item.key] = { valor: el?.value || '' };
@@ -1576,6 +1618,9 @@ const OS = {
     const obs = existente?.observacoes || '';
 
     const campos = this._itensSaida.map(item => {
+      if (item.secao) {
+        return `<div style="padding:12px 0 6px;margin-top:8px;border-bottom:2px solid var(--primary);font-size:11px;font-weight:800;letter-spacing:1px;color:var(--primary);">${item.secao}</div>`;
+      }
       const val = itens[item.key] || {};
       return `
         <div style="padding:10px 0;border-bottom:1px solid var(--border);">
@@ -1583,7 +1628,7 @@ const OS = {
             <input type="checkbox" id="chk-s-${item.key}" ${val.checked ? 'checked' : ''}>
             <span style="font-size:13px;">${esc(item.label)}</span>
           </label>
-          ${item.temCampo ? `<input type="text" class="form-control" id="chk-s-${item.key}-obs" value="${esc(val.obs || '')}" placeholder="Detalhes..." style="margin-top:6px;font-size:12px;">` : ''}
+          ${item.temCampo ? `<input type="text" class="form-control" id="chk-s-${item.key}-obs" value="${esc(val.obs || '')}" placeholder="${esc(item.dica || 'Detalhes...')}" style="margin-top:6px;font-size:12px;">` : ''}
         </div>`;
     }).join('');
 
@@ -1608,7 +1653,7 @@ const OS = {
 
   async salvarChecklistSaida(osId) {
     const itens = {};
-    this._itensSaida.forEach(item => {
+    this._itensSaida.filter(i => !i.secao).forEach(item => {
       const el = document.getElementById('chk-s-' + item.key);
       const obsEl = document.getElementById('chk-s-' + item.key + '-obs');
       itens[item.key] = {
