@@ -1760,13 +1760,13 @@ const OS = {
   },
 
   enviarHistorico(placa, whatsapp) {
-    const link = 'https://rpmpro.com.br/historico.html?p=' + placa.replace(/[^A-Z0-9]/gi, '');
+    const link = 'https://rpmpro.com.br/v?p=' + placa.replace(/[^A-Z0-9]/gi, '');
     const oficina = APP.oficina?.nome || 'a oficina';
 
     if (whatsapp) {
       const num = whatsapp.replace(/\D/g, '');
       const fone = num.startsWith('55') ? num : '55' + num;
-      const msg = `Ola! Aqui e da ${oficina}. Segue o historico completo de manutencoes do seu veiculo ${placa}:\n\n${link}\n\nQualquer duvida e so chamar!`;
+      const msg = `Olá! Aqui é da ${oficina}. Segue o histórico completo de manutenções do seu veículo ${placa}:\n\n${link}\n\nQualquer dúvida é só chamar!`;
       window.open(`https://wa.me/${fone}?text=${encodeURIComponent(msg)}`, '_blank');
     } else {
       navigator.clipboard.writeText(link);
@@ -1776,11 +1776,11 @@ const OS = {
 
   enviarWhatsApp(whatsapp, placa, status) {
     const msgs = {
-      orcamento: `Ola! Seu veiculo ${placa} esta com o orcamento pronto. Posso enviar os detalhes?`,
-      pronto: `Ola! Seu veiculo ${placa} esta pronto para retirada. Quando pode vir buscar?`,
-      execucao: `Ola! Informamos que seu veiculo ${placa} ja esta em execucao na oficina.`
+      orcamento: `Olá! Seu veículo ${placa} está com o orçamento pronto. Posso enviar os detalhes?`,
+      pronto: `Olá! Seu veículo ${placa} está pronto para retirada. Quando pode vir buscar?`,
+      execucao: `Olá! Informamos que seu veículo ${placa} já está em execução na oficina.`
     };
-    const msg = msgs[status] || `Ola! Atualizacao sobre seu veiculo ${placa} na oficina.`;
+    const msg = msgs[status] || `Olá! Atualização sobre seu veículo ${placa} na oficina.`;
     const num = whatsapp.replace(/\D/g, '');
     const fone = num.startsWith('55') ? num : '55' + num;
     window.open(`https://wa.me/${fone}?text=${encodeURIComponent(msg)}`, '_blank');

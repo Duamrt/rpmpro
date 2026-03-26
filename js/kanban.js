@@ -447,12 +447,12 @@ const KANBAN = {
       msg = await this._montarMsgEntrega(os, placa, oficina);
     } else {
       const mensagens = {
-        diagnostico: `Ola! Aqui e da ${oficina}. Seu veiculo ${placa} entrou em diagnostico. Em breve teremos novidades.`,
-        orcamento: `Ola! Aqui e da ${oficina}. O orcamento do seu veiculo ${placa} esta pronto. Posso enviar os detalhes?`,
-        aprovada: `Ola! Orcamento do veiculo ${placa} aprovado! Ja vamos iniciar o servico. Qualquer novidade te aviso.`,
-        aguardando_peca: `Ola! Aqui e da ${oficina}. Seu veiculo ${placa} esta aguardando uma peca. Te aviso assim que chegar.`,
-        execucao: `Ola! Seu veiculo ${placa} ja esta em execucao aqui na ${oficina}. Te aviso quando estiver pronto!`,
-        pronto: `Ola! Seu veiculo ${placa} esta pronto pra retirada aqui na ${oficina}! Quando pode vir buscar?`
+        diagnostico: `Olá! Aqui é da ${oficina}. Seu veículo ${placa} entrou em diagnóstico. Em breve teremos novidades.`,
+        orcamento: `Olá! Aqui é da ${oficina}. O orçamento do seu veículo ${placa} está pronto. Posso enviar os detalhes?`,
+        aprovada: `Olá! Orçamento do veículo ${placa} aprovado! Já vamos iniciar o serviço. Qualquer novidade te aviso.`,
+        aguardando_peca: `Olá! Aqui é da ${oficina}. Seu veículo ${placa} está aguardando uma peça. Te aviso assim que chegar.`,
+        execucao: `Olá! Seu veículo ${placa} já está em execução aqui na ${oficina}. Te aviso quando estiver pronto!`,
+        pronto: `Olá! Seu veículo ${placa} está pronto pra retirada aqui na ${oficina}! Quando pode vir buscar?`
       };
       msg = mensagens[novoStatus];
     }
@@ -473,8 +473,8 @@ const KANBAN = {
 
     // Se não achou por id, monta mensagem simples
     if (!osData) {
-      const link = 'https://rpmpro.com.br/historico.html?p=' + placa.replace(/[^A-Z0-9]/gi, '');
-      return `Ola! Seu veiculo ${placa} foi entregue pela ${oficina}.\n\nHistorico completo:\n${link}\n\nObrigado pela confianca!`;
+      const link = 'https://rpmpro.com.br/v?p=' + placa.replace(/[^A-Z0-9]/gi, '');
+      return `Olá! Seu veículo ${placa} foi entregue pela ${oficina}.\n\nHistórico completo:\n${link}\n\nObrigado pela confiança!`;
     }
 
     const { data: itens } = await db.from('itens_os')
@@ -485,18 +485,18 @@ const KANBAN = {
     const pagLabels = { dinheiro: 'Dinheiro', pix: 'Pix', debito: 'Debito', credito: 'Credito', boleto: 'Boleto', pendente: 'Pendente' };
     const pagamento = pagLabels[osData.forma_pagamento] || 'Pendente';
     const total = (osData.valor_total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    const link = 'https://rpmpro.com.br/historico.html?p=' + placa.replace(/[^A-Z0-9]/gi, '');
+    const link = 'https://rpmpro.com.br/v?p=' + placa.replace(/[^A-Z0-9]/gi, '');
 
-    let msg = `Ola! Seu veiculo ${placa} foi entregue pela ${oficina}.\n\n`;
+    let msg = `Olá! Seu veículo ${placa} foi entregue pela ${oficina}.\n\n`;
 
     if (servicos.length) {
-      msg += `Servico: ${servicos.join(', ')}\n`;
+      msg += `Serviço: ${servicos.join(', ')}\n`;
     }
     msg += `Total: ${total}\n`;
     msg += `Pagamento: ${pagamento}\n`;
-    msg += `\nHistorico completo do veiculo:\n${link}\n`;
-    msg += `\nObrigado pela confianca!`;
-    msg += `\n\n💡 Dica: a proxima revisao do seu veiculo seria em aproximadamente 6 meses ou 10.000 km. Quer que a gente ja agende um horario?`;
+    msg += `\nHistórico completo do veículo:\n${link}\n`;
+    msg += `\nObrigado pela confiança!`;
+    msg += `\n\n💡 Dica: a próxima revisão do seu veículo seria em aproximadamente 6 meses ou 10.000 km. Quer que a gente já agende um horário?`;
 
     return msg;
   },
