@@ -83,6 +83,7 @@ const AGENDAMENTOS = {
                 ${a.clientes?.whatsapp && a.status !== 'realizado' ? `<button class="btn btn-success btn-sm" onclick="AGENDAMENTOS.notificar('${a.id}','${esc(a.clientes.whatsapp)}','${esc(a.clientes.nome)}','${esc(tipoLabel[a.tipo] || a.tipo)}','${a.data_prevista}')">WhatsApp</button>` : ''}
                 ${a.status === 'pendente' || a.status === 'notificado' ? `<button class="btn btn-primary btn-sm" onclick="AGENDAMENTOS.mudarStatus('${a.id}','confirmado')">Confirmar</button>` : ''}
                 ${a.status === 'confirmado' ? `<button class="btn btn-primary btn-sm" onclick="AGENDAMENTOS.mudarStatus('${a.id}','realizado')">Realizado</button>` : ''}
+                ${a.status !== 'realizado' && a.status !== 'cancelado' ? `<button class="btn btn-secondary btn-sm" onclick="AGENDAMENTOS.editar('${a.id}')">Editar</button>` : ''}
                 ${a.status !== 'realizado' && a.status !== 'cancelado' ? `<button class="btn btn-danger btn-sm" onclick="AGENDAMENTOS.mudarStatus('${a.id}','cancelado')">X</button>` : ''}
               </td>
             </tr>`;
@@ -124,23 +125,25 @@ const AGENDAMENTOS = {
     const d30 = new Date(); d30.setDate(d30.getDate() + 30);
     const dataPadrao = d30.toISOString().split('T')[0];
 
+    const isEdit = !!prefill.id;
+
     openModal(`
       <div class="modal-header">
-        <h3>Novo Agendamento</h3>
+        <h3>${isEdit ? 'Editar Agendamento' : 'Novo Agendamento'}</h3>
         <button class="modal-close" onclick="closeModal()">&times;</button>
       </div>
       <div class="modal-body">
-        <form onsubmit="AGENDAMENTOS.salvar(event)">
+        <form onsubmit="AGENDAMENTOS.salvar(event, '${prefill.id || ''}')">
           <div class="form-group">
             <label>Cliente *</label>
-            <select class="form-control" id="ag-cliente" required onchange="AGENDAMENTOS._filtrarVeiculos()">
+            <select class="form-control" id="ag-cliente" required onchange="AGENDAMENTOS._filtrarVeiculos()" ${isEdit ? 'disabled' : ''}>
               <option value="">Selecione...</option>
-              ${this._clientes.map(c => `<option value="${c.id}" ${c.id === prefill.cliente_id ? 'selected' : ''}>${esc(c.nome)}</option>`).join('')}
+              ${this._clientes.map(c => `<option value="${c.id}" ${c.id === (prefill.cliente_id) ? 'selected' : ''}>${esc(c.nome)}</option>`).join('')}
             </select>
           </div>
           <div class="form-group">
             <label>Veiculo *</label>
-            <select class="form-control" id="ag-veiculo" required>
+            <select class="form-control" id="ag-veiculo" required ${isEdit ? 'disabled' : ''}>
               <option value="">Selecione o cliente primeiro</option>
             </select>
           </div>
@@ -148,34 +151,43 @@ const AGENDAMENTOS = {
             <div class="form-group">
               <label>Tipo de servico *</label>
               <select class="form-control" id="ag-tipo" required>
-                ${tipos.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}
+                ${tipos.map(([v, l]) => `<option value="${v}" ${prefill.tipo === v ? 'selected' : ''}>${l}</option>`).join('')}
               </select>
             </div>
             <div class="form-group">
               <label>Data prevista *</label>
-              <input type="date" class="form-control" id="ag-data" required value="${dataPadrao}">
+              <input type="date" class="form-control" id="ag-data" required value="${prefill.data_prevista || dataPadrao}">
             </div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
             <div class="form-group">
               <label>KM previsto</label>
-              <input type="number" class="form-control" id="ag-km" placeholder="Ex: 60000">
+              <input type="number" class="form-control" id="ag-km" placeholder="Ex: 60000" value="${prefill.km_previsto || ''}">
             </div>
           </div>
           <div class="form-group">
             <label>Observacoes</label>
-            <textarea class="form-control" id="ag-desc" placeholder="Detalhes do servico previsto..."></textarea>
+            <textarea class="form-control" id="ag-desc" placeholder="Detalhes do servico previsto...">${esc(prefill.descricao || '')}</textarea>
           </div>
           <div class="modal-footer" style="padding:16px 0 0;border:0;">
             <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-            <button type="submit" class="btn btn-primary">Agendar</button>
+            <button type="submit" class="btn btn-primary">${isEdit ? 'Salvar' : 'Agendar'}</button>
           </div>
         </form>
       </div>
     `);
 
-    // Se veio com cliente pré-selecionado, filtra veículos
-    if (prefill.cliente_id) this._filtrarVeiculos();
+    // Filtra veículos do cliente selecionado
+    if (prefill.cliente_id) {
+      this._filtrarVeiculos();
+      // Se editando, seleciona o veículo correto
+      if (prefill.veiculo_id) {
+        setTimeout(() => {
+          const sel = document.getElementById('ag-veiculo');
+          if (sel) sel.value = prefill.veiculo_id;
+        }, 50);
+      }
+    }
   },
 
   _filtrarVeiculos() {
@@ -187,23 +199,36 @@ const AGENDAMENTOS = {
       : '<option value="">Nenhum veiculo deste cliente</option>';
   },
 
-  async salvar(e) {
+  async salvar(e, id) {
     e.preventDefault();
-    const { error } = await db.from('agendamentos').insert({
-      oficina_id: APP.profile.oficina_id,
-      cliente_id: document.getElementById('ag-cliente').value,
-      veiculo_id: document.getElementById('ag-veiculo').value,
+    const oficina_id = APP.profile.oficina_id;
+    const obj = {
       tipo: document.getElementById('ag-tipo').value,
       data_prevista: document.getElementById('ag-data').value,
       km_previsto: document.getElementById('ag-km').value ? parseInt(document.getElementById('ag-km').value) : null,
-      descricao: document.getElementById('ag-desc').value.trim(),
-      created_by: APP.profile.id
-    });
+      descricao: document.getElementById('ag-desc').value.trim()
+    };
+
+    let error;
+    if (id) {
+      ({ error } = await db.from('agendamentos').update(obj).eq('id', id).eq('oficina_id', oficina_id));
+    } else {
+      obj.oficina_id = oficina_id;
+      obj.cliente_id = document.getElementById('ag-cliente').value;
+      obj.veiculo_id = document.getElementById('ag-veiculo').value;
+      obj.created_by = APP.profile.id;
+      ({ error } = await db.from('agendamentos').insert(obj));
+    }
 
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
     closeModal();
-    APP.toast('Agendamento criado');
+    APP.toast(id ? 'Agendamento atualizado' : 'Agendamento criado');
     this.carregar();
+  },
+
+  async editar(id) {
+    const { data } = await db.from('agendamentos').select('*').eq('id', id).single();
+    if (data) this.abrirModal(data);
   },
 
   async mudarStatus(id, novoStatus) {
