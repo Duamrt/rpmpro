@@ -192,11 +192,10 @@ const OS = {
             </select>
           </div>
 
-          <div class="form-group">
+          <div class="form-group" style="position:relative;">
             <label>Tipo de servico</label>
-            <select class="form-control" id="os-servico-tipo" onchange="OS._selecionarServico(this.value)">
-              ${optionsServicos()}
-            </select>
+            <input type="text" class="form-control" id="os-servico-busca" placeholder="Digite pra buscar servico..." autocomplete="off" oninput="OS._buscarServico(this.value, 'os-servico-sugestoes', 'abertura')">
+            <div id="os-servico-sugestoes" class="hidden" style="position:absolute;left:0;right:0;top:100%;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);max-height:200px;overflow-y:auto;z-index:10;"></div>
           </div>
 
           <div class="form-group">
@@ -238,17 +237,84 @@ const OS = {
 
   _servicosSelecionados: [], // [{nome, valor}]
 
+  _servicosCache: null,
+
+  async _carregarServicosCache() {
+    if (this._servicosCache) return this._servicosCache;
+    // Prioriza catálogo da oficina
+    if (typeof SERVICOS !== 'undefined') {
+      const oficina = await SERVICOS.getServicosOficina();
+      if (oficina.length) {
+        this._servicosCache = oficina.map(s => ({ nome: s.nome, valor: s.valor_padrao, categoria: s.categoria }));
+        return this._servicosCache;
+      }
+    }
+    // Fallback: catálogo fixo
+    const lista = [];
+    for (const [cat, servicos] of Object.entries(CATALOGO_SERVICOS)) {
+      servicos.forEach(s => lista.push({ nome: s.nome, valor: s.valor, categoria: cat }));
+    }
+    this._servicosCache = lista;
+    return lista;
+  },
+
+  async _buscarServico(val, sugId, contexto) {
+    const termo = val.trim().toLowerCase();
+    const sugEl = document.getElementById(sugId);
+    if (termo.length < 2) { sugEl.classList.add('hidden'); return; }
+
+    const todos = await this._carregarServicosCache();
+    const resultados = todos.filter(s =>
+      s.nome.toLowerCase().includes(termo) || s.categoria.toLowerCase().includes(termo)
+    ).slice(0, 12);
+
+    if (!resultados.length) {
+      sugEl.innerHTML = '<div style="padding:8px 12px;font-size:13px;color:var(--text-secondary);">Nenhum servico encontrado</div>';
+      sugEl.classList.remove('hidden');
+      return;
+    }
+
+    sugEl.innerHTML = resultados.map(s => `
+      <div style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px;"
+           onmouseover="this.style.background='rgba(255,69,0,0.1)'" onmouseout="this.style.background=''"
+           onclick="OS._selecionarServicoBusca('${esc(s.nome).replace(/'/g, "\\'")}', ${s.valor}, '${sugId}', '${contexto}')">
+        <strong>${esc(s.nome)}</strong>
+        <span style="color:var(--text-secondary);font-size:11px;margin-left:8px;">${esc(s.categoria)}</span>
+        <span style="float:right;color:var(--success);font-weight:700;">R$ ${(s.valor || 0).toFixed(2)}</span>
+      </div>
+    `).join('');
+    sugEl.classList.remove('hidden');
+  },
+
+  _selecionarServicoBusca(nome, valor, sugId, contexto) {
+    document.getElementById(sugId).classList.add('hidden');
+
+    if (contexto === 'abertura') {
+      // Modal de abertura de OS
+      if (this._servicosSelecionados.find(s => s.nome === nome)) {
+        APP.toast('Servico ja adicionado', 'warning');
+        return;
+      }
+      this._servicosSelecionados.push({ nome, valor });
+      this._renderServicos();
+      document.getElementById('os-servico-busca').value = '';
+    } else {
+      // Detalhe da OS — preenche campo
+      document.getElementById('det-servico-busca').value = nome;
+      document.getElementById('det-servico-nome-selecionado').value = nome;
+      document.getElementById('det-servico-valor').value = valor.toFixed(2);
+    }
+  },
+
   _selecionarServico(nome) {
     if (!nome || nome === '__outro') return;
     if (this._servicosSelecionados.find(s => s.nome === nome)) {
       APP.toast('Servico ja adicionado', 'warning');
-      document.getElementById('os-servico-tipo').value = '';
       return;
     }
     const valor = getValorServico(nome);
     this._servicosSelecionados.push({ nome, valor });
     this._renderServicos();
-    document.getElementById('os-servico-tipo').value = '';
   },
 
   _abrirServicoManual() {
@@ -714,12 +780,13 @@ const OS = {
     container.classList.remove('hidden');
 
     if (tipo === 'catalogo') {
-      const opcoes = typeof SERVICOS !== 'undefined' ? await SERVICOS.optionsServicosOficina() : optionsServicos();
       container.innerHTML = `
         <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Adicionar servico do catalogo</div>
-        <select class="form-control" id="det-servico-select" onchange="OS._preencherServicoCatalogo()" style="margin-bottom:8px;">
-          ${opcoes}
-        </select>
+        <div style="position:relative;margin-bottom:8px;">
+          <input type="text" class="form-control" id="det-servico-busca" placeholder="Digite pra buscar servico..." autocomplete="off" oninput="OS._buscarServico(this.value, 'det-servico-sugestoes', 'detalhe')">
+          <input type="hidden" id="det-servico-nome-selecionado">
+          <div id="det-servico-sugestoes" class="hidden" style="position:absolute;left:0;right:0;top:100%;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);max-height:200px;overflow-y:auto;z-index:10;"></div>
+        </div>
         <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;">
           <div class="form-group" style="margin:0;">
             <label style="font-size:11px;">Valor (R$)</label>
@@ -745,20 +812,9 @@ const OS = {
     }
   },
 
-  _preencherServicoCatalogo() {
-    const sel = document.getElementById('det-servico-select');
-    const nome = sel.value;
-    if (!nome || nome === '__outro') return;
-    // Prioriza valor da oficina, fallback pro catálogo fixo
-    const opt = sel.selectedOptions[0];
-    const valor = opt?.dataset?.valor ? parseFloat(opt.dataset.valor) : (typeof SERVICOS !== 'undefined' ? SERVICOS.getValorServico(nome) : getValorServico(nome));
-    document.getElementById('det-servico-valor').value = valor.toFixed(2);
-  },
-
   async addServicoCatalogo() {
-    const sel = document.getElementById('det-servico-select');
-    const nome = sel.value;
-    if (!nome || nome === '__outro') { APP.toast('Selecione um servico', 'error'); return; }
+    const nome = document.getElementById('det-servico-nome-selecionado')?.value || document.getElementById('det-servico-busca')?.value?.trim();
+    if (!nome) { APP.toast('Busque e selecione um servico', 'error'); return; }
     const valor = parseFloat(document.getElementById('det-servico-valor').value) || 0;
 
     const { error } = await db.from('itens_os').insert({
