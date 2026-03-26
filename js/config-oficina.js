@@ -81,6 +81,11 @@ const CONFIG = {
               <input type="number" class="form-control" id="cfg-margem" value="${oficina.margem_padrao || 30}" min="0" max="500" step="1" style="max-width:200px;">
               <span style="font-size:11px;color:var(--text-secondary);margin-top:4px;display:block;">Ex: 30% = peca que custa R$100 vende a R$130. Aplicado ao cadastrar nova peca.</span>
             </div>
+            <div class="form-group">
+              <label>Capacidade diaria (veiculos/dia)</label>
+              <input type="number" class="form-control" id="cfg-capacidade" value="${oficina.capacidade_diaria || 5}" min="1" max="50" step="1" style="max-width:200px;">
+              <span style="font-size:11px;color:var(--text-secondary);margin-top:4px;display:block;">Quantos veiculos a oficina consegue atender por dia. Aparece no calendario de agendamentos.</span>
+            </div>
             <button type="submit" class="btn btn-primary" style="margin-top:8px;">Salvar valores</button>
           </form>
         </div>
@@ -125,19 +130,21 @@ const CONFIG = {
     const comissao_padrao = parseFloat(document.getElementById('cfg-comissao').value) || 0;
 
     const margem_padrao = parseFloat(document.getElementById('cfg-margem').value) || 30;
+    const capacidade_diaria = parseInt(document.getElementById('cfg-capacidade').value) || 5;
 
     const { error } = await db.from('oficinas').update({
       valor_hora,
       comissao_padrao,
-      margem_padrao
+      margem_padrao,
+      capacidade_diaria
     }).eq('id', APP.profile.oficina_id);
 
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
 
-    // Atualiza no objeto local pra usar nos modais
     APP.oficina.valor_hora = valor_hora;
     APP.oficina.comissao_padrao = comissao_padrao;
     APP.oficina.margem_padrao = margem_padrao;
+    APP.oficina.capacidade_diaria = capacidade_diaria;
 
     APP.toast('Valores salvos');
   }

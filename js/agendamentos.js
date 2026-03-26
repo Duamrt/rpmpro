@@ -57,8 +57,25 @@ const AGENDAMENTOS = {
     const confirmados = this._dados.filter(a => a.status === 'confirmado').length;
     const filaCount = (filaData || []).length;
 
+    // Capacidade diaria da oficina
+    const capacidade = APP.oficina?.capacidade_diaria || 5;
+
+    // Conta tambem OS ativas (em andamento) por dia de entrada
+    const { data: osAtivas } = await db
+      .from('ordens_servico')
+      .select('created_at')
+      .eq('oficina_id', oficina_id)
+      .not('status', 'in', '("entregue","cancelada")');
+
+    // Mapa de OS por dia (pra somar com agendamentos)
+    const osPorDia = {};
+    (osAtivas || []).forEach(os => {
+      const d = os.created_at?.split('T')[0];
+      if (d) osPorDia[d] = (osPorDia[d] || 0) + 1;
+    });
+
     // Gera calendario
-    const calHtml = this._renderCalendario(porDia, hojStr, statusCor);
+    const calHtml = this._renderCalendario(porDia, hojStr, statusCor, capacidade);
 
     // Gera lista do dia selecionado
     const diaAgendamentos = porDia[this._diaSelecionado] || [];
@@ -108,7 +125,10 @@ const AGENDAMENTOS = {
         <div style="display:flex;flex-direction:column;gap:12px;">
           <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;">
             <h3 style="font-size:14px;font-weight:700;margin-bottom:4px;text-transform:capitalize;">${diaLabel}</h3>
-            <span style="font-size:12px;color:var(--text-muted);">${diaAgendamentos.length} agendamento${diaAgendamentos.length !== 1 ? 's' : ''}</span>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:var(--text-muted);">${diaAgendamentos.length} agendamento${diaAgendamentos.length !== 1 ? 's' : ''}</span>
+              <span style="font-size:13px;font-weight:700;color:${diaAgendamentos.filter(a => a.status !== 'cancelado' && a.status !== 'realizado').length >= capacidade ? 'var(--danger)' : diaAgendamentos.filter(a => a.status !== 'cancelado' && a.status !== 'realizado').length >= capacidade * 0.8 ? 'var(--warning)' : 'var(--success)'};">${diaAgendamentos.filter(a => a.status !== 'cancelado' && a.status !== 'realizado').length}/${capacidade} vagas</span>
+            </div>
           </div>
 
           ${diaAgendamentos.length ? diaAgendamentos.map(a => {
@@ -175,7 +195,7 @@ const AGENDAMENTOS = {
     this._checkResponsive();
   },
 
-  _renderCalendario(porDia, hojStr, statusCor) {
+  _renderCalendario(porDia, hojStr, statusCor, capacidade) {
     const primeiroDia = new Date(this._anoAtual, this._mesAtual, 1);
     const ultimoDia = new Date(this._anoAtual, this._mesAtual + 1, 0);
     const startDay = primeiroDia.getDay(); // 0=dom
@@ -209,13 +229,21 @@ const AGENDAMENTOS = {
         html += `<div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:2px;">${d}</div>`;
       }
 
+      // Ocupacao
+      const ativos = agendDia.filter(a => a.status !== 'cancelado' && a.status !== 'realizado').length;
+      if (ativos > 0 || capacidade) {
+        const pct = Math.min(ativos / capacidade, 1);
+        const corOcup = pct >= 1 ? '#f85149' : pct >= 0.8 ? '#f0883e' : '#3fb950';
+        html += `<div style="font-size:9px;font-weight:700;color:${corOcup};margin-top:2px;">${ativos}/${capacidade}</div>`;
+      }
+
       // Mini eventos
-      const maxShow = 3;
+      const maxShow = 2;
       agendDia.slice(0, maxShow).forEach(a => {
-        html += `<div style="font-size:9px;padding:1px 4px;border-radius:3px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:${statusCor[a.status]}22;color:${statusCor[a.status]};border-left:2px solid ${statusCor[a.status]};">${esc(a.clientes?.nome?.split(' ')[0] || '?')}</div>`;
+        html += `<div style="font-size:8px;padding:1px 3px;border-radius:3px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:${statusCor[a.status]}22;color:${statusCor[a.status]};border-left:2px solid ${statusCor[a.status]};">${esc(a.clientes?.nome?.split(' ')[0] || '?')}</div>`;
       });
       if (agendDia.length > maxShow) {
-        html += `<div style="font-size:9px;color:var(--primary);font-weight:700;">+${agendDia.length - maxShow}</div>`;
+        html += `<div style="font-size:8px;color:var(--primary);font-weight:700;">+${agendDia.length - maxShow}</div>`;
       }
 
       html += '</div>';
