@@ -90,7 +90,12 @@ const CLIENTES = {
       ${this._temMais ? `<div style="text-align:center;margin-top:16px;"><button class="btn btn-secondary" onclick="CLIENTES.carregar(true)">Carregar mais</button></div>` : ''}`;
   },
 
-  async abrirModal(dados = {}) {
+  _onSaveCallback: null,
+
+  async abrirModal(dados = {}, nomePrefill = '', callback = null) {
+    if (nomePrefill && !dados) dados = {};
+    if (nomePrefill) dados.nome = nomePrefill;
+    this._onSaveCallback = callback;
     // Se editando, busca veiculos existentes
     let veiculosExistentes = [];
     if (dados.id) {
@@ -324,7 +329,15 @@ const CLIENTES = {
 
     closeModal();
     APP.toast(id ? 'Cliente atualizado' : 'Cliente cadastrado');
-    this.carregar();
+
+    // Callback (ex: voltar pro agendamento)
+    if (this._onSaveCallback) {
+      const cb = this._onSaveCallback;
+      this._onSaveCallback = null;
+      cb();
+    } else {
+      this.carregar();
+    }
   },
 
   async excluirVeiculo(veiculoId, placa, clienteId) {

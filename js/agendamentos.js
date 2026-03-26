@@ -383,11 +383,49 @@ const AGENDAMENTOS = {
     if (!lista) return;
     const t = termo.toLowerCase();
     const filtrados = t ? this._clientes.filter(c => c.nome.toLowerCase().includes(t)) : this._clientes;
+
+    if (!filtrados.length && t.length >= 2) {
+      lista.style.display = 'block';
+      lista.innerHTML = `<div style="padding:12px 14px;cursor:pointer;font-size:13px;color:var(--primary);font-weight:600;" onmousedown="AGENDAMENTOS._cadastrarClienteRapido('${esc(termo.trim())}')">+ Cadastrar "${esc(termo.trim())}" como novo cliente</div>`;
+      return;
+    }
     if (!filtrados.length) { lista.style.display = 'none'; return; }
+
     lista.style.display = 'block';
-    lista.innerHTML = filtrados.slice(0, 15).map(c =>
+    let html = filtrados.slice(0, 15).map(c =>
       `<div style="padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);" onmousedown="AGENDAMENTOS._selecionarCliente('${c.id}','${esc(c.nome)}')" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">${esc(c.nome)}</div>`
     ).join('');
+    if (t.length >= 2) {
+      html += `<div style="padding:10px 14px;cursor:pointer;font-size:12px;color:var(--primary);border-top:1px solid var(--border);" onmousedown="AGENDAMENTOS._cadastrarClienteRapido('${esc(termo.trim())}')">+ Cadastrar novo cliente</div>`;
+    }
+    lista.innerHTML = html;
+  },
+
+  _cadastrarClienteRapido(nome) {
+    document.getElementById('ag-cliente-lista').style.display = 'none';
+    // Salva estado do agendamento pra restaurar depois
+    this._agPrefill = {
+      tipo: document.getElementById('ag-tipo')?.value || '',
+      data: document.getElementById('ag-data')?.value || '',
+      km: document.getElementById('ag-km')?.value || '',
+      desc: document.getElementById('ag-desc')?.value || ''
+    };
+    // Abre modal de cadastro de cliente com nome preenchido
+    CLIENTES.abrirModal(null, nome, () => {
+      // Callback: recarrega lista e reabre agendamento
+      this._recarregarEReabrir();
+    });
+  },
+
+  async _recarregarEReabrir() {
+    // Recarrega clientes
+    const { data } = await db.from('clientes').select('id, nome').eq('oficina_id', APP.profile.oficina_id).order('nome');
+    this._clientes = data || [];
+    const { data: veic } = await db.from('veiculos').select('id, placa, marca, modelo, cliente_id').eq('oficina_id', APP.profile.oficina_id).order('placa');
+    this._veiculos = veic || [];
+    // Reabre agendamento com dados salvos
+    const pf = this._agPrefill || {};
+    this.abrirModal({ tipo: pf.tipo, data_prevista: pf.data, km_previsto: pf.km, descricao: pf.desc });
   },
 
   _selecionarCliente(id, nome) {
