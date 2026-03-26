@@ -114,7 +114,10 @@ const CRM = {
             ${lista.map(c => `
               <tr>
                 <td><strong>${esc(c.nome)}</strong></td>
-                <td>${esc(c.whatsapp || c.telefone || '-')}</td>
+                <td>
+                  ${c.whatsapp ? `<span>${esc(c.whatsapp)}</span>` : `<input type="text" class="form-control" id="crm-whats-${c.id}" placeholder="(00) 00000-0000" maxlength="15" style="padding:4px 8px;font-size:12px;width:140px;" oninput="CRM._maskFone(this)">
+                  <button class="btn btn-primary btn-sm" style="margin-top:2px;" onclick="CRM.salvarWhatsApp('${c.id}')">Salvar</button>`}
+                </td>
                 <td>${c.total}</td>
                 <td>${c.dias !== null ? c.dias + ' dias atras' : 'Nunca'}</td>
                 <td style="display:flex;gap:4px;">
@@ -126,6 +129,25 @@ const CRM = {
           </tbody>
         </table>
       </div>`;
+  },
+
+  async salvarWhatsApp(clienteId) {
+    const input = document.getElementById('crm-whats-' + clienteId);
+    if (!input) return;
+    const whatsapp = input.value.trim();
+    if (!whatsapp) { APP.toast('Digite o WhatsApp', 'error'); return; }
+
+    await db.from('clientes').update({ whatsapp }).eq('id', clienteId);
+    APP.toast('WhatsApp salvo');
+    this.carregar();
+  },
+
+  _maskFone(el) {
+    let v = el.value.replace(/\D/g, '').slice(0, 11);
+    if (v.length > 10) v = v.replace(/^(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+    else if (v.length > 6) v = v.replace(/^(\d{2})(\d{4,5})(\d{0,4})/, '($1) $2-$3');
+    else if (v.length > 2) v = v.replace(/^(\d{2})(\d{0,5})/, '($1) $2');
+    el.value = v;
   },
 
   enviarWhatsApp(fone, nome, dias) {
