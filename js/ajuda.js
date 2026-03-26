@@ -123,6 +123,49 @@ const AJUDA = {
         'Clique num veiculo na fila pra abrir os detalhes da OS.',
       ]
     },
+    crm: {
+      titulo: 'CRM de Reativacao',
+      itens: [
+        'Mostra <strong>clientes inativos</strong> agrupados por tempo sem vir a oficina.',
+        'Faixas: <strong>Atencao</strong> (30-60 dias), <strong>Risco</strong> (60-90), <strong>Inativos</strong> (90-180), <strong>Perdidos</strong> (180+).',
+        'Clique em <strong>"WhatsApp"</strong> pra enviar mensagem personalizada pro cliente. O texto ja vem pronto.',
+        'A mensagem muda conforme o tempo de inatividade — mais urgente pra quem ta sumido ha mais tempo.',
+        'Clique em <strong>"Agendar"</strong> pra criar um agendamento de retorno direto.',
+        'Clientes que fizeram OS nos ultimos 30 dias sao considerados <strong>ativos</strong> e nao aparecem aqui.',
+      ]
+    },
+    agendamentos: {
+      titulo: 'Agendamentos',
+      itens: [
+        'Agende <strong>manutencoes preventivas</strong> vinculadas a um veiculo e cliente.',
+        'Tipos disponiveis: revisao, troca de oleo, pneus, filtros, correia, freios, alinhamento, bateria.',
+        'Filtre por <strong>Pendentes, Vencidos, Realizados</strong> ou veja todos.',
+        'Agendamentos vencidos ficam <strong>destacados em vermelho</strong>.',
+        'Clique em <strong>"WhatsApp"</strong> pra notificar o cliente que esta chegando a hora.',
+        'Fluxo: Pendente → Notificado (enviou WhatsApp) → Confirmado → Realizado.',
+      ]
+    },
+    contas: {
+      titulo: 'Contas a Pagar / Receber',
+      itens: [
+        'Registre contas <strong>a pagar</strong> (despesas) e <strong>a receber</strong> (receitas futuras).',
+        'Veja o resumo do mes: total a pagar, a receber e saldo previsto.',
+        'Contas <strong>vencidas</strong> ficam em vermelho, as que vencem <strong>hoje</strong> ficam em amarelo.',
+        'Clique em <strong>"Pagar"</strong> pra marcar como paga.',
+        'Marque como <strong>recorrente</strong> pra identificar contas mensais fixas.',
+        'Categorias: aluguel, energia, agua, internet, fornecedor, funcionario, imposto.',
+      ]
+    },
+    pesquisa: {
+      titulo: 'Pesquisa de Satisfacao',
+      itens: [
+        'Ao entregar uma OS, o sistema pode enviar um <strong>link de avaliacao pelo WhatsApp</strong>.',
+        'O cliente avalia de <strong>1 a 5 estrelas</strong> + comentario — sem precisar de login.',
+        'Veja a <strong>nota media</strong>, taxa de resposta e distribuicao de notas.',
+        'Clique em <strong>"Reenviar"</strong> pra mandar de novo pra quem nao respondeu.',
+        'Use esse feedback pra <strong>melhorar o servico</strong> e fidelizar clientes.',
+      ]
+    },
     admin: {
       titulo: 'Super Admin',
       itens: [

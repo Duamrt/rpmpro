@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro — Gestao inteligente para oficinas mecanicas</title>
+<meta name="description" content="Sistema completo de gestao para oficinas mecanicas. Controle OS, clientes, estoque, financeiro e equipe. Simples, rapido e sem burocracia.">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, sans-serif; background: #0d1117; color: #e6edf3; line-height: 1.6; }
+  a { color: #FF4500; text-decoration: none; }
+
+  /* NAV */
+  .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: #0d1117ee; backdrop-filter: blur(12px); border-bottom: 1px solid #21262d; }
+  .nav-inner { max-width: 1100px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
+  .nav-logo { font-size: 24px; font-weight: 900; letter-spacing: -1px; }
+  .nav-logo .rpm { color: #FF4500; }
+  .nav-logo .pro { color: #fff; }
+  .nav-btns { display: flex; gap: 12px; }
+  .btn { display: inline-block; padding: 10px 24px; border-radius: 10px; font-weight: 700; font-size: 14px; border: none; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+  .btn-ghost { background: transparent; color: #e6edf3; border: 1px solid #21262d; }
+  .btn-ghost:hover { border-color: #FF4500; color: #FF4500; }
+  .btn-primary { background: #FF4500; color: #fff; }
+  .btn-primary:hover { background: #e63e00; transform: translateY(-1px); }
+  .btn-lg { padding: 14px 36px; font-size: 16px; }
+
+  /* HERO */
+  .hero { padding: 140px 24px 80px; text-align: center; max-width: 800px; margin: 0 auto; }
+  .hero-badge { display: inline-block; background: #FF450022; color: #FF4500; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; margin-bottom: 24px; border: 1px solid #FF450044; }
+  .hero h1 { font-size: clamp(32px, 5vw, 56px); font-weight: 900; line-height: 1.1; margin-bottom: 20px; letter-spacing: -2px; }
+  .hero h1 em { color: #FF4500; font-style: normal; }
+  .hero p { font-size: 18px; color: #8b949e; max-width: 600px; margin: 0 auto 32px; }
+  .hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+  /* SOCIAL PROOF */
+  .proof { text-align: center; padding: 40px 24px; border-top: 1px solid #21262d; border-bottom: 1px solid #21262d; }
+  .proof-items { display: flex; justify-content: center; gap: 40px; flex-wrap: wrap; }
+  .proof-item { font-size: 14px; color: #8b949e; }
+  .proof-item strong { color: #e6edf3; font-size: 24px; display: block; }
+
+  /* FEATURES */
+  .features { max-width: 1100px; margin: 0 auto; padding: 80px 24px; }
+  .features h2 { text-align: center; font-size: 32px; font-weight: 800; margin-bottom: 12px; }
+  .features .sub { text-align: center; color: #8b949e; font-size: 16px; margin-bottom: 48px; }
+  .feat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+  .feat-card { background: #161b22; border: 1px solid #21262d; border-radius: 16px; padding: 28px; transition: border-color 0.3s; }
+  .feat-card:hover { border-color: #FF4500; }
+  .feat-icon { font-size: 32px; margin-bottom: 12px; }
+  .feat-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  .feat-card p { font-size: 14px; color: #8b949e; line-height: 1.6; }
+
+  /* PRICING */
+  .pricing { max-width: 900px; margin: 0 auto; padding: 80px 24px; }
+  .pricing h2 { text-align: center; font-size: 32px; font-weight: 800; margin-bottom: 12px; }
+  .pricing .sub { text-align: center; color: #8b949e; font-size: 16px; margin-bottom: 48px; }
+  .price-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+  .price-card { background: #161b22; border: 1px solid #21262d; border-radius: 16px; padding: 32px; text-align: center; }
+  .price-card.destaque { border-color: #FF4500; position: relative; }
+  .price-card.destaque::before { content: 'Mais popular'; position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #FF4500; color: #fff; padding: 4px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+  .price-card h3 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+  .price-card .price { font-size: 40px; font-weight: 900; margin: 16px 0; }
+  .price-card .price span { font-size: 16px; font-weight: 400; color: #8b949e; }
+  .price-card ul { list-style: none; text-align: left; margin: 20px 0; }
+  .price-card li { padding: 6px 0; font-size: 14px; color: #8b949e; }
+  .price-card li::before { content: '✓ '; color: #3fb950; font-weight: 700; }
+
+  /* CTA */
+  .cta { text-align: center; padding: 80px 24px; background: linear-gradient(180deg, transparent, #FF450011); }
+  .cta h2 { font-size: 32px; font-weight: 800; margin-bottom: 12px; }
+  .cta p { color: #8b949e; font-size: 16px; margin-bottom: 32px; }
+
+  /* FOOTER */
+  .footer { text-align: center; padding: 40px 24px; border-top: 1px solid #21262d; color: #484f58; font-size: 13px; }
+
+  @media (max-width: 600px) {
+    .nav-btns .btn-ghost { display: none; }
+    .proof-items { gap: 24px; }
+    .hero { padding: 120px 20px 60px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="nav-logo"><span class="rpm">RPM</span><span class="pro">PRO</span></div>
+    <div class="nav-btns">
+      <a href="login.html" class="btn btn-ghost">Entrar</a>
+      <a href="login.html#cadastro" class="btn btn-primary">Criar conta gratis</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">Novo — CRM + Agendamento + Pesquisa de satisfacao</div>
+  <h1>Sua oficina no <em>controle total</em>, sem complicacao</h1>
+  <p>Sistema completo pra gerenciar OS, clientes, estoque, financeiro e equipe. Tudo num lugar so, facil de usar, do celular ou computador.</p>
+  <div class="hero-cta">
+    <a href="login.html#cadastro" class="btn btn-primary btn-lg">Comecar gratis</a>
+    <a href="https://wa.me/5587981713987?text=Oi!%20Quero%20conhecer%20o%20RPM%20Pro" class="btn btn-ghost btn-lg" target="_blank">Falar no WhatsApp</a>
+  </div>
+</section>
+
+<!-- SOCIAL PROOF -->
+<section class="proof">
+  <div class="proof-items">
+    <div class="proof-item"><strong>100+</strong> servicos no catalogo</div>
+    <div class="proof-item"><strong>7</strong> etapas de fluxo</div>
+    <div class="proof-item"><strong>0</strong> planilha necessaria</div>
+    <div class="proof-item"><strong>100%</strong> online</div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features">
+  <h2>Tudo que sua oficina precisa</h2>
+  <p class="sub">Sem instalar nada, sem contrato, sem dor de cabeca</p>
+  <div class="feat-grid">
+    <div class="feat-card">
+      <div class="feat-icon">🏗️</div>
+      <h3>Patio visual (Kanban)</h3>
+      <p>Veja todos os veiculos da oficina num painel. Arraste entre etapas: Entrada, Diagnostico, Orcamento, Execucao, Pronto, Entregue.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">🔧</div>
+      <h3>OS completa</h3>
+      <p>Abra OS em segundos. Servicos do catalogo, pecas do estoque, desconto, mecanico responsavel e PDF automatico.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">👤</div>
+      <h3>Clientes e veiculos</h3>
+      <p>Cadastro com WhatsApp, historico completo de servicos por placa, e CRM pra reativar clientes inativos.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">📦</div>
+      <h3>Estoque inteligente</h3>
+      <p>Controle pecas com margem automatica, baixa ao usar na OS, alerta de estoque minimo e compatibilidade por veiculo.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">💵</div>
+      <h3>Financeiro</h3>
+      <p>Caixa diario, entradas e saidas, contas a pagar/receber, OS lanca no caixa automaticamente. Relatorio PDF.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">📅</div>
+      <h3>Agendamento preventivo</h3>
+      <p>Agende revisoes e trocas de oleo pro futuro. O sistema avisa quando ta chegando a hora. WhatsApp automatico.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">📋</div>
+      <h3>CRM de reativacao</h3>
+      <p>Saiba quem ta sumido. Clientes inativos agrupados por tempo, com mensagem pronta pro WhatsApp.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">⭐</div>
+      <h3>Pesquisa de satisfacao</h3>
+      <p>Ao entregar o carro, o cliente recebe um link pelo WhatsApp pra avaliar o servico. Nota + comentario.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">👥</div>
+      <h3>Equipe e comissao</h3>
+      <p>Cadastre mecanicos, defina comissao %, e gere relatorio mensal de comissao com PDF.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing">
+  <h2>Planos simples, sem surpresa</h2>
+  <p class="sub">Comece gratis, pague so quando crescer</p>
+  <div class="price-cards">
+    <div class="price-card">
+      <h3>Gratis</h3>
+      <div class="price">R$ 0<span>/mes</span></div>
+      <ul>
+        <li>Ate 30 OS por mes</li>
+        <li>1 usuario</li>
+        <li>Kanban, clientes, veiculos</li>
+        <li>Catalogo de servicos</li>
+        <li>PDF de OS</li>
+      </ul>
+      <a href="login.html#cadastro" class="btn btn-ghost" style="width:100%;">Comecar gratis</a>
+    </div>
+    <div class="price-card destaque">
+      <h3>Profissional</h3>
+      <div class="price">R$ 97<span>/mes</span></div>
+      <ul>
+        <li>OS ilimitadas</li>
+        <li>Usuarios ilimitados</li>
+        <li>Estoque completo</li>
+        <li>Financeiro + Contas</li>
+        <li>CRM + Agendamento</li>
+        <li>Pesquisa de satisfacao</li>
+        <li>Comissao + Relatorios</li>
+        <li>Suporte WhatsApp</li>
+      </ul>
+      <a href="login.html#cadastro" class="btn btn-primary" style="width:100%;">Comecar agora</a>
+    </div>
+    <div class="price-card">
+      <h3>Rede</h3>
+      <div class="price">R$ 197<span>/mes</span></div>
+      <ul>
+        <li>Tudo do Profissional</li>
+        <li>Ate 5 filiais</li>
+        <li>Dashboard consolidado</li>
+        <li>Super admin</li>
+        <li>Suporte prioritario</li>
+      </ul>
+      <a href="https://wa.me/5587981713987?text=Quero%20o%20plano%20Rede%20do%20RPM%20Pro" class="btn btn-ghost" style="width:100%;" target="_blank">Falar com vendas</a>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta">
+  <h2>Pronto pra organizar sua oficina?</h2>
+  <p>Cadastro em 30 segundos. Sem cartao de credito. Sem contrato.</p>
+  <a href="login.html#cadastro" class="btn btn-primary btn-lg">Criar minha conta gratis</a>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <p>RPM Pro &copy; 2026 — Todos os direitos reservados</p>
+  <p style="margin-top:4px;">Feito com dedicacao para oficinas que querem crescer</p>
+</footer>
+
+</body>
+</html>

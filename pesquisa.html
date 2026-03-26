@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Avalie nosso servico — RPM Pro</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .container { width: 100%; max-width: 480px; }
+  .logo { text-align: center; margin-bottom: 32px; }
+  .logo h1 { font-size: 36px; font-weight: 900; letter-spacing: -1px; }
+  .logo .rpm { color: #FF4500; }
+  .logo .pro { color: #fff; }
+  .card { background: #161b22; border: 1px solid #21262d; border-radius: 16px; padding: 32px; }
+  .card h2 { font-size: 20px; text-align: center; margin-bottom: 8px; }
+  .card .sub { text-align: center; color: #8b949e; font-size: 14px; margin-bottom: 24px; }
+  .info { background: #1c2128; padding: 12px 16px; border-radius: 10px; margin-bottom: 24px; font-size: 14px; }
+  .info span { color: #8b949e; }
+  .info strong { color: #FF4500; }
+  .stars { display: flex; justify-content: center; gap: 8px; margin-bottom: 24px; }
+  .star { width: 56px; height: 56px; border-radius: 12px; border: 2px solid #21262d; background: #1c2128; font-size: 28px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+  .star:hover, .star.active { border-color: #FF4500; background: #FF450022; transform: scale(1.1); }
+  .star.active { box-shadow: 0 0 16px #FF450044; }
+  textarea { width: 100%; background: #1c2128; border: 1px solid #21262d; border-radius: 10px; padding: 12px; color: #e6edf3; font-family: inherit; font-size: 14px; resize: vertical; min-height: 80px; margin-bottom: 16px; }
+  textarea:focus { outline: none; border-color: #FF4500; }
+  .btn { width: 100%; padding: 14px; background: #FF4500; color: #fff; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit; transition: background 0.2s; }
+  .btn:hover { background: #e63e00; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .sucesso { text-align: center; padding: 40px 0; }
+  .sucesso .icon { font-size: 64px; margin-bottom: 16px; }
+  .sucesso h2 { margin-bottom: 8px; color: #3fb950; }
+  .erro { text-align: center; padding: 40px 0; }
+  .erro .icon { font-size: 64px; margin-bottom: 16px; }
+  .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #484f58; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="logo">
+    <h1><span class="rpm">RPM</span><span class="pro">PRO</span></h1>
+  </div>
+
+  <div class="card" id="card-pesquisa">
+    <div style="text-align:center;padding:30px;color:#8b949e;">Carregando...</div>
+  </div>
+
+  <div class="footer">RPM Pro &copy; 2026 — rpmpro.com.br</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = 'https://sclrcxwiwfiqnxguxvbv.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNjbHJjeHdpd2ZpcW54Z3V4dmJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NjM2NzYsImV4cCI6MjA5MDAzOTY3Nn0._sH7CVQ38LO4RTQFHGmUPpZX4Js1SYmRwjau1Hc5cTM';
+  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let notaSelecionada = 0;
+  const token = new URLSearchParams(window.location.search).get('t');
+  const card = document.getElementById('card-pesquisa');
+
+  async function init() {
+    if (!token) {
+      card.innerHTML = `<div class="erro"><div class="icon">🔗</div><h2>Link invalido</h2><p style="color:#8b949e;">Este link de avaliacao nao e valido.</p></div>`;
+      return;
+    }
+
+    const { data } = await db.rpc('buscar_pesquisa', { p_token: token });
+
+    if (!data || !data.ok) {
+      card.innerHTML = `<div class="erro"><div class="icon">❌</div><h2>${data?.erro || 'Pesquisa nao encontrada'}</h2><p style="color:#8b949e;">Verifique o link e tente novamente.</p></div>`;
+      return;
+    }
+
+    if (data.ja_respondida) {
+      card.innerHTML = `<div class="sucesso"><div class="icon">✅</div><h2>Voce ja avaliou!</h2><p style="color:#8b949e;">Obrigado pela sua avaliacao. Ela e muito importante pra gente!</p></div>`;
+      return;
+    }
+
+    card.innerHTML = `
+      <h2>Como foi nosso servico?</h2>
+      <p class="sub">Sua avaliacao ajuda a ${esc(data.oficina)} a melhorar</p>
+
+      <div class="info">
+        <span>Cliente:</span> <strong>${esc(data.cliente)}</strong><br>
+        <span>OS:</span> <strong>#${esc(data.os_numero)}</strong>
+      </div>
+
+      <p style="text-align:center;font-size:14px;margin-bottom:12px;color:#8b949e;">Toque na nota:</p>
+      <div class="stars">
+        ${[1,2,3,4,5].map(n => `<div class="star" onclick="selNota(${n})" id="star-${n}">${n <= 2 ? ['😡','😕'][n-1] : n === 3 ? '😐' : n === 4 ? '😊' : '🤩'}</div>`).join('')}
+      </div>
+
+      <textarea id="comentario" placeholder="Deixe um comentario (opcional)..."></textarea>
+
+      <button class="btn" id="btn-enviar" onclick="enviar()" disabled>Enviar avaliacao</button>
+    `;
+  }
+
+  function esc(str) {
+    if (!str) return '';
+    const d = document.createElement('div');
+    d.textContent = String(str);
+    return d.innerHTML;
+  }
+
+  function selNota(n) {
+    notaSelecionada = n;
+    for (let i = 1; i <= 5; i++) {
+      document.getElementById('star-' + i).classList.toggle('active', i <= n);
+    }
+    document.getElementById('btn-enviar').disabled = false;
+  }
+
+  async function enviar() {
+    const btn = document.getElementById('btn-enviar');
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+
+    const comentario = document.getElementById('comentario').value.trim();
+
+    const { data } = await db.rpc('responder_pesquisa', {
+      p_token: token,
+      p_nota: notaSelecionada,
+      p_comentario: comentario || null
+    });
+
+    if (data && data.ok) {
+      card.innerHTML = `
+        <div class="sucesso">
+          <div class="icon">🎉</div>
+          <h2>Obrigado pela avaliacao!</h2>
+          <p style="color:#8b949e;margin-top:8px;">Sua nota: ${'★'.repeat(notaSelecionada)}${'☆'.repeat(5 - notaSelecionada)}</p>
+          <p style="color:#8b949e;margin-top:16px;">Sua opiniao e muito importante e nos ajuda a melhorar cada vez mais.</p>
+        </div>
+      `;
+    } else {
+      btn.disabled = false;
+      btn.textContent = 'Enviar avaliacao';
+      alert(data?.erro || 'Erro ao enviar. Tente novamente.');
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>

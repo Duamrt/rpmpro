@@ -121,6 +121,11 @@ const APP = {
       { page: 'veiculos', icon: '🚗', label: 'Veiculos' },
       { page: 'equipe', icon: '👥', label: 'Equipe' },
       { page: 'comissao', icon: '💰', label: 'Comissao' },
+      { page: 'financeiro', icon: '💵', label: 'Financeiro' },
+      { page: 'contas', icon: '💳', label: 'Contas' },
+      { page: 'crm', icon: '📋', label: 'CRM' },
+      { page: 'agendamentos', icon: '📅', label: 'Agendamentos' },
+      { page: 'pesquisa', icon: '⭐', label: 'Satisfacao' },
       { page: 'dashboard', icon: '📊', label: 'Dashboard' },
       { page: 'config', icon: '⚙️', label: 'Config' },
     ];
