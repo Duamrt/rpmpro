@@ -278,8 +278,8 @@ const KANBAN = {
     }
 
     // Bloqueio: ir pra "execucao" sem ter passado por "aprovada"
-    if (novoStatus === 'execucao' && os.status !== 'aprovada' && os.status !== 'aguardando_peca') {
-      APP.toast('A OS precisa estar aprovada antes de ir pra execucao', 'error');
+    if (novoStatus === 'execucao' && os.status !== 'orcamento' && os.status !== 'aguardando_peca') {
+      APP.toast('A OS precisa passar por Aprovacao ou Aguardando Peca antes da Execucao', 'error');
       return;
     }
 
@@ -373,8 +373,8 @@ const KANBAN = {
     }
 
     // Bloqueio: ir pra "execucao" sem ter passado por "aprovada"
-    if (novoStatus === 'execucao' && os.status !== 'aprovada' && os.status !== 'aguardando_peca') {
-      APP.toast('A OS precisa estar aprovada antes de ir pra execucao', 'error');
+    if (novoStatus === 'execucao' && os.status !== 'orcamento' && os.status !== 'aguardando_peca') {
+      APP.toast('A OS precisa passar por Aprovacao ou Aguardando Peca antes da Execucao', 'error');
       return;
     }
 

@@ -4,7 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro — Login</title>
-<link rel="stylesheet" href="css/style.css?v=03261303">
+<meta name="theme-color" content="#FF4500">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a1d23'/><text x='50' y='68' font-size='48' font-weight='900' font-family='Arial' text-anchor='middle' fill='%23FF4500'>R</text></svg>">
+<link rel="stylesheet" href="css/style.css?v=03261318">
 <style>
   body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
   .login-container { width: 100%; max-width: 400px; padding: 24px; }
@@ -51,6 +53,9 @@
         <input type="password" class="form-control" id="login-senha" required placeholder="Sua senha">
       </div>
       <button type="submit" class="btn btn-primary login-btn" id="btn-login">Entrar</button>
+      <div style="text-align:center;margin-top:12px;">
+        <a href="#" onclick="handleRecuperarSenha(event)" style="color:var(--primary);font-size:13px;text-decoration:none;">Esqueci minha senha</a>
+      </div>
     </form>
 
     <!-- CADASTRO -->
@@ -81,8 +86,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/config.js?v=03261303"></script>
-<script src="js/auth.js?v=03261303"></script>
+<script src="js/config.js?v=03261318"></script>
+<script src="js/auth.js?v=03261318"></script>
 <script>
   // Checa se ja ta logado
   (async () => {
@@ -92,10 +97,32 @@
 
   function showTab(tab, e) {
     document.querySelectorAll('.tab-switch button').forEach(b => b.classList.remove('active'));
-    e.target.classList.add('active');
+    if (e && e.target) e.target.classList.add('active');
+    else document.querySelectorAll('.tab-switch button').forEach(b => { if ((tab === 'cadastro' && b.textContent.includes('Criar')) || (tab === 'login' && b.textContent.includes('Entrar'))) b.classList.add('active'); });
     document.getElementById('form-login').classList.toggle('hidden', tab !== 'login');
     document.getElementById('form-cadastro').classList.toggle('hidden', tab !== 'cadastro');
     document.getElementById('login-error').style.display = 'none';
+  }
+
+  // Hash #cadastro da landing
+  if (location.hash === '#cadastro') showTab('cadastro');
+
+  async function handleRecuperarSenha(e) {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value.trim();
+    if (!email) { showError('Digite seu email acima pra recuperar a senha'); return; }
+    try {
+      const { error } = await db.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/login.html' });
+      if (error) throw error;
+      showError('');
+      const el = document.getElementById('login-error');
+      el.style.display = 'block';
+      el.style.background = 'var(--success-bg)';
+      el.style.color = 'var(--success)';
+      el.textContent = 'Link de recuperacao enviado pro email ' + email;
+    } catch (err) {
+      showError('Erro: ' + err.message);
+    }
   }
 
   function showError(msg) {
