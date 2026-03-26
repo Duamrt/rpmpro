@@ -753,8 +753,20 @@ const OS = {
           ${chkSaida ? this._resumoChecklist(chkSaida, 'saida') : '<div style="font-size:12px;color:var(--text-muted);">Preencha antes de marcar como Pronto</div>'}
         </div>
 
+        ${!['pronto', 'entregue'].includes(os.status) && chkSaida ? `
+          <button class="btn btn-primary" style="width:100%;margin-top:12px;padding:14px;font-size:15px;" onclick="OS.marcarPronto('${os.id}')">
+            ✅ Marcar como Pronto
+          </button>
+        ` : ''}
+
+        ${os.status === 'pronto' ? `
+          <button class="btn btn-success" style="width:100%;margin-top:12px;padding:14px;font-size:15px;" onclick="OS.entregarVeiculo('${os.id}')">
+            🚗 Entregar veículo
+          </button>
+        ` : ''}
+
         ${os.clientes?.whatsapp ? `
-          <button class="btn btn-success" style="width:100%;margin-top:12px;" onclick="OS.enviarWhatsApp('${os.clientes.whatsapp}', '${os.veiculos?.placa}', '${os.status}')">
+          <button class="btn btn-success" style="width:100%;margin-top:8px;" onclick="OS.enviarWhatsApp('${os.clientes.whatsapp}', '${os.veiculos?.placa}', '${os.status}')">
             💬 Avisar cliente pelo WhatsApp
           </button>
         ` : ''}
@@ -1757,6 +1769,45 @@ const OS = {
     await db.from('fotos_os').delete().eq('id', fotoId);
     APP.toast('Foto excluida');
     this.abrirChecklistEntrada(osId);
+  },
+
+  async marcarPronto(osId) {
+    await db.from('ordens_servico').update({
+      status: 'pronto',
+      data_conclusao: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }).eq('id', osId);
+    APP.toast('OS marcada como Pronto');
+    closeModal();
+    if (typeof KANBAN !== 'undefined') KANBAN.carregar();
+  },
+
+  async entregarVeiculo(osId) {
+    // Verifica se tem valor
+    const { data: osCheck } = await db.from('ordens_servico').select('valor_total').eq('id', osId).single();
+    if (!osCheck || !osCheck.valor_total || osCheck.valor_total <= 0) {
+      APP.toast('OS sem valor. Adicione serviços ou peças antes de entregar.', 'error');
+      return;
+    }
+
+    await db.from('ordens_servico').update({
+      status: 'entregue',
+      data_entrega: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }).eq('id', osId);
+
+    // Lança no caixa
+    if (typeof OS._lancarNoCaixa === 'function') await OS._lancarNoCaixa(osId);
+
+    // WhatsApp de entrega
+    const { data: os } = await db.from('ordens_servico')
+      .select('id, status, clientes(nome, whatsapp), veiculos(placa)')
+      .eq('id', osId).single();
+    if (os) KANBAN._enviarWhatsAuto(os, 'entregue');
+
+    APP.toast('Veículo entregue');
+    closeModal();
+    if (typeof KANBAN !== 'undefined') KANBAN.carregar();
   },
 
   enviarHistorico(placa, whatsapp) {
