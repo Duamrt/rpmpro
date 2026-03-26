@@ -199,6 +199,8 @@ const EQUIPE = {
       options: { data: { created_by_team: true } }
     });
 
+    console.log('signUp result:', JSON.stringify({ authData, authError }, null, 2));
+
     if (authError) { APP.toast('Erro ao criar login: ' + authError.message, 'error'); return; }
 
     // Supabase retorna user sem identities se email já existe
@@ -208,6 +210,7 @@ const EQUIPE = {
     }
 
     const userId = authData.user.id;
+    console.log('Auth user criado:', userId);
 
     // Confirma email automaticamente via RPC
     const { data, error } = await db.rpc('vincular_login_membro', {
