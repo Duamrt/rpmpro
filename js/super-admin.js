@@ -50,44 +50,32 @@ const SUPER_ADMIN = {
       </div>
 
       <!-- Lista de oficinas -->
-      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;">
-        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
-          <h3 style="font-size:15px;">Oficinas cadastradas</h3>
-        </div>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Oficina</th>
-              <th>Plano</th>
-              <th>Trial ate</th>
-              <th>Usuarios</th>
-              <th>OS</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            ${oficinas.map(o => {
-              const qtdUsers = users.filter(u => u.oficina_id === o.id).length;
-              const qtdOS = ordens.filter(os => os.oficina_id === o.id).length;
-              return `
-              <tr>
-                <td>
-                  <strong>${esc(o.nome)}</strong>
-                  ${o.cidade ? '<br><span style="font-size:11px;color:var(--text-secondary);">' + esc(o.cidade) + (o.estado ? '/' + esc(o.estado) : '') + '</span>' : ''}
-                </td>
-                <td><span class="badge badge-${o.plano === 'beta' ? 'pronto' : 'orcamento'}">${esc(o.plano)}</span></td>
-                <td style="font-size:13px;">${o.trial_ate ? APP.formatDate(o.trial_ate) : '-'}</td>
-                <td>${qtdUsers}</td>
-                <td>${qtdOS}</td>
-                <td style="display:flex;gap:4px;flex-wrap:nowrap;">
-                  <button class="btn btn-primary btn-sm" onclick="SUPER_ADMIN.acessarOficina('${o.id}','${esc(o.nome)}')">Acessar</button>
-                  <button class="btn btn-secondary btn-sm" onclick="SUPER_ADMIN.editarPlano('${o.id}','${esc(o.nome)}','${o.plano || 'trial'}','${o.trial_ate || ''}')">Plano</button>
-                  <button class="btn btn-secondary btn-sm" onclick="SUPER_ADMIN.verUsuarios('${o.id}','${esc(o.nome)}')">Usuarios</button>
-                </td>
-              </tr>`;
-            }).join('')}
-          </tbody>
-        </table>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;">
+        ${oficinas.map(o => {
+          const qtdUsers = users.filter(u => u.oficina_id === o.id).length;
+          const qtdOS = ordens.filter(os => os.oficina_id === o.id).length;
+          const planoCor = { beta: 'pronto', essencial: 'orcamento', profissional: 'aprovada', rede: 'entregue', trial: 'cancelada' };
+          return `
+          <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+              <div>
+                <div style="font-weight:700;font-size:16px;">${esc(o.nome)}</div>
+                ${o.cidade ? `<div style="font-size:12px;color:var(--text-secondary);">${esc(o.cidade)}${o.estado ? '/' + esc(o.estado) : ''}</div>` : ''}
+              </div>
+              <span class="badge badge-${planoCor[o.plano] || 'orcamento'}">${esc(o.plano || 'trial')}</span>
+            </div>
+            <div style="display:flex;gap:16px;margin-bottom:14px;font-size:13px;color:var(--text-secondary);">
+              <span>👥 ${qtdUsers} usuarios</span>
+              <span>🔧 ${qtdOS} OS</span>
+              ${o.trial_ate ? `<span>📅 Trial: ${APP.formatDate(o.trial_ate)}</span>` : ''}
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn btn-primary btn-sm" onclick="SUPER_ADMIN.acessarOficina('${o.id}','${esc(o.nome)}')">Acessar</button>
+              <button class="btn btn-secondary btn-sm" onclick="SUPER_ADMIN.verUsuarios('${o.id}','${esc(o.nome)}')">Usuarios</button>
+              <button class="btn btn-secondary btn-sm" onclick="SUPER_ADMIN.editarPlano('${o.id}','${esc(o.nome)}','${o.plano || 'trial'}','${o.trial_ate || ''}')">Plano</button>
+            </div>
+          </div>`;
+        }).join('')}
       </div>
     `;
   },
