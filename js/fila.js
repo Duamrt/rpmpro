@@ -120,13 +120,13 @@ const FILA = {
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
             <div class="form-group" style="position:relative;">
-              <label>Placa</label>
-              <input type="text" class="form-control" id="fila-placa" placeholder="Se souber" style="text-transform:uppercase" maxlength="8" autocomplete="off" oninput="FILA._buscarPlaca(this.value)">
-              <div id="fila-placa-lista" style="position:absolute;top:100%;left:0;right:0;z-index:100;background:var(--bg-card);border:1px solid var(--border);border-radius:0 0 var(--radius) var(--radius);max-height:200px;overflow-y:auto;display:none;box-shadow:0 4px 12px rgba(0,0,0,0.3);"></div>
+              <label>Veiculo</label>
+              <input type="text" class="form-control" id="fila-veiculo" placeholder="Digite marca ou modelo..." autocomplete="off" oninput="FILA._buscarVeiculo(this.value)" onfocus="FILA._buscarVeiculo(this.value)">
+              <div id="fila-veiculo-lista" style="position:absolute;top:100%;left:0;right:0;z-index:100;background:var(--bg-card);border:1px solid var(--border);border-radius:0 0 var(--radius) var(--radius);max-height:200px;overflow-y:auto;display:none;box-shadow:0 4px 12px rgba(0,0,0,0.3);"></div>
             </div>
             <div class="form-group">
-              <label>Veiculo</label>
-              <input type="text" class="form-control" id="fila-veiculo" placeholder="Ex: Gol prata, HB20 branco">
+              <label>Placa</label>
+              <input type="text" class="form-control" id="fila-placa" placeholder="Se souber" style="text-transform:uppercase" maxlength="8">
             </div>
           </div>
           <div class="form-group">
@@ -305,31 +305,37 @@ const FILA = {
     }
   },
 
-  _buscarPlaca(termo) {
-    const lista = document.getElementById('fila-placa-lista');
+  _buscarVeiculo(termo) {
+    const lista = document.getElementById('fila-veiculo-lista');
     if (!lista) return;
-    const t = termo.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const t = termo.toLowerCase();
     if (t.length < 2) { lista.style.display = 'none'; return; }
 
-    const filtrados = this._veiCache.filter(v => v.placa.replace(/[^A-Z0-9]/gi, '').includes(t));
-    if (!filtrados.length) { lista.style.display = 'none'; return; }
+    const filtrados = this._veiCache.filter(v =>
+      ((v.marca || '') + ' ' + (v.modelo || '') + ' ' + v.placa).toLowerCase().includes(t)
+    );
+
+    if (!filtrados.length) {
+      lista.style.display = 'block';
+      lista.innerHTML = `<div style="padding:10px 14px;font-size:12px;color:var(--text-muted);">Nenhum veículo encontrado — será cadastrado ao salvar</div>`;
+      return;
+    }
 
     lista.style.display = 'block';
     lista.innerHTML = filtrados.slice(0, 10).map(v => {
-      const label = `${v.placa} — ${v.marca || ''} ${v.modelo || ''}`;
       const cli = this._cliCache.find(c => c.id === v.cliente_id);
-      return `<div style="padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);" onmousedown="FILA._selecionarPlaca('${v.id}','${esc(v.placa)}','${esc((v.marca || '') + ' ' + (v.modelo || ''))}','${v.cliente_id}','${esc(cli?.nome || '')}','${esc(cli?.whatsapp || '')}')" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">
-        <strong>${esc(v.placa)}</strong> ${esc(v.marca || '')} ${esc(v.modelo || '')}
-        ${cli ? `<span style="font-size:11px;color:var(--text-muted);margin-left:6px;">(${esc(cli.nome)})</span>` : ''}
+      return `<div style="padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);" onmousedown="FILA._selecionarVeiculo('${esc(v.placa)}','${esc((v.marca || '') + ' ' + (v.modelo || ''))}','${v.cliente_id}','${esc(cli?.nome || '')}','${esc(cli?.whatsapp || '')}')" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">
+        <strong>${esc(v.marca || '')} ${esc(v.modelo || '')}</strong>
+        <span style="font-size:12px;color:var(--primary);margin-left:6px;">${esc(v.placa)}</span>
+        ${cli ? `<span style="font-size:11px;color:var(--text-muted);margin-left:6px;">— ${esc(cli.nome)}</span>` : ''}
       </div>`;
     }).join('');
   },
 
-  _selecionarPlaca(veiId, placa, veiInfo, clienteId, clienteNome, clienteWhats) {
+  _selecionarVeiculo(placa, veiInfo, clienteId, clienteNome, clienteWhats) {
     document.getElementById('fila-placa').value = placa;
     document.getElementById('fila-veiculo').value = veiInfo.trim();
-    document.getElementById('fila-placa-lista').style.display = 'none';
-    // Preenche cliente se estiver vazio
+    document.getElementById('fila-veiculo-lista').style.display = 'none';
     if (clienteNome && !document.getElementById('fila-nome').value) {
       document.getElementById('fila-nome').value = clienteNome;
       document.getElementById('fila-cliente-id').value = clienteId;
