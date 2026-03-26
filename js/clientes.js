@@ -79,7 +79,8 @@ const CLIENTES = {
               <td>${esc(c.whatsapp || c.telefone || '-')}</td>
               <td>${c.veiculos?.[0]?.count || 0}</td>
               <td><span class="badge badge-${c.score === 'ativo' ? 'pronto' : c.score === 'risco' ? 'orcamento' : 'entregue'}">${c.score}</span></td>
-              <td>
+              <td style="display:flex;gap:4px;">
+                <button class="btn btn-primary btn-sm" onclick="CLIENTES.historico('${c.id}','${esc(c.nome)}')">Historico</button>
                 <button class="btn btn-secondary btn-sm" onclick="CLIENTES.editar('${c.id}')">Editar</button>
               </td>
             </tr>
@@ -339,6 +340,114 @@ const CLIENTES = {
   async editar(id) {
     const { data } = await db.from('clientes').select('*').eq('id', id).single();
     if (data) this.abrirModal(data);
+  },
+
+  async historico(clienteId, nome) {
+    // Busca OS, veículos e agendamentos do cliente
+    const [osRes, veiRes, agRes] = await Promise.all([
+      db.from('ordens_servico')
+        .select('*, veiculos(placa, marca, modelo), itens_os(tipo, descricao, valor), profiles!ordens_servico_mecanico_id_fkey(nome)')
+        .eq('cliente_id', clienteId)
+        .eq('oficina_id', APP.profile.oficina_id)
+        .order('created_at', { ascending: false }),
+      db.from('veiculos')
+        .select('*')
+        .eq('cliente_id', clienteId)
+        .eq('oficina_id', APP.profile.oficina_id)
+        .order('placa'),
+      db.from('agendamentos')
+        .select('*, veiculos(placa)')
+        .eq('cliente_id', clienteId)
+        .eq('oficina_id', APP.profile.oficina_id)
+        .order('data_prevista', { ascending: false })
+        .limit(10)
+    ]);
+
+    const osList = osRes.data || [];
+    const veiculos = veiRes.data || [];
+    const agendamentos = agRes.data || [];
+
+    const totalGasto = osList.filter(o => o.status === 'entregue').reduce((s, o) => s + (o.valor_total || 0), 0);
+    const totalOS = osList.length;
+    const ultimaOS = osList.length ? osList[0] : null;
+
+    const statusCor = { entrada: '#2563eb', diagnostico: '#eab308', orcamento: '#dc2626', aguardando_peca: '#999', execucao: '#16a34a', pronto: '#ccc', entregue: '#8b949e', cancelada: '#f85149' };
+    const statusLabel = { entrada: 'Avaliacao', diagnostico: 'Diagnostico', orcamento: 'Aprovacao', aguardando_peca: 'Ag. Peca', execucao: 'Execucao', pronto: 'Pronto', entregue: 'Entregue', cancelada: 'Cancelada' };
+
+    openModal(`
+      <div class="modal-header">
+        <h3>Historico — ${esc(nome)}</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body" style="max-height:80vh;overflow-y:auto;">
+        <!-- KPIs -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;">
+          <div style="background:var(--bg-input);padding:14px;border-radius:var(--radius);text-align:center;">
+            <div style="font-size:11px;color:var(--text-muted);">Total OS</div>
+            <div style="font-size:24px;font-weight:800;">${totalOS}</div>
+          </div>
+          <div style="background:var(--bg-input);padding:14px;border-radius:var(--radius);text-align:center;">
+            <div style="font-size:11px;color:var(--text-muted);">Total gasto</div>
+            <div style="font-size:24px;font-weight:800;color:var(--success);">${APP.formatMoney(totalGasto)}</div>
+          </div>
+          <div style="background:var(--bg-input);padding:14px;border-radius:var(--radius);text-align:center;">
+            <div style="font-size:11px;color:var(--text-muted);">Ultimo atendimento</div>
+            <div style="font-size:16px;font-weight:700;">${ultimaOS ? APP.formatDate(ultimaOS.created_at) : '-'}</div>
+          </div>
+        </div>
+
+        <!-- Veículos -->
+        <div style="margin-bottom:20px;">
+          <div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--text-secondary);">VEICULOS (${veiculos.length})</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            ${veiculos.map(v => `
+              <div style="background:var(--bg-input);padding:8px 14px;border-radius:var(--radius);font-size:13px;">
+                <strong>${esc(v.placa)}</strong> <span style="color:var(--text-secondary);">${esc(v.marca || '')} ${esc(v.modelo || '')} ${v.ano || ''}</span>
+                ${v.km_atual ? `<span style="color:var(--text-muted);font-size:11px;margin-left:6px;">${v.km_atual.toLocaleString('pt-BR')} km</span>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Histórico de OS -->
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--text-secondary);">HISTORICO DE MANUTENCOES</div>
+        ${osList.length ? osList.map(os => {
+          const servicos = (os.itens_os || []).filter(i => i.tipo === 'servico');
+          const pecas = (os.itens_os || []).filter(i => i.tipo === 'peca');
+          return `
+          <div style="background:var(--bg-input);border-left:4px solid ${statusCor[os.status] || '#666'};border-radius:var(--radius);padding:14px;margin-bottom:10px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <div>
+                <strong style="font-size:14px;">OS #${os.numero || '-'}</strong>
+                <span style="font-size:11px;color:var(--text-muted);margin-left:8px;">${APP.formatDate(os.created_at)}</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:12px;font-weight:700;color:${statusCor[os.status]};">${statusLabel[os.status] || os.status}</span>
+                ${os.valor_total ? `<span style="font-size:13px;font-weight:700;">${APP.formatMoney(os.valor_total)}</span>` : ''}
+              </div>
+            </div>
+            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">
+              ${esc(os.veiculos?.placa || '')} ${esc(os.veiculos?.marca || '')} ${esc(os.veiculos?.modelo || '')}
+              ${os.km ? ` — ${os.km.toLocaleString('pt-BR')} km` : ''}
+              ${os.profiles?.nome ? ` — Mec: ${esc(os.profiles.nome)}` : ''}
+            </div>
+            ${servicos.length ? `<div style="font-size:12px;margin-top:6px;"><strong style="color:var(--primary);">Servicos:</strong> ${servicos.map(s => esc(s.descricao)).join(', ')}</div>` : ''}
+            ${pecas.length ? `<div style="font-size:12px;margin-top:2px;"><strong style="color:var(--info);">Pecas:</strong> ${pecas.map(p => esc(p.descricao)).join(', ')}</div>` : ''}
+            ${os.descricao ? `<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">${esc(os.descricao)}</div>` : ''}
+          </div>`;
+        }).join('') : '<div style="text-align:center;padding:20px;color:var(--text-muted);">Nenhuma OS registrada</div>'}
+
+        <!-- Próximos agendamentos -->
+        ${agendamentos.length ? `
+        <div style="font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text-secondary);">AGENDAMENTOS</div>
+        ${agendamentos.map(a => `
+          <div style="background:var(--bg-input);padding:10px 14px;border-radius:var(--radius);margin-bottom:6px;font-size:12px;display:flex;justify-content:space-between;align-items:center;">
+            <div>${APP.formatDate(a.data_prevista)} — ${esc(a.tipo)} ${a.veiculos?.placa ? '(' + esc(a.veiculos.placa) + ')' : ''}</div>
+            <span style="font-weight:700;color:${a.status === 'realizado' ? 'var(--success)' : a.status === 'cancelado' ? 'var(--danger)' : 'var(--warning)'};">${a.status}</span>
+          </div>
+        `).join('')}` : ''}
+      </div>
+    `);
   }
 };
 
