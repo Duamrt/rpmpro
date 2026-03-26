@@ -114,11 +114,11 @@ const CLIENTES = {
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
             <div class="form-group">
               <label>WhatsApp</label>
-              <input type="text" class="form-control" id="cli-whatsapp" value="${esc(dados.whatsapp || '')}" placeholder="(00) 00000-0000">
+              <input type="text" class="form-control" id="cli-whatsapp" value="${esc(dados.whatsapp || '')}" placeholder="(00) 00000-0000" maxlength="15" oninput="CLIENTES._maskFone(this)">
             </div>
             <div class="form-group">
               <label>CPF/CNPJ</label>
-              <input type="text" class="form-control" id="cli-cpf" value="${esc(dados.cpf_cnpj || '')}">
+              <input type="text" class="form-control" id="cli-cpf" value="${esc(dados.cpf_cnpj || '')}" placeholder="000.000.000-00" maxlength="18" oninput="CLIENTES._maskCpfCnpj(this)">
             </div>
           </div>
           <div class="form-group">
@@ -461,6 +461,31 @@ const CLIENTES = {
     document.querySelectorAll('.hist-os-card').forEach(card => {
       card.style.display = (!veiculoId || card.dataset.veiculoId === veiculoId) ? '' : 'none';
     });
+  },
+
+  _maskFone(el) {
+    let v = el.value.replace(/\D/g, '').slice(0, 11);
+    if (v.length > 10) v = v.replace(/^(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+    else if (v.length > 6) v = v.replace(/^(\d{2})(\d{4,5})(\d{0,4})/, '($1) $2-$3');
+    else if (v.length > 2) v = v.replace(/^(\d{2})(\d{0,5})/, '($1) $2');
+    el.value = v;
+  },
+
+  _maskCpfCnpj(el) {
+    let v = el.value.replace(/\D/g, '');
+    if (v.length <= 11) {
+      v = v.slice(0, 11);
+      if (v.length > 9) v = v.replace(/^(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+      else if (v.length > 6) v = v.replace(/^(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+      else if (v.length > 3) v = v.replace(/^(\d{3})(\d{1,3})/, '$1.$2');
+    } else {
+      v = v.slice(0, 14);
+      if (v.length > 12) v = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{1,2})/, '$1.$2.$3/$4-$5');
+      else if (v.length > 8) v = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{1,4})/, '$1.$2.$3/$4');
+      else if (v.length > 5) v = v.replace(/^(\d{2})(\d{3})(\d{1,3})/, '$1.$2.$3');
+      else if (v.length > 2) v = v.replace(/^(\d{2})(\d{1,3})/, '$1.$2');
+    }
+    el.value = v;
   }
 };
 

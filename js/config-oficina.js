@@ -25,17 +25,17 @@ const CONFIG = {
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
               <div class="form-group">
                 <label>CNPJ</label>
-                <input type="text" class="form-control" id="cfg-cnpj" value="${esc(oficina.cnpj || '')}">
+                <input type="text" class="form-control" id="cfg-cnpj" value="${esc(oficina.cnpj || '')}" placeholder="00.000.000/0000-00" maxlength="18" oninput="CONFIG._maskCNPJ(this)">
               </div>
               <div class="form-group">
                 <label>Telefone</label>
-                <input type="text" class="form-control" id="cfg-telefone" value="${esc(oficina.telefone || '')}">
+                <input type="text" class="form-control" id="cfg-telefone" value="${esc(oficina.telefone || '')}" placeholder="(00) 0000-0000" maxlength="15" oninput="CONFIG._maskFone(this)">
               </div>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
               <div class="form-group">
                 <label>WhatsApp</label>
-                <input type="text" class="form-control" id="cfg-whatsapp" value="${esc(oficina.whatsapp || '')}">
+                <input type="text" class="form-control" id="cfg-whatsapp" value="${esc(oficina.whatsapp || '')}" placeholder="(00) 00000-0000" maxlength="15" oninput="CONFIG._maskFone(this)">
               </div>
               <div class="form-group">
                 <label>Email</label>
@@ -261,6 +261,23 @@ const CONFIG = {
         ? `<img src="${url}" style="max-height:32px;max-width:120px;object-fit:contain;">`
         : '';
     }
+  },
+
+  _maskCNPJ(el) {
+    let v = el.value.replace(/\D/g, '').slice(0, 14);
+    if (v.length > 12) v = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{1,2})/, '$1.$2.$3/$4-$5');
+    else if (v.length > 8) v = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{1,4})/, '$1.$2.$3/$4');
+    else if (v.length > 5) v = v.replace(/^(\d{2})(\d{3})(\d{1,3})/, '$1.$2.$3');
+    else if (v.length > 2) v = v.replace(/^(\d{2})(\d{1,3})/, '$1.$2');
+    el.value = v;
+  },
+
+  _maskFone(el) {
+    let v = el.value.replace(/\D/g, '').slice(0, 11);
+    if (v.length > 10) v = v.replace(/^(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+    else if (v.length > 6) v = v.replace(/^(\d{2})(\d{4,5})(\d{0,4})/, '($1) $2-$3');
+    else if (v.length > 2) v = v.replace(/^(\d{2})(\d{0,5})/, '($1) $2');
+    el.value = v;
   }
 };
 
