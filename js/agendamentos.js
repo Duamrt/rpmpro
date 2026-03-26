@@ -240,7 +240,9 @@ const AGENDAMENTOS = {
       // Mini eventos
       const maxShow = 2;
       agendDia.slice(0, maxShow).forEach(a => {
-        html += `<div style="font-size:8px;padding:1px 3px;border-radius:3px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:${statusCor[a.status]}22;color:${statusCor[a.status]};border-left:2px solid ${statusCor[a.status]};">${esc(a.clientes?.nome?.split(' ')[0] || '?')}</div>`;
+        const vencido = a.status === 'pendente' && dateStr < hojStr;
+        const cor = vencido ? '#f85149' : statusCor[a.status];
+        html += `<div style="font-size:8px;padding:1px 3px;border-radius:3px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:${cor}22;color:${cor};border-left:2px solid ${cor};${vencido ? 'font-weight:700;' : ''}">${esc(a.clientes?.nome?.split(' ')[0] || '?')}${vencido ? ' !' : ''}</div>`;
       });
       if (agendDia.length > maxShow) {
         html += `<div style="font-size:8px;color:var(--primary);font-weight:700;">+${agendDia.length - maxShow}</div>`;
