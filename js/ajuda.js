@@ -539,9 +539,9 @@ const AJUDA = {
   const style = document.createElement('style');
   style.id = 'ajuda-css';
   style.textContent = `
-    @keyframes ajudaSlideIn { from { transform:translateX(100%);opacity:0; } to { transform:translateX(0);opacity:1; } }
-    #ajuda-painel { position:fixed;top:0;right:0;width:380px;max-width:90vw;height:100vh;background:var(--bg-card);border-left:1px solid var(--border);z-index:9999;padding:20px;animation:ajudaSlideIn .2s ease;box-shadow:-4px 0 24px rgba(0,0,0,0.4);display:flex;flex-direction:column; }
-    @media(max-width:768px) { #ajuda-painel { width:100vw !important;max-width:100vw !important; } }
+    @keyframes ajudaSlideUp { from { transform:translateY(20px);opacity:0; } to { transform:translateY(0);opacity:1; } }
+    #ajuda-painel { position:fixed;bottom:80px;right:24px;width:360px;max-width:calc(100vw - 48px);height:50vh;max-height:480px;background:var(--bg-card);border:1px solid var(--border);border-radius:16px;z-index:9999;padding:16px;animation:ajudaSlideUp .2s ease;box-shadow:0 8px 32px rgba(0,0,0,0.5);display:flex;flex-direction:column; }
+    @media(max-width:768px) { #ajuda-painel { bottom:70px;right:8px;left:8px;width:auto;max-width:none;height:55vh; } }
   `;
   document.head.appendChild(style);
 })();
