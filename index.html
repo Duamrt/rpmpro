@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro — Gestao de Oficina</title>
-<link rel="stylesheet" href="css/style.css?v=03260508">
+<link rel="stylesheet" href="css/style.css?v=03260528">
 </head>
 <body>
 
@@ -105,11 +105,12 @@
       <button class="btn btn-secondary btn-sm" style="width:100%;margin-top:10px;" onclick="AUTH.logout()">Sair</button>
     </div>
   </aside>
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="document.getElementById('sidebar').classList.remove('open'); this.classList.remove('show');"></div>
 
   <!-- MAIN CONTENT -->
   <main class="main-content">
     <!-- Menu toggle mobile -->
-    <button class="btn btn-secondary menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')" style="margin-bottom:16px;">
+    <button class="btn btn-secondary menu-toggle" onclick="var s=document.getElementById('sidebar'),o=document.getElementById('sidebar-overlay'); s.classList.toggle('open'); o.classList.toggle('show');" style="margin-bottom:16px;">
       ☰ Menu
     </button>
 
@@ -343,32 +344,32 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=03260508"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=03260508"></script>
-<script src="js/utils.js?v=03260508"></script>
-<script src="js/config.js?v=03260508"></script>
-<script src="js/auth.js?v=03260508"></script>
-<script src="js/app.js?v=03260508"></script>
-<script src="js/dashboard.js?v=03260508"></script>
-<script src="js/os.js?v=03260508"></script>
-<script src="js/clientes.js?v=03260508"></script>
-<script src="js/catalogo-veiculos.js?v=03260508"></script>
-<script src="js/catalogo-servicos.js?v=03260508"></script>
-<script src="js/veiculos.js?v=03260508"></script>
-<script src="js/servicos.js?v=03260508"></script>
-<script src="js/pecas.js?v=03260508"></script>
-<script src="js/equipe.js?v=03260508"></script>
-<script src="js/kanban.js?v=03260508"></script>
-<script src="js/config-oficina.js?v=03260508"></script>
-<script src="js/financeiro.js?v=03260508"></script>
-<script src="js/comissao.js?v=03260508"></script>
-<script src="js/super-admin.js?v=03260508"></script>
-<script src="js/crm.js?v=03260508"></script>
-<script src="js/agendamentos.js?v=03260508"></script>
-<script src="js/contas.js?v=03260508"></script>
-<script src="js/pesquisa.js?v=03260508"></script>
-<script src="js/ajuda.js?v=03260508"></script>
-<script src="js/pdf-os.js?v=03260508"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=03260528"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=03260528"></script>
+<script src="js/utils.js?v=03260528"></script>
+<script src="js/config.js?v=03260528"></script>
+<script src="js/auth.js?v=03260528"></script>
+<script src="js/app.js?v=03260528"></script>
+<script src="js/dashboard.js?v=03260528"></script>
+<script src="js/os.js?v=03260528"></script>
+<script src="js/clientes.js?v=03260528"></script>
+<script src="js/catalogo-veiculos.js?v=03260528"></script>
+<script src="js/catalogo-servicos.js?v=03260528"></script>
+<script src="js/veiculos.js?v=03260528"></script>
+<script src="js/servicos.js?v=03260528"></script>
+<script src="js/pecas.js?v=03260528"></script>
+<script src="js/equipe.js?v=03260528"></script>
+<script src="js/kanban.js?v=03260528"></script>
+<script src="js/config-oficina.js?v=03260528"></script>
+<script src="js/financeiro.js?v=03260528"></script>
+<script src="js/comissao.js?v=03260528"></script>
+<script src="js/super-admin.js?v=03260528"></script>
+<script src="js/crm.js?v=03260528"></script>
+<script src="js/agendamentos.js?v=03260528"></script>
+<script src="js/contas.js?v=03260528"></script>
+<script src="js/pesquisa.js?v=03260528"></script>
+<script src="js/ajuda.js?v=03260528"></script>
+<script src="js/pdf-os.js?v=03260528"></script>
 <script>
   // Modal helpers
   function openModal(html) {

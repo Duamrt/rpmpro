@@ -53,6 +53,10 @@ const APP = {
       el.addEventListener('click', (e) => {
         e.preventDefault();
         this.loadPage(el.dataset.page);
+        // Fecha sidebar mobile + overlay
+        document.getElementById('sidebar').classList.remove('open');
+        const overlay = document.getElementById('sidebar-overlay');
+        if (overlay) overlay.classList.remove('show');
         // Fecha menu overflow se aberto
         const moreMenu = document.getElementById('bottom-nav-more');
         if (moreMenu) moreMenu.remove();
