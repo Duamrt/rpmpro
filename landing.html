@@ -175,12 +175,20 @@
 <!-- SCREENSHOT -->
 <section style="max-width:1100px;margin:0 auto;padding:0 24px 40px;text-align:center;">
   <div style="background:#161b22;border:1px solid #21262d;border-radius:16px;overflow:hidden;padding:4px;">
-    <img id="screenshot-img" src="img/screenshot-kanban.png" alt="Painel RPM Pro" style="width:100%;border-radius:12px;display:block;cursor:pointer;transition:transform 0.3s;" onclick="this.classList.toggle('expanded')" onerror="this.parentElement.parentElement.style.display='none'">
+    <img class="screenshot-zoom" src="img/screenshot-kanban.png" alt="Painel RPM Pro" style="width:100%;border-radius:12px;display:block;cursor:pointer;" onclick="this.classList.toggle('expanded')" onerror="this.parentElement.parentElement.style.display='none'">
   </div>
   <p style="font-size:13px;color:#484f58;margin-top:12px;">Painel de patio — acompanhe cada veiculo em tempo real <span style="color:#FF4500;">(clique pra ampliar)</span></p>
   <style>
-    #screenshot-img.expanded { position:fixed;top:0;left:0;width:100vw;height:100vh;object-fit:contain;z-index:9999;background:rgba(0,0,0,0.95);border-radius:0;padding:20px;cursor:zoom-out; }
+    .screenshot-zoom.expanded { position:fixed;top:0;left:0;width:100vw;height:100vh;object-fit:contain;z-index:9999;background:rgba(0,0,0,0.95);border-radius:0;padding:20px;cursor:zoom-out; }
   </style>
+</section>
+
+<!-- SCREENSHOT AGENDAMENTOS -->
+<section style="max-width:1100px;margin:0 auto;padding:0 24px 40px;text-align:center;">
+  <div style="background:#161b22;border:1px solid #21262d;border-radius:16px;overflow:hidden;padding:4px;">
+    <img class="screenshot-zoom" src="img/screenshot-agendamentos.png" alt="Calendario de Agendamentos RPM Pro" style="width:100%;border-radius:12px;display:block;cursor:pointer;" onclick="this.classList.toggle('expanded')" onerror="this.parentElement.parentElement.style.display='none'">
+  </div>
+  <p style="font-size:13px;color:#484f58;margin-top:12px;">Calendario de agendamentos — controle visual de cada dia <span style="color:#FF4500;">(clique pra ampliar)</span></p>
 </section>
 
 <!-- SOCIAL PROOF -->
