@@ -764,6 +764,12 @@ const OS = {
           <button class="btn btn-secondary" style="flex:1;" onclick="PDF_OS.recibo('${os.id}')">🧾 Gerar Recibo</button>
         </div>
 
+        ${os.veiculos?.placa ? `
+        <button class="btn btn-secondary" style="width:100%;margin-top:8px;" onclick="OS.enviarHistorico('${os.veiculos.placa}', '${os.clientes?.whatsapp || ''}')">
+          📋 Enviar historico do veiculo
+        </button>
+        ` : ''}
+
         <div style="display:flex;gap:8px;margin-top:8px;">
           <button class="btn btn-secondary" style="flex:1;" onclick="OS.editarOS('${os.id}')">Editar OS</button>
           ${os.status !== 'entregue' ? `<button class="btn btn-danger" style="flex:1;" onclick="OS.excluirOS('${os.id}')">Excluir OS</button>` : ''}
@@ -1734,6 +1740,21 @@ const OS = {
     await db.from('fotos_os').delete().eq('id', fotoId);
     APP.toast('Foto excluida');
     this.abrirChecklistEntrada(osId);
+  },
+
+  enviarHistorico(placa, whatsapp) {
+    const link = 'https://rpmpro.com.br/historico.html?p=' + placa.replace(/[^A-Z0-9]/gi, '');
+    const oficina = APP.oficina?.nome || 'a oficina';
+
+    if (whatsapp) {
+      const num = whatsapp.replace(/\D/g, '');
+      const fone = num.startsWith('55') ? num : '55' + num;
+      const msg = `Ola! Aqui e da ${oficina}. Segue o historico completo de manutencoes do seu veiculo ${placa}:\n\n${link}\n\nQualquer duvida e so chamar!`;
+      window.open(`https://wa.me/${fone}?text=${encodeURIComponent(msg)}`, '_blank');
+    } else {
+      navigator.clipboard.writeText(link);
+      APP.toast('Link copiado: ' + link);
+    }
   },
 
   enviarWhatsApp(whatsapp, placa, status) {
