@@ -82,6 +82,7 @@ const CLIENTES = {
               <td style="display:flex;gap:4px;">
                 <button class="btn btn-primary btn-sm" onclick="CLIENTES.historico('${c.id}','${esc(c.nome)}')">Historico</button>
                 <button class="btn btn-secondary btn-sm" onclick="CLIENTES.editar('${c.id}')">Editar</button>
+                <button class="btn btn-danger btn-sm" onclick="CLIENTES.excluir('${c.id}','${esc(c.nome)}')">Excluir</button>
               </td>
             </tr>
           `).join('')}
@@ -353,6 +354,20 @@ const CLIENTES = {
     } else {
       this.carregar();
     }
+  },
+
+  async excluir(id, nome) {
+    if (!confirm(`Excluir o cliente "${nome}" e todos os veiculos dele? Essa acao nao pode ser desfeita.`)) return;
+
+    const oficina_id = APP.profile.oficina_id;
+    // Remove veículos do cliente primeiro
+    await db.from('veiculos').delete().eq('cliente_id', id).eq('oficina_id', oficina_id);
+    // Remove cliente
+    const { error } = await db.from('clientes').delete().eq('id', id).eq('oficina_id', oficina_id);
+    if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
+
+    APP.toast('Cliente excluido');
+    this.carregar();
   },
 
   async excluirVeiculo(veiculoId, placa, clienteId) {
