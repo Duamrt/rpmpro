@@ -21,6 +21,12 @@ const APP = {
     const elUser = document.getElementById('user-nome');
     if (elUser) elUser.textContent = this.profile.nome;
 
+    const roleLabels = { dono: 'Dono', gerente: 'Gerente', mecanico: 'Mecanico', atendente: 'Atendente', aux_mecanico: 'Aux. Mecanico', aux_admin: 'Aux. Administrativo' };
+    const elRole = document.getElementById('user-role');
+    if (elRole) elRole.textContent = roleLabels[this.profile.role] || this.profile.role;
+    const elAvatar = document.getElementById('user-avatar');
+    if (elAvatar) elAvatar.textContent = (this.profile.nome || '?')[0].toUpperCase();
+
     // Logo da oficina na sidebar
     if (this.oficina?.logo_url) {
       const logoEl = document.getElementById('sidebar-logo-img');
@@ -89,8 +95,8 @@ const APP = {
   _paginasPermitidas: {
     mecanico: ['kanban', 'dashboard'],
     aux_mecanico: ['kanban', 'dashboard'],
-    atendente: ['kanban', 'dashboard', 'fila', 'os', 'clientes', 'veiculos', 'agendamentos', 'servicos', 'pecas', 'contas'],
-    aux_admin: ['kanban', 'dashboard', 'fila', 'os', 'clientes', 'veiculos', 'agendamentos', 'servicos', 'pecas', 'contas'],
+    atendente: ['kanban', 'dashboard', 'fila', 'os', 'clientes', 'veiculos', 'agendamentos', 'servicos', 'pecas', 'contas', 'equipe'],
+    aux_admin: ['kanban', 'dashboard', 'fila', 'os', 'clientes', 'veiculos', 'agendamentos', 'servicos', 'pecas', 'contas', 'equipe'],
     gerente: ['kanban', 'dashboard', 'fila', 'os', 'clientes', 'veiculos', 'agendamentos', 'servicos', 'pecas', 'financeiro', 'contas', 'comissao', 'crm', 'pesquisa', 'equipe', 'config'],
     dono: null, // null = tudo
   },
