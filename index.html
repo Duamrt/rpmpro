@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro — Gestao de Oficina</title>
-<link rel="stylesheet" href="css/style.css?v=03260450">
+<link rel="stylesheet" href="css/style.css?v=03260504">
 </head>
 <body>
 
@@ -17,54 +17,81 @@
     </div>
 
     <nav class="sidebar-nav">
-      <a href="#" data-page="kanban" class="active">
-        <span class="icon">🏗️</span> Patio
-      </a>
-      <a href="#" data-page="dashboard">
-        <span class="icon">📊</span> Dashboard
-      </a>
-      <a href="#" data-page="os">
-        <span class="icon">🔧</span> Ordens de Servico
-      </a>
-      <a href="#" data-page="clientes">
-        <span class="icon">👤</span> Clientes
-      </a>
-      <a href="#" data-page="veiculos">
-        <span class="icon">🚗</span> Veiculos
-      </a>
-      <a href="#" data-page="servicos">
-        <span class="icon">🛠️</span> Servicos
-      </a>
-      <a href="#" data-page="pecas">
-        <span class="icon">📦</span> Pecas / Estoque
-      </a>
-      <a href="#" data-page="equipe">
-        <span class="icon">👥</span> Equipe
-      </a>
-      <a href="#" data-page="comissao" class="nav-dono-gerente">
-        <span class="icon">💰</span> Comissao
-      </a>
-      <a href="#" data-page="financeiro" class="nav-dono-gerente">
-        <span class="icon">💵</span> Financeiro
-      </a>
-      <a href="#" data-page="contas" class="nav-dono-gerente">
-        <span class="icon">💳</span> Contas
-      </a>
-      <a href="#" data-page="crm" class="nav-dono-gerente">
-        <span class="icon">📋</span> CRM
-      </a>
-      <a href="#" data-page="agendamentos">
-        <span class="icon">📅</span> Agendamentos
-      </a>
-      <a href="#" data-page="pesquisa" class="nav-dono-gerente">
-        <span class="icon">⭐</span> Satisfacao
-      </a>
-      <a href="#" data-page="config">
-        <span class="icon">⚙️</span> Configuracoes
-      </a>
-      <a href="#" data-page="admin" class="nav-super-admin" style="display:none;">
-        <span class="icon">🔑</span> Super Admin
-      </a>
+      <div class="sidebar-group-label" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">OFICINA</div>
+      <div class="sidebar-group">
+        <a href="#" data-page="kanban" class="active">
+          <span class="icon">🏗️</span> Patio
+        </a>
+        <a href="#" data-page="dashboard">
+          <span class="icon">📊</span> Dashboard
+        </a>
+      </div>
+
+      <div class="sidebar-group-label" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">ATENDIMENTO</div>
+      <div class="sidebar-group">
+        <a href="#" data-page="os">
+          <span class="icon">🔧</span> Ordens de Servico
+        </a>
+        <a href="#" data-page="clientes">
+          <span class="icon">👤</span> Clientes
+        </a>
+        <a href="#" data-page="veiculos">
+          <span class="icon">🚗</span> Veiculos
+        </a>
+      </div>
+
+      <div class="sidebar-group-label" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">CATALOGO</div>
+      <div class="sidebar-group">
+        <a href="#" data-page="servicos">
+          <span class="icon">🛠️</span> Servicos
+        </a>
+        <a href="#" data-page="pecas">
+          <span class="icon">📦</span> Pecas / Estoque
+        </a>
+      </div>
+
+      <div class="sidebar-group-label nav-dono-gerente" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">FINANCEIRO</div>
+      <div class="sidebar-group nav-dono-gerente">
+        <a href="#" data-page="financeiro">
+          <span class="icon">💵</span> Caixa
+        </a>
+        <a href="#" data-page="contas">
+          <span class="icon">💳</span> Contas a Pagar
+        </a>
+        <a href="#" data-page="comissao">
+          <span class="icon">💰</span> Comissao
+        </a>
+      </div>
+
+      <div class="sidebar-group-label" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">RELACIONAMENTO</div>
+      <div class="sidebar-group">
+        <a href="#" data-page="crm" class="nav-dono-gerente">
+          <span class="icon">📋</span> CRM
+        </a>
+        <a href="#" data-page="agendamentos">
+          <span class="icon">📅</span> Agendamentos
+        </a>
+        <a href="#" data-page="pesquisa" class="nav-dono-gerente">
+          <span class="icon">⭐</span> Satisfacao
+        </a>
+      </div>
+
+      <div class="sidebar-group-label" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">EQUIPE</div>
+      <div class="sidebar-group">
+        <a href="#" data-page="equipe">
+          <span class="icon">👥</span> Equipe
+        </a>
+        <a href="#" data-page="config">
+          <span class="icon">⚙️</span> Configuracoes
+        </a>
+      </div>
+
+      <div class="sidebar-group-label nav-super-admin" style="display:none;" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">ADMIN</div>
+      <div class="sidebar-group nav-super-admin" style="display:none;">
+        <a href="#" data-page="admin">
+          <span class="icon">🔑</span> Super Admin
+        </a>
+      </div>
     </nav>
 
     <div class="sidebar-footer">
@@ -316,32 +343,32 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=03260450"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=03260450"></script>
-<script src="js/utils.js?v=03260450"></script>
-<script src="js/config.js?v=03260450"></script>
-<script src="js/auth.js?v=03260450"></script>
-<script src="js/app.js?v=03260450"></script>
-<script src="js/dashboard.js?v=03260450"></script>
-<script src="js/os.js?v=03260450"></script>
-<script src="js/clientes.js?v=03260450"></script>
-<script src="js/catalogo-veiculos.js?v=03260450"></script>
-<script src="js/catalogo-servicos.js?v=03260450"></script>
-<script src="js/veiculos.js?v=03260450"></script>
-<script src="js/servicos.js?v=03260450"></script>
-<script src="js/pecas.js?v=03260450"></script>
-<script src="js/equipe.js?v=03260450"></script>
-<script src="js/kanban.js?v=03260450"></script>
-<script src="js/config-oficina.js?v=03260450"></script>
-<script src="js/financeiro.js?v=03260450"></script>
-<script src="js/comissao.js?v=03260450"></script>
-<script src="js/super-admin.js?v=03260450"></script>
-<script src="js/crm.js?v=03260450"></script>
-<script src="js/agendamentos.js?v=03260450"></script>
-<script src="js/contas.js?v=03260450"></script>
-<script src="js/pesquisa.js?v=03260450"></script>
-<script src="js/ajuda.js?v=03260450"></script>
-<script src="js/pdf-os.js?v=03260450"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=03260504"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=03260504"></script>
+<script src="js/utils.js?v=03260504"></script>
+<script src="js/config.js?v=03260504"></script>
+<script src="js/auth.js?v=03260504"></script>
+<script src="js/app.js?v=03260504"></script>
+<script src="js/dashboard.js?v=03260504"></script>
+<script src="js/os.js?v=03260504"></script>
+<script src="js/clientes.js?v=03260504"></script>
+<script src="js/catalogo-veiculos.js?v=03260504"></script>
+<script src="js/catalogo-servicos.js?v=03260504"></script>
+<script src="js/veiculos.js?v=03260504"></script>
+<script src="js/servicos.js?v=03260504"></script>
+<script src="js/pecas.js?v=03260504"></script>
+<script src="js/equipe.js?v=03260504"></script>
+<script src="js/kanban.js?v=03260504"></script>
+<script src="js/config-oficina.js?v=03260504"></script>
+<script src="js/financeiro.js?v=03260504"></script>
+<script src="js/comissao.js?v=03260504"></script>
+<script src="js/super-admin.js?v=03260504"></script>
+<script src="js/crm.js?v=03260504"></script>
+<script src="js/agendamentos.js?v=03260504"></script>
+<script src="js/contas.js?v=03260504"></script>
+<script src="js/pesquisa.js?v=03260504"></script>
+<script src="js/ajuda.js?v=03260504"></script>
+<script src="js/pdf-os.js?v=03260504"></script>
 <script>
   // Modal helpers
   function openModal(html) {

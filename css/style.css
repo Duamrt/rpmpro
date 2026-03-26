@@ -77,7 +77,33 @@ body {
   margin-top: 2px;
 }
 
-.sidebar-nav { flex: 1; padding: 8px 0; }
+.sidebar-nav { flex: 1; padding: 0; overflow-y: auto; }
+
+/* Grupos do sidebar */
+.sidebar-group-label {
+  font-size: 10px;
+  font-weight: 800;
+  color: rgba(255,255,255,0.35);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 14px 20px 6px;
+  user-select: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  border-top: 1px solid var(--border);
+}
+.sidebar-group-label:first-child { border-top: none; padding-top: 12px; }
+.sidebar-group-label:hover { color: rgba(255,255,255,0.6); }
+.sidebar-group-label::after {
+  content: '▾';
+  font-size: 9px;
+  position: absolute;
+  right: 20px;
+  opacity: 0.3;
+}
+.sidebar-group-label.collapsed::after { content: '▸'; }
+.sidebar-group.collapsed { display: none; }
 
 .sidebar-nav a {
   display: flex;
