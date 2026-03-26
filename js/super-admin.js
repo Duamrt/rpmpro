@@ -246,17 +246,85 @@ const SUPER_ADMIN = {
   },
 
   // ========== OFICINAS ==========
+  _getOrdemOficinas() {
+    try { return JSON.parse(localStorage.getItem('rpmpro-admin-ordem') || '[]'); } catch { return []; }
+  },
+
+  _salvarOrdem(ordem) {
+    localStorage.setItem('rpmpro-admin-ordem', JSON.stringify(ordem));
+  },
+
+  _ordenarOficinas(oficinas) {
+    const ordem = this._getOrdemOficinas();
+    if (!ordem.length) return oficinas;
+    // Ordena: quem tá na lista de ordem vem primeiro, na posição salva
+    const mapa = new Map(ordem.map((id, i) => [id, i]));
+    return [...oficinas].sort((a, b) => {
+      const posA = mapa.has(a.id) ? mapa.get(a.id) : 9999;
+      const posB = mapa.has(b.id) ? mapa.get(b.id) : 9999;
+      if (posA !== posB) return posA - posB;
+      return 0; // mantém ordem original pra quem não tá na lista
+    });
+  },
+
+  moverOficina(oficinaId, direcao) {
+    const oficinas = this._dados?.oficinas || [];
+    let ordem = this._getOrdemOficinas();
+
+    // Se ordem vazia, inicializa com ordem atual
+    if (!ordem.length) ordem = oficinas.map(o => o.id);
+
+    const idx = ordem.indexOf(oficinaId);
+    if (idx === -1) return;
+
+    const novoIdx = idx + direcao;
+    if (novoIdx < 0 || novoIdx >= ordem.length) return;
+
+    // Swap
+    [ordem[idx], ordem[novoIdx]] = [ordem[novoIdx], ordem[idx]];
+    this._salvarOrdem(ordem);
+
+    // Re-ordena dados locais e re-renderiza
+    this._dados.oficinas = this._ordenarOficinas(this._dados.oficinas);
+    const container = document.getElementById('admin-content');
+    if (container) container.innerHTML = this._renderOficinas(this._dados.oficinas);
+  },
+
+  fixarOficina(oficinaId) {
+    const oficinas = this._dados?.oficinas || [];
+    let ordem = this._getOrdemOficinas();
+    if (!ordem.length) ordem = oficinas.map(o => o.id);
+
+    const idx = ordem.indexOf(oficinaId);
+    if (idx === -1) return;
+
+    // Remove e coloca no topo
+    ordem.splice(idx, 1);
+    ordem.unshift(oficinaId);
+    this._salvarOrdem(ordem);
+
+    this._dados.oficinas = this._ordenarOficinas(this._dados.oficinas);
+    const container = document.getElementById('admin-content');
+    if (container) container.innerHTML = this._renderOficinas(this._dados.oficinas);
+    APP.toast('Oficina fixada no topo');
+  },
+
   _renderOficinas(oficinas) {
     const busca = (this._buscaOficina || '').toLowerCase();
-    const filtradas = busca ? oficinas.filter(o =>
+
+    // Aplica ordenação customizada
+    const ordenadas = this._ordenarOficinas(oficinas);
+
+    const filtradas = busca ? ordenadas.filter(o =>
       (o.nome || '').toLowerCase().includes(busca) ||
       (o.cidade || '').toLowerCase().includes(busca) ||
       (o.cnpj || '').includes(busca) ||
       (o.plano || '').includes(busca)
-    ) : oficinas;
+    ) : ordenadas;
 
     const planoCores = { beta: 'var(--success)', essencial: 'var(--info)', profissional: '#22d3ee', rede: 'var(--success)', trial: 'var(--warning)' };
     const hoje = new Date().toISOString().split('T')[0];
+    const ordem = this._getOrdemOficinas();
 
     return `
       <div class="page-header">
@@ -269,14 +337,26 @@ const SUPER_ADMIN = {
       </div>
 
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;">
-        ${filtradas.map(o => {
+        ${filtradas.map((o, idx) => {
           const trialVencido = o.plano === 'trial' && o.trial_ate && o.trial_ate < hoje;
+          const isFirst = idx === 0;
+          const isLast = idx === filtradas.length - 1;
+          const isPinned = ordem.length > 0 && ordem[0] === o.id;
           return `
-          <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;${trialVencido ? 'opacity:0.6;' : ''}">
+          <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;${trialVencido ? 'opacity:0.6;' : ''}${isPinned ? 'border-color:var(--primary);' : ''}">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
-              <div>
-                <div style="font-weight:700;font-size:16px;">${esc(o.nome)}</div>
-                ${o.cidade ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">${esc(o.cidade)}${o.estado ? '/' + esc(o.estado) : ''}</div>` : ''}
+              <div style="display:flex;align-items:flex-start;gap:8px;">
+                <div style="display:flex;flex-direction:column;gap:2px;margin-top:2px;">
+                  <button onclick="SUPER_ADMIN.fixarOficina('${o.id}')" title="Fixar no topo" style="background:none;border:none;cursor:pointer;font-size:14px;padding:0;line-height:1;opacity:${isPinned ? '1' : '0.4'};">📌</button>
+                  ${!busca ? `
+                  <button onclick="SUPER_ADMIN.moverOficina('${o.id}',-1)" title="Mover pra cima" style="background:none;border:none;cursor:pointer;font-size:11px;padding:0;line-height:1;${isFirst ? 'opacity:0.15;' : 'opacity:0.5;'}">▲</button>
+                  <button onclick="SUPER_ADMIN.moverOficina('${o.id}',1)" title="Mover pra baixo" style="background:none;border:none;cursor:pointer;font-size:11px;padding:0;line-height:1;${isLast ? 'opacity:0.15;' : 'opacity:0.5;'}">▼</button>
+                  ` : ''}
+                </div>
+                <div>
+                  <div style="font-weight:700;font-size:16px;">${esc(o.nome)}</div>
+                  ${o.cidade ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">${esc(o.cidade)}${o.estado ? '/' + esc(o.estado) : ''}</div>` : ''}
+                </div>
               </div>
               <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
                 <span style="font-size:11px;font-weight:700;color:${planoCores[o.plano] || 'var(--warning)'};background:${planoCores[o.plano] || 'var(--warning)'}18;padding:2px 10px;border-radius:10px;">${(o.plano || 'trial').toUpperCase()}</span>
