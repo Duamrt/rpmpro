@@ -384,9 +384,26 @@ const AGENDAMENTOS = {
   async salvar(e, id) {
     e.preventDefault();
     const oficina_id = APP.profile.oficina_id;
+    const dataSel = document.getElementById('ag-data').value;
+
+    // Verifica capacidade do dia (só pra novos ou se mudou a data)
+    const capacidade = APP.oficina?.capacidade_diaria || 5;
+    const { data: agendDia } = await db
+      .from('agendamentos')
+      .select('id')
+      .eq('oficina_id', oficina_id)
+      .eq('data_prevista', dataSel)
+      .not('status', 'in', '("cancelado","realizado")');
+
+    const qtdDia = (agendDia || []).filter(a => a.id !== id).length;
+    if (qtdDia >= capacidade) {
+      APP.toast(`Dia lotado! Ja tem ${qtdDia}/${capacidade} agendamentos. Escolha outra data.`, 'error');
+      return;
+    }
+
     const obj = {
       tipo: document.getElementById('ag-tipo').value,
-      data_prevista: document.getElementById('ag-data').value,
+      data_prevista: dataSel,
       km_previsto: document.getElementById('ag-km').value ? parseInt(document.getElementById('ag-km').value) : null,
       descricao: document.getElementById('ag-desc').value.trim()
     };
