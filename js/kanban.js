@@ -445,6 +445,8 @@ const KANBAN = {
     const placa = os.veiculos?.placa || '';
     const veiculo = [os.veiculos?.marca, os.veiculos?.modelo].filter(Boolean).join(' ');
     const nomeVeiculo = veiculo ? `${veiculo} placa ${placa}` : placa;
+    const cliente = (os.clientes?.nome || '').split(' ')[0] || '';
+    const saudacao = cliente ? `Olá, ${cliente}!` : 'Olá!';
     const oficina = APP.oficina?.nome || 'a oficina';
     const num = whats.replace(/\D/g, '');
     const fone = num.startsWith('55') ? num : '55' + num;
@@ -452,15 +454,15 @@ const KANBAN = {
     let msg = '';
 
     if (novoStatus === 'entregue') {
-      msg = await this._montarMsgEntrega(os, nomeVeiculo, placa, oficina);
+      msg = await this._montarMsgEntrega(os, nomeVeiculo, placa, oficina, cliente);
     } else {
       const mensagens = {
-        diagnostico: `Olá! Aqui é da ${oficina}. Seu ${nomeVeiculo} entrou em diagnóstico. Em breve teremos novidades.`,
-        orcamento: `Olá! Aqui é da ${oficina}. O orçamento do seu ${nomeVeiculo} está pronto. Posso enviar os detalhes?`,
-        aprovada: `Olá! Orçamento do ${nomeVeiculo} aprovado! Já vamos iniciar o serviço. Qualquer novidade te aviso.`,
-        aguardando_peca: `Olá! Aqui é da ${oficina}. Seu ${nomeVeiculo} está aguardando uma peça. Te aviso assim que chegar.`,
-        execucao: `Olá! Seu ${nomeVeiculo} já está em execução aqui na ${oficina}. Te aviso quando estiver pronto!`,
-        pronto: `Olá! Seu ${nomeVeiculo} está pronto pra retirada aqui na ${oficina}! Quando pode vir buscar?`
+        diagnostico: `${saudacao} Aqui é da ${oficina}. Seu ${nomeVeiculo} entrou em diagnóstico. Em breve teremos novidades.`,
+        orcamento: `${saudacao} Aqui é da ${oficina}. O orçamento do seu ${nomeVeiculo} está pronto. Posso enviar os detalhes?`,
+        aprovada: `${saudacao} Orçamento do ${nomeVeiculo} aprovado! Já vamos iniciar o serviço. Qualquer novidade te aviso.`,
+        aguardando_peca: `${saudacao} Aqui é da ${oficina}. Seu ${nomeVeiculo} está aguardando uma peça. Te aviso assim que chegar.`,
+        execucao: `${saudacao} Seu ${nomeVeiculo} já está em execução aqui na ${oficina}. Te aviso quando estiver pronto!`,
+        pronto: `${saudacao} Seu ${nomeVeiculo} está pronto pra retirada aqui na ${oficina}! Quando pode vir buscar?`
       };
       msg = mensagens[novoStatus];
     }
@@ -475,17 +477,18 @@ const KANBAN = {
     }
   },
 
-  async _montarMsgEntrega(os, nomeVeiculo, placa, oficina) {
+  async _montarMsgEntrega(os, nomeVeiculo, placa, oficina, cliente) {
     const { data: osData } = await db.from('ordens_servico')
       .select('id, numero, valor_total, forma_pagamento')
       .eq('id', os.id || '')
       .single();
 
+    const saudacao = cliente ? `Olá, ${cliente}!` : 'Olá!';
     const placaLimpa = placa.replace(/[^A-Z0-9]/gi, '');
     const link = 'https://rpmpro.com.br/v?p=' + placaLimpa;
 
     if (!osData) {
-      return `Olá! Seu ${nomeVeiculo} foi entregue pela ${oficina}.\n\nHistórico completo:\n${link}\n\nObrigado pela confiança!`;
+      return `${saudacao} Seu ${nomeVeiculo} foi entregue pela ${oficina}.\n\nHistórico completo:\n${link}\n\nObrigado pela confiança!`;
     }
 
     const { data: itens } = await db.from('itens_os')
@@ -497,7 +500,7 @@ const KANBAN = {
     const pagamento = pagLabels[osData.forma_pagamento] || 'Pendente';
     const total = (osData.valor_total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-    let msg = `Olá! Seu ${nomeVeiculo} foi entregue pela ${oficina}.\n\n`;
+    let msg = `${saudacao} Seu ${nomeVeiculo} foi entregue pela ${oficina}.\n\n`;
 
     if (servicos.length) {
       msg += `Serviço: ${servicos.join(', ')}\n`;
