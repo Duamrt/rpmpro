@@ -251,13 +251,13 @@ body {
   font-weight: 600;
 }
 
-.badge-entrada { background: var(--info-bg); color: var(--info); }
-.badge-diagnostico { background: #8b5cf622; color: #a78bfa; }
-.badge-orcamento { background: var(--warning-bg); color: var(--warning); }
+.badge-entrada { background: #2563eb18; color: #2563eb; }
+.badge-diagnostico { background: #eab30818; color: #eab308; }
+.badge-orcamento { background: #dc262618; color: #dc2626; }
 .badge-aprovada { background: #06b6d422; color: #22d3ee; }
-.badge-aguardando_peca { background: #f0883e22; color: #f0883e; }
-.badge-execucao { background: var(--info-bg); color: var(--info); }
-.badge-pronto { background: var(--success-bg); color: var(--success); }
+.badge-aguardando_peca { background: #99999918; color: #999; }
+.badge-execucao { background: #16a34a18; color: #16a34a; }
+.badge-pronto { background: #1a1d2318; color: #ccc; }
 .badge-entregue { background: #484f5822; color: var(--text-secondary); }
 .badge-cancelada { background: var(--danger-bg); color: var(--danger); }
 

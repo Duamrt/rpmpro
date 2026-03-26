@@ -1,13 +1,13 @@
 // RPM Pro — Kanban de Pátio
 const KANBAN = {
   colunas: [
-    { status: 'entrada', label: 'Aguardando Avaliação', icon: '🔍' },
-    { status: 'diagnostico', label: 'Em Diagnóstico', icon: '🔧' },
-    { status: 'orcamento', label: 'Aguardando Aprovação', icon: '💰' },
-    { status: 'aguardando_peca', label: 'Aguardando Peça', icon: '📦' },
-    { status: 'execucao', label: 'Em Execução', icon: '⚙️' },
-    { status: 'pronto', label: 'Pronto', icon: '✅' },
-    { status: 'entregue', label: 'Entregue', icon: '🚗' },
+    { status: 'entrada', label: 'Aguardando Avaliação', icon: '🔍', cor: '#2563eb' },
+    { status: 'diagnostico', label: 'Em Diagnóstico', icon: '🔧', cor: '#eab308' },
+    { status: 'orcamento', label: 'Aguardando Aprovação', icon: '💰', cor: '#dc2626' },
+    { status: 'aguardando_peca', label: 'Aguardando Peça', icon: '📦', cor: '#999' },
+    { status: 'execucao', label: 'Em Execução', icon: '⚙️', cor: '#16a34a' },
+    { status: 'pronto', label: 'Pronto', icon: '✅', cor: '#1a1d23' },
+    { status: 'entregue', label: 'Entregue', icon: '🚗', cor: '#8b949e' },
   ],
 
   _draggedCard: null,
@@ -62,7 +62,7 @@ const KANBAN = {
       .from('profiles')
       .select('id, nome')
       .eq('oficina_id', APP.profile.oficina_id)
-      .in('role', ['mecanico', 'dono', 'gerente'])
+      .in('role', ['mecanico', 'aux_mecanico', 'dono', 'gerente'])
       .eq('ativo', true)
       .order('nome');
 
@@ -99,10 +99,10 @@ const KANBAN = {
                ondragover="event.preventDefault(); this.style.background='rgba(255,69,0,0.05)'"
                ondragleave="this.style.background=''"
                ondrop="KANBAN.drop(event, '${col.status}')"
-               style="min-width:220px;max-width:220px;flex-shrink:0;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);display:flex;flex-direction:column;${mostrarEntregue ? 'opacity:0.6;' : ''}">
+               style="min-width:220px;max-width:220px;flex-shrink:0;background:var(--bg-card);border:1px solid var(--border);border-top:3px solid ${col.cor};border-radius:var(--radius-lg);display:flex;flex-direction:column;${mostrarEntregue ? 'opacity:0.6;' : ''}">
             <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-size:13px;font-weight:700;">${col.icon} ${esc(col.label)}</span>
-              <span data-count style="background:var(--bg-input);padding:2px 8px;border-radius:12px;font-size:12px;font-weight:700;color:var(--text-secondary);">${cards.length}</span>
+              <span style="font-size:13px;font-weight:700;color:${col.cor};">${col.icon} ${esc(col.label)}</span>
+              <span data-count style="background:${col.cor}18;padding:2px 8px;border-radius:12px;font-size:12px;font-weight:700;color:${col.cor};">${cards.length}</span>
             </div>
             <div style="padding:8px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;" data-status="${col.status}">
               ${cards.map(os => this._renderCard(os, isDono)).join('')}
