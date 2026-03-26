@@ -331,9 +331,16 @@ const FILA = {
     }
 
     if (!clienteId || !veiculoId) {
-      APP.toast('Cliente ou veiculo nao encontrado. Cadastre primeiro e depois agende.', 'warning');
-      APP.loadPage('agendamentos');
-      setTimeout(() => AGENDAMENTOS.abrirModal(), 300);
+      // Abre cadastro de cliente com dados preenchidos, depois volta pra agendar
+      APP.toast('Cadastre o cliente com veículo primeiro', 'warning');
+      APP.loadPage('clientes');
+      setTimeout(() => {
+        CLIENTES.abrirModal({}, nome, async () => {
+          // Depois de cadastrar, tenta agendar de novo
+          APP.loadPage('agendamentos');
+          setTimeout(() => AGENDAMENTOS.abrirModal({ descricao: sintoma, tipo: 'outro' }), 300);
+        });
+      }, 300);
       return;
     }
 

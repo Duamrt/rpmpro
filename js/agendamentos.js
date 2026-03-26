@@ -405,27 +405,36 @@ const AGENDAMENTOS = {
     document.getElementById('ag-cliente-lista').style.display = 'none';
     // Salva estado do agendamento pra restaurar depois
     this._agPrefill = {
+      nome: nome,
       tipo: document.getElementById('ag-tipo')?.value || '',
       data: document.getElementById('ag-data')?.value || '',
       km: document.getElementById('ag-km')?.value || '',
       desc: document.getElementById('ag-desc')?.value || ''
     };
     // Abre modal de cadastro de cliente com nome preenchido
-    CLIENTES.abrirModal(null, nome, () => {
-      // Callback: recarrega lista e reabre agendamento
+    CLIENTES.abrirModal({}, nome, () => {
       this._recarregarEReabrir();
     });
   },
 
   async _recarregarEReabrir() {
-    // Recarrega clientes
-    const { data } = await db.from('clientes').select('id, nome').eq('oficina_id', APP.profile.oficina_id).order('nome');
+    const oficina_id = APP.profile.oficina_id;
+    const { data } = await db.from('clientes').select('id, nome').eq('oficina_id', oficina_id).order('nome');
     this._clientes = data || [];
-    const { data: veic } = await db.from('veiculos').select('id, placa, marca, modelo, cliente_id').eq('oficina_id', APP.profile.oficina_id).order('placa');
+    const { data: veic } = await db.from('veiculos').select('id, placa, marca, modelo, cliente_id').eq('oficina_id', oficina_id).order('placa');
     this._veiculos = veic || [];
-    // Reabre agendamento com dados salvos
+
     const pf = this._agPrefill || {};
-    this.abrirModal({ tipo: pf.tipo, data_prevista: pf.data, km_previsto: pf.km, descricao: pf.desc });
+    // Busca o cliente recém cadastrado pelo nome
+    const clienteNovo = pf.nome ? this._clientes.find(c => c.nome.toLowerCase() === pf.nome.toLowerCase()) : null;
+
+    this.abrirModal({
+      tipo: pf.tipo,
+      data_prevista: pf.data,
+      km_previsto: pf.km,
+      descricao: pf.desc,
+      cliente_id: clienteNovo?.id || ''
+    });
   },
 
   _selecionarCliente(id, nome) {
