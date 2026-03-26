@@ -27,6 +27,12 @@ const APP = {
       document.querySelectorAll('.nav-super-admin').forEach(el => el.style.display = '');
     }
 
+    // Verifica trial/plano (super admin ignora)
+    if (!isAdmin && this._trialExpirado()) {
+      this._mostrarBloqueio();
+      return;
+    }
+
     // Ajusta bottom nav por perfil
     this._setupBottomNav();
 
@@ -167,6 +173,46 @@ const APP = {
       }
     };
     setTimeout(() => document.addEventListener('click', fechar), 10);
+  },
+
+  _trialExpirado() {
+    if (!this.oficina) return false;
+    const plano = this.oficina.plano;
+    // Planos pagos e beta nunca bloqueiam
+    if (['essencial', 'profissional', 'rede', 'beta'].includes(plano)) return false;
+    // Trial: verifica data
+    if (plano === 'trial' && this.oficina.trial_ate) {
+      const hoje = new Date().toISOString().split('T')[0];
+      return this.oficina.trial_ate < hoje;
+    }
+    // Sem plano definido = bloqueia
+    if (!plano) return true;
+    return false;
+  },
+
+  _mostrarBloqueio() {
+    document.querySelector('.main-content').innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;min-height:80vh;padding:24px;">
+        <div style="text-align:center;max-width:480px;">
+          <div style="font-size:64px;margin-bottom:16px;">⏰</div>
+          <h2 style="font-size:24px;margin-bottom:12px;">Seu periodo de teste acabou</h2>
+          <p style="color:var(--text-secondary);font-size:15px;margin-bottom:24px;">
+            O trial de 7 dias da <strong>${esc(this.oficina.nome)}</strong> expirou em ${APP.formatDate(this.oficina.trial_ate)}.
+            <br>Pra continuar usando o RPM Pro, escolha um plano.
+          </p>
+          <div style="display:flex;flex-direction:column;gap:12px;align-items:center;">
+            <a href="https://wa.me/5587981456565?text=${encodeURIComponent('Oi! Meu trial do RPM Pro acabou. Quero ativar um plano pra oficina ' + (this.oficina.nome || ''))}" target="_blank" class="btn btn-primary" style="padding:14px 32px;font-size:16px;border-radius:10px;text-decoration:none;">Falar no WhatsApp pra ativar</a>
+            <a href="landing.html" style="color:var(--text-secondary);font-size:13px;">Ver planos e precos</a>
+          </div>
+          <div style="margin-top:32px;padding-top:20px;border-top:1px solid var(--border);">
+            <p style="font-size:13px;color:var(--text-muted);">Planos a partir de R$ 189/mes</p>
+          </div>
+        </div>
+      </div>
+    `;
+    // Esconde bottom nav
+    const nav = document.querySelector('.bottom-nav');
+    if (nav) nav.style.display = 'none';
   },
 
   toast(msg, tipo = 'success') {

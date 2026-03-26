@@ -172,6 +172,8 @@ const AJUDA = {
         'Painel exclusivo pra administradores da plataforma.',
         'Veja todas as oficinas cadastradas, usuarios e OS.',
         'Clique em <strong>"Acessar"</strong> pra entrar no contexto de uma oficina e ver/editar como se fosse o dono.',
+        'Clique em <strong>"Plano"</strong> pra mudar o plano de uma oficina (trial, essencial, profissional, rede, beta).',
+        'Oficinas com <strong>trial expirado</strong> ficam bloqueadas ate voce ativar um plano.',
         'O <strong>badge laranja</strong> no canto mostra qual oficina voce esta acessando. Clique nele pra voltar.',
       ]
     }

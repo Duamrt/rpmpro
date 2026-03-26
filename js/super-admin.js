@@ -79,8 +79,9 @@ const SUPER_ADMIN = {
                 <td style="font-size:13px;">${o.trial_ate ? APP.formatDate(o.trial_ate) : '-'}</td>
                 <td>${qtdUsers}</td>
                 <td>${qtdOS}</td>
-                <td>
+                <td style="display:flex;gap:4px;flex-wrap:nowrap;">
                   <button class="btn btn-primary btn-sm" onclick="SUPER_ADMIN.acessarOficina('${o.id}','${esc(o.nome)}')">Acessar</button>
+                  <button class="btn btn-secondary btn-sm" onclick="SUPER_ADMIN.editarPlano('${o.id}','${esc(o.nome)}','${o.plano || 'trial'}','${o.trial_ate || ''}')">Plano</button>
                 </td>
               </tr>`;
             }).join('')}
@@ -120,6 +121,52 @@ const SUPER_ADMIN = {
 
     APP.toast('Acessando: ' + (oficina?.nome || nome));
     APP.loadPage('kanban');
+  },
+
+  editarPlano(oficinaId, nome, planoAtual, trialAte) {
+    openModal(`
+      <div class="modal-header">
+        <h3>Plano — ${esc(nome)}</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form onsubmit="SUPER_ADMIN.salvarPlano(event, '${oficinaId}')">
+          <div class="form-group">
+            <label>Plano</label>
+            <select class="form-control" id="adm-plano">
+              ${['trial','essencial','profissional','rede','beta'].map(p => `<option value="${p}" ${planoAtual === p ? 'selected' : ''}>${p.charAt(0).toUpperCase() + p.slice(1)}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Trial/Validade ate (deixe vazio pra planos pagos sem vencimento)</label>
+            <input type="date" class="form-control" id="adm-trial" value="${trialAte}">
+          </div>
+          <div class="modal-footer" style="padding:16px 0 0;border:0;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Salvar</button>
+          </div>
+        </form>
+      </div>
+    `);
+  },
+
+  async salvarPlano(e, oficinaId) {
+    e.preventDefault();
+    const plano = document.getElementById('adm-plano').value;
+    const trialAte = document.getElementById('adm-trial').value || null;
+
+    const { data, error } = await db.rpc('admin_mudar_plano', {
+      p_oficina_id: oficinaId,
+      p_plano: plano,
+      p_trial_ate: trialAte
+    });
+
+    if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
+    if (data && !data.ok) { APP.toast(data.erro, 'error'); return; }
+
+    closeModal();
+    APP.toast('Plano atualizado');
+    this.carregar();
   },
 
   voltarAdmin() {
