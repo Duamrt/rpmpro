@@ -75,6 +75,12 @@ const APP = {
     const paginaPadrao = isAdmin ? 'admin' : 'kanban';
     this.loadPage(localStorage.getItem('rpmpro-page') || paginaPadrao);
 
+    // Onboarding guiado (primeira vez)
+    if (!isAdmin) {
+      const precisaOnboarding = await ONBOARDING.verificar();
+      if (precisaOnboarding) ONBOARDING.iniciar();
+    }
+
     // Sidebar navigation
     document.querySelectorAll('[data-page]').forEach(el => {
       el.addEventListener('click', (e) => {

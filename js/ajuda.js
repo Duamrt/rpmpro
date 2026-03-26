@@ -6,6 +6,7 @@ const AJUDA = {
       perfis: ['dono','gerente','mecanico','atendente'],
       secoes: [
         { titulo: 'Visao geral', info: 'Painel visual com todos os veiculos na oficina. Cada card mostra placa, cliente, mecanico e tempo em aberto.' },
+        { perfil: 'dono', dica: 'Na primeira vez, o sistema mostra um wizard pra configurar oficina, mecanico e cliente. Se precisar rodar de novo, limpe o cache do navegador.' },
         { titulo: 'Movimentar veiculo', passos: [
           'Use os botoes Avancar e Voltar em cada card',
           'O fluxo e: Entrada → Diagnostico → Orcamento → Aprovada → Execucao → Pronto → Entregue',
