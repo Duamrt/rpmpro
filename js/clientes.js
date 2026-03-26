@@ -322,9 +322,24 @@ const CLIENTES = {
       });
     }
 
-    if (veiculos.length) {
-      const { error: vErr } = await db.from('veiculos').insert(veiculos);
-      if (vErr) { APP.toast('Cliente salvo, mas erro no veiculo: ' + vErr.message, 'error'); }
+    for (const vei of veiculos) {
+      // Verifica se placa já existe na oficina
+      const { data: existe } = await db.from('veiculos')
+        .select('id, cliente_id')
+        .eq('oficina_id', oficina_id)
+        .eq('placa', vei.placa)
+        .maybeSingle();
+
+      if (existe) {
+        // Placa já existe — vincula ao cliente se for diferente
+        if (existe.cliente_id !== clienteId) {
+          await db.from('veiculos').update({ cliente_id: clienteId }).eq('id', existe.id);
+          APP.toast('Veículo ' + vei.placa + ' vinculado ao cliente');
+        }
+      } else {
+        const { error: vErr } = await db.from('veiculos').insert(vei);
+        if (vErr) APP.toast('Erro no veículo: ' + vErr.message, 'error');
+      }
     }
 
     closeModal();
