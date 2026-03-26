@@ -23,6 +23,7 @@ const APP = {
 
     const roleLabels = { dono: 'Dono', gerente: 'Gerente', mecanico: 'Mecanico', atendente: 'Atendente', aux_mecanico: 'Aux. Mecanico', aux_admin: 'Aux. Administrativo' };
     const elRole = document.getElementById('user-role');
+    // Super admin mostra "Admin" ao invés do role da oficina
     if (elRole) elRole.textContent = roleLabels[this.profile.role] || this.profile.role;
     const elAvatar = document.getElementById('user-avatar');
     if (elAvatar) elAvatar.textContent = (this.profile.nome || '?')[0].toUpperCase();
@@ -37,6 +38,8 @@ const APP = {
     const isAdmin = await SUPER_ADMIN.verificar();
     if (isAdmin) {
       document.querySelectorAll('.nav-super-admin').forEach(el => el.style.display = '');
+      const elRole = document.getElementById('user-role');
+      if (elRole) elRole.textContent = 'Admin';
     }
 
     // Verifica trial/plano (super admin ignora)
