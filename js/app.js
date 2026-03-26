@@ -41,8 +41,12 @@ const APP = {
       document.querySelectorAll('.nav-dono-gerente').forEach(el => el.style.display = 'none');
     }
 
-    // Carrega pagina salva ou kanban (patio)
-    this.loadPage(localStorage.getItem('rpmpro-page') || 'kanban');
+    // Sidebar: colapsa grupos conforme perfil
+    this._setupSidebarGroups(isAdmin);
+
+    // Carrega pagina salva ou pagina padrão do perfil
+    const paginaPadrao = isAdmin ? 'admin' : 'kanban';
+    this.loadPage(localStorage.getItem('rpmpro-page') || paginaPadrao);
 
     // Sidebar navigation
     document.querySelectorAll('[data-page]').forEach(el => {
@@ -173,6 +177,29 @@ const APP = {
       }
     };
     setTimeout(() => document.addEventListener('click', fechar), 10);
+  },
+
+  _setupSidebarGroups(isAdmin) {
+    const labels = document.querySelectorAll('.sidebar-group-label');
+    labels.forEach(label => {
+      const group = label.nextElementSibling;
+      if (!group) return;
+      const texto = label.textContent.trim();
+
+      if (isAdmin) {
+        // Super admin: tudo fechado, só ADMIN aberto
+        if (texto !== 'ADMIN') {
+          label.classList.add('collapsed');
+          group.classList.add('collapsed');
+        }
+      } else {
+        // Clientes: só OFICINA aberto, resto fechado
+        if (texto !== 'OFICINA') {
+          label.classList.add('collapsed');
+          group.classList.add('collapsed');
+        }
+      }
+    });
   },
 
   _trialExpirado() {
