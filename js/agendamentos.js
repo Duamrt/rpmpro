@@ -346,7 +346,8 @@ const AGENDAMENTOS = {
             </div>
             <div class="form-group">
               <label>Data *</label>
-              <input type="date" class="form-control" id="ag-data" required value="${dataPadrao}">
+              <input type="date" class="form-control" id="ag-data" required value="${dataPadrao}" onchange="AGENDAMENTOS._atualizarVagas()">
+              <div id="ag-vagas" style="margin-top:6px;font-size:12px;color:var(--text-muted);"></div>
             </div>
           </div>
           <div class="form-group">
@@ -357,6 +358,12 @@ const AGENDAMENTOS = {
             <label>Observacoes</label>
             <textarea class="form-control" id="ag-desc" placeholder="Detalhes...">${esc(prefill.descricao || '')}</textarea>
           </div>
+          <!-- Painel de vagas -->
+          <div id="ag-painel-vagas" style="background:var(--bg-input);border-radius:var(--radius);padding:12px;margin-bottom:12px;">
+            <div style="font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:8px;">VAGAS POR DIA (clique pra selecionar)</div>
+            <div id="ag-dias-vagas" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+          </div>
+
           <div class="modal-footer" style="padding:16px 0 0;border:0;">
             <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
             <button type="submit" class="btn btn-primary">${isEdit ? 'Salvar' : 'Agendar'}</button>
@@ -364,6 +371,9 @@ const AGENDAMENTOS = {
         </form>
       </div>
     `);
+
+    // Carrega vagas
+    this._carregarVagas(dataPadrao);
 
     // Fecha dropdown ao clicar fora
     document.addEventListener('click', function _closeDrop(e) {
@@ -399,6 +409,86 @@ const AGENDAMENTOS = {
       html += `<div style="padding:10px 14px;cursor:pointer;font-size:12px;color:var(--primary);border-top:1px solid var(--border);" onmousedown="AGENDAMENTOS._cadastrarClienteRapido('${esc(termo.trim())}')">+ Cadastrar novo cliente</div>`;
     }
     lista.innerHTML = html;
+  },
+
+  async _carregarVagas(dataSelecionada) {
+    const container = document.getElementById('ag-dias-vagas');
+    if (!container) return;
+
+    const capacidade = APP.oficina?.capacidade_diaria || 5;
+    const oficina_id = APP.profile.oficina_id;
+
+    // Busca agendamentos dos próximos 14 dias
+    const hoje = new Date();
+    const inicio = new Date(hoje);
+    inicio.setDate(inicio.getDate());
+    const fim = new Date(hoje);
+    fim.setDate(fim.getDate() + 13);
+
+    const { data: agends } = await db.from('agendamentos')
+      .select('data_prevista')
+      .eq('oficina_id', oficina_id)
+      .gte('data_prevista', inicio.toISOString().split('T')[0])
+      .lte('data_prevista', fim.toISOString().split('T')[0])
+      .not('status', 'in', '("cancelado","realizado")');
+
+    // Conta por dia
+    const contagem = {};
+    (agends || []).forEach(a => {
+      contagem[a.data_prevista] = (contagem[a.data_prevista] || 0) + 1;
+    });
+
+    const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
+    let html = '';
+
+    for (let i = 0; i < 14; i++) {
+      const d = new Date(hoje);
+      d.setDate(d.getDate() + i);
+      const dataStr = d.toISOString().split('T')[0];
+      const dow = d.getDay();
+
+      // Pula domingos
+      if (dow === 0) continue;
+
+      const qtd = contagem[dataStr] || 0;
+      const vagas = capacidade - qtd;
+      const lotado = vagas <= 0;
+      const selecionado = dataStr === dataSelecionada;
+
+      const cor = lotado ? 'var(--danger)' : vagas <= 2 ? 'var(--warning)' : 'var(--success)';
+
+      html += `<div onclick="${lotado ? '' : `document.getElementById('ag-data').value='${dataStr}';AGENDAMENTOS._marcarDiaSelecionado('${dataStr}')`}"
+        style="text-align:center;padding:8px 6px;border-radius:var(--radius);min-width:58px;cursor:${lotado ? 'not-allowed' : 'pointer'};
+        background:${selecionado ? 'var(--primary)' : 'var(--bg-card)'};
+        border:1px solid ${selecionado ? 'var(--primary)' : 'var(--border)'};
+        opacity:${lotado ? '0.5' : '1'};">
+        <div style="font-size:10px;color:${selecionado ? '#fff' : 'var(--text-muted)'};font-weight:600;">${diasSemana[dow]}</div>
+        <div style="font-size:14px;font-weight:700;color:${selecionado ? '#fff' : 'var(--text)'};">${d.getDate()}</div>
+        <div style="font-size:10px;font-weight:700;color:${selecionado ? '#fff' : cor};">${lotado ? 'LOTADO' : vagas + '/' + capacidade}</div>
+      </div>`;
+    }
+
+    container.innerHTML = html;
+
+    // Atualiza indicador abaixo do campo data
+    this._atualizarVagas();
+  },
+
+  _atualizarVagas() {
+    const el = document.getElementById('ag-vagas');
+    const dataInput = document.getElementById('ag-data');
+    if (!el || !dataInput) return;
+    const data = dataInput.value;
+    if (!data) { el.textContent = ''; return; }
+
+    const d = new Date(data + 'T12:00:00');
+    const diasSemana = ['Domingo', 'Segunda', 'Terca', 'Quarta', 'Quinta', 'Sexta', 'Sabado'];
+    el.textContent = diasSemana[d.getDay()] + ', ' + d.getDate() + '/' + String(d.getMonth() + 1).padStart(2, '0');
+  },
+
+  _marcarDiaSelecionado(dataStr) {
+    this._carregarVagas(dataStr);
+    this._atualizarVagas();
   },
 
   _cadastrarClienteRapido(nome) {
