@@ -48,6 +48,7 @@ const EQUIPE = {
               <td><span class="badge badge-${m.ativo ? 'pronto' : 'entregue'}">${m.ativo ? 'Ativo' : 'Inativo'}</span></td>
               <td>
                 ${['dono','gerente'].includes(APP.profile.role) ? `<button class="btn btn-secondary btn-sm" onclick="EQUIPE.editar('${m.id}')">Editar</button>` : ''}
+                ${['dono','gerente'].includes(APP.profile.role) && m.id !== APP.profile.id && m.role !== 'dono' ? `<button class="btn btn-danger btn-sm" onclick="EQUIPE.excluir('${m.id}','${esc(m.nome)}')">Excluir</button>` : ''}
               </td>
             </tr>
           `).join('')}
@@ -146,6 +147,15 @@ const EQUIPE = {
   async editar(id) {
     const { data } = await db.from('profiles').select('*').eq('id', id).single();
     if (data) this.abrirModal(data);
+  },
+
+  async excluir(id, nome) {
+    if (!confirm(`Excluir ${nome} da equipe? Essa acao nao pode ser desfeita.`)) return;
+
+    const { error } = await db.from('profiles').delete().eq('id', id).eq('oficina_id', APP.profile.oficina_id);
+    if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
+    APP.toast(nome + ' removido da equipe');
+    this.carregar();
   }
 };
 
