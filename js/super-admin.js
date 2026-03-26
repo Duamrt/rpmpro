@@ -417,6 +417,9 @@ const SUPER_ADMIN = {
     this._oficinaOriginal = this._oficinaOriginal || APP.profile.oficina_id;
     this._acessandoOutra = true;
 
+    // Persiste no localStorage pra sobreviver a F5
+    localStorage.setItem('rpmpro-admin-oficina', oficinaId);
+
     // Troca contexto
     APP.profile.oficina_id = oficinaId;
     APP.oficina = { id: oficinaId, nome };
@@ -477,6 +480,7 @@ const SUPER_ADMIN = {
   voltarAdmin() {
     if (this._oficinaOriginal) APP.profile.oficina_id = this._oficinaOriginal;
     this._acessandoOutra = false;
+    localStorage.removeItem('rpmpro-admin-oficina');
 
     const barra = document.getElementById('admin-barra');
     if (barra) barra.remove();

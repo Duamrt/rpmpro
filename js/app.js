@@ -40,6 +40,13 @@ const APP = {
       document.querySelectorAll('.nav-super-admin').forEach(el => el.style.display = '');
       const elRole = document.getElementById('user-role');
       if (elRole) elRole.textContent = 'Admin';
+
+      // Restaura oficina que estava acessando antes do F5
+      const oficinaSalva = localStorage.getItem('rpmpro-admin-oficina');
+      if (oficinaSalva) {
+        await SUPER_ADMIN.acessarOficina(oficinaSalva, '');
+        return; // acessarOficina já carrega tudo
+      }
     }
 
     // Verifica trial/plano (super admin ignora)
