@@ -396,16 +396,17 @@ const CLIENTES = {
           </div>
         </div>
 
-        <!-- Veículos -->
+        <!-- Filtro por veículo -->
         <div style="margin-bottom:20px;">
-          <div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--text-secondary);">VEICULOS (${veiculos.length})</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            ${veiculos.map(v => `
-              <div style="background:var(--bg-input);padding:8px 14px;border-radius:var(--radius);font-size:13px;">
-                <strong>${esc(v.placa)}</strong> <span style="color:var(--text-secondary);">${esc(v.marca || '')} ${esc(v.modelo || '')} ${v.ano || ''}</span>
-                ${v.km_atual ? `<span style="color:var(--text-muted);font-size:11px;margin-left:6px;">${v.km_atual.toLocaleString('pt-BR')} km</span>` : ''}
-              </div>
-            `).join('')}
+          <div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--text-secondary);">FILTRAR POR VEICULO</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;" id="hist-filtro-veiculos">
+            <button class="btn btn-primary btn-sm hist-vei-btn" data-vei="" onclick="CLIENTES._filtrarHistorico('')" style="font-size:12px;">Todos (${osList.length})</button>
+            ${veiculos.map(v => {
+              const qtd = osList.filter(o => o.veiculo_id === v.id).length;
+              return `<button class="btn btn-secondary btn-sm hist-vei-btn" data-vei="${v.id}" onclick="CLIENTES._filtrarHistorico('${v.id}')" style="font-size:12px;">
+                ${esc(v.placa)} <span style="color:var(--text-muted);">${esc(v.marca || '')} ${esc(v.modelo || '')}</span> (${qtd})
+              </button>`;
+            }).join('')}
           </div>
         </div>
 
@@ -415,7 +416,7 @@ const CLIENTES = {
           const servicos = (os.itens_os || []).filter(i => i.tipo === 'servico');
           const pecas = (os.itens_os || []).filter(i => i.tipo === 'peca');
           return `
-          <div style="background:var(--bg-input);border-left:4px solid ${statusCor[os.status] || '#666'};border-radius:var(--radius);padding:14px;margin-bottom:10px;">
+          <div class="hist-os-card" data-veiculo-id="${os.veiculo_id || ''}" style="background:var(--bg-input);border-left:4px solid ${statusCor[os.status] || '#666'};border-radius:var(--radius);padding:14px;margin-bottom:10px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
               <div>
                 <strong style="font-size:14px;">OS #${os.numero || '-'}</strong>
@@ -448,6 +449,18 @@ const CLIENTES = {
         `).join('')}` : ''}
       </div>
     `);
+  },
+
+  _filtrarHistorico(veiculoId) {
+    // Atualiza botões
+    document.querySelectorAll('.hist-vei-btn').forEach(btn => {
+      const isActive = btn.dataset.vei === veiculoId;
+      btn.className = `btn btn-${isActive ? 'primary' : 'secondary'} btn-sm hist-vei-btn`;
+    });
+    // Filtra cards
+    document.querySelectorAll('.hist-os-card').forEach(card => {
+      card.style.display = (!veiculoId || card.dataset.veiculoId === veiculoId) ? '' : 'none';
+    });
   }
 };
 
