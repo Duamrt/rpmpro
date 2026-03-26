@@ -310,25 +310,53 @@ const FILA = {
     const t = termo.toLowerCase();
     if (t.length < 2) { lista.style.display = 'none'; return; }
 
-    const filtrados = this._veiCache.filter(v =>
+    let html = '';
+
+    // 1. Busca nos veículos já cadastrados da oficina
+    const cadastrados = this._veiCache.filter(v =>
       ((v.marca || '') + ' ' + (v.modelo || '') + ' ' + v.placa).toLowerCase().includes(t)
     );
 
-    if (!filtrados.length) {
-      lista.style.display = 'block';
-      lista.innerHTML = `<div style="padding:10px 14px;font-size:12px;color:var(--text-muted);">Nenhum veículo encontrado — será cadastrado ao salvar</div>`;
+    if (cadastrados.length) {
+      html += `<div style="padding:6px 14px;font-size:10px;font-weight:700;color:var(--text-muted);letter-spacing:1px;">CADASTRADOS</div>`;
+      html += cadastrados.slice(0, 5).map(v => {
+        const cli = this._cliCache.find(c => c.id === v.cliente_id);
+        return `<div style="padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);" onmousedown="FILA._selecionarVeiculo('${esc(v.placa)}','${esc((v.marca || '') + ' ' + (v.modelo || ''))}','${v.cliente_id}','${esc(cli?.nome || '')}','${esc(cli?.whatsapp || '')}')" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">
+          <strong>${esc(v.marca || '')} ${esc(v.modelo || '')}</strong>
+          <span style="font-size:12px;color:var(--primary);margin-left:6px;">${esc(v.placa)}</span>
+          ${cli ? `<span style="font-size:11px;color:var(--text-muted);margin-left:6px;">— ${esc(cli.nome)}</span>` : ''}
+        </div>`;
+      }).join('');
+    }
+
+    // 2. Busca no catálogo geral de marcas/modelos
+    if (typeof CATALOGO_VEICULOS !== 'undefined') {
+      const resultsCatalogo = [];
+      for (const [marca, modelos] of Object.entries(CATALOGO_VEICULOS)) {
+        for (const modelo of modelos) {
+          if ((marca + ' ' + modelo).toLowerCase().includes(t)) {
+            resultsCatalogo.push({ marca, modelo });
+          }
+        }
+      }
+
+      if (resultsCatalogo.length) {
+        html += `<div style="padding:6px 14px;font-size:10px;font-weight:700;color:var(--text-muted);letter-spacing:1px;border-top:1px solid var(--border);">CATALOGO</div>`;
+        html += resultsCatalogo.slice(0, 8).map(v =>
+          `<div style="padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);" onmousedown="FILA._selecionarCatalogo('${esc(v.marca)}','${esc(v.modelo)}')" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">
+            <strong>${esc(v.marca)}</strong> <span style="color:var(--text-secondary);">${esc(v.modelo)}</span>
+          </div>`
+        ).join('');
+      }
+    }
+
+    if (!html) {
+      lista.style.display = 'none';
       return;
     }
 
     lista.style.display = 'block';
-    lista.innerHTML = filtrados.slice(0, 10).map(v => {
-      const cli = this._cliCache.find(c => c.id === v.cliente_id);
-      return `<div style="padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);" onmousedown="FILA._selecionarVeiculo('${esc(v.placa)}','${esc((v.marca || '') + ' ' + (v.modelo || ''))}','${v.cliente_id}','${esc(cli?.nome || '')}','${esc(cli?.whatsapp || '')}')" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">
-        <strong>${esc(v.marca || '')} ${esc(v.modelo || '')}</strong>
-        <span style="font-size:12px;color:var(--primary);margin-left:6px;">${esc(v.placa)}</span>
-        ${cli ? `<span style="font-size:11px;color:var(--text-muted);margin-left:6px;">— ${esc(cli.nome)}</span>` : ''}
-      </div>`;
-    }).join('');
+    lista.innerHTML = html;
   },
 
   _selecionarVeiculo(placa, veiInfo, clienteId, clienteNome, clienteWhats) {
@@ -342,6 +370,11 @@ const FILA = {
     if (clienteWhats && !document.getElementById('fila-whatsapp').value) {
       document.getElementById('fila-whatsapp').value = clienteWhats;
     }
+  },
+
+  _selecionarCatalogo(marca, modelo) {
+    document.getElementById('fila-veiculo').value = marca + ' ' + modelo;
+    document.getElementById('fila-veiculo-lista').style.display = 'none';
   },
 
   _maskFone(el) {
