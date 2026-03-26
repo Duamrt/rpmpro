@@ -505,6 +505,44 @@ const PDF_OS = {
       margin: [0, 10, 0, 0]
     };
 
+    // QR Code Pix (se oficina tem chave configurada e valor > 0)
+    let blocoPix = {};
+    if (oficina.pix_chave && totalGeral > 0) {
+      const qrData = this._gerarPixEMV(oficina, totalGeral, os.numero);
+      if (qrData) {
+        const qrImg = this._gerarQRBase64(qrData);
+        if (qrImg) {
+          blocoPix = {
+            columns: [
+              {
+                stack: [
+                  { text: 'Pague com Pix', fontSize: 12, bold: true, color: '#1a1a1a', margin: [0, 0, 0, 6] },
+                  { image: qrImg, width: 120, height: 120 },
+                  { text: 'Chave: ' + oficina.pix_chave, fontSize: 8, color: '#666', margin: [0, 4, 0, 0] },
+                  { text: oficina.pix_nome || oficina.nome, fontSize: 8, color: '#666' }
+                ],
+                alignment: 'center',
+                width: 160
+              },
+              { text: '', width: '*' },
+              {
+                stack: [
+                  { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.5, lineColor: '#999' }], margin: [0, 40, 0, 0] },
+                  { text: 'Assinatura do cliente', fontSize: 8, color: '#999', alignment: 'center', margin: [0, 4, 0, 20] },
+                  { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.5, lineColor: '#999' }] },
+                  { text: 'Assinatura da oficina', fontSize: 8, color: '#999', alignment: 'center', margin: [0, 4, 0, 0] }
+                ],
+                width: 220
+              }
+            ],
+            margin: [0, 10, 0, 0]
+          };
+        }
+      }
+    }
+
+    const temPix = oficina.pix_chave && totalGeral > 0 && blocoPix.columns;
+
     const docDef = {
       pageSize: 'A4',
       pageMargins: [40, 30, 40, 50],
@@ -516,12 +554,69 @@ const PDF_OS = {
         blocoTotais,
         infoPagamento,
         obs,
-        assinaturas
+        temPix ? blocoPix : assinaturas
       ],
       footer: this._footer(),
       styles: this._styles()
     };
 
     pdfMake.createPdf(docDef).open();
+  },
+
+  // Gera código Pix EMV (BR Code estático)
+  _gerarPixEMV(oficina, valor, numOS) {
+    const chave = oficina.pix_chave;
+    const nome = (oficina.pix_nome || oficina.nome || 'OFICINA').substring(0, 25).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const cidade = (oficina.cidade || 'CIDADE').substring(0, 15).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const valorStr = valor.toFixed(2);
+    const txid = 'OS' + (numOS || '0');
+
+    const tlv = (id, val) => id + String(val.length).padStart(2, '0') + val;
+
+    // Merchant Account Info (chave Pix)
+    const mai = tlv('00', 'br.gov.bcb.pix') + tlv('01', chave);
+
+    let emv = '';
+    emv += tlv('00', '01'); // Payload Format
+    emv += tlv('26', mai); // Merchant Account
+    emv += tlv('52', '0000'); // MCC
+    emv += tlv('53', '986'); // Moeda BRL
+    emv += tlv('54', valorStr); // Valor
+    emv += tlv('58', 'BR'); // País
+    emv += tlv('59', nome); // Nome
+    emv += tlv('60', cidade); // Cidade
+    emv += tlv('62', tlv('05', txid)); // Additional Data
+
+    // CRC16
+    emv += '6304';
+    const crc = this._crc16(emv);
+    emv += crc;
+
+    return emv;
+  },
+
+  _crc16(str) {
+    let crc = 0xFFFF;
+    for (let i = 0; i < str.length; i++) {
+      crc ^= str.charCodeAt(i) << 8;
+      for (let j = 0; j < 8; j++) {
+        if (crc & 0x8000) crc = (crc << 1) ^ 0x1021;
+        else crc <<= 1;
+        crc &= 0xFFFF;
+      }
+    }
+    return crc.toString(16).toUpperCase().padStart(4, '0');
+  },
+
+  _gerarQRBase64(data) {
+    if (typeof qrcode === 'undefined') return null;
+    try {
+      const qr = qrcode(0, 'M');
+      qr.addData(data);
+      qr.make();
+      return qr.createDataURL(4, 0);
+    } catch (e) {
+      return null;
+    }
   }
 };

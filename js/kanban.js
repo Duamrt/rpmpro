@@ -313,22 +313,8 @@ const KANBAN = {
 
     await db.from('ordens_servico').update(update).eq('id', osId);
 
-    // WhatsApp automático
-    const whats = os.clientes?.whatsapp;
-    const placa = os.veiculos?.placa || '';
-    if (whats) {
-      const num = whats.replace(/\D/g, '');
-      const fone = num.startsWith('55') ? num : '55' + num;
-      let msg = null;
-
-      if (novoStatus === 'orcamento') msg = `Olá! O orçamento do seu veículo ${placa} está pronto. Posso enviar os detalhes?`;
-      else if (novoStatus === 'pronto') msg = `Olá! Seu veículo ${placa} está pronto para retirada!`;
-      else if (novoStatus === 'aguardando_peca') msg = `Olá! Seu veículo ${placa} está aguardando uma peça. Te aviso assim que chegar.`;
-
-      if (msg && confirm(`Enviar WhatsApp pro cliente?\n\n"${msg}"`)) {
-        window.open(`https://wa.me/${fone}?text=${encodeURIComponent(msg)}`, '_blank');
-      }
-    }
+    // WhatsApp automático por status
+    this._enviarWhatsAuto(os, novoStatus);
 
     // Lança no caixa se entregue
     if (novoStatus === 'entregue' && typeof OS._lancarNoCaixa === 'function') {
@@ -408,27 +394,8 @@ const KANBAN = {
 
     await db.from('ordens_servico').update(update).eq('id', osId);
 
-    // WhatsApp automático em colunas-chave
-    const whats = os.clientes?.whatsapp;
-    const placa = os.veiculos?.placa || '';
-    if (whats) {
-      const num = whats.replace(/\D/g, '');
-      const fone = num.startsWith('55') ? num : '55' + num;
-      let msg = null;
-
-      if (novoStatus === 'orcamento') {
-        msg = `Olá! O orçamento do seu veículo ${placa} está pronto. Posso enviar os detalhes?`;
-      } else if (novoStatus === 'pronto') {
-        msg = `Olá! Seu veículo ${placa} está pronto para retirada! Quando pode vir buscar?`;
-      } else if (novoStatus === 'aguardando_peca') {
-        msg = `Olá! Seu veículo ${placa} está aguardando uma peça. Te aviso assim que chegar.`;
-      }
-
-      if (msg) {
-        const enviar = confirm(`Enviar WhatsApp pro cliente?\n\n"${msg}"`);
-        if (enviar) window.open(`https://wa.me/${fone}?text=${encodeURIComponent(msg)}`, '_blank');
-      }
-    }
+    // WhatsApp automático por status
+    this._enviarWhatsAuto(os, novoStatus);
 
     // Lança no caixa se entregue
     if (novoStatus === 'entregue' && typeof OS._lancarNoCaixa === 'function') {
@@ -462,6 +429,33 @@ const KANBAN = {
     });
 
     document.getElementById('kanban-total').textContent = visivel + ' veiculos no patio';
+  },
+
+  _enviarWhatsAuto(os, novoStatus) {
+    const whats = os.clientes?.whatsapp;
+    if (!whats) return;
+
+    const placa = os.veiculos?.placa || '';
+    const oficina = APP.oficina?.nome || 'a oficina';
+    const num = whats.replace(/\D/g, '');
+    const fone = num.startsWith('55') ? num : '55' + num;
+
+    const mensagens = {
+      diagnostico: `Ola! Aqui e da ${oficina}. Seu veiculo ${placa} entrou em diagnostico. Em breve teremos novidades.`,
+      orcamento: `Ola! Aqui e da ${oficina}. O orcamento do seu veiculo ${placa} esta pronto. Posso enviar os detalhes?`,
+      aprovada: `Ola! Orcamento do veiculo ${placa} aprovado! Ja vamos iniciar o servico. Qualquer novidade te aviso.`,
+      aguardando_peca: `Ola! Aqui e da ${oficina}. Seu veiculo ${placa} esta aguardando uma peca. Te aviso assim que chegar.`,
+      execucao: `Ola! Seu veiculo ${placa} ja esta em execucao aqui na ${oficina}. Te aviso quando estiver pronto!`,
+      pronto: `Ola! Seu veiculo ${placa} esta pronto pra retirada aqui na ${oficina}! Quando pode vir buscar?`,
+      entregue: `Obrigado pela confianca! Seu veiculo ${placa} foi entregue. Qualquer coisa, conte com a ${oficina}!`
+    };
+
+    const msg = mensagens[novoStatus];
+    if (!msg) return;
+
+    if (confirm(`Enviar WhatsApp pro cliente?\n\n"${msg}"`)) {
+      window.open(`https://wa.me/${fone}?text=${encodeURIComponent(msg)}`, '_blank');
+    }
   }
 };
 

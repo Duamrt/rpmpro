@@ -1486,6 +1486,10 @@ const OS = {
         </div>`;
     }).join('');
 
+    // Busca fotos existentes
+    const { data: fotos } = await db.from('fotos_os').select('*').eq('os_id', osId).eq('tipo', 'entrada').order('created_at');
+    const fotosExistentes = fotos || [];
+
     openModal(`
       <div class="modal-header">
         <h3>Checklist de Entrada</h3>
@@ -1493,6 +1497,25 @@ const OS = {
       </div>
       <div class="modal-body">
         ${campos}
+
+        <!-- FOTOS DO VEÍCULO -->
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+          <label style="font-size:13px;font-weight:600;margin-bottom:8px;display:block;">Fotos do veiculo na entrada</label>
+          <div id="fotos-entrada-lista" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+            ${fotosExistentes.map(f => `
+              <div style="position:relative;width:80px;height:80px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);">
+                <img src="${esc(f.url)}" style="width:100%;height:100%;object-fit:cover;">
+                <button onclick="OS.excluirFoto('${f.id}','${osId}')" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.7);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer;line-height:1;">X</button>
+              </div>
+            `).join('')}
+          </div>
+          <div style="display:flex;gap:8px;">
+            <input type="file" id="foto-entrada-input" accept="image/*" capture="environment" multiple style="display:none;" onchange="OS.uploadFotos(this.files,'${osId}','entrada')">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('foto-entrada-input').click()">📷 Tirar / Enviar fotos</button>
+          </div>
+          <span style="font-size:11px;color:var(--text-muted);display:block;margin-top:4px;">Registre arranhoes, amassados e estado geral do veiculo</span>
+        </div>
+
         <div class="form-group" style="margin-top:12px;">
           <label>Observacoes gerais</label>
           <textarea class="form-control" id="chk-e-obs" placeholder="Observacoes adicionais...">${esc(obs)}</textarea>
@@ -1629,6 +1652,43 @@ const OS = {
     const { data } = await db.from('checklists_saida')
       .select('id').eq('os_id', osId).maybeSingle();
     return !!data;
+  },
+
+  async uploadFotos(files, osId, tipo) {
+    if (!files || !files.length) return;
+    const oficina_id = APP.profile.oficina_id;
+
+    for (const file of files) {
+      if (file.size > 2 * 1024 * 1024) { APP.toast('Foto muito grande (max 2MB): ' + file.name, 'error'); continue; }
+      if (!file.type.startsWith('image/')) continue;
+
+      const ext = file.name.split('.').pop().toLowerCase();
+      const nome = `${oficina_id}/${osId}/${tipo}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}.${ext}`;
+
+      const { error: upErr } = await db.storage.from('fotos-os').upload(nome, file, { upsert: true });
+      if (upErr) { APP.toast('Erro upload: ' + upErr.message, 'error'); continue; }
+
+      const { data: urlData } = db.storage.from('fotos-os').getPublicUrl(nome);
+
+      await db.from('fotos_os').insert({
+        os_id: osId,
+        oficina_id,
+        tipo,
+        url: urlData.publicUrl
+      });
+    }
+
+    APP.toast(files.length + ' foto(s) enviada(s)');
+    // Recarrega o checklist pra mostrar as fotos
+    if (tipo === 'entrada') this.abrirChecklistEntrada(osId);
+    else this.abrirDetalhes(osId);
+  },
+
+  async excluirFoto(fotoId, osId) {
+    if (!confirm('Excluir esta foto?')) return;
+    await db.from('fotos_os').delete().eq('id', fotoId);
+    APP.toast('Foto excluida');
+    this.abrirChecklistEntrada(osId);
   },
 
   enviarWhatsApp(whatsapp, placa, status) {

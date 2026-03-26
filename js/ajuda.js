@@ -312,7 +312,12 @@ const AJUDA = {
       titulo: 'Dashboard',
       perfis: ['dono','gerente'],
       secoes: [
-        { titulo: 'Visao geral', info: 'Resumo da oficina: OS abertas, aguardando orcamento, prontas e faturamento do mes.' },
+        { titulo: 'Visao geral', info: 'Resumo da oficina: OS abertas, aguardando orcamento, prontas, faturamento, ticket medio, tempo medio de permanencia e ranking de mecanicos.' },
+        { titulo: 'Metricas avancadas', passos: [
+          'Ticket medio: valor medio das OS entregues no mes',
+          'Tempo medio: quanto tempo o veiculo fica na oficina',
+          'Ranking mecanicos: quem mais entregou no mes (so pra dono/gerente)'
+        ]},
         { titulo: 'Fila de hoje', passos: [
           'Mostra veiculos em andamento com status e mecanico',
           'Clique num veiculo pra abrir os detalhes da OS'

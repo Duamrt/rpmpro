@@ -90,6 +90,34 @@ const CONFIG = {
           </form>
         </div>
 
+        <!-- PIX -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;">
+          <h3 style="font-size:16px;margin-bottom:16px;">Chave Pix</h3>
+          <form id="form-config-pix" onsubmit="CONFIG.salvarPix(event)">
+            <div class="form-group">
+              <label>Tipo da chave</label>
+              <select class="form-control" id="cfg-pix-tipo" style="max-width:200px;">
+                <option value="">Nenhuma</option>
+                <option value="cpf" ${oficina.pix_tipo === 'cpf' ? 'selected' : ''}>CPF</option>
+                <option value="cnpj" ${oficina.pix_tipo === 'cnpj' ? 'selected' : ''}>CNPJ</option>
+                <option value="telefone" ${oficina.pix_tipo === 'telefone' ? 'selected' : ''}>Telefone</option>
+                <option value="email" ${oficina.pix_tipo === 'email' ? 'selected' : ''}>E-mail</option>
+                <option value="aleatoria" ${oficina.pix_tipo === 'aleatoria' ? 'selected' : ''}>Chave aleatoria</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Chave Pix</label>
+              <input type="text" class="form-control" id="cfg-pix-chave" value="${esc(oficina.pix_chave || '')}" placeholder="Digite sua chave Pix" style="max-width:400px;">
+            </div>
+            <div class="form-group">
+              <label>Nome do beneficiario (como aparece no Pix)</label>
+              <input type="text" class="form-control" id="cfg-pix-nome" value="${esc(oficina.pix_nome || oficina.nome || '')}" style="max-width:400px;">
+            </div>
+            <span style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:12px;">A chave Pix aparece como QR Code no recibo da OS. O cliente paga na hora pelo celular.</span>
+            <button type="submit" class="btn btn-primary">Salvar Pix</button>
+          </form>
+        </div>
+
         <!-- LOGO -->
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;">
           <h3 style="font-size:16px;margin-bottom:16px;">Logo da Oficina</h3>
@@ -163,6 +191,25 @@ const CONFIG = {
     APP.oficina.capacidade_diaria = capacidade_diaria;
 
     APP.toast('Valores salvos');
+  },
+
+  async salvarPix(e) {
+    e.preventDefault();
+    const pix_tipo = document.getElementById('cfg-pix-tipo').value || null;
+    const pix_chave = document.getElementById('cfg-pix-chave').value.trim() || null;
+    const pix_nome = document.getElementById('cfg-pix-nome').value.trim() || null;
+
+    const { error } = await db.from('oficinas').update({
+      pix_tipo, pix_chave, pix_nome
+    }).eq('id', APP.profile.oficina_id);
+
+    if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
+
+    APP.oficina.pix_tipo = pix_tipo;
+    APP.oficina.pix_chave = pix_chave;
+    APP.oficina.pix_nome = pix_nome;
+
+    APP.toast('Pix salvo');
   },
 
   async uploadLogo(file) {

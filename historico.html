@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Historico do Veiculo — RPM Pro</title>
+<meta name="theme-color" content="#FF4500">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a1d23'/><text x='50' y='68' font-size='48' font-weight='900' font-family='Arial' text-anchor='middle' fill='%23FF4500'>R</text></svg>">
+<meta property="og:title" content="Historico do Veiculo — RPM Pro">
+<meta property="og:description" content="Consulte o historico de manutencoes do seu veiculo">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+  :root { --primary: #FF4500; --bg: #0d1117; --bg-card: #161b22; --border: #21262d; --text: #e6edf3; --text-secondary: #8b949e; --text-muted: #484f58; --success: #3fb950; --warning: #f0883e; --radius: 10px; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+  .container { max-width:700px; margin:0 auto; padding:24px 16px; }
+  .header { text-align:center; margin-bottom:32px; }
+  .header h1 { font-size:14px; }
+  .header h1 .rpm { color:var(--primary); }
+  .header h1 .pro { color:#fff; }
+  .busca { display:flex; gap:8px; margin-bottom:24px; }
+  .busca input { flex:1; padding:14px 16px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); color:var(--text); font-size:16px; font-family:inherit; text-transform:uppercase; }
+  .busca input:focus { outline:none; border-color:var(--primary); }
+  .busca button { padding:14px 24px; background:var(--primary); color:#fff; border:none; border-radius:var(--radius); font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }
+  .card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:12px; }
+  .card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; }
+  .badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; }
+  .badge-ok { background:#3fb95022; color:#3fb950; }
+  .badge-pendente { background:#f0883e22; color:#f0883e; }
+  .item { padding:8px 0; border-bottom:1px solid var(--border); font-size:13px; display:flex; justify-content:space-between; }
+  .item:last-child { border:0; }
+  .empty { text-align:center; padding:60px 20px; color:var(--text-muted); }
+  .empty .icon { font-size:48px; margin-bottom:16px; }
+  .veiculo-info { display:flex; gap:16px; flex-wrap:wrap; font-size:13px; color:var(--text-secondary); margin-bottom:20px; }
+  .oficina-info { text-align:center; font-size:12px; color:var(--text-muted); margin-bottom:20px; padding:12px; background:var(--bg-card); border-radius:var(--radius); }
+  .total-geral { text-align:center; margin-top:20px; padding:16px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); }
+  .footer { text-align:center; margin-top:40px; font-size:11px; color:var(--text-muted); }
+  .footer a { color:var(--primary); text-decoration:none; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1><span class="rpm">RPM </span><span class="pro">PRO</span></h1>
+    <p style="font-size:20px;font-weight:800;margin-top:8px;">Historico do Veiculo</p>
+    <p style="font-size:13px;color:var(--text-secondary);margin-top:4px;">Consulte todas as manutencoes realizadas</p>
+  </div>
+
+  <div class="busca">
+    <input type="text" id="placa-input" placeholder="Digite a placa (ex: ABC1234)" maxlength="8">
+    <button onclick="buscar()">Buscar</button>
+  </div>
+
+  <div id="resultado"></div>
+
+  <div class="footer">
+    <p>Powered by <a href="https://rpmpro.com.br" target="_blank">RPM Pro</a> — Sistema de gestao para oficinas</p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://sclrcxwiwfiqnxguxvbv.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNjbHJjeHdpd2ZpcW54Z3V4dmJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NjM2NzYsImV4cCI6MjA5MDAzOTY3Nn0._sH7CVQ38LO4RTQFHGmUPpZX4Js1SYmRwjau1Hc5cTM';
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Pega placa da URL (?p=ABC1234)
+const params = new URLSearchParams(window.location.search);
+const placaURL = params.get('p');
+if (placaURL) {
+  document.getElementById('placa-input').value = placaURL.toUpperCase();
+  setTimeout(() => buscar(), 100);
+}
+
+document.getElementById('placa-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') buscar();
+});
+
+async function buscar() {
+  const placa = document.getElementById('placa-input').value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (!placa || placa.length < 6) {
+    document.getElementById('resultado').innerHTML = '<div class="empty"><div class="icon">🔍</div><p>Digite uma placa valida</p></div>';
+    return;
+  }
+
+  document.getElementById('resultado').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-secondary);">Buscando...</div>';
+
+  // Busca veículo pela placa usando RPC pública
+  const { data, error } = await db.rpc('historico_veiculo_publico', { p_placa: placa });
+
+  if (error || !data || !data.encontrado) {
+    document.getElementById('resultado').innerHTML = `
+      <div class="empty">
+        <div class="icon">🚗</div>
+        <p style="font-size:16px;font-weight:600;margin-bottom:8px;">Veiculo nao encontrado</p>
+        <p>Nenhum registro para a placa <strong>${placa}</strong></p>
+      </div>`;
+    return;
+  }
+
+  const v = data.veiculo;
+  const os_list = data.ordens || [];
+  const oficina = data.oficina;
+
+  let totalGasto = 0;
+
+  let html = '';
+
+  // Info oficina
+  if (oficina) {
+    html += `<div class="oficina-info">
+      <strong>${esc(oficina.nome)}</strong>
+      ${oficina.whatsapp ? ' — WhatsApp: ' + esc(oficina.whatsapp) : ''}
+      ${oficina.cidade ? '<br>' + esc(oficina.cidade) + (oficina.estado ? '/' + esc(oficina.estado) : '') : ''}
+    </div>`;
+  }
+
+  // Info veículo
+  html += `<div class="veiculo-info">
+    <span>Placa: <strong>${esc(v.placa)}</strong></span>
+    ${v.marca ? '<span>' + esc(v.marca) + ' ' + esc(v.modelo || '') + '</span>' : ''}
+    ${v.ano ? '<span>Ano: ' + esc(v.ano) + '</span>' : ''}
+    ${v.cor ? '<span>Cor: ' + esc(v.cor) + '</span>' : ''}
+  </div>`;
+
+  if (!os_list.length) {
+    html += '<div class="empty"><div class="icon">📋</div><p>Nenhuma manutencao registrada</p></div>';
+  } else {
+    os_list.forEach(os => {
+      const total = os.valor_total || 0;
+      totalGasto += total;
+      const data = os.data_entrada ? new Date(os.data_entrada).toLocaleDateString('pt-BR') : '-';
+      const pago = os.pago;
+
+      html += `<div class="card">
+        <div class="card-header">
+          <div>
+            <div style="font-weight:700;font-size:15px;">OS #${os.numero || '-'}</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${data}${os.km_entrada ? ' — ' + os.km_entrada.toLocaleString('pt-BR') + ' km' : ''}</div>
+          </div>
+          <span class="badge ${pago ? 'badge-ok' : 'badge-pendente'}">${pago ? 'Pago' : 'Pendente'}</span>
+        </div>`;
+
+      if (os.servicos && os.servicos.length) {
+        html += '<div style="margin-bottom:8px;">';
+        os.servicos.forEach(s => {
+          html += `<div class="item"><span>${esc(s.descricao)}</span><span>${formatMoney(s.valor_total)}</span></div>`;
+        });
+        html += '</div>';
+      }
+
+      if (os.pecas && os.pecas.length) {
+        html += '<div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Pecas:</div><div>';
+        os.pecas.forEach(p => {
+          html += `<div class="item"><span>${esc(p.descricao)} (x${p.quantidade || 1})</span><span>${formatMoney(p.valor_total)}</span></div>`;
+        });
+        html += '</div>';
+      }
+
+      html += `<div style="display:flex;justify-content:space-between;margin-top:12px;padding-top:8px;border-top:1px solid var(--border);font-weight:700;">
+        <span>Total</span><span style="color:var(--success);">${formatMoney(total)}</span>
+      </div>`;
+
+      if (os.observacoes) {
+        html += `<div style="font-size:11px;color:var(--text-muted);margin-top:8px;">Obs: ${esc(os.observacoes)}</div>`;
+      }
+
+      html += '</div>';
+    });
+
+    html += `<div class="total-geral">
+      <div style="font-size:12px;color:var(--text-secondary);">${os_list.length} manutencao(es) registrada(s)</div>
+      <div style="font-size:22px;font-weight:800;color:var(--success);margin-top:4px;">${formatMoney(totalGasto)}</div>
+      <div style="font-size:11px;color:var(--text-muted);">total investido em manutencao</div>
+    </div>`;
+  }
+
+  document.getElementById('resultado').innerHTML = html;
+
+  // Atualiza URL sem recarregar
+  history.replaceState(null, '', '?p=' + placa);
+}
+
+function formatMoney(val) {
+  return (val || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function esc(str) {
+  if (!str) return '';
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+</script>
+</body>
+</html>
