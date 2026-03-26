@@ -281,8 +281,7 @@ const FILA = {
     const filtrados = t.length >= 2 ? this._cliCache.filter(c => c.nome.toLowerCase().includes(t)) : [];
 
     if (!filtrados.length) {
-      lista.style.display = t.length >= 2 ? 'block' : 'none';
-      lista.innerHTML = t.length >= 2 ? `<div style="padding:10px 14px;font-size:12px;color:var(--text-muted);">Nenhum cliente encontrado — será cadastrado automaticamente</div>` : '';
+      lista.style.display = 'none';
       document.getElementById('fila-cliente-id').value = '';
       return;
     }
