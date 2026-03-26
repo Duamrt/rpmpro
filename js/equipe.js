@@ -188,8 +188,23 @@ const EQUIPE = {
 
     if (senha.length < 6) { APP.toast('Senha precisa ter pelo menos 6 caracteres', 'error'); return; }
 
-    const { data, error } = await db.rpc('criar_login_membro', {
+    // Client temporário pra não deslogar o dono
+    const tempDb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: false }
+    });
+
+    // Cria auth user pelo fluxo oficial do Supabase
+    const { data: authData, error: authError } = await tempDb.auth.signUp({
+      email, password: senha
+    });
+
+    if (authError) { APP.toast('Erro: ' + authError.message, 'error'); return; }
+    if (!authData.user) { APP.toast('Erro ao criar usuario', 'error'); return; }
+
+    // Vincula o auth user ao profile existente
+    const { data, error } = await db.rpc('vincular_login_membro', {
       p_profile_id: profileId,
+      p_user_id: authData.user.id,
       p_email: email,
       p_senha: senha
     });
