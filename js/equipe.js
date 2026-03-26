@@ -47,9 +47,10 @@ const EQUIPE = {
               <td>${m.comissao_percent ? m.comissao_percent + '%' : '-'}</td>
               <td><span class="badge badge-${m.ativo ? 'pronto' : 'entregue'}">${m.ativo ? 'Ativo' : 'Inativo'}</span></td>
               <td>
-                ${['dono','gerente'].includes(APP.profile.role) ? `<button class="btn btn-secondary btn-sm" onclick="EQUIPE.editar('${m.id}')">Editar</button>` : ''}
-                ${['dono','gerente'].includes(APP.profile.role) && !m.email ? `<button class="btn btn-primary btn-sm" onclick="EQUIPE.criarLogin('${m.id}','${esc(m.nome)}')">Criar login</button>` : ''}
-                ${['dono','gerente'].includes(APP.profile.role) && m.id !== APP.profile.id && m.role !== 'dono' ? `<button class="btn btn-danger btn-sm" onclick="EQUIPE.excluir('${m.id}','${esc(m.nome)}')">Excluir</button>` : ''}
+                ${['dono','gerente'].includes(APP.profile.role) || SUPER_ADMIN.isSuperAdmin ? `<button class="btn btn-secondary btn-sm" onclick="EQUIPE.editar('${m.id}')">Editar</button>` : ''}
+                ${(['dono','gerente'].includes(APP.profile.role) || SUPER_ADMIN.isSuperAdmin) && !m.email ? `<button class="btn btn-primary btn-sm" onclick="EQUIPE.criarLogin('${m.id}','${esc(m.nome)}')">Criar login</button>` : ''}
+                ${(['dono','gerente'].includes(APP.profile.role) || SUPER_ADMIN.isSuperAdmin) && m.email ? `<button class="btn btn-secondary btn-sm" onclick="EQUIPE.gerenciarLogin('${m.id}','${esc(m.nome)}','${esc(m.email)}','${esc(m.senha_texto || '')}')">Login</button>` : ''}
+                ${(['dono','gerente'].includes(APP.profile.role) || SUPER_ADMIN.isSuperAdmin) && m.id !== APP.profile.id && m.role !== 'dono' ? `<button class="btn btn-danger btn-sm" onclick="EQUIPE.excluir('${m.id}','${esc(m.nome)}')">Excluir</button>` : ''}
               </td>
             </tr>
           `).join('')}
@@ -198,6 +199,63 @@ const EQUIPE = {
 
     closeModal();
     APP.toast('Login criado! Email: ' + email);
+    this.carregar();
+  },
+
+  gerenciarLogin(profileId, nome, email, senha) {
+    openModal(`
+      <div class="modal-header">
+        <h3>Login — ${esc(nome)}</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="text" class="form-control" value="${esc(email)}" readonly style="opacity:.7;">
+        </div>
+        <div class="form-group">
+          <label>Senha atual</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="text" class="form-control" value="${esc(senha || 'Nao registrada')}" readonly style="opacity:.7;flex:1;">
+          </div>
+        </div>
+        <hr style="border-color:var(--border);margin:16px 0;">
+        <div class="form-group">
+          <label>Nova senha</label>
+          <input type="text" class="form-control" id="nova-senha" placeholder="Minimo 6 caracteres" minlength="6">
+        </div>
+        <div class="modal-footer" style="padding:16px 0 0;border:0;display:flex;gap:8px;">
+          <button type="button" class="btn btn-danger" onclick="EQUIPE.removerLogin('${profileId}','${esc(nome)}')">Remover login</button>
+          <div style="flex:1;"></div>
+          <button type="button" class="btn btn-secondary" onclick="closeModal()">Fechar</button>
+          <button type="button" class="btn btn-primary" onclick="EQUIPE.salvarNovaSenha('${profileId}')">Redefinir senha</button>
+        </div>
+      </div>
+    `);
+  },
+
+  async salvarNovaSenha(profileId) {
+    const senha = document.getElementById('nova-senha').value;
+    if (!senha || senha.length < 6) { APP.toast('Senha precisa ter pelo menos 6 caracteres', 'error'); return; }
+
+    const { data, error } = await db.rpc('redefinir_senha_membro', { p_profile_id: profileId, p_nova_senha: senha });
+    if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
+    if (data && !data.ok) { APP.toast(data.erro, 'error'); return; }
+
+    closeModal();
+    APP.toast('Senha redefinida!');
+    this.carregar();
+  },
+
+  async removerLogin(profileId, nome) {
+    if (!confirm(`Remover login de ${nome}? Ele nao vai mais conseguir acessar o sistema.`)) return;
+
+    const { data, error } = await db.rpc('remover_login_membro', { p_profile_id: profileId });
+    if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
+    if (data && !data.ok) { APP.toast(data.erro, 'error'); return; }
+
+    closeModal();
+    APP.toast('Login removido');
     this.carregar();
   },
 
