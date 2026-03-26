@@ -546,6 +546,17 @@ const AJUDA = {
   document.head.appendChild(style);
 })();
 
+// Atualiza chat ao mudar de tela
+document.addEventListener('pageLoad', (e) => {
+  const painel = document.getElementById('ajuda-painel');
+  if (!painel) return;
+  const pagina = e.detail.page;
+  const ajuda = AJUDA.conteudo[pagina];
+  if (ajuda) {
+    AJUDA._addMsg('bot', `Voce mudou pra <strong>${esc(ajuda.titulo)}</strong>. Tem alguma duvida sobre essa tela?`);
+  }
+});
+
 // Fechar com ESC
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && document.getElementById('ajuda-painel')) {
