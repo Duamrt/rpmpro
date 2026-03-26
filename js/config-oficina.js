@@ -42,17 +42,27 @@ const CONFIG = {
                 <input type="email" class="form-control" id="cfg-email" value="${esc(oficina.email || '')}">
               </div>
             </div>
-            <div class="form-group">
-              <label>Endereco</label>
-              <input type="text" class="form-control" id="cfg-endereco" value="${esc(oficina.endereco || '')}">
+            <div style="display:grid;grid-template-columns:1fr 100px;gap:12px;">
+              <div class="form-group">
+                <label>Endereco (rua/avenida)</label>
+                <input type="text" class="form-control" id="cfg-endereco" value="${esc(oficina.endereco || '')}" placeholder="Av. Brasil">
+              </div>
+              <div class="form-group">
+                <label>Numero</label>
+                <input type="text" class="form-control" id="cfg-numero" value="${esc(oficina.numero || '')}" placeholder="1500">
+              </div>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:12px;">
+              <div class="form-group">
+                <label>Bairro</label>
+                <input type="text" class="form-control" id="cfg-bairro" value="${esc(oficina.bairro || '')}" placeholder="Centro">
+              </div>
               <div class="form-group">
                 <label>Cidade</label>
                 <input type="text" class="form-control" id="cfg-cidade" value="${esc(oficina.cidade || '')}">
               </div>
               <div class="form-group">
-                <label>Estado</label>
+                <label>UF</label>
                 <input type="text" class="form-control" id="cfg-estado" value="${esc(oficina.estado || '')}" maxlength="2" style="text-transform:uppercase">
               </div>
             </div>
@@ -155,6 +165,8 @@ const CONFIG = {
       whatsapp: document.getElementById('cfg-whatsapp').value.trim(),
       email: document.getElementById('cfg-email').value.trim(),
       endereco: document.getElementById('cfg-endereco').value.trim(),
+      numero: document.getElementById('cfg-numero').value.trim(),
+      bairro: document.getElementById('cfg-bairro').value.trim(),
       cidade: document.getElementById('cfg-cidade').value.trim(),
       estado: document.getElementById('cfg-estado').value.trim().toUpperCase()
     }).eq('id', APP.profile.oficina_id);

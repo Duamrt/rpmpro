@@ -40,17 +40,16 @@ const PDF_OS = {
   },
 
   _montarHeader(oficina, titulo) {
-    // Monta endereço sem duplicar cidade/estado
-    let endereco = '';
+    // Monta endereço completo
+    const partes = [];
     if (oficina.endereco) {
-      endereco = oficina.endereco;
-      // Só adiciona cidade/estado se não estiver já no endereço
-      if (oficina.cidade && !oficina.endereco.toLowerCase().includes(oficina.cidade.toLowerCase())) {
-        endereco += ' — ' + oficina.cidade + (oficina.estado ? '/' + oficina.estado : '');
-      }
-    } else if (oficina.cidade) {
-      endereco = oficina.cidade + (oficina.estado ? '/' + oficina.estado : '');
+      let rua = oficina.endereco;
+      if (oficina.numero) rua += ', ' + oficina.numero;
+      partes.push(rua);
     }
+    if (oficina.bairro) partes.push(oficina.bairro);
+    if (oficina.cidade) partes.push(oficina.cidade + (oficina.estado ? '/' + oficina.estado : ''));
+    const endereco = partes.join(' — ');
 
     // Coluna esquerda: logo oficina + nome
     const headerLeft = [];
