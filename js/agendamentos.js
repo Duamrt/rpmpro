@@ -606,7 +606,18 @@ const AGENDAMENTOS = {
       obj.cliente_id = document.getElementById('ag-cliente').value;
       obj.veiculo_id = document.getElementById('ag-veiculo').value;
       obj.created_by = APP.profile.id;
-      ({ error } = await db.from('agendamentos').insert(obj));
+
+      if (!obj.cliente_id || !obj.veiculo_id) {
+        APP.toast('Selecione cliente e veículo', 'error');
+        return;
+      }
+
+      const res = await db.from('agendamentos').insert(obj).select();
+      error = res.error;
+      if (!error && (!res.data || !res.data.length)) {
+        APP.toast('Agendamento não foi salvo. Verifique os dados.', 'error');
+        return;
+      }
     }
 
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
