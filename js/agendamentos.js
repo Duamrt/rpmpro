@@ -644,22 +644,20 @@ const AGENDAMENTOS = {
   async excluir(id) {
     if (!confirm('Excluir este agendamento?')) return;
     try {
-      console.log('[AGEND] Excluindo:', id);
+      alert('Excluindo ID: ' + id);
       const { data: updated, error } = await db.from('agendamentos').update({ status: 'cancelado' }).eq('id', id).select();
-      console.log('[AGEND] Resultado update:', { updated, error });
+      alert('Resultado: updated=' + JSON.stringify(updated) + ' error=' + JSON.stringify(error));
       if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
       if (!updated || updated.length === 0) {
-        console.warn('[AGEND] Update não afetou nenhuma row! RLS pode estar bloqueando.');
-        APP.toast('Não foi possível excluir. Sem permissão.', 'error');
+        APP.toast('RLS bloqueou. Sem permissão.', 'error');
         return;
       }
-      // Remover da lista local imediatamente
       this._dados = this._dados.filter(a => a.id !== id);
       APP.toast('Excluído!');
       await this.carregar();
     } catch(e) {
-      console.error('[AGEND] Erro ao excluir:', e);
-      APP.toast('Erro de conexão. Tente novamente.', 'error');
+      alert('CATCH: ' + e.message);
+      APP.toast('Erro de conexão.', 'error');
     }
   },
 
