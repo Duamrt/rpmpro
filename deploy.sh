@@ -23,12 +23,11 @@ done
 git add -A
 git commit -m "$MSG — v$VERSION" || echo "Nada pra comitar"
 
-# Squash merge dev → main
+# Sync main = dev
 git push origin dev
 git checkout main
-git merge --squash dev
-git commit -m "$MSG — v$VERSION" || echo "Nada pra comitar na main"
-git push origin main
+git reset --hard dev
+git push --force-with-lease origin main
 git checkout dev
 
 echo ""

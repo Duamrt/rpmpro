@@ -149,7 +149,7 @@ const AGENDAMENTOS = {
                 ${a.status === 'pendente' || a.status === 'notificado' ? `<button class="btn btn-primary btn-sm" onclick="AGENDAMENTOS.mudarStatus('${a.id}','confirmado')">Confirmar</button>` : ''}
                 ${a.status === 'confirmado' ? `<button class="btn btn-primary btn-sm" onclick="AGENDAMENTOS.mudarStatus('${a.id}','realizado')">Realizado</button>` : ''}
                 ${a.status !== 'realizado' && a.status !== 'cancelado' ? `<button class="btn btn-secondary btn-sm" onclick="AGENDAMENTOS.editar('${a.id}')">Editar</button>` : ''}
-                ${a.status !== 'realizado' && a.status !== 'cancelado' ? `<button class="btn btn-danger btn-sm" onclick="AGENDAMENTOS.mudarStatus('${a.id}','cancelado')">X</button>` : ''}
+                ${a.status !== 'realizado' && a.status !== 'cancelado' ? `<button class="btn btn-danger btn-sm" onclick="AGENDAMENTOS.excluir('${a.id}',this)">X</button>` : ''}
               </div>
             </div>`;
           }).join('') : `
@@ -638,6 +638,21 @@ const AGENDAMENTOS = {
     const { error } = await db.from('agendamentos').update(update).eq('id', id).eq('oficina_id', APP.profile.oficina_id);
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
     APP.toast('Status atualizado');
+    this.carregar();
+  },
+
+  async excluir(id, btn) {
+    if (!btn.dataset.confirming) {
+      btn.textContent = 'Certeza?';
+      btn.dataset.confirming = 'true';
+      setTimeout(() => { btn.textContent = 'X'; delete btn.dataset.confirming; }, 3000);
+      return;
+    }
+    btn.textContent = '...';
+    btn.disabled = true;
+    const { error } = await db.from('agendamentos').delete().eq('id', id).eq('oficina_id', APP.profile.oficina_id);
+    if (error) { APP.toast('Erro: ' + error.message, 'error'); btn.textContent = 'X'; btn.disabled = false; return; }
+    APP.toast('Agendamento excluído');
     this.carregar();
   },
 
