@@ -25,7 +25,7 @@ const AGENDAMENTOS = {
       .lte('data_prevista', fim)
       .order('data_prevista');
 
-    this._dados = data || [];
+    this._dados = (data || []).filter(a => a.status !== 'cancelado');
 
     // Busca fila de espera agendada (pra mostrar no calendario tb)
     const { data: filaData } = await db
@@ -43,9 +43,9 @@ const AGENDAMENTOS = {
     const tipoLabel = { revisao: 'Revisao', troca_oleo: 'Troca oleo', pneus: 'Pneus', filtros: 'Filtros', correia: 'Correia', freios: 'Freios', alinhamento: 'Alinhamento', bateria: 'Bateria', outro: 'Outro' };
     const statusCor = { pendente: '#f0883e', notificado: '#388bfd', confirmado: '#3fb950', realizado: '#8b949e', cancelado: '#f85149' };
 
-    // Monta mapa de agendamentos por dia (exclui cancelados)
+    // Monta mapa de agendamentos por dia
     const porDia = {};
-    this._dados.filter(a => a.status !== 'cancelado').forEach(a => {
+    this._dados.forEach(a => {
       const d = a.data_prevista;
       if (!porDia[d]) porDia[d] = [];
       porDia[d].push(a);
@@ -650,22 +650,7 @@ const AGENDAMENTOS = {
     }
     btn.textContent = '...';
     btn.disabled = true;
-    // Tentar delete direto; se RLS bloquear, marcar como cancelado
-    const { error } = await db.from('agendamentos').delete().eq('id', id);
-    if (error) {
-      // Fallback: marcar cancelado
-      await db.from('agendamentos').update({ status: 'cancelado' }).eq('id', id);
-    }
-    // Verificar se ainda existe
-    const { data: check } = await db.from('agendamentos').select('id').eq('id', id).maybeSingle();
-    if (check) {
-      // Delete falhou silenciosamente, forçar cancelado
-      await db.from('agendamentos').update({ status: 'cancelado' }).eq('id', id);
-      APP.toast('Agendamento cancelado');
-    } else {
-      APP.toast('Agendamento excluído');
-    }
-    this.carregar();
+    await this.mudarStatus(id, 'cancelado');
   },
 
   notificar(id, fone, nome, tipo, data) {
