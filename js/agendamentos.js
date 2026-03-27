@@ -149,7 +149,7 @@ const AGENDAMENTOS = {
                 ${a.status === 'pendente' || a.status === 'notificado' ? `<button class="btn btn-primary btn-sm" onclick="AGENDAMENTOS.mudarStatus('${a.id}','confirmado')">Confirmar</button>` : ''}
                 ${a.status === 'confirmado' ? `<button class="btn btn-primary btn-sm" onclick="AGENDAMENTOS.mudarStatus('${a.id}','realizado')">Realizado</button>` : ''}
                 ${a.status !== 'realizado' && a.status !== 'cancelado' ? `<button class="btn btn-secondary btn-sm" onclick="AGENDAMENTOS.editar('${a.id}')">Editar</button>` : ''}
-                ${a.status !== 'realizado' && a.status !== 'cancelado' ? `<button class="btn btn-danger btn-sm" onclick="AGENDAMENTOS.excluir('${a.id}',this)">X</button>` : ''}
+                ${a.status !== 'realizado' && a.status !== 'cancelado' ? `<button class="btn btn-danger btn-sm" onclick="AGENDAMENTOS.excluir('${a.id}')">X</button>` : ''}
               </div>
             </div>`;
           }).join('') : `
@@ -641,16 +641,17 @@ const AGENDAMENTOS = {
     this.carregar();
   },
 
-  async excluir(id, btn) {
-    if (!btn.dataset.confirming) {
-      btn.textContent = 'Certeza?';
-      btn.dataset.confirming = 'true';
-      setTimeout(() => { btn.textContent = 'X'; delete btn.dataset.confirming; }, 3000);
-      return;
+  async excluir(id) {
+    if (!confirm('Excluir este agendamento?')) return;
+    try {
+      const { error } = await db.from('agendamentos').update({ status: 'cancelado' }).eq('id', id);
+      if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
+      APP.toast('Excluído');
+      await this.carregar();
+    } catch(e) {
+      console.error('Erro ao excluir agendamento:', e);
+      APP.toast('Erro de conexão. Tente novamente.', 'error');
     }
-    btn.textContent = '...';
-    btn.disabled = true;
-    await this.mudarStatus(id, 'cancelado');
   },
 
   notificar(id, fone, nome, tipo, data) {
