@@ -643,22 +643,10 @@ const AGENDAMENTOS = {
 
   async excluir(id) {
     if (!confirm('Excluir este agendamento?')) return;
-    try {
-      alert('Excluindo ID: ' + id);
-      const { data: updated, error } = await db.from('agendamentos').update({ status: 'cancelado' }).eq('id', id).select();
-      alert('Resultado: updated=' + JSON.stringify(updated) + ' error=' + JSON.stringify(error));
-      if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
-      if (!updated || updated.length === 0) {
-        APP.toast('RLS bloqueou. Sem permissão.', 'error');
-        return;
-      }
-      this._dados = this._dados.filter(a => a.id !== id);
-      APP.toast('Excluído!');
-      await this.carregar();
-    } catch(e) {
-      alert('CATCH: ' + e.message);
-      APP.toast('Erro de conexão.', 'error');
-    }
+    const { error } = await db.from('agendamentos').update({ status: 'cancelado' }).eq('id', id);
+    if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
+    APP.toast('Excluído');
+    this.carregar();
   },
 
   notificar(id, fone, nome, tipo, data) {
