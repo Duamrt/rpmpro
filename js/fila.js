@@ -46,13 +46,13 @@ const FILA = {
       <div style="display:flex;flex-direction:column;gap:12px;">
         ${lista.map(f => `
           <div style="background:var(--bg-card);border:1px solid ${f.urgencia === 'urgente' && f.status === 'aguardando' ? 'var(--danger)' : 'var(--border)'};border-radius:var(--radius-lg);padding:16px;${f.urgencia === 'urgente' && f.status === 'aguardando' ? 'border-left:4px solid var(--danger);' : ''}">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
               <div>
                 <strong style="font-size:15px;">${esc(f.nome)}</strong>
                 ${f.placa ? `<span style="margin-left:8px;font-size:13px;color:var(--primary);font-weight:700;">${esc(f.placa)}</span>` : ''}
-                ${f.veiculo_info ? `<span style="margin-left:4px;font-size:12px;color:var(--text-secondary);">${esc(f.veiculo_info)}</span>` : ''}
+                ${f.veiculo_info ? `<br><span style="font-size:12px;color:var(--text-secondary);">${esc(f.veiculo_info)}</span>` : ''}
               </div>
-              <div style="display:flex;gap:6px;align-items:center;">
+              <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
                 <span style="font-size:12px;font-weight:700;color:var(--text-secondary);background:var(--bg-input);padding:2px 8px;border-radius:6px;">${FILA._tempoAtras(f.created_at)}</span>
                 <span style="font-size:11px;font-weight:700;color:${urgenciaCor[f.urgencia]};">${esc(urgenciaLabel[f.urgencia])}</span>
                 <span class="badge badge-${statusBadge[f.status] || 'orcamento'}">${esc(f.status)}</span>
@@ -61,18 +61,16 @@ const FILA = {
             <div style="background:var(--bg-input);padding:10px 12px;border-radius:var(--radius);margin-bottom:10px;font-size:14px;line-height:1.5;">
               "${esc(f.sintoma)}"
             </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <div style="font-size:12px;color:var(--text-muted);">
-                ${APP.formatDateTime(f.created_at)}
-                ${f.whatsapp ? ` · ${esc(f.whatsapp)}` : ''}
-              </div>
-              <div style="display:flex;gap:6px;">
-                ${f.whatsapp && f.status === 'aguardando' ? `<button class="btn btn-success btn-sm" onclick="FILA.contatar('${f.id}','${esc(f.whatsapp)}','${esc(f.nome)}')">WhatsApp</button>` : ''}
-                ${f.status === 'aguardando' || f.status === 'contatado' ? `<button class="btn btn-primary btn-sm" onclick="FILA.agendar('${f.id}','${esc(f.nome)}','${esc(f.placa || '')}','${esc(f.sintoma)}')">Agendar</button>` : ''}
-                ${f.status === 'aguardando' ? `<button class="btn btn-secondary btn-sm" onclick="FILA.mudarStatus('${f.id}','contatado')">Contatado</button>` : ''}
-                ${f.status !== 'cancelado' && f.status !== 'agendado' ? `<button class="btn btn-secondary btn-sm" onclick="FILA.editar('${f.id}')">Editar</button>` : ''}
-                ${f.status !== 'cancelado' && f.status !== 'agendado' ? `<button class="btn btn-danger btn-sm" onclick="FILA.mudarStatus('${f.id}','cancelado')">X</button>` : ''}
-              </div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
+              ${APP.formatDateTime(f.created_at)}
+              ${f.whatsapp ? ` · ${esc(f.whatsapp)}` : ''}
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              ${f.whatsapp && f.status === 'aguardando' ? `<button class="btn btn-success btn-sm" onclick="FILA.contatar('${f.id}','${esc(f.whatsapp)}','${esc(f.nome)}')">WhatsApp</button>` : ''}
+              ${f.status === 'aguardando' || f.status === 'contatado' ? `<button class="btn btn-primary btn-sm" onclick="FILA.agendar('${f.id}','${esc(f.nome)}','${esc(f.placa || '')}','${esc(f.sintoma)}')">Agendar</button>` : ''}
+              ${f.status === 'aguardando' ? `<button class="btn btn-secondary btn-sm" onclick="FILA.mudarStatus('${f.id}','contatado')">Contatado</button>` : ''}
+              ${f.status !== 'cancelado' && f.status !== 'agendado' ? `<button class="btn btn-secondary btn-sm" onclick="FILA.editar('${f.id}')">Editar</button>` : ''}
+              ${f.status !== 'cancelado' && f.status !== 'agendado' ? `<button class="btn btn-danger btn-sm" onclick="FILA.mudarStatus('${f.id}','cancelado')">X</button>` : ''}
             </div>
             ${f.observacoes ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">${esc(f.observacoes)}</div>` : ''}
           </div>

@@ -174,7 +174,21 @@ const DASHBOARD = {
       execucao: 'Em execucao', pronto: 'Pronto',
     };
 
-    container.innerHTML = `
+    container.innerHTML = window.innerWidth <= 768 ? `
+      <div class="mobile-card-list">
+        ${lista.map(os => `
+          <div class="mobile-card" onclick="OS.abrirDetalhes('${os.id}')">
+            <div class="mobile-card-header">
+              <div>
+                <div class="mobile-card-title">${esc(os.veiculos?.placa || '-')}</div>
+                <div class="mobile-card-subtitle">${esc(os.veiculos?.marca || '')} ${esc(os.veiculos?.modelo || '')} · ${esc(os.clientes?.nome || '-')}</div>
+              </div>
+              <span class="badge badge-${os.status}">${statusLabel[os.status] || os.status}</span>
+            </div>
+            <div class="mobile-card-row"><span>${esc(os.profiles?.nome || 'Sem mecânico')}</span></div>
+          </div>
+        `).join('')}
+      </div>` : `
       <table class="data-table">
         <thead>
           <tr>

@@ -50,6 +50,27 @@ const SERVICOS = {
               <h3 style="font-size:14px;">${esc(cat)}</h3>
               <span style="font-size:12px;color:var(--text-secondary);">${servicos.length} servicos</span>
             </div>
+            ${window.innerWidth <= 768 ? `
+            <div style="padding:8px;">
+              ${servicos.map(s => `
+                <div class="mobile-card" data-busca="${esc(s.nome.toLowerCase())} ${esc(cat.toLowerCase())}" style="margin-bottom:8px;">
+                  <div class="mobile-card-header">
+                    <div>
+                      <div class="mobile-card-title">${esc(s.nome)}</div>
+                      <div class="mobile-card-subtitle">${s.tempo_estimado ? s.tempo_estimado + ' min' : ''}</div>
+                    </div>
+                    <div style="text-align:right;">
+                      <div class="mobile-card-value">R$ ${(s.valor_padrao || 0).toFixed(2)}</div>
+                      <span class="badge badge-${s.ativo ? 'pronto' : 'entregue'}" style="font-size:10px;">${s.ativo ? 'Ativo' : 'Inativo'}</span>
+                    </div>
+                  </div>
+                  <div class="mobile-card-actions">
+                    <button class="btn btn-secondary btn-sm" onclick="SERVICOS.editar('${s.id}')">Editar</button>
+                    <button class="btn btn-danger btn-sm" onclick="SERVICOS.excluir('${s.id}','${esc(s.nome)}')">X</button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>` : `
             <table class="data-table">
               <thead>
                 <tr>
@@ -74,7 +95,7 @@ const SERVICOS = {
                   </tr>
                 `).join('')}
               </tbody>
-            </table>
+            </table>`}
           </div>
         `).join('')}
       </div>
