@@ -7,14 +7,20 @@ const PDF_OS = {
     if (!url || this._logoBase64) return;
     try {
       const res = await fetch(url);
+      if (!res.ok) return;
       const blob = await res.blob();
+      if (!blob.type.startsWith('image/')) return;
       return new Promise(resolve => {
         const reader = new FileReader();
-        reader.onload = () => { this._logoBase64 = reader.result; resolve(); };
+        reader.onload = () => {
+          const result = reader.result;
+          if (result && result.startsWith('data:image/')) { this._logoBase64 = result; }
+          resolve();
+        };
         reader.onerror = () => resolve();
         reader.readAsDataURL(blob);
       });
-    } catch (e) { /* ignora se não conseguir */ }
+    } catch (e) { this._logoBase64 = null; }
   },
 
   async _buscarDados(osId) {
@@ -53,7 +59,7 @@ const PDF_OS = {
 
     // Coluna esquerda: logo oficina + nome
     const headerLeft = [];
-    if (oficina.logo_url && this._logoBase64) {
+    if (oficina.logo_url && this._logoBase64 && this._logoBase64.startsWith('data:image/')) {
       headerLeft.push({ image: this._logoBase64, width: 80, margin: [0, 0, 0, 4] });
     }
     headerLeft.push({ text: oficina.nome || 'Oficina', fontSize: 16, bold: true, color: '#1a1a1a' });
