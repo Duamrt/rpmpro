@@ -236,7 +236,7 @@ const SUPER_ADMIN = {
                 ${l.whatsapp ? ' — ' + esc(l.whatsapp) : ''}
               </div>
               <div style="display:flex;gap:6px;">
-                ${l.whatsapp ? `<a href="https://wa.me/55${l.whatsapp.replace(/\\D/g, '')}" target="_blank" class="btn btn-success btn-sm">WhatsApp</a>` : ''}
+                ${l.whatsapp ? `<a href="https://wa.me/55${l.whatsapp.replace(/[^0-9]/g, '')}" target="_blank" class="btn btn-success btn-sm">WhatsApp</a>` : ''}
                 <button class="btn btn-danger btn-sm" onclick="SUPER_ADMIN.excluirLead('${l.id}')" title="Excluir">X</button>
               </div>
             </div>
@@ -374,7 +374,7 @@ const SUPER_ADMIN = {
               <button class="btn btn-primary btn-sm" onclick="SUPER_ADMIN.acessarOficina('${o.id}','${esc(o.nome)}')">Acessar</button>
               <button class="btn btn-secondary btn-sm" onclick="SUPER_ADMIN.verUsuarios('${o.id}','${esc(o.nome)}')">Usuarios</button>
               <button class="btn btn-secondary btn-sm" onclick="SUPER_ADMIN.editarPlano('${o.id}','${esc(o.nome)}','${o.plano || 'trial'}','${o.trial_ate || ''}')">Plano</button>
-              ${o.whatsapp ? `<a href="https://wa.me/55${o.whatsapp.replace(/\\D/g, '')}" target="_blank" class="btn btn-success btn-sm">WhatsApp</a>` : ''}
+              ${o.whatsapp ? `<a href="https://wa.me/55${o.whatsapp.replace(/[^0-9]/g, '')}" target="_blank" class="btn btn-success btn-sm">WhatsApp</a>` : ''}
             </div>
           </div>`;
         }).join('')}
