@@ -4,21 +4,25 @@ const PDF_OS = {
 
   async _carregarLogo() {
     const url = APP.oficina?.logo_url;
-    if (!url || this._logoBase64) return;
+    if (!url) return;
+    if (this._logoBase64) return;
     try {
-      const res = await fetch(url);
-      if (!res.ok) return;
-      const blob = await res.blob();
-      if (!blob.type.startsWith('image/')) return;
+      // Carrega via Image pra garantir que é imagem válida, depois converte pra canvas → dataURL
       return new Promise(resolve => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const result = reader.result;
-          if (result && result.startsWith('data:image/')) { this._logoBase64 = result; }
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            canvas.getContext('2d').drawImage(img, 0, 0);
+            this._logoBase64 = canvas.toDataURL('image/png');
+          } catch(e) { this._logoBase64 = null; }
           resolve();
         };
-        reader.onerror = () => resolve();
-        reader.readAsDataURL(blob);
+        img.onerror = () => { this._logoBase64 = null; resolve(); };
+        img.src = url;
       });
     } catch (e) { this._logoBase64 = null; }
   },
