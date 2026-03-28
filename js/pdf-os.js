@@ -348,75 +348,67 @@ const PDF_OS = {
 
     const header = this._montarHeader(oficina, 'RECIBO DE SERVICO');
 
-    // Info OS + Cliente + Veículo
+    // Info — mesma estrutura do gerar() que funciona
     const veiculo = [os.veiculos?.marca, os.veiculos?.modelo, os.veiculos?.ano].filter(Boolean).join(' ');
-    const infoRecibo = {
+    const infoOS = {
       table: {
-        widths: ['*', '*'],
+        widths: ['*', '*', '*', '*'],
         body: [
           [
-            { text: 'OS #' + (os.numero || '-'), fontSize: 11, bold: true },
-            { text: 'Data: ' + APP.formatDate(os.data_entrada), fontSize: 11, alignment: 'right' }
+            { text: 'OS #' + (os.numero || '-'), style: 'infoLabel' },
+            { text: 'Data: ' + APP.formatDate(os.data_entrada), style: 'infoVal' },
+            { text: 'Pagamento: ' + (pagLabel[os.forma_pagamento] || 'Pendente'), style: 'infoVal' },
+            { text: os.km_entrada ? 'KM: ' + os.km_entrada.toLocaleString('pt-BR') : '', style: 'infoVal' }
           ],
           [
-            { text: 'Cliente: ' + (os.clientes?.nome || '-'), fontSize: 11 },
-            { text: os.clientes?.whatsapp ? 'WhatsApp: ' + os.clientes.whatsapp : (os.clientes?.telefone ? 'Tel: ' + os.clientes.telefone : ''), fontSize: 10, alignment: 'right', color: '#666' }
+            { text: 'Placa: ' + (os.veiculos?.placa || '-'), style: 'infoVal' },
+            { text: veiculo ? 'Veiculo: ' + veiculo : '', style: 'infoVal', colSpan: 2 },
+            {},
+            { text: os.veiculos?.cor ? 'Cor: ' + os.veiculos.cor : '', style: 'infoVal' }
           ],
           [
-            { text: 'Veiculo: ' + (os.veiculos?.placa || '') + (veiculo ? ' — ' + veiculo : ''), fontSize: 11 },
-            { text: os.veiculos?.cor ? 'Cor: ' + os.veiculos.cor : '', fontSize: 10, alignment: 'right', color: '#666' }
-          ],
-          ...(os.km_entrada ? [[
-            { text: 'KM: ' + os.km_entrada.toLocaleString('pt-BR'), fontSize: 10, color: '#666' },
-            { text: os.profiles?.nome ? 'Mecanico: ' + os.profiles.nome : '', fontSize: 10, alignment: 'right', color: '#666' }
-          ]] : (os.profiles?.nome ? [[
-            { text: 'Mecanico: ' + os.profiles.nome, fontSize: 10, color: '#666', colSpan: 2 }, {}
-          ]] : []))
-        ]
-      },
-      layout: {
-        hLineWidth: () => 0.3,
-        vLineWidth: () => 0,
-        hLineColor: () => '#dddddd',
-        paddingTop: () => 5, paddingBottom: () => 5,
-        paddingLeft: () => 4, paddingRight: () => 4
-      },
-      margin: [0, 0, 0, 16]
-    };
-
-    // Tabela de servicos detalhada
-    const tabelaServicos = servicos.length ? {
-      table: {
-        headerRows: 1,
-        widths: ['*', 90],
-        body: [
-          [{ text: 'SERVICOS', style: 'sectionTitle', colSpan: 2 }, {}],
-          ...servicos.map(s => [
-            { text: s.descricao, style: 'tableCell' },
-            { text: this._formatMoney(s.valor_total), style: 'tableCellRight' }
-          ]),
-          [
-            { text: 'Subtotal', style: 'tableSubtotal' },
-            { text: this._formatMoney(totalServicos), style: 'tableSubtotalRight' }
+            { text: 'Cliente: ' + (os.clientes?.nome || '-'), style: 'infoVal', colSpan: 2 },
+            {},
+            { text: 'Mecanico: ' + (os.profiles?.nome || 'Nao definido'), style: 'infoVal', colSpan: 2 },
+            {}
           ]
         ]
       },
       layout: {
-        hLineWidth: (i, node) => (i === 0 || i === 1 || i === node.table.body.length) ? 0.5 : 0.3,
-        vLineWidth: () => 0.5,
-        hLineColor: () => '#cccccc',
-        vLineColor: () => '#cccccc',
+        hLineWidth: () => 0.5, vLineWidth: () => 0.5,
+        hLineColor: () => '#cccccc', vLineColor: () => '#cccccc',
         paddingLeft: () => 6, paddingRight: () => 6,
-        paddingTop: () => 4, paddingBottom: () => 4
+        paddingTop: () => 5, paddingBottom: () => 5
+      },
+      margin: [0, 0, 0, 14]
+    };
+
+    // Tabela servicos — mesma estrutura do gerar()
+    const tabelaServicos = {
+      table: {
+        headerRows: 1, widths: ['*', 90],
+        body: [
+          [{ text: 'SERVICOS (Mao de obra)', style: 'sectionTitle', colSpan: 2 }, {}],
+          ...servicos.map(s => [
+            { text: s.descricao, style: 'tableCell' },
+            { text: this._formatMoney(s.valor_total), style: 'tableCellRight' }
+          ]),
+          ...(servicos.length === 0 ? [[{ text: 'Nenhum servico registrado', style: 'tableEmpty', colSpan: 2 }, {}]] : []),
+          [{ text: 'Subtotal Servicos', style: 'tableSubtotal' }, { text: this._formatMoney(totalServicos), style: 'tableSubtotalRight' }]
+        ]
+      },
+      layout: {
+        hLineWidth: (i, node) => (i === 0 || i === 1 || i === node.table.body.length) ? 0.5 : 0.3,
+        vLineWidth: () => 0.5, hLineColor: () => '#cccccc', vLineColor: () => '#cccccc',
+        paddingLeft: () => 6, paddingRight: () => 6, paddingTop: () => 4, paddingBottom: () => 4
       },
       margin: [0, 0, 0, 10]
-    } : {};
+    };
 
-    // Tabela de pecas detalhada
-    const tabelaPecas = pecas.length ? {
+    // Tabela pecas — mesma estrutura do gerar()
+    const tabelaPecas = {
       table: {
-        headerRows: 2,
-        widths: ['*', 35, 70, 80],
+        headerRows: 2, widths: ['*', 35, 70, 80],
         body: [
           [{ text: 'PECAS / MATERIAIS', style: 'sectionTitle', colSpan: 4 }, {}, {}, {}],
           [
@@ -431,132 +423,98 @@ const PDF_OS = {
             { text: this._formatMoney(p.valor_unitario), style: 'tableCellRight' },
             { text: this._formatMoney(p.valor_total), style: 'tableCellRight' }
           ]),
-          [
-            { text: 'Subtotal', style: 'tableSubtotal', colSpan: 3 }, {}, {},
-            { text: this._formatMoney(totalPecas), style: 'tableSubtotalRight' }
-          ]
+          ...(pecas.length === 0 ? [[{ text: 'Nenhuma peca registrada', style: 'tableEmpty', colSpan: 4 }, {}, {}, {}]] : []),
+          [{ text: 'Subtotal Pecas', style: 'tableSubtotal', colSpan: 3 }, {}, {}, { text: this._formatMoney(totalPecas), style: 'tableSubtotalRight' }]
         ]
       },
       layout: {
         hLineWidth: (i, node) => (i <= 2 || i === node.table.body.length) ? 0.5 : 0.3,
-        vLineWidth: () => 0.5,
-        hLineColor: () => '#cccccc',
-        vLineColor: () => '#cccccc',
-        paddingLeft: () => 6, paddingRight: () => 6,
-        paddingTop: () => 4, paddingBottom: () => 4
+        vLineWidth: () => 0.5, hLineColor: () => '#cccccc', vLineColor: () => '#cccccc',
+        paddingLeft: () => 6, paddingRight: () => 6, paddingTop: () => 4, paddingBottom: () => 4
       },
       margin: [0, 0, 0, 10]
-    } : {};
+    };
 
     // Totais
-    const linhasTotais = [];
-    if (servicos.length) linhasTotais.push([{ text: 'Servicos', style: 'totalLabel' }, { text: this._formatMoney(totalServicos), style: 'totalVal' }]);
-    if (pecas.length) linhasTotais.push([{ text: 'Pecas', style: 'totalLabel' }, { text: this._formatMoney(totalPecas), style: 'totalVal' }]);
+    const linhasTotais = [
+      [{ text: 'Servicos', style: 'totalLabel' }, { text: this._formatMoney(totalServicos), style: 'totalVal' }],
+      [{ text: 'Pecas', style: 'totalLabel' }, { text: this._formatMoney(totalPecas), style: 'totalVal' }]
+    ];
     if (desconto > 0) linhasTotais.push([{ text: 'Desconto', style: 'totalLabel' }, { text: '- ' + this._formatMoney(desconto), style: 'totalValDesconto' }]);
-    linhasTotais.push([
-      { text: 'TOTAL', style: 'totalFinal' },
-      { text: this._formatMoney(totalGeral), style: 'totalFinalVal' }
-    ]);
+    linhasTotais.push([{ text: 'TOTAL', style: 'totalFinal' }, { text: this._formatMoney(totalGeral), style: 'totalFinalVal' }]);
 
     const blocoTotais = {
       table: { widths: ['*', 120], body: linhasTotais },
       layout: {
         hLineWidth: (i, node) => i === node.table.body.length - 1 ? 1 : 0.3,
-        vLineWidth: () => 0,
-        hLineColor: () => '#333333',
-        paddingLeft: () => 6, paddingRight: () => 6,
-        paddingTop: () => 5, paddingBottom: () => 5
+        vLineWidth: () => 0, hLineColor: () => '#333333',
+        paddingLeft: () => 6, paddingRight: () => 6, paddingTop: () => 5, paddingBottom: () => 5
       },
       margin: [0, 0, 0, 14]
     };
 
-    // Pagamento
-    const formaPag = pagLabel[os.forma_pagamento] || 'Pendente';
-    const isPendente = !os.forma_pagamento || os.forma_pagamento === 'pendente';
-    const infoPagamento = {
-      text: 'Forma de pagamento: ' + formaPag,
-      fontSize: 11, bold: true,
-      color: isPendente ? '#e63e00' : '#1a1a1a',
-      margin: [0, 0, 0, 8]
-    };
-
-    // Observações
     const obsText = os.observacoes || os.descricao;
-    const obs = obsText ? { text: 'Obs: ' + obsText, style: 'obs', margin: [0, 0, 0, 30] } : { text: '', margin: [0, 0, 0, 30] };
+    const obs = obsText ? { text: 'Obs: ' + obsText, style: 'obs', margin: [0, 0, 0, 20] } : { text: '', margin: [0, 0, 0, 20] };
 
     // Assinaturas
     const assinaturas = {
       columns: [
-        {
-          stack: [
-            { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.5, lineColor: '#999' }] },
-            { text: 'Assinatura do cliente', fontSize: 8, color: '#999', alignment: 'center', margin: [0, 4, 0, 0] }
-          ],
-          width: 220
-        },
+        { stack: [
+          { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.5, lineColor: '#999' }] },
+          { text: 'Assinatura do cliente', fontSize: 8, color: '#999', alignment: 'center', margin: [0, 4, 0, 0] }
+        ], width: 220 },
         { text: '', width: '*' },
-        {
-          stack: [
-            { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.5, lineColor: '#999' }] },
-            { text: 'Assinatura da oficina', fontSize: 8, color: '#999', alignment: 'center', margin: [0, 4, 0, 0] }
-          ],
-          width: 220
-        }
+        { stack: [
+          { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.5, lineColor: '#999' }] },
+          { text: 'Assinatura da oficina', fontSize: 8, color: '#999', alignment: 'center', margin: [0, 4, 0, 0] }
+        ], width: 220 }
       ],
       margin: [0, 10, 0, 0]
     };
 
-    // QR Code Pix (se oficina tem chave configurada e valor > 0)
-    let blocoPix = {};
-    if (oficina.pix_chave && totalGeral > 0) {
-      const qrData = this._gerarPixEMV(oficina, totalGeral, os.numero);
-      if (qrData) {
-        const qrImg = this._gerarQRBase64(qrData);
-        if (qrImg) {
-          blocoPix = {
-            columns: [
-              {
-                stack: [
+    // QR Code Pix
+    let blocoPix = null;
+    try {
+      if (oficina.pix_chave && totalGeral > 0 && typeof qrcode !== 'undefined') {
+        const qrData = this._gerarPixEMV(oficina, totalGeral, os.numero);
+        if (qrData) {
+          const qrImg = this._gerarQRBase64(qrData);
+          if (qrImg) {
+            blocoPix = {
+              columns: [
+                { stack: [
                   { text: 'Pague com Pix', fontSize: 12, bold: true, color: '#1a1a1a', margin: [0, 0, 0, 6] },
                   { image: qrImg, width: 120, height: 120 },
                   { text: 'Chave: ' + oficina.pix_chave, fontSize: 8, color: '#666', margin: [0, 4, 0, 0] },
                   { text: oficina.pix_nome || oficina.nome, fontSize: 8, color: '#666' }
-                ],
-                alignment: 'center',
-                width: 160
-              },
-              { text: '', width: '*' },
-              {
-                stack: [
+                ], alignment: 'center', width: 160 },
+                { text: '', width: '*' },
+                { stack: [
                   { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.5, lineColor: '#999' }], margin: [0, 40, 0, 0] },
                   { text: 'Assinatura do cliente', fontSize: 8, color: '#999', alignment: 'center', margin: [0, 4, 0, 20] },
                   { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.5, lineColor: '#999' }] },
                   { text: 'Assinatura da oficina', fontSize: 8, color: '#999', alignment: 'center', margin: [0, 4, 0, 0] }
-                ],
-                width: 220
-              }
-            ],
-            margin: [0, 10, 0, 0]
-          };
+                ], width: 220 }
+              ],
+              margin: [0, 10, 0, 0]
+            };
+          }
         }
       }
-    }
-
-    const temPix = oficina.pix_chave && totalGeral > 0 && blocoPix.columns;
+    } catch(qe) { /* ignora erro do QR */ }
 
     const docDef = {
       pageSize: 'A4',
       pageMargins: [40, 30, 40, 50],
       content: [
         ...header,
-        infoRecibo,
-        ...(tabelaServicos.table ? [tabelaServicos] : []),
-        ...(tabelaPecas.table ? [tabelaPecas] : []),
+        infoOS,
+        tabelaServicos,
+        tabelaPecas,
         blocoTotais,
-        infoPagamento,
         obs,
-        temPix ? blocoPix : assinaturas
-      ].filter(x => x && Object.keys(x).length),
+        blocoPix || assinaturas
+      ],
       footer: this._footer(),
       styles: this._styles()
     };
