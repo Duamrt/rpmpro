@@ -322,7 +322,8 @@ const PDF_OS = {
       styles: this._styles()
     };
 
-    pdfMake.createPdf(docDef).open();
+    const pdf = pdfMake.createPdf(docDef);
+    if (window.innerWidth <= 768) { pdf.download(); } else { pdf.open(); }
   },
 
   // ========== RECIBO ==========
@@ -559,7 +560,8 @@ const PDF_OS = {
       styles: this._styles()
     };
 
-    pdfMake.createPdf(docDef).open();
+    const pdf = pdfMake.createPdf(docDef);
+    if (window.innerWidth <= 768) { pdf.download(); } else { pdf.open(); }
   },
 
   // Gera código Pix EMV (BR Code estático)

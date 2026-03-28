@@ -128,6 +128,31 @@ const CONFIG = {
           </form>
         </div>
 
+        <!-- MENSAGENS WHATSAPP -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;">
+          <h3 style="font-size:16px;margin-bottom:4px;">Mensagens WhatsApp</h3>
+          <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;">Personalize os textos que o sistema envia pelo WhatsApp. Use <strong>{placa}</strong>, <strong>{oficina}</strong> e <strong>{link}</strong> como variáveis.</p>
+          <form id="form-config-msgs" onsubmit="CONFIG.salvarMensagens(event)">
+            <div class="form-group">
+              <label>Histórico do veículo</label>
+              <textarea class="form-control" id="cfg-msg-historico" rows="3" style="resize:vertical;">${esc(oficina.msg_historico || 'Olá! Aqui é da {oficina}. Segue o histórico completo de manutenções do seu veículo {placa}:\n\n{link}\n\nQualquer dúvida é só chamar!')}</textarea>
+            </div>
+            <div class="form-group">
+              <label>Orçamento pronto</label>
+              <textarea class="form-control" id="cfg-msg-orcamento" rows="2" style="resize:vertical;">${esc(oficina.msg_orcamento || 'Olá! Seu veículo {placa} está com o orçamento pronto. Posso enviar os detalhes?')}</textarea>
+            </div>
+            <div class="form-group">
+              <label>Veículo pronto</label>
+              <textarea class="form-control" id="cfg-msg-pronto" rows="2" style="resize:vertical;">${esc(oficina.msg_pronto || 'Olá! Seu veículo {placa} está pronto para retirada. Quando pode vir buscar?')}</textarea>
+            </div>
+            <div class="form-group">
+              <label>Em execução</label>
+              <textarea class="form-control" id="cfg-msg-execucao" rows="2" style="resize:vertical;">${esc(oficina.msg_execucao || 'Olá! Informamos que seu veículo {placa} já está em execução na oficina.')}</textarea>
+            </div>
+            <button type="submit" class="btn btn-primary" style="margin-top:8px;">Salvar mensagens</button>
+          </form>
+        </div>
+
         <!-- LOGO -->
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;">
           <h3 style="font-size:16px;margin-bottom:16px;">Logo da Oficina</h3>
@@ -178,6 +203,25 @@ const CONFIG = {
     if (elNome) elNome.textContent = document.getElementById('cfg-nome').value.trim();
 
     APP.toast('Dados salvos');
+  },
+
+  async salvarMensagens(e) {
+    e.preventDefault();
+    const { error } = await db.from('oficinas').update({
+      msg_historico: document.getElementById('cfg-msg-historico').value,
+      msg_orcamento: document.getElementById('cfg-msg-orcamento').value,
+      msg_pronto: document.getElementById('cfg-msg-pronto').value,
+      msg_execucao: document.getElementById('cfg-msg-execucao').value
+    }).eq('id', APP.profile.oficina_id);
+    if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
+    // Atualiza cache local
+    if (APP.oficina) {
+      APP.oficina.msg_historico = document.getElementById('cfg-msg-historico').value;
+      APP.oficina.msg_orcamento = document.getElementById('cfg-msg-orcamento').value;
+      APP.oficina.msg_pronto = document.getElementById('cfg-msg-pronto').value;
+      APP.oficina.msg_execucao = document.getElementById('cfg-msg-execucao').value;
+    }
+    APP.toast('Mensagens salvas');
   },
 
   async salvarValores(e) {
