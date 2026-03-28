@@ -104,15 +104,17 @@ const PECAS = {
   filtrar() {
     const t = (document.getElementById('pecas-busca')?.value || '').toLowerCase();
     const filtro = document.getElementById('pecas-filtro-estoque')?.value || 'todos';
-    document.querySelectorAll('#pecas-tabela tbody tr').forEach(tr => {
-      const buscaOk = !t || tr.dataset.busca.includes(t);
-      const qtd = parseFloat(tr.dataset.qtd);
-      const min = parseFloat(tr.dataset.min);
+    // Funciona tanto com tabela (tr) quanto com cards mobile (div)
+    const items = document.querySelectorAll('#pecas-tabela tr[data-busca], #pecas-tabela .mobile-card[data-busca]');
+    items.forEach(el => {
+      const buscaOk = !t || el.dataset.busca.includes(t);
+      const qtd = parseFloat(el.dataset.qtd);
+      const min = parseFloat(el.dataset.min);
       let estoqueOk = true;
       if (filtro === 'negativo') estoqueOk = qtd <= 0;
       else if (filtro === 'baixo') estoqueOk = qtd > 0 && qtd <= min;
       else if (filtro === 'ok') estoqueOk = qtd > min || (min === 0 && qtd > 0);
-      tr.style.display = buscaOk && estoqueOk ? '' : 'none';
+      el.style.display = buscaOk && estoqueOk ? '' : 'none';
     });
   },
 
