@@ -100,6 +100,31 @@ const CONFIG = {
           </form>
         </div>
 
+        <!-- HORÁRIO DE FUNCIONAMENTO -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;">
+          <h3 style="font-size:16px;margin-bottom:4px;">Horário de Funcionamento</h3>
+          <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;">Define os dias e horários que a oficina atende. Usado nos agendamentos.</p>
+          <form id="form-config-horario" onsubmit="CONFIG.salvarHorario(event)">
+            ${['Segunda','Terca','Quarta','Quinta','Sexta','Sabado','Domingo'].map((dia, i) => {
+              const key = ['seg','ter','qua','qui','sex','sab','dom'][i];
+              const h = oficina.horario || {};
+              const ativo = h[key]?.ativo !== false && i < 6; // seg-sex ativo por padrão
+              const abertura = h[key]?.abertura || (i < 6 ? '08:00' : '');
+              const fechamento = h[key]?.fechamento || (i < 6 ? '18:00' : i === 5 ? '12:00' : '');
+              return `<div style="display:flex;align-items:center;gap:12px;padding:8px 0;${i < 6 ? '' : 'opacity:0.7;'}border-bottom:1px solid var(--border);">
+                <label style="display:flex;align-items:center;gap:8px;width:100px;cursor:pointer;">
+                  <input type="checkbox" class="cfg-dia" data-dia="${key}" ${ativo ? 'checked' : ''}>
+                  <span style="font-weight:600;font-size:13px;">${dia}</span>
+                </label>
+                <input type="time" class="form-control cfg-abertura" data-dia="${key}" value="${abertura}" style="width:100px;padding:6px 8px;">
+                <span style="color:var(--text-secondary);">às</span>
+                <input type="time" class="form-control cfg-fechamento" data-dia="${key}" value="${fechamento}" style="width:100px;padding:6px 8px;">
+              </div>`;
+            }).join('')}
+            <button type="submit" class="btn btn-primary" style="margin-top:12px;">Salvar horários</button>
+          </form>
+        </div>
+
         <!-- PIX -->
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;">
           <h3 style="font-size:16px;margin-bottom:16px;">Chave Pix</h3>
@@ -250,6 +275,21 @@ const CONFIG = {
     if (elNome) elNome.textContent = document.getElementById('cfg-nome').value.trim();
 
     APP.toast('Dados salvos');
+  },
+
+  async salvarHorario(e) {
+    e.preventDefault();
+    const horario = {};
+    ['seg','ter','qua','qui','sex','sab','dom'].forEach(dia => {
+      const ativo = document.querySelector(`.cfg-dia[data-dia="${dia}"]`)?.checked || false;
+      const abertura = document.querySelector(`.cfg-abertura[data-dia="${dia}"]`)?.value || '';
+      const fechamento = document.querySelector(`.cfg-fechamento[data-dia="${dia}"]`)?.value || '';
+      horario[dia] = { ativo, abertura, fechamento };
+    });
+    const { error } = await db.from('oficinas').update({ horario }).eq('id', APP.profile.oficina_id);
+    if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
+    if (APP.oficina) APP.oficina.horario = horario;
+    APP.toast('Horários salvos');
   },
 
   async salvarMensagens(e) {

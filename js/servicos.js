@@ -106,8 +106,13 @@ const SERVICOS = {
 
   filtrar(termo) {
     const t = termo.toLowerCase();
-    document.querySelectorAll('#servicos-grid tr[data-busca]').forEach(tr => {
-      tr.style.display = tr.dataset.busca.includes(t) ? '' : 'none';
+    document.querySelectorAll('#servicos-grid tr[data-busca], #servicos-grid .mobile-card[data-busca]').forEach(el => {
+      el.style.display = el.dataset.busca.includes(t) ? '' : 'none';
+    });
+    // Esconde categorias inteiras se todos os itens ficaram ocultos
+    document.querySelectorAll('#servicos-grid [data-cat]').forEach(grupo => {
+      const visiveis = grupo.querySelectorAll('tr[data-busca]:not([style*="display: none"]), .mobile-card[data-busca]:not([style*="display: none"])');
+      grupo.style.display = visiveis.length ? '' : 'none';
     });
   },
 
@@ -197,29 +202,74 @@ const SERVICOS = {
   },
 
   // Importa catálogo padrão (do catalogo-servicos.js) pra oficina
-  async importarCatalogoPadrao() {
-    if (!confirm('Importar todos os servicos do catalogo padrao pra sua oficina? Voce pode editar os precos depois.')) return;
+  abrirImportacao() {
+    // Serviços já cadastrados (pra evitar duplicata)
+    const existentes = new Set((this._dados || []).map(s => s.nome.toLowerCase()));
+    const categorias = Object.entries(CATALOGO_SERVICOS);
+    const totalNovos = categorias.reduce((s, [, svcs]) => s + svcs.filter(sv => !existentes.has(sv.nome.toLowerCase())).length, 0);
 
+    openModal(`
+      <div class="modal-header">
+        <h3>Importar Catálogo Padrão</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">Selecione as categorias que deseja importar. Serviços já cadastrados não serão duplicados. Você pode editar os preços depois.</p>
+        <div style="margin-bottom:12px;">
+          <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer;">
+            <input type="checkbox" id="imp-todos" checked onchange="document.querySelectorAll('.imp-cat').forEach(c=>c.checked=this.checked)">
+            <strong>Selecionar todas (${totalNovos} novos)</strong>
+          </label>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;max-height:400px;overflow-y:auto;">
+          ${categorias.map(([cat, svcs]) => {
+            const novos = svcs.filter(s => !existentes.has(s.nome.toLowerCase()));
+            return `<label style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg-input);border-radius:8px;cursor:pointer;">
+              <input type="checkbox" class="imp-cat" value="${esc(cat)}" ${novos.length ? 'checked' : 'disabled'}>
+              <div style="flex:1;">
+                <div style="font-weight:600;font-size:13px;">${esc(cat)}</div>
+                <div style="font-size:11px;color:var(--text-secondary);">${svcs.length} serviços${novos.length < svcs.length ? ` (${svcs.length - novos.length} já cadastrados)` : ''}</div>
+              </div>
+              <span style="font-size:12px;font-weight:700;color:${novos.length ? 'var(--success)' : 'var(--text-muted)'};">${novos.length ? '+' + novos.length + ' novos' : 'completo'}</span>
+            </label>`;
+          }).join('')}
+        </div>
+        <div class="modal-footer" style="padding:16px 0 0;border:0;">
+          <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+          <button type="button" class="btn btn-primary" onclick="SERVICOS.executarImportacao()">Importar selecionados</button>
+        </div>
+      </div>
+    `);
+  },
+
+  async executarImportacao() {
+    const cats = [...document.querySelectorAll('.imp-cat:checked')].map(c => c.value);
+    if (!cats.length) { APP.toast('Selecione pelo menos uma categoria'); return; }
+
+    const existentes = new Set((this._dados || []).map(s => s.nome.toLowerCase()));
     const oficina_id = APP.profile.oficina_id;
     const itens = [];
 
-    for (const [cat, servicos] of Object.entries(CATALOGO_SERVICOS)) {
-      servicos.forEach(s => {
-        itens.push({
-          oficina_id,
-          categoria: cat,
-          nome: s.nome,
-          valor_padrao: s.valor,
-          ativo: true
-        });
+    cats.forEach(cat => {
+      (CATALOGO_SERVICOS[cat] || []).forEach(s => {
+        if (!existentes.has(s.nome.toLowerCase())) {
+          itens.push({ oficina_id, categoria: cat, nome: s.nome, valor_padrao: s.valor, ativo: true });
+        }
       });
-    }
+    });
+
+    if (!itens.length) { APP.toast('Todos os serviços das categorias selecionadas já estão cadastrados'); closeModal(); return; }
 
     const { error } = await db.from('servicos_catalogo').insert(itens);
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
 
-    APP.toast(itens.length + ' servicos importados! Edite os precos conforme sua oficina.');
+    closeModal();
+    APP.toast(itens.length + ' serviços importados!');
     this.carregar();
+  },
+
+  async importarCatalogoPadrao() {
+    this.abrirImportacao();
   },
 
   // Retorna serviços ativos da oficina (pra usar na OS)
