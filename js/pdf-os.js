@@ -328,9 +328,10 @@ const PDF_OS = {
 
   // ========== RECIBO ==========
   async recibo(osId) {
+    try {
     await this._carregarLogo();
     const dados = await this._buscarDados(osId);
-    if (!dados) return;
+    if (!dados) { APP.toast('Erro ao buscar dados da OS', 'error'); return; }
 
     const { os, itens, oficina } = dados;
     const servicos = itens.filter(i => i.tipo === 'servico');
@@ -561,7 +562,8 @@ const PDF_OS = {
     };
 
     const pdf = pdfMake.createPdf(docDef);
-    if (window.innerWidth <= 768) { pdf.download(); } else { pdf.open(); }
+    if (window.innerWidth <= 768) { pdf.download('recibo-os-' + (os.numero || osId) + '.pdf'); } else { pdf.open(); }
+    } catch(e) { APP.toast('Erro ao gerar recibo: ' + e.message, 'error'); console.error(e); }
   },
 
   // Gera código Pix EMV (BR Code estático)
