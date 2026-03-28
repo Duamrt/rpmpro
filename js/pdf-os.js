@@ -488,7 +488,7 @@ const PDF_OS = {
       if (oficina.pix_chave && totalGeral > 0 && typeof qrcode !== 'undefined') {
         const qrData = this._gerarPixEMV(oficina, totalGeral, os.numero);
         if (qrData) {
-          const qrImg = this._gerarQRBase64(qrData);
+          const qrImg = await this._gerarQRBase64(qrData);
           if (qrImg) {
             blocoPix = {
               columns: [
@@ -590,22 +590,28 @@ const PDF_OS = {
     return crc.toString(16).toUpperCase().padStart(4, '0');
   },
 
-  _gerarQRBase64(data) {
+  async _gerarQRBase64(data) {
     if (typeof qrcode === 'undefined') return null;
     try {
       const qr = qrcode(0, 'M');
       qr.addData(data);
       qr.make();
-      // Converter GIF pra PNG via canvas (pdfmake não aceita GIF)
-      const gifUrl = qr.createDataURL(4, 0);
-      const size = qr.getModuleCount() * 4;
-      const img = new Image();
-      img.src = gifUrl;
+      const cellSize = 4;
+      const count = qr.getModuleCount();
+      const size = count * cellSize;
+      // Desenhar direto no canvas (sem passar por GIF)
       const canvas = document.createElement('canvas');
       canvas.width = size;
       canvas.height = size;
       const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, size, size);
+      ctx.fillStyle = '#000000';
+      for (let r = 0; r < count; r++) {
+        for (let c = 0; c < count; c++) {
+          if (qr.isDark(r, c)) ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+        }
+      }
       return canvas.toDataURL('image/png');
     } catch (e) {
       return null;
