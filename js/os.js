@@ -627,14 +627,38 @@ const OS = {
     const desconto = os.desconto || 0;
     const totalGeral = totalServicos + totalPecas - desconto;
 
+    const _mob = window.innerWidth <= 768;
     openModal(`
       <div class="modal-header">
         <h3>OS #${esc(os.numero || '-')} — ${esc(os.veiculos?.placa)}</h3>
         <button class="modal-close" onclick="closeModal()">&times;</button>
       </div>
       <div class="modal-body">
+        <!-- RESUMO TOPO (sempre visivel) -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+          <div>
+            <div style="font-weight:700;font-size:16px;">${esc(os.veiculos?.placa)} · ${esc(os.veiculos?.marca || '')} ${esc(os.veiculos?.modelo || '')}</div>
+            <div style="font-size:13px;color:var(--text-secondary);">${esc(os.clientes?.nome)} · ${esc(os.profiles?.nome || 'Sem mecânico')}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:20px;font-weight:800;color:var(--success);" id="det-total">R$ ${totalGeral.toFixed(2)}</div>
+            <span class="badge badge-${os.status}">${statusLabel[os.status]}</span>
+          </div>
+        </div>
+
+        ${_mob ? `
+        <!-- ABAS MOBILE -->
+        <div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;-webkit-overflow-scrolling:touch;" id="os-det-tabs">
+          <button class="kanban-tab active" onclick="OS._switchDetTab('info',this)">Info</button>
+          <button class="kanban-tab" onclick="OS._switchDetTab('servicos',this)">Serviços</button>
+          <button class="kanban-tab" onclick="OS._switchDetTab('pecas',this)">Peças</button>
+          <button class="kanban-tab" onclick="OS._switchDetTab('checklist',this)">Checklist</button>
+          <button class="kanban-tab" onclick="OS._switchDetTab('acoes',this)">Ações</button>
+        </div>` : ''}
+
         <!-- INFO -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+        <div id="os-det-info" ${_mob ? '' : ''}>
+        <div style="display:grid;grid-template-columns:${_mob ? '1fr' : '1fr 1fr'};gap:12px;margin-bottom:16px;">
           <div>
             <div style="font-size:11px;color:var(--text-secondary);">Veiculo</div>
             <div style="font-weight:600;font-size:14px;"><a href="#" onclick="event.preventDefault();closeModal();setTimeout(()=>VEICULOS.abrirHistorico('${os.veiculo_id}','${esc(os.veiculos?.placa)}'),200)" style="color:var(--primary);text-decoration:none;">${esc(os.veiculos?.placa)}</a> — ${esc(os.veiculos?.marca || '')} ${esc(os.veiculos?.modelo || '')}</div>
@@ -654,7 +678,7 @@ const OS = {
         </div>
 
         <!-- STATUS + PAGAMENTO -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+        <div style="display:grid;grid-template-columns:${_mob ? '1fr' : '1fr 1fr'};gap:12px;margin-bottom:16px;">
           <div class="form-group" style="margin:0;">
             <label>Status</label>
             <select class="form-control" id="det-status" onchange="OS.atualizarStatus('${os.id}', this.value)">
@@ -672,8 +696,10 @@ const OS = {
             </select>
           </div>
         </div>
+        ${_mob ? '</div>' : ''}
 
         <!-- SERVICOS -->
+        ${_mob ? '<div id="os-det-servicos" style="display:none;">' : ''}
         <div style="border-top:1px solid var(--border);padding-top:12px;margin-bottom:12px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
             <label style="font-size:13px;font-weight:700;color:var(--text-secondary);margin:0;">SERVICOS (Mao de obra)</label>
@@ -696,8 +722,10 @@ const OS = {
           </div>
           <div id="det-add-servico" class="hidden" style="margin-top:10px;background:var(--bg-input);padding:12px;border-radius:var(--radius);"></div>
         </div>
+        ${_mob ? '</div>' : ''}
 
         <!-- PECAS / MATERIAIS -->
+        ${_mob ? '<div id="os-det-pecas" style="display:none;">' : ''}
         <div style="border-top:1px solid var(--border);padding-top:12px;margin-bottom:12px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
             <label style="font-size:13px;font-weight:700;color:var(--text-secondary);margin:0;">PECAS / MATERIAIS</label>
@@ -721,6 +749,7 @@ const OS = {
 
           <div id="det-add-peca" class="hidden" style="margin-top:10px;background:var(--bg-input);padding:12px;border-radius:var(--radius);"></div>
         </div>
+        ${_mob ? '</div>' : ''}
 
         <!-- TOTAIS -->
         <div style="border-top:1px solid var(--border);padding-top:12px;">
@@ -745,6 +774,7 @@ const OS = {
         </div>
 
         <!-- CHECKLIST DE ENTRADA -->
+        ${_mob ? '<div id="os-det-checklist" style="display:none;">' : ''}
         <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:12px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
             <label style="font-size:13px;font-weight:700;color:var(--text-secondary);margin:0;">
@@ -769,7 +799,9 @@ const OS = {
           </div>
           ${chkSaida ? this._resumoChecklist(chkSaida, 'saida') : '<div style="font-size:12px;color:var(--text-muted);">Preencha antes de marcar como Pronto</div>'}
         </div>
+        ${_mob ? '</div>' : ''}
 
+        ${_mob ? '<div id="os-det-acoes" style="display:none;">' : ''}
         ${!['pronto', 'entregue'].includes(os.status) && chkSaida ? `
           <button class="btn btn-primary" style="width:100%;margin-top:12px;padding:14px;font-size:15px;" onclick="OS.marcarPronto('${os.id}')">
             ✅ Marcar como Pronto
@@ -809,6 +841,7 @@ const OS = {
             <strong>Obs:</strong> ${esc(os.descricao)}
           </div>
         ` : ''}
+        ${_mob ? '</div>' : ''}
       </div>
     `);
 
@@ -1494,6 +1527,15 @@ const OS = {
     { key: 'documentos_devolvidos', label: 'Documentos devolvidos', temCampo: false },
     { key: 'cliente_orientado', label: 'Cliente orientado sobre o servico', temCampo: true, dica: 'Explicou o que foi feito e cuidados?' }
   ],
+
+  _switchDetTab(tab, btn) {
+    ['info','servicos','pecas','checklist','acoes'].forEach(t => {
+      const el = document.getElementById('os-det-' + t);
+      if (el) el.style.display = t === tab ? 'block' : 'none';
+    });
+    document.querySelectorAll('#os-det-tabs .kanban-tab').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+  },
 
   _resumoChecklist(chk, tipo) {
     const itensData = chk.itens || {};
