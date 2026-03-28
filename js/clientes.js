@@ -60,8 +60,27 @@ const CLIENTES = {
       return;
     }
 
+    const isMobile = window.innerWidth <= 768;
     container.innerHTML = buscaHtml + `
       <div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">Mostrando ${lista.length} clientes${this._busca ? ' (filtrado)' : ''}</div>
+      ${isMobile ? `
+      <div class="mobile-card-list">
+        ${lista.map(c => `
+          <div class="mobile-card" onclick="CLIENTES.historico('${c.id}','${esc(c.nome)}')">
+            <div class="mobile-card-header">
+              <div>
+                <div class="mobile-card-title">${esc(c.nome)}</div>
+                <div class="mobile-card-subtitle">${esc(c.whatsapp || c.telefone || 'Sem telefone')} · ${c.veiculos?.[0]?.count || 0} veículo(s)</div>
+              </div>
+              <span class="badge badge-${c.score === 'ativo' ? 'pronto' : c.score === 'risco' ? 'orcamento' : 'entregue'}">${c.score}</span>
+            </div>
+            <div class="mobile-card-actions">
+              ${c.whatsapp ? `<a class="btn btn-sm btn-secondary" href="https://wa.me/55${(c.whatsapp||'').replace(/\D/g,'')}" target="_blank" onclick="event.stopPropagation()">WhatsApp</a>` : ''}
+              <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation();CLIENTES.editar('${c.id}')">Editar</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>` : `
       <table class="data-table">
         <thead>
           <tr>
@@ -87,7 +106,7 @@ const CLIENTES = {
             </tr>
           `).join('')}
         </tbody>
-      </table>
+      </table>`}
       ${this._temMais ? `<div style="text-align:center;margin-top:16px;"><button class="btn btn-secondary" onclick="CLIENTES.carregar(true)">Carregar mais</button></div>` : ''}`;
   },
 

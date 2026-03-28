@@ -112,7 +112,21 @@ const FINANCEIRO = {
           <h3 style="font-size:14px;">OS Pagas — ${esc(periodoLabel[this._periodo])}</h3>
           <span style="font-size:13px;color:var(--success);font-weight:700;">${APP.formatMoney(totalOS)}</span>
         </div>
-        ${osPagas.length ? `
+        ${osPagas.length ? (window.innerWidth <= 768 ? `
+        <div class="mobile-card-list" style="padding:10px;">
+          ${osPagas.map(o => `
+            <div class="mobile-card" onclick="OS.abrirDetalhes('${o.id}')">
+              <div class="mobile-card-header">
+                <div>
+                  <div class="mobile-card-title">#${esc(o.numero || '-')} · ${esc(o.veiculos?.placa || '-')}</div>
+                  <div class="mobile-card-subtitle">${esc(o.clientes?.nome || '-')}</div>
+                </div>
+                <span style="font-weight:700;color:var(--success);">${APP.formatMoney(o.valor_total)}</span>
+              </div>
+              <div class="mobile-card-row"><span>${esc(formaLabel[o.forma_pagamento] || o.forma_pagamento || '-')}</span></div>
+            </div>
+          `).join('')}
+        </div>` : `
         <table class="data-table">
           <thead>
             <tr><th>OS</th><th>Veiculo</th><th>Cliente</th><th>Pagamento</th><th>Valor</th></tr>
@@ -128,7 +142,7 @@ const FINANCEIRO = {
               </tr>
             `).join('')}
           </tbody>
-        </table>` : '<div style="padding:30px;text-align:center;color:var(--text-muted);font-size:13px;">Nenhuma OS paga nesse periodo</div>'}
+        </table>`) : '<div style="padding:30px;text-align:center;color:var(--text-muted);font-size:13px;">Nenhuma OS paga nesse periodo</div>'}
       </div>
 
       <!-- Movimentações do caixa -->
@@ -137,7 +151,24 @@ const FINANCEIRO = {
           <h3 style="font-size:14px;">Movimentacoes do Caixa</h3>
           <span style="font-size:13px;color:var(--text-secondary);">${movimentacoes.length} lancamentos</span>
         </div>
-        ${movimentacoes.length ? `
+        ${movimentacoes.length ? (window.innerWidth <= 768 ? `
+        <div class="mobile-card-list" style="padding:10px;">
+          ${movimentacoes.map(m => `
+            <div class="mobile-card">
+              <div class="mobile-card-header">
+                <div>
+                  <div class="mobile-card-title">${esc(m.descricao)}</div>
+                  <div class="mobile-card-subtitle">${esc(FINANCEIRO._catLabel(m.categoria))} · ${APP.formatDate(m.created_at)}</div>
+                </div>
+                <span style="font-weight:700;color:${m.tipo === 'entrada' ? 'var(--success)' : 'var(--danger)'};">${m.tipo === 'saida' ? '-' : ''}${APP.formatMoney(m.valor)}</span>
+              </div>
+              <div class="mobile-card-row">
+                <span class="badge badge-${m.tipo === 'entrada' ? 'pronto' : 'cancelada'}">${m.tipo === 'entrada' ? 'Entrada' : 'Saída'}</span>
+                <button class="btn btn-danger btn-sm" style="flex:0;" onclick="FINANCEIRO.excluir('${m.id}')">X</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>` : `
         <table class="data-table">
           <thead>
             <tr><th>Data</th><th>Tipo</th><th>Categoria</th><th>Descricao</th><th>Valor</th><th></th></tr>
@@ -154,7 +185,7 @@ const FINANCEIRO = {
               </tr>
             `).join('')}
           </tbody>
-        </table>` : '<div style="padding:30px;text-align:center;color:var(--text-muted);font-size:13px;">Nenhuma movimentacao registrada</div>'}
+        </table>`) : '<div style="padding:30px;text-align:center;color:var(--text-muted);font-size:13px;">Nenhuma movimentacao registrada</div>'}
       </div>
 
       <!-- Botão PDF -->

@@ -35,6 +35,32 @@ const PECAS = {
         </select>
         <button class="btn btn-secondary btn-sm" onclick="PECAS.exportarExcel()" style="white-space:nowrap;">Exportar Excel</button>
       </div>
+      ${window.innerWidth <= 768 ? `
+      <div class="mobile-card-list" id="pecas-tabela">
+        ${lista.map(p => {
+          const estoqueColor = p.quantidade <= 0 ? 'var(--danger)' : p.quantidade <= p.estoque_minimo ? 'var(--warning)' : 'var(--success)';
+          return `
+          <div class="mobile-card" data-busca="${esc(p.nome).toLowerCase()} ${esc(p.codigo || '').toLowerCase()} ${esc(p.marca || '').toLowerCase()}" data-qtd="${p.quantidade}" data-min="${p.estoque_minimo || 0}">
+            <div class="mobile-card-header">
+              <div>
+                <div class="mobile-card-title">${esc(p.nome)}</div>
+                <div class="mobile-card-subtitle">${esc(p.codigo || '')}${p.marca ? ' · ' + esc(p.marca) : ''}${p.localizacao ? ' · ' + esc(p.localizacao) : ''}</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:18px;font-weight:800;color:${estoqueColor};">${p.quantidade}</div>
+                <div style="font-size:10px;color:var(--text-secondary);">estoque</div>
+              </div>
+            </div>
+            <div class="mobile-card-body">
+              <div class="mobile-card-row"><span>Venda</span><strong>R$ ${(p.preco_venda || 0).toFixed(2)}</strong></div>
+            </div>
+            <div class="mobile-card-actions">
+              <button class="btn btn-secondary btn-sm" onclick="PECAS.ajustarEstoque('${p.id}', '${esc(p.nome)}', ${p.quantidade})">Ajustar</button>
+              <button class="btn btn-secondary btn-sm" onclick="PECAS.editar('${p.id}')">Editar</button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>` : `
       <table class="data-table" id="pecas-tabela">
         <thead>
           <tr>
@@ -67,7 +93,7 @@ const PECAS = {
             </tr>`;
           }).join('')}
         </tbody>
-      </table>
+      </table>`}
       <div style="margin-top:12px;font-size:13px;color:var(--text-secondary);">
         ${lista.length} pecas cadastradas |
         <span style="color:var(--danger);">${lista.filter(p => p.quantidade <= 0).length} sem estoque</span> |

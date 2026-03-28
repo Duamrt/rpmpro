@@ -165,24 +165,26 @@ const APP = {
     if (!nav) return;
     const role = this.profile.role;
 
-    // Define itens por perfil
+    // Define itens por perfil — otimizado pra ações mais frequentes
     const configs = {
       mecanico: [
-        { page: 'kanban', icon: '🏗️', label: 'Patio' },
+        { page: 'kanban', icon: '🏗️', label: 'Pátio' },
         { page: 'os', icon: '🔧', label: 'OS' },
-        { page: 'equipe', icon: '👥', label: 'Equipe' },
+        { page: 'pecas', icon: '📦', label: 'Estoque' },
+        { page: '_more', icon: '⋯', label: 'Mais' },
       ],
       atendente: [
-        { page: 'kanban', icon: '🏗️', label: 'Patio' },
+        { page: 'kanban', icon: '🏗️', label: 'Pátio' },
+        { page: 'fila', icon: '⏳', label: 'Fila' },
         { page: 'os', icon: '🔧', label: 'OS' },
         { page: 'clientes', icon: '👤', label: 'Clientes' },
-        { page: 'veiculos', icon: '🚗', label: 'Veiculos' },
+        { page: '_more', icon: '⋯', label: 'Mais' },
       ],
       dono: [
-        { page: 'kanban', icon: '🏗️', label: 'Patio' },
+        { page: 'kanban', icon: '🏗️', label: 'Pátio' },
         { page: 'os', icon: '🔧', label: 'OS' },
-        { page: 'clientes', icon: '👤', label: 'Clientes' },
-        { page: 'pecas', icon: '📦', label: 'Estoque' },
+        { page: 'financeiro', icon: '💵', label: 'Financeiro' },
+        { page: 'dashboard', icon: '📊', label: 'Dashboard' },
         { page: '_more', icon: '⋯', label: 'Mais' },
       ],
     };
@@ -191,19 +193,27 @@ const APP = {
     const baseRole = this.profile._roleBase || role;
     const items = configs[baseRole] || configs.dono;
 
-    // Itens extras pro menu overflow (dono/gerente)
-    const moreItems = [
-      { page: 'veiculos', icon: '🚗', label: 'Veiculos' },
+    // Itens extras pro menu overflow — exclui os que já estão na nav
+    const navPages = new Set(items.map(i => i.page));
+    const allPages = [
+      { page: 'kanban', icon: '🏗️', label: 'Pátio' },
+      { page: 'os', icon: '🔧', label: 'OS' },
+      { page: 'fila', icon: '⏳', label: 'Fila' },
+      { page: 'clientes', icon: '👤', label: 'Clientes' },
+      { page: 'veiculos', icon: '🚗', label: 'Veículos' },
+      { page: 'pecas', icon: '📦', label: 'Estoque' },
       { page: 'equipe', icon: '👥', label: 'Equipe' },
-      { page: 'comissao', icon: '💰', label: 'Comissao' },
+      { page: 'agendamentos', icon: '📅', label: 'Agendamentos' },
+      { page: 'comissao', icon: '💰', label: 'Comissão' },
       { page: 'financeiro', icon: '💵', label: 'Financeiro' },
       { page: 'contas', icon: '💳', label: 'Contas' },
       { page: 'crm', icon: '📋', label: 'CRM' },
-      { page: 'agendamentos', icon: '📅', label: 'Agendamentos' },
-      { page: 'pesquisa', icon: '⭐', label: 'Satisfacao' },
+      { page: 'pesquisa', icon: '⭐', label: 'Satisfação' },
       { page: 'dashboard', icon: '📊', label: 'Dashboard' },
+      { page: 'servicos', icon: '🛠️', label: 'Serviços' },
       { page: 'config', icon: '⚙️', label: 'Config' },
     ];
+    const moreItems = allPages.filter(p => !navPages.has(p.page) && p.page !== '_more');
 
     nav.innerHTML = items.map(item => {
       if (item.page === '_more') {

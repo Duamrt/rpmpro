@@ -23,7 +23,26 @@ const VEICULOS = {
       return;
     }
 
-    container.innerHTML = `
+    container.innerHTML = window.innerWidth <= 768 ? `
+      <div class="mobile-card-list">
+        ${lista.map(v => `
+          <div class="mobile-card" onclick="VEICULOS.abrirHistorico('${v.id}','${esc(v.placa)}')">
+            <div class="mobile-card-header">
+              <div>
+                <div class="mobile-card-title">${esc(v.placa)}</div>
+                <div class="mobile-card-subtitle">${esc(v.marca || '')} ${esc(v.modelo || '')} ${v.ano || ''}</div>
+              </div>
+              <span style="font-size:12px;color:var(--text-secondary);">${v.km_atual ? v.km_atual.toLocaleString('pt-BR') + ' km' : ''}</span>
+            </div>
+            <div class="mobile-card-body">
+              <div class="mobile-card-row"><span>Dono</span><strong>${esc(v.clientes?.nome || '-')}</strong></div>
+            </div>
+            <div class="mobile-card-actions">
+              <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();VEICULOS.editar('${v.id}')">Editar</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>` : `
       <table class="data-table">
         <thead>
           <tr>

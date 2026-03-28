@@ -79,7 +79,24 @@ const OS = {
       </div>
       <div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">Mostrando ${paginada.length} de ${listaFiltrada.length} ordens${this._busca ? ' (filtrado)' : ''}</div>
 
-      ${paginada.length ? `
+      ${paginada.length ? (window.innerWidth <= 768 ? `
+      <div class="mobile-card-list">
+        ${paginada.map(os => `
+          <div class="mobile-card" onclick="OS.abrirDetalhes('${os.id}')">
+            <div class="mobile-card-header">
+              <div>
+                <div class="mobile-card-title">${esc(os.veiculos?.placa || '-')} <span style="font-size:12px;color:var(--text-secondary);font-weight:400;">#${esc(os.numero || '-')}</span></div>
+                <div class="mobile-card-subtitle">${esc(os.veiculos?.marca || '')} ${esc(os.veiculos?.modelo || '')} · ${esc(os.clientes?.nome || '-')}</div>
+              </div>
+              <span class="mobile-card-value">${APP.formatMoney(os.valor_total)}</span>
+            </div>
+            <div class="mobile-card-body">
+              <div class="mobile-card-row"><span>${esc(os.profiles?.nome || 'Sem mecânico')}</span> <span class="badge badge-${os.status}">${statusLabel[os.status] || esc(os.status)}</span></div>
+              <div class="mobile-card-row"><span style="font-size:11px;">${APP.formatDate(os.data_entrada)}</span></div>
+            </div>
+          </div>
+        `).join('')}
+      </div>` : `
       <table class="data-table">
         <thead>
           <tr>
@@ -108,9 +125,9 @@ const OS = {
             </tr>
           `).join('')}
         </tbody>
-      </table>
-      ${temMais ? `<div style="text-align:center;margin-top:14px;"><button class="btn btn-secondary" onclick="OS._pagina++;OS.render()">Carregar mais (${listaFiltrada.length - fim} restantes)</button></div>` : ''}
-      ` : `<div class="empty-state"><div class="icon">🔍</div><h3>Nenhuma OS encontrada</h3><p>Tente alterar os filtros de busca</p></div>`}
+      </table>`) +
+      (temMais ? `<div style="text-align:center;margin-top:14px;"><button class="btn btn-secondary" onclick="OS._pagina++;OS.render()">Carregar mais (${listaFiltrada.length - fim} restantes)</button></div>` : '')
+      : `<div class="empty-state"><div class="icon">🔍</div><h3>Nenhuma OS encontrada</h3><p>Tente alterar os filtros de busca</p></div>`}
     `;
   },
 

@@ -25,7 +25,25 @@ const EQUIPE = {
 
     const roleLabel = { dono: 'Dono', gerente: 'Gerente', mecanico: 'Mecanico', atendente: 'Atendente', aux_mecanico: 'Aux. Mecanico', aux_admin: 'Aux. Administrativo' };
 
-    container.innerHTML = `
+    const isAdmin = ['dono','gerente'].includes(APP.profile.role) || SUPER_ADMIN.isSuperAdmin;
+    container.innerHTML = window.innerWidth <= 768 ? `
+      <div class="mobile-card-list">
+        ${lista.map(m => `
+          <div class="mobile-card">
+            <div class="mobile-card-header">
+              <div>
+                <div class="mobile-card-title">${esc(m.nome)}</div>
+                <div class="mobile-card-subtitle">${roleLabel[m.role] || m.role}${m.comissao_percent ? ' · ' + m.comissao_percent + '% comissão' : ''}</div>
+              </div>
+              <span class="badge badge-${m.ativo ? 'pronto' : 'entregue'}">${m.ativo ? 'Ativo' : 'Inativo'}</span>
+            </div>
+            ${isAdmin ? `<div class="mobile-card-actions">
+              <button class="btn btn-secondary btn-sm" onclick="EQUIPE.editar('${m.id}')">Editar</button>
+              ${!m.senha_texto ? `<button class="btn btn-primary btn-sm" onclick="EQUIPE.criarLogin('${m.id}','${esc(m.nome)}','${esc(m.email || '')}')">Criar login</button>` : `<button class="btn btn-secondary btn-sm" onclick="EQUIPE.gerenciarLogin('${m.id}','${esc(m.nome)}','${esc(m.email)}','${esc(m.senha_texto || '')}')">Login</button>`}
+            </div>` : ''}
+          </div>
+        `).join('')}
+      </div>` : `
       <table class="data-table">
         <thead>
           <tr>
@@ -47,10 +65,10 @@ const EQUIPE = {
               <td>${m.comissao_percent ? m.comissao_percent + '%' : '-'}</td>
               <td><span class="badge badge-${m.ativo ? 'pronto' : 'entregue'}">${m.ativo ? 'Ativo' : 'Inativo'}</span></td>
               <td>
-                ${['dono','gerente'].includes(APP.profile.role) || SUPER_ADMIN.isSuperAdmin ? `<button class="btn btn-secondary btn-sm" onclick="EQUIPE.editar('${m.id}')">Editar</button>` : ''}
-                ${(['dono','gerente'].includes(APP.profile.role) || SUPER_ADMIN.isSuperAdmin) && !m.senha_texto ? `<button class="btn btn-primary btn-sm" onclick="EQUIPE.criarLogin('${m.id}','${esc(m.nome)}','${esc(m.email || '')}')">Criar login</button>` : ''}
-                ${(['dono','gerente'].includes(APP.profile.role) || SUPER_ADMIN.isSuperAdmin) && m.senha_texto ? `<button class="btn btn-secondary btn-sm" onclick="EQUIPE.gerenciarLogin('${m.id}','${esc(m.nome)}','${esc(m.email)}','${esc(m.senha_texto || '')}')">Login</button>` : ''}
-                ${(['dono','gerente'].includes(APP.profile.role) || SUPER_ADMIN.isSuperAdmin) && m.id !== APP.profile.id && m.role !== 'dono' ? `<button class="btn btn-danger btn-sm" onclick="EQUIPE.excluir('${m.id}','${esc(m.nome)}')">Excluir</button>` : ''}
+                ${isAdmin ? `<button class="btn btn-secondary btn-sm" onclick="EQUIPE.editar('${m.id}')">Editar</button>` : ''}
+                ${isAdmin && !m.senha_texto ? `<button class="btn btn-primary btn-sm" onclick="EQUIPE.criarLogin('${m.id}','${esc(m.nome)}','${esc(m.email || '')}')">Criar login</button>` : ''}
+                ${isAdmin && m.senha_texto ? `<button class="btn btn-secondary btn-sm" onclick="EQUIPE.gerenciarLogin('${m.id}','${esc(m.nome)}','${esc(m.email)}','${esc(m.senha_texto || '')}')">Login</button>` : ''}
+                ${isAdmin && m.id !== APP.profile.id && m.role !== 'dono' ? `<button class="btn btn-danger btn-sm" onclick="EQUIPE.excluir('${m.id}','${esc(m.nome)}')">Excluir</button>` : ''}
               </td>
             </tr>
           `).join('')}

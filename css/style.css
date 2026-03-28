@@ -616,4 +616,93 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 @media (min-width: 769px) {
   .bottom-nav { display: none; }
   .menu-toggle { display: none; }
+  .mobile-only { display: none !important; }
+}
+
+/* ═══ MOBILE CARDS & UTILITIES ═══ */
+@media (max-width: 768px) {
+  .hide-mobile { display: none !important; }
+
+  /* Card mobile — substitui tabelas */
+  .mobile-card-list { display: flex; flex-direction: column; gap: 10px; }
+  .mobile-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .mobile-card:active { border-color: var(--primary); }
+  .mobile-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .mobile-card-title { font-weight: 700; font-size: 15px; color: var(--text); }
+  .mobile-card-subtitle { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .mobile-card-value { font-weight: 700; font-size: 15px; color: var(--primary); white-space: nowrap; }
+  .mobile-card-body { display: flex; flex-direction: column; gap: 4px; }
+  .mobile-card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .mobile-card-row strong { color: var(--text); }
+  .mobile-card-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+  .mobile-card-actions .btn { min-height: 44px; flex: 1; font-size: 13px; }
+
+  /* Botões touch-friendly em TODO o sistema */
+  .btn-sm { min-height: 44px; padding: 10px 12px; font-size: 13px; }
+
+  /* Modal fullscreen no mobile */
+  .modal { width: 100% !important; max-width: 100% !important; border-radius: 0 !important; max-height: 100vh !important; height: 100%; }
+
+  /* Grids de formulário — 1 coluna no mobile */
+  [style*="grid-template-columns:1fr 1fr 1fr"],
+  [style*="grid-template-columns: 1fr 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+  [style*="grid-template-columns:1fr 1fr"],
+  [style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Toast acima do bottom-nav */
+  .toast { bottom: 80px !important; }
+
+  /* Botão de ajuda acima do bottom-nav */
+  #help-btn, [onclick*="ajuda"], .help-float { bottom: 80px !important; }
+
+  /* FAB Nova OS */
+  .fab-nova-os {
+    position: fixed;
+    bottom: 80px;
+    right: 16px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    font-size: 28px;
+    font-weight: 700;
+    box-shadow: 0 4px 16px rgba(255,69,0,0.4);
+    z-index: 95;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s;
+  }
+  .fab-nova-os:active { transform: scale(0.9); }
 }
