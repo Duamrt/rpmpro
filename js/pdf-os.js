@@ -503,24 +503,35 @@ const PDF_OS = {
       }
     } catch(qe) { /* ignora erro do QR */ }
 
+    const content = [
+      ...header.filter(h => h && (h.text || h.columns || h.canvas)),
+      infoOS,
+      tabelaServicos,
+      tabelaPecas,
+      blocoTotais,
+      obs,
+      blocoPix || assinaturas
+    ];
+
     const docDef = {
       pageSize: 'A4',
       pageMargins: [40, 30, 40, 50],
-      content: [
-        ...header,
-        infoOS,
-        tabelaServicos,
-        tabelaPecas,
-        blocoTotais,
-        obs,
-        blocoPix || assinaturas
-      ],
+      content,
       footer: this._footer(),
       styles: this._styles()
     };
 
     const pdf = pdfMake.createPdf(docDef);
-    if (window.innerWidth <= 768) { pdf.download('recibo-os-' + (os.numero || osId) + '.pdf'); } else { pdf.open(); }
+    pdf.getBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      if (window.innerWidth <= 768) {
+        const a = document.createElement('a');
+        a.href = url; a.download = 'recibo-os-' + (os.numero || osId) + '.pdf';
+        a.click(); URL.revokeObjectURL(url);
+      } else {
+        window.open(url, '_blank');
+      }
+    });
     } catch(e) { APP.toast('Erro ao gerar recibo: ' + e.message, 'error'); console.error(e); }
   },
 
