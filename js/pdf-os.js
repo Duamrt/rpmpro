@@ -596,7 +596,17 @@ const PDF_OS = {
       const qr = qrcode(0, 'M');
       qr.addData(data);
       qr.make();
-      return qr.createDataURL(4, 0);
+      // Converter GIF pra PNG via canvas (pdfmake não aceita GIF)
+      const gifUrl = qr.createDataURL(4, 0);
+      const size = qr.getModuleCount() * 4;
+      const img = new Image();
+      img.src = gifUrl;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      return canvas.toDataURL('image/png');
     } catch (e) {
       return null;
     }
