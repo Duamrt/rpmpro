@@ -131,24 +131,71 @@ const CONFIG = {
         <!-- MENSAGENS WHATSAPP -->
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;">
           <h3 style="font-size:16px;margin-bottom:4px;">Mensagens WhatsApp</h3>
-          <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;">Personalize os textos que o sistema envia pelo WhatsApp. Use <strong>{placa}</strong>, <strong>{oficina}</strong> e <strong>{link}</strong> como variáveis.</p>
+          <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;">Personalize a saudação e o fechamento de cada mensagem. Os dados do veículo e da oficina são inseridos automaticamente — você não precisa se preocupar com isso.</p>
           <form id="form-config-msgs" onsubmit="CONFIG.salvarMensagens(event)">
-            <div class="form-group">
-              <label>Histórico do veículo</label>
-              <textarea class="form-control" id="cfg-msg-historico" rows="3" style="resize:vertical;">${esc(oficina.msg_historico || 'Olá! Aqui é da {oficina}. Segue o histórico completo de manutenções do seu veículo {placa}:\n\n{link}\n\nQualquer dúvida é só chamar!')}</textarea>
+
+            <div style="margin-bottom:20px;padding:16px;background:var(--bg-input);border-radius:var(--radius);border-left:3px solid var(--primary);">
+              <label style="font-size:13px;font-weight:700;margin-bottom:8px;display:block;">📋 Histórico do veículo</label>
+              <div class="form-group" style="margin-bottom:8px;">
+                <label style="font-size:11px;">Saudação</label>
+                <input type="text" class="form-control" id="cfg-msg-historico-abertura" value="${esc(oficina.msg_historico_abertura || 'Olá! Tudo bem?')}" placeholder="Ex: Olá! Tudo bem?">
+              </div>
+              <div style="font-size:12px;color:var(--text-secondary);padding:8px 12px;background:var(--bg-card);border-radius:6px;margin-bottom:8px;line-height:1.6;">
+                <em>Aqui é da <strong>${esc(oficina.nome)}</strong>. Segue o histórico completo do seu veículo:<br>
+                <strong>Placa · Marca Modelo</strong><br>
+                🔗 Link do histórico</em>
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label style="font-size:11px;">Fechamento</label>
+                <input type="text" class="form-control" id="cfg-msg-historico-fechamento" value="${esc(oficina.msg_historico_fechamento || 'Qualquer dúvida é só chamar! Abraço.')}" placeholder="Ex: Qualquer dúvida é só chamar!">
+              </div>
             </div>
-            <div class="form-group">
-              <label>Orçamento pronto</label>
-              <textarea class="form-control" id="cfg-msg-orcamento" rows="2" style="resize:vertical;">${esc(oficina.msg_orcamento || 'Olá! Seu veículo {placa} está com o orçamento pronto. Posso enviar os detalhes?')}</textarea>
+
+            <div style="margin-bottom:20px;padding:16px;background:var(--bg-input);border-radius:var(--radius);border-left:3px solid var(--warning);">
+              <label style="font-size:13px;font-weight:700;margin-bottom:8px;display:block;">💰 Orçamento pronto</label>
+              <div class="form-group" style="margin-bottom:8px;">
+                <label style="font-size:11px;">Saudação</label>
+                <input type="text" class="form-control" id="cfg-msg-orcamento-abertura" value="${esc(oficina.msg_orcamento_abertura || 'Olá! Tudo certo?')}" placeholder="Ex: Olá! Tudo certo?">
+              </div>
+              <div style="font-size:12px;color:var(--text-secondary);padding:8px 12px;background:var(--bg-card);border-radius:6px;margin-bottom:8px;line-height:1.6;">
+                <em>O orçamento do seu <strong>Marca Modelo — Placa</strong> ficou pronto.</em>
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label style="font-size:11px;">Fechamento</label>
+                <input type="text" class="form-control" id="cfg-msg-orcamento-fechamento" value="${esc(oficina.msg_orcamento_fechamento || 'Posso te enviar os detalhes? Abraço!')}" placeholder="Ex: Posso te enviar os detalhes?">
+              </div>
             </div>
-            <div class="form-group">
-              <label>Veículo pronto</label>
-              <textarea class="form-control" id="cfg-msg-pronto" rows="2" style="resize:vertical;">${esc(oficina.msg_pronto || 'Olá! Seu veículo {placa} está pronto para retirada. Quando pode vir buscar?')}</textarea>
+
+            <div style="margin-bottom:20px;padding:16px;background:var(--bg-input);border-radius:var(--radius);border-left:3px solid var(--success);">
+              <label style="font-size:13px;font-weight:700;margin-bottom:8px;display:block;">✅ Veículo pronto</label>
+              <div class="form-group" style="margin-bottom:8px;">
+                <label style="font-size:11px;">Saudação</label>
+                <input type="text" class="form-control" id="cfg-msg-pronto-abertura" value="${esc(oficina.msg_pronto_abertura || 'Olá! Boas notícias!')}" placeholder="Ex: Olá! Boas notícias!">
+              </div>
+              <div style="font-size:12px;color:var(--text-secondary);padding:8px 12px;background:var(--bg-card);border-radius:6px;margin-bottom:8px;line-height:1.6;">
+                <em>Seu <strong>Marca Modelo — Placa</strong> está pronto e disponível para retirada aqui na <strong>${esc(oficina.nome)}</strong>.</em>
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label style="font-size:11px;">Fechamento</label>
+                <input type="text" class="form-control" id="cfg-msg-pronto-fechamento" value="${esc(oficina.msg_pronto_fechamento || 'Quando pode vir buscar? Abraço!')}" placeholder="Ex: Quando pode vir buscar?">
+              </div>
             </div>
-            <div class="form-group">
-              <label>Em execução</label>
-              <textarea class="form-control" id="cfg-msg-execucao" rows="2" style="resize:vertical;">${esc(oficina.msg_execucao || 'Olá! Informamos que seu veículo {placa} já está em execução na oficina.')}</textarea>
+
+            <div style="margin-bottom:20px;padding:16px;background:var(--bg-input);border-radius:var(--radius);border-left:3px solid var(--info);">
+              <label style="font-size:13px;font-weight:700;margin-bottom:8px;display:block;">🔧 Em execução</label>
+              <div class="form-group" style="margin-bottom:8px;">
+                <label style="font-size:11px;">Saudação</label>
+                <input type="text" class="form-control" id="cfg-msg-execucao-abertura" value="${esc(oficina.msg_execucao_abertura || 'Olá! Passando pra te atualizar.')}" placeholder="Ex: Olá! Passando pra te atualizar.">
+              </div>
+              <div style="font-size:12px;color:var(--text-secondary);padding:8px 12px;background:var(--bg-card);border-radius:6px;margin-bottom:8px;line-height:1.6;">
+                <em>Seu <strong>Marca Modelo — Placa</strong> já está em execução na oficina. Estamos cuidando com atenção.</em>
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label style="font-size:11px;">Fechamento</label>
+                <input type="text" class="form-control" id="cfg-msg-execucao-fechamento" value="${esc(oficina.msg_execucao_fechamento || 'Te aviso assim que ficar pronto! Abraço.')}" placeholder="Ex: Te aviso assim que ficar pronto!">
+              </div>
             </div>
+
             <button type="submit" class="btn btn-primary" style="margin-top:8px;">Salvar mensagens</button>
           </form>
         </div>
@@ -207,20 +254,14 @@ const CONFIG = {
 
   async salvarMensagens(e) {
     e.preventDefault();
-    const { error } = await db.from('oficinas').update({
-      msg_historico: document.getElementById('cfg-msg-historico').value,
-      msg_orcamento: document.getElementById('cfg-msg-orcamento').value,
-      msg_pronto: document.getElementById('cfg-msg-pronto').value,
-      msg_execucao: document.getElementById('cfg-msg-execucao').value
-    }).eq('id', APP.profile.oficina_id);
+    const campos = {};
+    ['historico','orcamento','pronto','execucao'].forEach(tipo => {
+      campos['msg_' + tipo + '_abertura'] = document.getElementById('cfg-msg-' + tipo + '-abertura').value.trim();
+      campos['msg_' + tipo + '_fechamento'] = document.getElementById('cfg-msg-' + tipo + '-fechamento').value.trim();
+    });
+    const { error } = await db.from('oficinas').update(campos).eq('id', APP.profile.oficina_id);
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
-    // Atualiza cache local
-    if (APP.oficina) {
-      APP.oficina.msg_historico = document.getElementById('cfg-msg-historico').value;
-      APP.oficina.msg_orcamento = document.getElementById('cfg-msg-orcamento').value;
-      APP.oficina.msg_pronto = document.getElementById('cfg-msg-pronto').value;
-      APP.oficina.msg_execucao = document.getElementById('cfg-msg-execucao').value;
-    }
+    if (APP.oficina) Object.assign(APP.oficina, campos);
     APP.toast('Mensagens salvas');
   },
 

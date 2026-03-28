@@ -815,7 +815,7 @@ const OS = {
         ` : ''}
 
         ${os.clientes?.whatsapp ? `
-          <button class="btn btn-success" style="width:100%;margin-top:8px;" onclick="OS.enviarWhatsApp('${os.clientes.whatsapp}', '${os.veiculos?.placa}', '${os.status}')">
+          <button class="btn btn-success" style="width:100%;margin-top:8px;" onclick="OS.enviarWhatsApp('${os.clientes.whatsapp}', '${esc(os.veiculos?.placa)}', '${os.status}', '${esc(os.veiculos?.marca || '')}', '${esc(os.veiculos?.modelo || '')}')">
             💬 Avisar cliente pelo WhatsApp
           </button>
         ` : ''}
@@ -826,7 +826,7 @@ const OS = {
         </div>
 
         ${os.veiculos?.placa ? `
-        <button class="btn btn-secondary" style="width:100%;margin-top:8px;" onclick="OS.enviarHistorico('${os.veiculos.placa}', '${os.clientes?.whatsapp || ''}')">
+        <button class="btn btn-secondary" style="width:100%;margin-top:8px;" onclick="OS.enviarHistorico('${esc(os.veiculos.placa)}', '${os.clientes?.whatsapp || ''}', '${esc(os.veiculos?.marca || '')}', '${esc(os.veiculos?.modelo || '')}')">
           📋 Enviar historico do veiculo
         </button>
         ` : ''}
@@ -1869,15 +1869,37 @@ const OS = {
     if (typeof KANBAN !== 'undefined') KANBAN.carregar();
   },
 
-  _montarMsg(template, placa, link) {
-    const oficina = APP.oficina?.nome || 'a oficina';
-    return template.replace(/\{placa\}/g, placa).replace(/\{oficina\}/g, oficina).replace(/\{link\}/g, link || '');
+  _montarMsgCompleta(tipo, placa, marca, modelo, link) {
+    const o = APP.oficina || {};
+    const nomeOficina = o.nome || 'a oficina';
+    const veiculo = [marca, modelo].filter(Boolean).join(' ');
+    const veiculoStr = veiculo ? veiculo + ' — ' + placa : placa;
+
+    const aberturas = {
+      historico: o.msg_historico_abertura || 'Olá! Tudo bem?',
+      orcamento: o.msg_orcamento_abertura || 'Olá! Tudo certo?',
+      pronto: o.msg_pronto_abertura || 'Olá! Boas notícias!',
+      execucao: o.msg_execucao_abertura || 'Olá! Passando pra te atualizar.'
+    };
+    const fechamentos = {
+      historico: o.msg_historico_fechamento || 'Qualquer dúvida é só chamar! Abraço.',
+      orcamento: o.msg_orcamento_fechamento || 'Posso te enviar os detalhes? Abraço!',
+      pronto: o.msg_pronto_fechamento || 'Quando pode vir buscar? Abraço!',
+      execucao: o.msg_execucao_fechamento || 'Te aviso assim que ficar pronto! Abraço.'
+    };
+    const meios = {
+      historico: `Aqui é da *${nomeOficina}*. Segue o histórico completo do seu veículo:\n*${veiculoStr}*\n\n${link}`,
+      orcamento: `O orçamento do seu *${veiculoStr}* ficou pronto aqui na *${nomeOficina}*.`,
+      pronto: `Seu *${veiculoStr}* está pronto e disponível para retirada aqui na *${nomeOficina}*.`,
+      execucao: `Seu *${veiculoStr}* já está em execução aqui na *${nomeOficina}*. Estamos cuidando com atenção.`
+    };
+
+    return [aberturas[tipo], '', meios[tipo], '', fechamentos[tipo]].join('\n');
   },
 
-  enviarHistorico(placa, whatsapp) {
+  enviarHistorico(placa, whatsapp, marca, modelo) {
     const link = 'https://rpmpro.com.br/v?p=' + placa.replace(/[^A-Z0-9]/gi, '');
-    const template = APP.oficina?.msg_historico || 'Olá! Aqui é da {oficina}. Segue o histórico completo de manutenções do seu veículo {placa}:\n\n{link}\n\nQualquer dúvida é só chamar!';
-    const msg = this._montarMsg(template, placa, link);
+    const msg = this._montarMsgCompleta('historico', placa, marca, modelo, link);
 
     if (whatsapp) {
       const num = whatsapp.replace(/\D/g, '');
@@ -1889,14 +1911,8 @@ const OS = {
     }
   },
 
-  enviarWhatsApp(whatsapp, placa, status) {
-    const defaults = {
-      orcamento: 'Olá! Seu veículo {placa} está com o orçamento pronto. Posso enviar os detalhes?',
-      pronto: 'Olá! Seu veículo {placa} está pronto para retirada. Quando pode vir buscar?',
-      execucao: 'Olá! Informamos que seu veículo {placa} já está em execução na oficina.'
-    };
-    const template = APP.oficina?.['msg_' + status] || defaults[status] || 'Olá! Atualização sobre seu veículo {placa} na oficina.';
-    const msg = this._montarMsg(template, placa);
+  enviarWhatsApp(whatsapp, placa, status, marca, modelo) {
+    const msg = this._montarMsgCompleta(status, placa, marca, modelo);
     const num = whatsapp.replace(/\D/g, '');
     const fone = num.startsWith('55') ? num : '55' + num;
     window.open(`https://wa.me/${fone}?text=${encodeURIComponent(msg)}`, '_blank');

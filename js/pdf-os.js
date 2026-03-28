@@ -550,13 +550,13 @@ const PDF_OS = {
       content: [
         ...header,
         infoRecibo,
-        tabelaServicos,
-        tabelaPecas,
+        ...(tabelaServicos.table ? [tabelaServicos] : []),
+        ...(tabelaPecas.table ? [tabelaPecas] : []),
         blocoTotais,
         infoPagamento,
         obs,
         temPix ? blocoPix : assinaturas
-      ],
+      ].filter(x => x && Object.keys(x).length),
       footer: this._footer(),
       styles: this._styles()
     };
