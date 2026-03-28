@@ -275,8 +275,12 @@ const FINANCEIRO = {
   },
 
   async gerarPDF() {
+    try {
+    await PDF_OS._carregarLogo();
+    const oficina = APP.oficina || {};
     const oficina_id = APP.profile.oficina_id;
     const periodoLabel = { hoje: 'Hoje', semana: 'Esta semana', mes: 'Este mês' };
+    const formaLabel = { dinheiro: 'Dinheiro', pix: 'Pix', debito: 'Débito', credito: 'Crédito', boleto: 'Boleto', transferencia: 'Transferência', outros: 'Outros' };
     const agora = new Date();
     const hoje = agora.toISOString().split('T')[0];
     const inicioSemana = new Date(agora); inicioSemana.setDate(agora.getDate() - agora.getDay());
@@ -295,84 +299,135 @@ const FINANCEIRO = {
 
     const movs = caixaRes.data || [];
     const oss = osRes.data || [];
-
     const totalOS = oss.reduce((s, o) => s + (o.valor_total || 0), 0);
     const totalEntradas = movs.filter(m => m.tipo === 'entrada').reduce((s, m) => s + (m.valor || 0), 0);
     const totalSaidas = movs.filter(m => m.tipo === 'saida').reduce((s, m) => s + (m.valor || 0), 0);
     const saldo = totalEntradas + totalOS - totalSaidas;
 
+    // Recebimentos por forma de pagamento
+    const porForma = {};
+    oss.forEach(o => { const f = o.forma_pagamento || 'outros'; porForma[f] = (porForma[f] || 0) + (o.valor_total || 0); });
+    movs.filter(m => m.tipo === 'entrada').forEach(m => { const f = m.forma_pagamento || 'outros'; porForma[f] = (porForma[f] || 0) + (m.valor || 0); });
+
+    const header = PDF_OS._montarHeader(oficina, 'RELATÓRIO FINANCEIRO');
+    const fmt = v => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
     const doc = {
       pageSize: 'A4',
-      pageMargins: [40, 60, 40, 40],
+      pageMargins: [40, 30, 40, 50],
       content: [
-        { text: 'RPM PRO', style: 'brand' },
-        { text: APP.oficina?.nome || '', style: 'subheader' },
-        { text: `Relatorio Financeiro — ${periodoLabel[this._periodo] || 'Periodo'}`, style: 'title', margin: [0, 10, 0, 20] },
+        ...header.filter(h => h && (h.text || h.columns || h.canvas)),
 
-        // Resumo
+        // Período
+        { text: periodoLabel[this._periodo] || 'Período', fontSize: 11, color: '#666', margin: [0, 0, 0, 14] },
+
+        // KPIs resumo
         {
-          columns: [
-            { text: `Entradas: R$ ${(totalEntradas + totalOS).toFixed(2)}`, style: 'kpiGreen' },
-            { text: `Saidas: R$ ${totalSaidas.toFixed(2)}`, style: 'kpiRed' },
-            { text: `Saldo: R$ ${saldo.toFixed(2)}`, style: saldo >= 0 ? 'kpiGreen' : 'kpiRed' },
-          ],
+          table: {
+            widths: ['*', '*', '*', '*'],
+            body: [[
+              { stack: [{ text: 'ENTRADAS', fontSize: 8, color: '#666' }, { text: fmt(totalEntradas + totalOS), fontSize: 14, bold: true, color: '#3fb950' }], alignment: 'center' },
+              { stack: [{ text: 'SAÍDAS', fontSize: 8, color: '#666' }, { text: fmt(totalSaidas), fontSize: 14, bold: true, color: '#f85149' }], alignment: 'center' },
+              { stack: [{ text: 'SALDO', fontSize: 8, color: '#666' }, { text: fmt(saldo), fontSize: 14, bold: true, color: saldo >= 0 ? '#3fb950' : '#f85149' }], alignment: 'center' },
+              { stack: [{ text: 'OS PAGAS', fontSize: 8, color: '#666' }, { text: String(oss.length), fontSize: 14, bold: true, color: '#FF4500' }], alignment: 'center' }
+            ]]
+          },
+          layout: { hLineWidth: () => 0, vLineWidth: () => 0.3, vLineColor: () => '#ddd', paddingTop: () => 10, paddingBottom: () => 10, paddingLeft: () => 8, paddingRight: () => 8 },
           margin: [0, 0, 0, 20]
         },
 
+        // Recebimentos por forma de pagamento
+        ...(Object.keys(porForma).length ? [
+          { text: 'RECEBIMENTOS POR FORMA DE PAGAMENTO', fontSize: 10, bold: true, color: '#333', margin: [0, 0, 0, 8] },
+          {
+            table: {
+              widths: ['*', 100],
+              body: Object.entries(porForma).sort((a, b) => b[1] - a[1]).map(([f, v]) => [
+                { text: formaLabel[f] || f, fontSize: 10 },
+                { text: fmt(v), fontSize: 10, bold: true, color: '#3fb950', alignment: 'right' }
+              ])
+            },
+            layout: { hLineWidth: (i) => i === 0 ? 0 : 0.3, vLineWidth: () => 0, hLineColor: () => '#eee', paddingTop: () => 4, paddingBottom: () => 4, paddingLeft: () => 4, paddingRight: () => 4 },
+            margin: [0, 0, 0, 20]
+          }
+        ] : []),
+
         // OS Pagas
-        { text: `OS Pagas (${oss.length})`, style: 'sectionHeader' },
+        { text: `OS PAGAS (${oss.length})`, fontSize: 10, bold: true, color: '#333', fillColor: '#f0f0f0', margin: [0, 0, 0, 6] },
         oss.length ? {
           table: {
             headerRows: 1,
-            widths: ['auto', '*', '*', 'auto', 'auto'],
+            widths: [35, '*', '*', 65, 70],
             body: [
-              ['OS', 'Veiculo', 'Cliente', 'Pagamento', 'Valor'],
+              [
+                { text: 'OS', fontSize: 9, bold: true, color: '#666' },
+                { text: 'Veículo', fontSize: 9, bold: true, color: '#666' },
+                { text: 'Cliente', fontSize: 9, bold: true, color: '#666' },
+                { text: 'Pagamento', fontSize: 9, bold: true, color: '#666' },
+                { text: 'Valor', fontSize: 9, bold: true, color: '#666', alignment: 'right' }
+              ],
               ...oss.map(o => [
-                '#' + (o.numero || '-'),
-                o.veiculos?.placa || '-',
-                o.clientes?.nome || '-',
-                o.forma_pagamento || '-',
-                'R$ ' + (o.valor_total || 0).toFixed(2)
-              ])
+                { text: '#' + (o.numero || '-'), fontSize: 9 },
+                { text: o.veiculos?.placa || '-', fontSize: 9, bold: true },
+                { text: o.clientes?.nome || '-', fontSize: 9 },
+                { text: formaLabel[o.forma_pagamento] || o.forma_pagamento || '-', fontSize: 9 },
+                { text: fmt(o.valor_total), fontSize: 9, bold: true, color: '#3fb950', alignment: 'right' }
+              ]),
+              [
+                { text: 'TOTAL', fontSize: 9, bold: true, colSpan: 4 }, {}, {}, {},
+                { text: fmt(totalOS), fontSize: 10, bold: true, color: '#3fb950', alignment: 'right' }
+              ]
             ]
           },
-          layout: 'lightHorizontalLines',
+          layout: {
+            hLineWidth: (i, node) => (i === 0 || i === 1 || i === node.table.body.length) ? 0.5 : 0.3,
+            vLineWidth: () => 0.3, hLineColor: () => '#ccc', vLineColor: () => '#eee',
+            paddingLeft: () => 6, paddingRight: () => 6, paddingTop: () => 4, paddingBottom: () => 4
+          },
           margin: [0, 0, 0, 20]
-        } : { text: 'Nenhuma OS paga no periodo', italics: true, margin: [0, 0, 0, 20] },
+        } : { text: 'Nenhuma OS paga no período', fontSize: 10, italics: true, color: '#999', margin: [0, 0, 0, 20] },
 
-        // Movimentações
-        { text: `Movimentacoes do Caixa (${movs.length})`, style: 'sectionHeader' },
+        // Movimentações do caixa
+        { text: `MOVIMENTAÇÕES DO CAIXA (${movs.length})`, fontSize: 10, bold: true, color: '#333', margin: [0, 0, 0, 6] },
         movs.length ? {
           table: {
             headerRows: 1,
-            widths: ['auto', 'auto', '*', 'auto'],
+            widths: [50, 70, '*', 70],
             body: [
-              ['Tipo', 'Categoria', 'Descricao', 'Valor'],
+              [
+                { text: 'Tipo', fontSize: 9, bold: true, color: '#666' },
+                { text: 'Categoria', fontSize: 9, bold: true, color: '#666' },
+                { text: 'Descrição', fontSize: 9, bold: true, color: '#666' },
+                { text: 'Valor', fontSize: 9, bold: true, color: '#666', alignment: 'right' }
+              ],
               ...movs.map(m => [
-                m.tipo === 'entrada' ? 'Entrada' : 'Saida',
-                FINANCEIRO._catLabel(m.categoria),
-                m.descricao,
-                (m.tipo === 'saida' ? '-' : '') + 'R$ ' + (m.valor || 0).toFixed(2)
+                { text: m.tipo === 'entrada' ? 'Entrada' : 'Saída', fontSize: 9, color: m.tipo === 'entrada' ? '#3fb950' : '#f85149', bold: true },
+                { text: FINANCEIRO._catLabel(m.categoria), fontSize: 9 },
+                { text: m.descricao || '-', fontSize: 9 },
+                { text: (m.tipo === 'saida' ? '- ' : '') + fmt(m.valor), fontSize: 9, bold: true, color: m.tipo === 'entrada' ? '#3fb950' : '#f85149', alignment: 'right' }
               ])
             ]
           },
-          layout: 'lightHorizontalLines',
-          margin: [0, 0, 0, 20]
-        } : { text: 'Nenhuma movimentacao no periodo', italics: true },
+          layout: {
+            hLineWidth: (i, node) => (i === 0 || i === 1 || i === node.table.body.length) ? 0.5 : 0.3,
+            vLineWidth: () => 0.3, hLineColor: () => '#ccc', vLineColor: () => '#eee',
+            paddingLeft: () => 6, paddingRight: () => 6, paddingTop: () => 4, paddingBottom: () => 4
+          },
+          margin: [0, 0, 0, 14]
+        } : { text: 'Nenhuma movimentação no período', fontSize: 10, italics: true, color: '#999' },
       ],
-      footer: { text: 'Gerado pelo RPM Pro — rpmpro.com.br', alignment: 'center', fontSize: 8, color: '#999', margin: [0, 10] },
-      styles: {
-        brand: { fontSize: 20, bold: true, color: '#FF4500' },
-        subheader: { fontSize: 12, color: '#666' },
-        title: { fontSize: 14, bold: true },
-        sectionHeader: { fontSize: 12, bold: true, margin: [0, 0, 0, 8] },
-        kpiGreen: { fontSize: 13, bold: true, color: '#3fb950' },
-        kpiRed: { fontSize: 13, bold: true, color: '#f85149' },
-      },
-      defaultStyle: { fontSize: 10, font: 'Roboto' }
+      footer: PDF_OS._footer(),
+      styles: PDF_OS._styles()
     };
 
-    pdfMake.createPdf(doc).open();
+    const pdf = pdfMake.createPdf(doc);
+    pdf.getBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      if (window.innerWidth <= 768) {
+        const a = document.createElement('a'); a.href = url; a.download = 'financeiro-' + this._periodo + '.pdf'; a.click(); URL.revokeObjectURL(url);
+      } else { window.open(url, '_blank'); }
+    });
+    } catch(e) { APP.toast('Erro ao gerar PDF: ' + e.message, 'error'); console.error(e); }
   }
 };
 
