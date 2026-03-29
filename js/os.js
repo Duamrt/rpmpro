@@ -294,7 +294,7 @@ const OS = {
     sugEl.innerHTML = resultados.map(s => `
       <div style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px;"
            onmouseover="this.style.background='rgba(255,69,0,0.1)'" onmouseout="this.style.background=''"
-           onclick="OS._selecionarServicoBusca('${esc(s.nome).replace(/'/g, "\\'")}', ${s.valor}, '${sugId}', '${contexto}')">
+           onclick="OS._selecionarServicoBusca('${escAttr(s.nome).replace(/'/g, "\\'")}', ${s.valor}, '${sugId}', '${contexto}')">
         <strong>${esc(s.nome)}</strong>
         <span style="color:var(--text-secondary);font-size:11px;margin-left:8px;">${esc(s.categoria)}</span>
         <span style="float:right;color:var(--success);font-weight:700;">R$ ${(s.valor || 0).toFixed(2)}</span>
@@ -661,7 +661,7 @@ const OS = {
         <div style="display:grid;grid-template-columns:${_mob ? '1fr' : '1fr 1fr'};gap:12px;margin-bottom:16px;">
           <div>
             <div style="font-size:11px;color:var(--text-secondary);">Veiculo</div>
-            <div style="font-weight:600;font-size:14px;"><a href="#" onclick="event.preventDefault();closeModal();setTimeout(()=>VEICULOS.abrirHistorico('${os.veiculo_id}','${esc(os.veiculos?.placa)}'),200)" style="color:var(--primary);text-decoration:none;">${esc(os.veiculos?.placa)}</a> — ${esc(os.veiculos?.marca || '')} ${esc(os.veiculos?.modelo || '')}</div>
+            <div style="font-weight:600;font-size:14px;"><a href="#" onclick="event.preventDefault();closeModal();setTimeout(()=>VEICULOS.abrirHistorico('${os.veiculo_id}','${escAttr(os.veiculos?.placa)}'),200)" style="color:var(--primary);text-decoration:none;">${escAttr(os.veiculos?.placa)}</a> — ${escAttr(os.veiculos?.marca || '')} ${escAttr(os.veiculos?.modelo || '')}</div>
           </div>
           <div>
             <div style="font-size:11px;color:var(--text-secondary);">Cliente</div>
@@ -815,7 +815,7 @@ const OS = {
         ` : ''}
 
         ${os.clientes?.whatsapp ? `
-          <button class="btn btn-success" style="width:100%;margin-top:8px;" onclick="OS.enviarWhatsApp('${os.clientes.whatsapp}', '${esc(os.veiculos?.placa)}', '${os.status}', '${esc(os.veiculos?.marca || '')}', '${esc(os.veiculos?.modelo || '')}')">
+          <button class="btn btn-success" style="width:100%;margin-top:8px;" onclick="OS.enviarWhatsApp('${os.clientes.whatsapp}', '${escAttr(os.veiculos?.placa)}', '${os.status}', '${escAttr(os.veiculos?.marca || '')}', '${escAttr(os.veiculos?.modelo || '')}')">
             💬 Avisar cliente pelo WhatsApp
           </button>
         ` : ''}
@@ -826,7 +826,7 @@ const OS = {
         </div>
 
         ${os.veiculos?.placa ? `
-        <button class="btn btn-secondary" style="width:100%;margin-top:8px;" onclick="OS.enviarHistorico('${esc(os.veiculos.placa)}', '${os.clientes?.whatsapp || ''}', '${esc(os.veiculos?.marca || '')}', '${esc(os.veiculos?.modelo || '')}')">
+        <button class="btn btn-secondary" style="width:100%;margin-top:8px;" onclick="OS.enviarHistorico('${escAttr(os.veiculos.placa)}', '${os.clientes?.whatsapp || ''}', '${escAttr(os.veiculos?.marca || '')}', '${escAttr(os.veiculos?.modelo || '')}')">
           📋 Enviar historico do veiculo
         </button>
         ` : ''}

@@ -31,7 +31,7 @@ const APP = {
     // Logo da oficina na sidebar — grande e centralizada
     if (this.oficina?.logo_url) {
       const logoEl = document.getElementById('sidebar-logo-img');
-      if (logoEl) logoEl.innerHTML = `<img src="${this.oficina.logo_url}" style="max-height:44px;max-width:60px;object-fit:contain;display:block;border-radius:6px;">`;
+      if (logoEl) logoEl.innerHTML = `<img src="${esc(this.oficina.logo_url)}" style="max-height:44px;max-width:60px;object-fit:contain;display:block;border-radius:6px;">`;
     }
 
     // Verifica super admin

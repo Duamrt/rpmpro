@@ -26,7 +26,7 @@ const VEICULOS = {
     container.innerHTML = window.innerWidth <= 768 ? `
       <div class="mobile-card-list">
         ${lista.map(v => `
-          <div class="mobile-card" onclick="VEICULOS.abrirHistorico('${v.id}','${esc(v.placa)}')">
+          <div class="mobile-card" onclick="VEICULOS.abrirHistorico('${v.id}','${escAttr(v.placa)}')">
             <div class="mobile-card-header">
               <div>
                 <div class="mobile-card-title">${esc(v.placa)}</div>
@@ -61,7 +61,7 @@ const VEICULOS = {
               <td>${esc(v.clientes?.nome || '-')}</td>
               <td>${v.km_atual ? v.km_atual.toLocaleString('pt-BR') + ' km' : '-'}</td>
               <td style="display:flex;gap:4px;flex-wrap:wrap;">
-                <button class="btn btn-secondary btn-sm" onclick="VEICULOS.abrirHistorico('${v.id}','${esc(v.placa)}')">Historico</button>
+                <button class="btn btn-secondary btn-sm" onclick="VEICULOS.abrirHistorico('${v.id}','${escAttr(v.placa)}')">Historico</button>
                 <button class="btn btn-secondary btn-sm" onclick="VEICULOS.editar('${v.id}')">Editar</button>
                 <button class="btn btn-danger btn-sm" onclick="VEICULOS.excluir('${v.id}','${v.placa}')">Excluir</button>
               </td>

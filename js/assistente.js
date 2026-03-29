@@ -75,7 +75,7 @@ const ASSISTENTE = {
     container.innerHTML = this._msgs.map(m => {
       if (m.tipo === 'bot') return `<div style="background:#1e2430;padding:12px 14px;border-radius:12px 12px 12px 2px;font-size:13px;line-height:1.6;max-width:85%;color:#e6edf3;">${m.texto.replace(/\n/g, '<br>')}</div>`;
       if (m.tipo === 'user') return `<div style="background:#D97706;padding:10px 14px;border-radius:12px 12px 2px 12px;font-size:13px;max-width:80%;align-self:flex-end;color:#fff;">${esc(m.texto)}</div>`;
-      if (m.tipo === 'opcoes') return `<div style="display:flex;flex-wrap:wrap;gap:6px;">${m.opcoes.map(o => `<button onclick="ASSISTENTE.clicarOpcao('${esc(o)}')" style="background:transparent;border:1px solid #D97706;color:#D97706;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s;" onmouseover="this.style.background='#D97706';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='#D97706'">${o}</button>`).join('')}</div>`;
+      if (m.tipo === 'opcoes') return `<div style="display:flex;flex-wrap:wrap;gap:6px;">${m.opcoes.map(o => `<button onclick="ASSISTENTE.clicarOpcao('${escAttr(o)}')" style="background:transparent;border:1px solid #D97706;color:#D97706;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s;" onmouseover="this.style.background='#D97706';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='#D97706'">${o}</button>`).join('')}</div>`;
       return '';
     }).join('');
     container.scrollTop = container.scrollHeight;

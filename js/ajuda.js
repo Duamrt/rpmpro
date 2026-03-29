@@ -392,7 +392,7 @@ const AJUDA = {
     if (ajuda) {
       const sugestoes = ajuda.secoes.filter(s => s.titulo && !s.perfil).slice(0, 4).map(s => s.titulo);
       if (sugestoes.length) {
-        const btns = sugestoes.map(s => `<button class="btn btn-secondary btn-sm" style="font-size:11px;margin:2px;" onclick="AJUDA._perguntaRapida('${esc(s)}')">${esc(s)}</button>`).join('');
+        const btns = sugestoes.map(s => `<button class="btn btn-secondary btn-sm" style="font-size:11px;margin:2px;" onclick="AJUDA._perguntaRapida('${escAttr(s)}')">${escAttr(s)}</button>`).join('');
         this._addMsg('bot', `Voce ta na tela <strong>${esc(ajuda.titulo)}</strong>. Algumas duvidas comuns:<br><div style="margin-top:6px;">${btns}</div>`);
       }
     }

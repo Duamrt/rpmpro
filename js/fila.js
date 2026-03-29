@@ -66,8 +66,8 @@ const FILA = {
               ${f.whatsapp ? ` · ${esc(f.whatsapp)}` : ''}
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
-              ${f.whatsapp && f.status === 'aguardando' ? `<button class="btn btn-success btn-sm" onclick="FILA.contatar('${f.id}','${esc(f.whatsapp)}','${esc(f.nome)}')">WhatsApp</button>` : ''}
-              ${f.status === 'aguardando' || f.status === 'contatado' ? `<button class="btn btn-primary btn-sm" onclick="FILA.agendar('${f.id}','${esc(f.nome)}','${esc(f.placa || '')}','${esc(f.sintoma)}')">Agendar</button>` : ''}
+              ${f.whatsapp && f.status === 'aguardando' ? `<button class="btn btn-success btn-sm" onclick="FILA.contatar('${f.id}','${escAttr(f.whatsapp)}','${escAttr(f.nome)}')">WhatsApp</button>` : ''}
+              ${f.status === 'aguardando' || f.status === 'contatado' ? `<button class="btn btn-primary btn-sm" onclick="FILA.agendar('${f.id}','${escAttr(f.nome)}','${escAttr(f.placa || '')}','${escAttr(f.sintoma)}')">Agendar</button>` : ''}
               ${f.status === 'aguardando' ? `<button class="btn btn-secondary btn-sm" onclick="FILA.mudarStatus('${f.id}','contatado')">Contatado</button>` : ''}
               ${f.status !== 'cancelado' && f.status !== 'agendado' ? `<button class="btn btn-secondary btn-sm" onclick="FILA.editar('${f.id}')">Editar</button>` : ''}
               ${f.status !== 'cancelado' && f.status !== 'agendado' ? `<button class="btn btn-danger btn-sm" onclick="FILA.mudarStatus('${f.id}','cancelado')">X</button>` : ''}

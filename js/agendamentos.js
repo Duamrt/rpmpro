@@ -145,7 +145,7 @@ const AGENDAMENTOS = {
               <div style="font-size:13px;color:var(--primary);margin-bottom:8px;">${esc(tipoLabel[a.tipo] || a.tipo)}</div>
               ${a.descricao ? `<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">${esc(a.descricao)}</div>` : ''}
               <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                ${a.clientes?.whatsapp && a.status !== 'realizado' ? `<button class="btn btn-success btn-sm" onclick="AGENDAMENTOS.notificar('${a.id}','${esc(a.clientes.whatsapp)}','${esc(a.clientes.nome)}','${esc(tipoLabel[a.tipo] || a.tipo)}','${a.data_prevista}')">WhatsApp</button>` : ''}
+                ${a.clientes?.whatsapp && a.status !== 'realizado' ? `<button class="btn btn-success btn-sm" onclick="AGENDAMENTOS.notificar('${a.id}','${escAttr(a.clientes.whatsapp)}','${escAttr(a.clientes.nome)}','${escAttr(tipoLabel[a.tipo] || a.tipo)}','${a.data_prevista}')">WhatsApp</button>` : ''}
                 ${a.status === 'pendente' || a.status === 'notificado' ? `<button class="btn btn-primary btn-sm" onclick="AGENDAMENTOS.mudarStatus('${a.id}','confirmado')">Confirmar</button>` : ''}
                 ${a.status === 'confirmado' ? `<button class="btn btn-primary btn-sm" onclick="AGENDAMENTOS.mudarStatus('${a.id}','realizado')">Realizado</button>` : ''}
                 ${a.status !== 'realizado' && a.status !== 'cancelado' ? `<button class="btn btn-secondary btn-sm" onclick="AGENDAMENTOS.editar('${a.id}')">Editar</button>` : ''}
@@ -181,7 +181,7 @@ const AGENDAMENTOS = {
             </div>
             <div style="font-size:13px;color:var(--text-secondary);">${esc(a.veiculos?.placa || '')} — ${esc(tipoLabel[a.tipo] || a.tipo)}</div>
             <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
-              ${a.clientes?.whatsapp && a.status !== 'realizado' ? `<button class="btn btn-success btn-sm" onclick="AGENDAMENTOS.notificar('${a.id}','${esc(a.clientes.whatsapp)}','${esc(a.clientes.nome)}','${esc(tipoLabel[a.tipo] || a.tipo)}','${a.data_prevista}')">WhatsApp</button>` : ''}
+              ${a.clientes?.whatsapp && a.status !== 'realizado' ? `<button class="btn btn-success btn-sm" onclick="AGENDAMENTOS.notificar('${a.id}','${escAttr(a.clientes.whatsapp)}','${escAttr(a.clientes.nome)}','${escAttr(tipoLabel[a.tipo] || a.tipo)}','${a.data_prevista}')">WhatsApp</button>` : ''}
               ${a.status === 'pendente' || a.status === 'notificado' ? `<button class="btn btn-primary btn-sm" onclick="AGENDAMENTOS.mudarStatus('${a.id}','confirmado')">Confirmar</button>` : ''}
               ${a.status === 'confirmado' ? `<button class="btn btn-primary btn-sm" onclick="AGENDAMENTOS.mudarStatus('${a.id}','realizado')">Realizado</button>` : ''}
             </div>

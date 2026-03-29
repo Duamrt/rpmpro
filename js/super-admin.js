@@ -371,9 +371,9 @@ const SUPER_ADMIN = {
             </div>
             ${o.cnpj ? `<div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">CNPJ: ${esc(o.cnpj)}</div>` : ''}
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
-              <button class="btn btn-primary btn-sm" onclick="SUPER_ADMIN.acessarOficina('${o.id}','${esc(o.nome)}')">Acessar</button>
-              <button class="btn btn-secondary btn-sm" onclick="SUPER_ADMIN.verUsuarios('${o.id}','${esc(o.nome)}')">Usuarios</button>
-              <button class="btn btn-secondary btn-sm" onclick="SUPER_ADMIN.editarPlano('${o.id}','${esc(o.nome)}','${o.plano || 'trial'}','${o.trial_ate || ''}')">Plano</button>
+              <button class="btn btn-primary btn-sm" onclick="SUPER_ADMIN.acessarOficina('${o.id}','${escAttr(o.nome)}')">Acessar</button>
+              <button class="btn btn-secondary btn-sm" onclick="SUPER_ADMIN.verUsuarios('${o.id}','${escAttr(o.nome)}')">Usuarios</button>
+              <button class="btn btn-secondary btn-sm" onclick="SUPER_ADMIN.editarPlano('${o.id}','${escAttr(o.nome)}','${o.plano || 'trial'}','${o.trial_ate || ''}')">Plano</button>
               ${o.whatsapp ? `<a href="https://wa.me/55${o.whatsapp.replace(/[^0-9]/g, '')}" target="_blank" class="btn btn-success btn-sm">WhatsApp</a>` : ''}
             </div>
           </div>`;
@@ -433,7 +433,7 @@ const SUPER_ADMIN = {
     const logoEl = document.getElementById('sidebar-logo-img');
     if (logoEl) {
       logoEl.innerHTML = oficina?.logo_url
-        ? `<img src="${oficina.logo_url}" style="max-height:44px;max-width:60px;object-fit:contain;display:block;border-radius:6px;">`
+        ? `<img src="${esc(oficina.logo_url)}" style="max-height:44px;max-width:60px;object-fit:contain;display:block;border-radius:6px;">`
         : '';
     }
 
@@ -590,10 +590,10 @@ const SUPER_ADMIN = {
               </div>
               <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
                 <span style="font-size:13px;color:var(--text-secondary);">${esc(u.auth_email || u.email)}</span>
-                <button style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--primary);" onclick="navigator.clipboard.writeText('${esc(u.auth_email || u.email)}'); APP.toast('Email copiado');">copiar</button>
+                <button style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--primary);" onclick="navigator.clipboard.writeText('${escAttr(u.auth_email || u.email)}'); APP.toast('Email copiado');">copiar</button>
               </div>
               <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Ultimo login: ${u.last_sign_in ? APP.formatDateTime(u.last_sign_in) : 'Nunca'}</div>
-              <button class="btn btn-secondary btn-sm" onclick="SUPER_ADMIN.resetarSenha('${u.id}','${esc(u.nome)}')">Resetar senha</button>
+              <button class="btn btn-secondary btn-sm" onclick="SUPER_ADMIN.resetarSenha('${u.id}','${escAttr(u.nome)}')">Resetar senha</button>
             </div>
           `).join('')}
         </div>` : '<div style="padding:20px;text-align:center;color:var(--text-muted);">Nenhum usuario encontrado</div>'}

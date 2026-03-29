@@ -66,7 +66,7 @@ const SERVICOS = {
                   </div>
                   <div class="mobile-card-actions">
                     <button class="btn btn-secondary btn-sm" onclick="SERVICOS.editar('${s.id}')">Editar</button>
-                    <button class="btn btn-danger btn-sm" onclick="SERVICOS.excluir('${s.id}','${esc(s.nome)}')">X</button>
+                    <button class="btn btn-danger btn-sm" onclick="SERVICOS.excluir('${s.id}','${escAttr(s.nome)}')">X</button>
                   </div>
                 </div>
               `).join('')}
@@ -90,7 +90,7 @@ const SERVICOS = {
                     <td><span class="badge badge-${s.ativo ? 'pronto' : 'entregue'}">${s.ativo ? 'Ativo' : 'Inativo'}</span></td>
                     <td style="display:flex;gap:4px;">
                       <button class="btn btn-secondary btn-sm" onclick="SERVICOS.editar('${s.id}')">Editar</button>
-                      <button class="btn btn-danger btn-sm" onclick="SERVICOS.excluir('${s.id}','${esc(s.nome)}')">X</button>
+                      <button class="btn btn-danger btn-sm" onclick="SERVICOS.excluir('${s.id}','${escAttr(s.nome)}')">X</button>
                     </td>
                   </tr>
                 `).join('')}

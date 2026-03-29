@@ -20,7 +20,7 @@ const CLIENTES = {
       .order('nome')
       .range(this._offset, this._offset + this._limit - 1);
 
-    const busca = this._busca.trim();
+    const busca = sanitizeBusca(this._busca);
     if (busca) {
       query = query.or(`nome.ilike.%${busca}%,whatsapp.ilike.%${busca}%,cpf_cnpj.ilike.%${busca}%`);
     }
@@ -66,7 +66,7 @@ const CLIENTES = {
       ${isMobile ? `
       <div class="mobile-card-list">
         ${lista.map(c => `
-          <div class="mobile-card" onclick="CLIENTES.historico('${c.id}','${esc(c.nome)}')">
+          <div class="mobile-card" onclick="CLIENTES.historico('${c.id}','${escAttr(c.nome)}')">
             <div class="mobile-card-header">
               <div>
                 <div class="mobile-card-title">${esc(c.nome)}</div>
@@ -99,9 +99,9 @@ const CLIENTES = {
               <td>${c.veiculos?.[0]?.count || 0}</td>
               <td><span class="badge badge-${c.score === 'ativo' ? 'pronto' : c.score === 'risco' ? 'orcamento' : 'entregue'}">${c.score}</span></td>
               <td style="display:flex;gap:4px;">
-                <button class="btn btn-primary btn-sm" onclick="CLIENTES.historico('${c.id}','${esc(c.nome)}')">Historico</button>
+                <button class="btn btn-primary btn-sm" onclick="CLIENTES.historico('${c.id}','${escAttr(c.nome)}')">Historico</button>
                 <button class="btn btn-secondary btn-sm" onclick="CLIENTES.editar('${c.id}')">Editar</button>
-                <button class="btn btn-danger btn-sm" onclick="CLIENTES.excluir('${c.id}','${esc(c.nome)}')">Excluir</button>
+                <button class="btn btn-danger btn-sm" onclick="CLIENTES.excluir('${c.id}','${escAttr(c.nome)}')">Excluir</button>
               </td>
             </tr>
           `).join('')}

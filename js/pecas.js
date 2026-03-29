@@ -55,7 +55,7 @@ const PECAS = {
               <div class="mobile-card-row"><span>Venda</span><strong>R$ ${(p.preco_venda || 0).toFixed(2)}</strong></div>
             </div>
             <div class="mobile-card-actions">
-              <button class="btn btn-secondary btn-sm" onclick="PECAS.ajustarEstoque('${p.id}', '${esc(p.nome)}', ${p.quantidade})">Ajustar</button>
+              <button class="btn btn-secondary btn-sm" onclick="PECAS.ajustarEstoque('${p.id}', '${escAttr(p.nome)}', ${p.quantidade})">Ajustar</button>
               <button class="btn btn-secondary btn-sm" onclick="PECAS.editar('${p.id}')">Editar</button>
             </div>
           </div>`;
@@ -87,8 +87,8 @@ const PECAS = {
               <td style="font-size:13px;font-weight:600;">R$ ${(p.preco_venda || 0).toFixed(2)}</td>
               <td style="display:flex;gap:4px;">
                 <button class="btn btn-secondary btn-sm" onclick="PECAS.editar('${p.id}')">Editar</button>
-                <button class="btn btn-secondary btn-sm" onclick="PECAS.ajustarEstoque('${p.id}', '${esc(p.nome)}', ${p.quantidade})">Ajustar</button>
-                <button class="btn btn-danger btn-sm" onclick="PECAS.excluir('${p.id}', '${esc(p.nome)}')">X</button>
+                <button class="btn btn-secondary btn-sm" onclick="PECAS.ajustarEstoque('${p.id}', '${escAttr(p.nome)}', ${p.quantidade})">Ajustar</button>
+                <button class="btn btn-danger btn-sm" onclick="PECAS.excluir('${p.id}', '${escAttr(p.nome)}')">X</button>
               </td>
             </tr>`;
           }).join('')}

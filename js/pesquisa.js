@@ -81,7 +81,7 @@ const PESQUISA = {
                 <td>${p.respondido_em ? `<span style="color:var(--warning);font-weight:700;">${estrelas(p.nota)}</span>` : '<span style="color:var(--text-muted);font-size:12px;">Aguardando</span>'}</td>
                 <td style="font-size:13px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(p.comentario || '-')}</td>
                 <td>
-                  ${!p.respondido_em && p.clientes?.whatsapp ? `<button class="btn btn-success btn-sm" onclick="PESQUISA.reenviar('${esc(p.clientes.whatsapp)}','${esc(p.clientes.nome)}','${p.token}')">Reenviar</button>` : ''}
+                  ${!p.respondido_em && p.clientes?.whatsapp ? `<button class="btn btn-success btn-sm" onclick="PESQUISA.reenviar('${escAttr(p.clientes.whatsapp)}','${escAttr(p.clientes.nome)}','${p.token}')">Reenviar</button>` : ''}
                 </td>
               </tr>
             `).join('')}

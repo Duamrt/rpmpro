@@ -121,7 +121,7 @@ const CRM = {
                 <td>${c.total}</td>
                 <td>${c.dias !== null ? c.dias + ' dias atras' : 'Nunca'}</td>
                 <td style="display:flex;gap:4px;">
-                  ${c.whatsapp ? `<button class="btn btn-success btn-sm" onclick="CRM.enviarWhatsApp('${esc(c.whatsapp)}','${esc(c.nome)}',${c.dias || 0})">WhatsApp</button>` : ''}
+                  ${c.whatsapp ? `<button class="btn btn-success btn-sm" onclick="CRM.enviarWhatsApp('${escAttr(c.whatsapp)}','${escAttr(c.nome)}',${c.dias || 0})">WhatsApp</button>` : ''}
                   <button class="btn btn-secondary btn-sm" onclick="CRM.agendarRetorno('${c.id}')">Agendar</button>
                 </td>
               </tr>

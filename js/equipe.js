@@ -3,7 +3,7 @@ const EQUIPE = {
   async carregar() {
     const { data, error } = await db
       .from('profiles')
-      .select('*')
+      .select('id, nome, email, telefone, role, comissao_percent, ativo, user_id')
       .eq('oficina_id', APP.profile.oficina_id)
       .order('nome');
 
@@ -39,7 +39,7 @@ const EQUIPE = {
             </div>
             ${isAdmin ? `<div class="mobile-card-actions">
               <button class="btn btn-secondary btn-sm" onclick="EQUIPE.editar('${m.id}')">Editar</button>
-              ${!m.senha_texto ? `<button class="btn btn-primary btn-sm" onclick="EQUIPE.criarLogin('${m.id}','${esc(m.nome)}','${esc(m.email || '')}')">Criar login</button>` : `<button class="btn btn-secondary btn-sm" onclick="EQUIPE.gerenciarLogin('${m.id}','${esc(m.nome)}','${esc(m.email)}','${esc(m.senha_texto || '')}')">Login</button>`}
+              ${!m.user_id ? `<button class="btn btn-primary btn-sm" onclick="EQUIPE.criarLogin('${m.id}','${escAttr(m.nome)}','${escAttr(m.email || '')}')">Criar login</button>` : `<button class="btn btn-secondary btn-sm" onclick="EQUIPE.gerenciarLogin('${m.id}','${escAttr(m.nome)}','${escAttr(m.email)}')">Login</button>`}
             </div>` : ''}
           </div>
         `).join('')}
@@ -66,9 +66,9 @@ const EQUIPE = {
               <td><span class="badge badge-${m.ativo ? 'pronto' : 'entregue'}">${m.ativo ? 'Ativo' : 'Inativo'}</span></td>
               <td>
                 ${isAdmin ? `<button class="btn btn-secondary btn-sm" onclick="EQUIPE.editar('${m.id}')">Editar</button>` : ''}
-                ${isAdmin && !m.senha_texto ? `<button class="btn btn-primary btn-sm" onclick="EQUIPE.criarLogin('${m.id}','${esc(m.nome)}','${esc(m.email || '')}')">Criar login</button>` : ''}
-                ${isAdmin && m.senha_texto ? `<button class="btn btn-secondary btn-sm" onclick="EQUIPE.gerenciarLogin('${m.id}','${esc(m.nome)}','${esc(m.email)}','${esc(m.senha_texto || '')}')">Login</button>` : ''}
-                ${isAdmin && m.id !== APP.profile.id && m.role !== 'dono' ? `<button class="btn btn-danger btn-sm" onclick="EQUIPE.excluir('${m.id}','${esc(m.nome)}')">Excluir</button>` : ''}
+                ${isAdmin && !m.user_id ? `<button class="btn btn-primary btn-sm" onclick="EQUIPE.criarLogin('${m.id}','${escAttr(m.nome)}','${escAttr(m.email || '')}')">Criar login</button>` : ''}
+                ${isAdmin && m.user_id ? `<button class="btn btn-secondary btn-sm" onclick="EQUIPE.gerenciarLogin('${m.id}','${escAttr(m.nome)}','${escAttr(m.email)}')">Login</button>` : ''}
+                ${isAdmin && m.id !== APP.profile.id && m.role !== 'dono' ? `<button class="btn btn-danger btn-sm" onclick="EQUIPE.excluir('${m.id}','${escAttr(m.nome)}')">Excluir</button>` : ''}
               </td>
             </tr>
           `).join('')}
@@ -248,7 +248,7 @@ const EQUIPE = {
     this.carregar();
   },
 
-  gerenciarLogin(profileId, nome, email, senha) {
+  gerenciarLogin(profileId, nome, email) {
     openModal(`
       <div class="modal-header">
         <h3>Login — ${esc(nome)}</h3>
@@ -259,19 +259,13 @@ const EQUIPE = {
           <label>Email</label>
           <input type="text" class="form-control" value="${esc(email)}" readonly style="opacity:.7;">
         </div>
-        <div class="form-group">
-          <label>Senha atual</label>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <input type="text" class="form-control" value="${esc(senha || 'Nao registrada')}" readonly style="opacity:.7;flex:1;">
-          </div>
-        </div>
         <hr style="border-color:var(--border);margin:16px 0;">
         <div class="form-group">
           <label>Nova senha</label>
           <input type="text" class="form-control" id="nova-senha" placeholder="Minimo 6 caracteres" minlength="6">
         </div>
         <div class="modal-footer" style="padding:16px 0 0;border:0;display:flex;gap:8px;">
-          <button type="button" class="btn btn-danger" onclick="EQUIPE.removerLogin('${profileId}','${esc(nome)}')">Remover login</button>
+          <button type="button" class="btn btn-danger" onclick="EQUIPE.removerLogin('${profileId}','${escAttr(nome)}')">Remover login</button>
           <div style="flex:1;"></div>
           <button type="button" class="btn btn-secondary" onclick="closeModal()">Fechar</button>
           <button type="button" class="btn btn-primary" onclick="EQUIPE.salvarNovaSenha('${profileId}')">Redefinir senha</button>
