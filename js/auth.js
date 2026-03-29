@@ -54,7 +54,7 @@ const AUTH = {
     const { data } = await db
       .from('profiles')
       .select('*, oficinas(*)')
-      .eq('id', user.id)
+      .eq('user_id', user.id)
       .single();
     return data;
   },
