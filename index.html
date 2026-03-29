@@ -5,8 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro — Gestao de Oficina</title>
 <meta name="theme-color" content="#D97706">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='8' fill='%2318181C'/><text x='50' y='68' font-size='48' font-weight='900' font-family='Arial' text-anchor='middle' fill='%23D97706'>R</text></svg>">
-<link rel="stylesheet" href="css/style.css?v=03291850">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RPM Pro">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="img/icon-192.svg">
+<link rel="apple-touch-icon" href="img/icon-192.svg">
+<link rel="stylesheet" href="css/style.css?v=03291949">
 </head>
 <body>
 <div class="hazard-top"></div>
@@ -374,35 +379,35 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=03291850"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=03291850"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=03291850"></script>
-<script src="js/utils.js?v=03291850"></script>
-<script src="js/config.js?v=03291850"></script>
-<script src="js/auth.js?v=03291850"></script>
-<script src="js/app.js?v=03291850"></script>
-<script src="js/dashboard.js?v=03291850"></script>
-<script src="js/os.js?v=03291850"></script>
-<script src="js/clientes.js?v=03291850"></script>
-<script src="js/catalogo-veiculos.js?v=03291850"></script>
-<script src="js/catalogo-servicos.js?v=03291850"></script>
-<script src="js/veiculos.js?v=03291850"></script>
-<script src="js/servicos.js?v=03291850"></script>
-<script src="js/pecas.js?v=03291850"></script>
-<script src="js/equipe.js?v=03291850"></script>
-<script src="js/kanban.js?v=03291850"></script>
-<script src="js/config-oficina.js?v=03291850"></script>
-<script src="js/financeiro.js?v=03291850"></script>
-<script src="js/comissao.js?v=03291850"></script>
-<script src="js/super-admin.js?v=03291850"></script>
-<script src="js/fila.js?v=03291850"></script>
-<script src="js/crm.js?v=03291850"></script>
-<script src="js/agendamentos.js?v=03291850"></script>
-<script src="js/contas.js?v=03291850"></script>
-<script src="js/pesquisa.js?v=03291850"></script>
-<script src="js/ajuda.js?v=03291850"></script>
-<script src="js/onboarding.js?v=03291850"></script>
-<script src="js/pdf-os.js?v=03291850"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=03291949"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=03291949"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=03291949"></script>
+<script src="js/utils.js?v=03291949"></script>
+<script src="js/config.js?v=03291949"></script>
+<script src="js/auth.js?v=03291949"></script>
+<script src="js/app.js?v=03291949"></script>
+<script src="js/dashboard.js?v=03291949"></script>
+<script src="js/os.js?v=03291949"></script>
+<script src="js/clientes.js?v=03291949"></script>
+<script src="js/catalogo-veiculos.js?v=03291949"></script>
+<script src="js/catalogo-servicos.js?v=03291949"></script>
+<script src="js/veiculos.js?v=03291949"></script>
+<script src="js/servicos.js?v=03291949"></script>
+<script src="js/pecas.js?v=03291949"></script>
+<script src="js/equipe.js?v=03291949"></script>
+<script src="js/kanban.js?v=03291949"></script>
+<script src="js/config-oficina.js?v=03291949"></script>
+<script src="js/financeiro.js?v=03291949"></script>
+<script src="js/comissao.js?v=03291949"></script>
+<script src="js/super-admin.js?v=03291949"></script>
+<script src="js/fila.js?v=03291949"></script>
+<script src="js/crm.js?v=03291949"></script>
+<script src="js/agendamentos.js?v=03291949"></script>
+<script src="js/contas.js?v=03291949"></script>
+<script src="js/pesquisa.js?v=03291949"></script>
+<script src="js/ajuda.js?v=03291949"></script>
+<script src="js/onboarding.js?v=03291949"></script>
+<script src="js/pdf-os.js?v=03291949"></script>
 <script>
   // Modal helpers
   function openModal(html) {
@@ -451,6 +456,25 @@
 
   // Init
   APP.init();
+
+  // Service Worker — auto-atualização sem CTRL+SHIFT+R
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').then(reg => {
+      reg.addEventListener('updatefound', () => {
+        const nw = reg.installing;
+        nw.addEventListener('statechange', () => {
+          if (nw.state === 'activated') {
+            // Banner de atualização
+            var banner = document.createElement('div');
+            banner.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#D97706;color:#000;padding:12px 24px;border-radius:8px;font-weight:700;cursor:pointer;z-index:99999;font-family:var(--heading);box-shadow:0 4px 20px rgba(217,119,6,.4)';
+            banner.textContent = 'Atualização disponível — toque para atualizar';
+            banner.onclick = () => location.reload();
+            document.body.appendChild(banner);
+          }
+        });
+      });
+    });
+  }
 </script>
 </body>
 </html>
