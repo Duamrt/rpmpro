@@ -6,7 +6,7 @@
 <title>RPM Pro — Gestao de Oficina</title>
 <meta name="theme-color" content="#D97706">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='8' fill='%2318181C'/><text x='50' y='68' font-size='48' font-weight='900' font-family='Arial' text-anchor='middle' fill='%23D97706'>R</text></svg>">
-<link rel="stylesheet" href="css/style.css?v=03291751">
+<link rel="stylesheet" href="css/style.css?v=03291802">
 </head>
 <body>
 <div class="hazard-top"></div>
@@ -20,10 +20,6 @@
         <div class="oficina-name" id="oficina-nome">Carregando...</div>
       </div>
       <div id="sidebar-logo-img"></div>
-      <div class="theme-toggle" onclick="toggleTheme()" title="Dia / Noite">
-        <span class="theme-icon moon">&#127769;</span>
-        <span class="theme-icon sun">&#9728;&#65039;</span>
-      </div>
     </div>
 
     <nav class="sidebar-nav">
@@ -132,6 +128,12 @@
     <button class="btn btn-secondary menu-toggle" onclick="var s=document.getElementById('sidebar'),o=document.getElementById('sidebar-overlay'); s.classList.toggle('open'); o.classList.toggle('show');" style="margin-bottom:16px;">
       ☰ Menu
     </button>
+
+    <!-- Toggle dia/noite fixo no topo direito -->
+    <div class="theme-toggle-main" onclick="toggleTheme()" title="Dia / Noite">
+      <span class="theme-icon moon">&#127769;</span>
+      <span class="theme-icon sun">&#9728;&#65039;</span>
+    </div>
 
     <!-- KANBAN / PATIO -->
     <section id="page-kanban" class="page-content">
@@ -377,35 +379,35 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=03291751"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=03291751"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=03291751"></script>
-<script src="js/utils.js?v=03291751"></script>
-<script src="js/config.js?v=03291751"></script>
-<script src="js/auth.js?v=03291751"></script>
-<script src="js/app.js?v=03291751"></script>
-<script src="js/dashboard.js?v=03291751"></script>
-<script src="js/os.js?v=03291751"></script>
-<script src="js/clientes.js?v=03291751"></script>
-<script src="js/catalogo-veiculos.js?v=03291751"></script>
-<script src="js/catalogo-servicos.js?v=03291751"></script>
-<script src="js/veiculos.js?v=03291751"></script>
-<script src="js/servicos.js?v=03291751"></script>
-<script src="js/pecas.js?v=03291751"></script>
-<script src="js/equipe.js?v=03291751"></script>
-<script src="js/kanban.js?v=03291751"></script>
-<script src="js/config-oficina.js?v=03291751"></script>
-<script src="js/financeiro.js?v=03291751"></script>
-<script src="js/comissao.js?v=03291751"></script>
-<script src="js/super-admin.js?v=03291751"></script>
-<script src="js/fila.js?v=03291751"></script>
-<script src="js/crm.js?v=03291751"></script>
-<script src="js/agendamentos.js?v=03291751"></script>
-<script src="js/contas.js?v=03291751"></script>
-<script src="js/pesquisa.js?v=03291751"></script>
-<script src="js/ajuda.js?v=03291751"></script>
-<script src="js/onboarding.js?v=03291751"></script>
-<script src="js/pdf-os.js?v=03291751"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=03291802"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=03291802"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=03291802"></script>
+<script src="js/utils.js?v=03291802"></script>
+<script src="js/config.js?v=03291802"></script>
+<script src="js/auth.js?v=03291802"></script>
+<script src="js/app.js?v=03291802"></script>
+<script src="js/dashboard.js?v=03291802"></script>
+<script src="js/os.js?v=03291802"></script>
+<script src="js/clientes.js?v=03291802"></script>
+<script src="js/catalogo-veiculos.js?v=03291802"></script>
+<script src="js/catalogo-servicos.js?v=03291802"></script>
+<script src="js/veiculos.js?v=03291802"></script>
+<script src="js/servicos.js?v=03291802"></script>
+<script src="js/pecas.js?v=03291802"></script>
+<script src="js/equipe.js?v=03291802"></script>
+<script src="js/kanban.js?v=03291802"></script>
+<script src="js/config-oficina.js?v=03291802"></script>
+<script src="js/financeiro.js?v=03291802"></script>
+<script src="js/comissao.js?v=03291802"></script>
+<script src="js/super-admin.js?v=03291802"></script>
+<script src="js/fila.js?v=03291802"></script>
+<script src="js/crm.js?v=03291802"></script>
+<script src="js/agendamentos.js?v=03291802"></script>
+<script src="js/contas.js?v=03291802"></script>
+<script src="js/pesquisa.js?v=03291802"></script>
+<script src="js/ajuda.js?v=03291802"></script>
+<script src="js/onboarding.js?v=03291802"></script>
+<script src="js/pdf-os.js?v=03291802"></script>
 <script>
   // Modal helpers
   function openModal(html) {
