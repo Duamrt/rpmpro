@@ -82,7 +82,7 @@ const PDF_OS = {
           { stack: headerLeft, width: '*' },
           {
             stack: [
-              { text: [{ text: 'RPM ', bold: true, color: '#FF4500', fontSize: 11 }, { text: 'PRO', bold: true, color: '#666666', fontSize: 11 }], alignment: 'right', margin: [0, 0, 0, 6] },
+              { text: [{ text: 'RPM ', bold: true, color: '#D97706', fontSize: 11 }, { text: 'PRO', bold: true, color: '#666666', fontSize: 11 }], alignment: 'right', margin: [0, 0, 0, 6] },
               ...infoLines
             ],
             alignment: 'right',
@@ -91,7 +91,7 @@ const PDF_OS = {
         ],
         margin: [0, 0, 0, 8]
       },
-      { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1.5, lineColor: '#FF4500' }], margin: [0, 0, 0, 12] },
+      { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1.5, lineColor: '#D97706' }], margin: [0, 0, 0, 12] },
       titulo ? { text: titulo, fontSize: 16, bold: true, alignment: 'center', color: '#1a1a1a', margin: [0, 0, 0, 14] } : {}
     ];
   },
@@ -120,7 +120,7 @@ const PDF_OS = {
       tableSubtotalRight: { fontSize: 10, bold: true, color: '#1a1a1a', alignment: 'right', fillColor: '#f5f5f5' },
       totalLabel: { fontSize: 10, color: '#555555' },
       totalVal: { fontSize: 10, color: '#333333', alignment: 'right' },
-      totalValDesconto: { fontSize: 10, color: '#e63e00', alignment: 'right' },
+      totalValDesconto: { fontSize: 10, color: '#B45309', alignment: 'right' },
       totalFinal: { fontSize: 14, bold: true, color: '#1a1a1a' },
       totalFinalVal: { fontSize: 14, bold: true, color: '#2e7d32', alignment: 'right' },
       obs: { fontSize: 9, color: '#666666' }
@@ -287,7 +287,7 @@ const PDF_OS = {
     // Pagamento
     const infoPagamento = os.forma_pagamento && os.forma_pagamento !== 'pendente'
       ? { text: 'Forma de pagamento: ' + (pagLabel[os.forma_pagamento] || os.forma_pagamento), fontSize: 10, bold: true, margin: [0, 0, 0, 6] }
-      : { text: 'Pagamento: Pendente', fontSize: 10, bold: true, color: '#e63e00', margin: [0, 0, 0, 6] };
+      : { text: 'Pagamento: Pendente', fontSize: 10, bold: true, color: '#B45309', margin: [0, 0, 0, 6] };
 
     // Observações
     const obsText = os.observacoes || os.descricao;

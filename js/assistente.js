@@ -74,8 +74,8 @@ const ASSISTENTE = {
     if (!container) return;
     container.innerHTML = this._msgs.map(m => {
       if (m.tipo === 'bot') return `<div style="background:#1e2430;padding:12px 14px;border-radius:12px 12px 12px 2px;font-size:13px;line-height:1.6;max-width:85%;color:#e6edf3;">${m.texto.replace(/\n/g, '<br>')}</div>`;
-      if (m.tipo === 'user') return `<div style="background:#FF4500;padding:10px 14px;border-radius:12px 12px 2px 12px;font-size:13px;max-width:80%;align-self:flex-end;color:#fff;">${esc(m.texto)}</div>`;
-      if (m.tipo === 'opcoes') return `<div style="display:flex;flex-wrap:wrap;gap:6px;">${m.opcoes.map(o => `<button onclick="ASSISTENTE.clicarOpcao('${esc(o)}')" style="background:transparent;border:1px solid #FF4500;color:#FF4500;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s;" onmouseover="this.style.background='#FF4500';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='#FF4500'">${o}</button>`).join('')}</div>`;
+      if (m.tipo === 'user') return `<div style="background:#D97706;padding:10px 14px;border-radius:12px 12px 2px 12px;font-size:13px;max-width:80%;align-self:flex-end;color:#fff;">${esc(m.texto)}</div>`;
+      if (m.tipo === 'opcoes') return `<div style="display:flex;flex-wrap:wrap;gap:6px;">${m.opcoes.map(o => `<button onclick="ASSISTENTE.clicarOpcao('${esc(o)}')" style="background:transparent;border:1px solid #D97706;color:#D97706;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s;" onmouseover="this.style.background='#D97706';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='#D97706'">${o}</button>`).join('')}</div>`;
       return '';
     }).join('');
     container.scrollTop = container.scrollHeight;
@@ -197,8 +197,8 @@ const ASSISTENTE = {
     // Injeta o widget na página
     const html = `
     <div id="assistente-container" style="display:none;position:fixed;bottom:90px;right:24px;width:380px;max-width:calc(100vw - 48px);height:520px;max-height:calc(100vh - 120px);background:#0d1117;border:1px solid #21262d;border-radius:16px;z-index:998;flex-direction:column;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.5);">
-      <div style="background:linear-gradient(135deg,#FF4500,#e03d00);padding:16px 20px;display:flex;align-items:center;gap:12px;">
-        <div style="width:36px;height:36px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:#FF4500;">R</div>
+      <div style="background:linear-gradient(135deg,#D97706,#B45309);padding:16px 20px;display:flex;align-items:center;gap:12px;">
+        <div style="width:36px;height:36px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:#D97706;">R</div>
         <div>
           <div style="font-weight:700;font-size:14px;color:#fff;">Assistente RPM Pro</div>
           <div style="font-size:11px;color:#ffcdb8;">Online agora</div>
@@ -209,10 +209,10 @@ const ASSISTENTE = {
       <div id="assistente-msgs" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;"></div>
       <div style="padding:12px;border-top:1px solid #21262d;display:flex;gap:8px;">
         <input type="text" id="assistente-input" placeholder="Digite sua pergunta..." style="flex:1;background:#161b22;border:1px solid #21262d;border-radius:8px;padding:10px 14px;color:#e6edf3;font-size:13px;font-family:inherit;outline:none;" onkeydown="if(event.key==='Enter')ASSISTENTE.enviarMsg()">
-        <button onclick="ASSISTENTE.enviarMsg()" style="background:#FF4500;border:none;color:#fff;padding:10px 16px;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit;font-size:13px;">Enviar</button>
+        <button onclick="ASSISTENTE.enviarMsg()" style="background:#D97706;border:none;color:#fff;padding:10px 16px;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit;font-size:13px;">Enviar</button>
       </div>
     </div>
-    <button id="assistente-btn" onclick="ASSISTENTE.toggle()" style="position:fixed;bottom:90px;right:24px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#FF4500,#e03d00);border:none;color:#fff;font-size:24px;cursor:pointer;z-index:997;box-shadow:0 4px 16px rgba(255,69,0,0.4);display:flex;align-items:center;justify-content:center;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">💬</button>`;
+    <button id="assistente-btn" onclick="ASSISTENTE.toggle()" style="position:fixed;bottom:90px;right:24px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#D97706,#B45309);border:none;color:#fff;font-size:24px;cursor:pointer;z-index:997;box-shadow:0 4px 16px rgba(217,119,6,0.4);display:flex;align-items:center;justify-content:center;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">💬</button>`;
 
     document.body.insertAdjacentHTML('beforeend', html);
 

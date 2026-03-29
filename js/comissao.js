@@ -138,7 +138,7 @@ const COMISSAO = {
       content: [
         {
           columns: [
-            { text: [{ text: 'RPM ', bold: true, color: '#FF4500', fontSize: 22 }, { text: 'PRO', bold: true, fontSize: 22 }], width: 'auto' },
+            { text: [{ text: 'RPM ', bold: true, color: '#D97706', fontSize: 22 }, { text: 'PRO', bold: true, fontSize: 22 }], width: 'auto' },
             {
               stack: [
                 { text: oficina.nome || 'Oficina', fontSize: 14, bold: true, alignment: 'right' },
@@ -149,7 +149,7 @@ const COMISSAO = {
           ],
           margin: [0, 0, 0, 8]
         },
-        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: '#FF4500' }], margin: [0, 0, 0, 15] },
+        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: '#D97706' }], margin: [0, 0, 0, 15] },
         { text: 'RELATORIO DE COMISSAO', fontSize: 16, bold: true, alignment: 'center', margin: [0, 0, 0, 5] },
         { text: mesNome + ' / ' + ano, fontSize: 12, alignment: 'center', color: '#666666', margin: [0, 0, 0, 15] },
         { text: lista.length + ' OS entregues no periodo', fontSize: 10, color: '#999999', margin: [0, 0, 0, 12] },

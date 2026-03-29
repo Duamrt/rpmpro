@@ -5,39 +5,42 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Avalie nosso servico — RPM Pro</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Inter', sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  :root { --primary: #D97706; --primary-hover: #B45309; --bg: #131316; --bg-card: #1E1E22; --border: #2E2E36; --text: #F5F5F5; --text-sec: #A1A1AA; --text-muted: #71717A; --success: #16A34A; --heading: 'Barlow Condensed', sans-serif; --body: 'IBM Plex Sans', sans-serif; }
+  body { font-family: var(--body); background: var(--bg); color: var(--text); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; -webkit-font-smoothing: antialiased; }
+  .hazard-p { position:fixed; top:0; left:0; right:0; height:3px; background:repeating-linear-gradient(-45deg,var(--primary),var(--primary) 6px,transparent 6px,transparent 12px); opacity:.5; z-index:10; }
   .container { width: 100%; max-width: 480px; }
   .logo { text-align: center; margin-bottom: 32px; }
-  .logo h1 { font-size: 36px; font-weight: 900; letter-spacing: -1px; }
-  .logo .rpm { color: #FF4500; }
+  .logo h1 { font-family: var(--heading); font-size: 36px; font-weight: 800; letter-spacing: 3px; }
+  .logo .rpm { color: var(--primary); }
   .logo .pro { color: #fff; }
-  .card { background: #161b22; border: 1px solid #21262d; border-radius: 16px; padding: 32px; }
-  .card h2 { font-size: 20px; text-align: center; margin-bottom: 8px; }
-  .card .sub { text-align: center; color: #8b949e; font-size: 14px; margin-bottom: 24px; }
-  .info { background: #1c2128; padding: 12px 16px; border-radius: 10px; margin-bottom: 24px; font-size: 14px; }
-  .info span { color: #8b949e; }
-  .info strong { color: #FF4500; }
+  .card { background: var(--bg-card); border: 1px solid var(--border); border-top: 3px solid var(--primary); border-radius: 8px; padding: 32px; }
+  .card h2 { font-family: var(--heading); font-size: 20px; text-align: center; margin-bottom: 8px; letter-spacing: 1px; text-transform: uppercase; }
+  .card .sub { text-align: center; color: var(--text-sec); font-size: 14px; margin-bottom: 24px; }
+  .info { background: #2A2A30; padding: 12px 16px; border-radius: 6px; margin-bottom: 24px; font-size: 14px; }
+  .info span { color: var(--text-sec); }
+  .info strong { color: var(--primary); }
   .stars { display: flex; justify-content: center; gap: 8px; margin-bottom: 24px; }
-  .star { width: 56px; height: 56px; border-radius: 12px; border: 2px solid #21262d; background: #1c2128; font-size: 28px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
-  .star:hover, .star.active { border-color: #FF4500; background: #FF450022; transform: scale(1.1); }
-  .star.active { box-shadow: 0 0 16px #FF450044; }
-  textarea { width: 100%; background: #1c2128; border: 1px solid #21262d; border-radius: 10px; padding: 12px; color: #e6edf3; font-family: inherit; font-size: 14px; resize: vertical; min-height: 80px; margin-bottom: 16px; }
-  textarea:focus { outline: none; border-color: #FF4500; }
-  .btn { width: 100%; padding: 14px; background: #FF4500; color: #fff; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit; transition: background 0.2s; }
-  .btn:hover { background: #e63e00; }
+  .star { width: 56px; height: 56px; border-radius: 6px; border: 2px solid var(--border); background: #2A2A30; font-size: 28px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+  .star:hover, .star.active { border-color: var(--primary); background: rgba(217,119,6,0.12); transform: scale(1.1); }
+  .star.active { box-shadow: 0 0 16px rgba(217,119,6,0.25); }
+  textarea { width: 100%; background: #2A2A30; border: 1px solid var(--border); border-radius: 6px; padding: 12px; color: var(--text); font-family: var(--body); font-size: 14px; resize: vertical; min-height: 80px; margin-bottom: 16px; }
+  textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(217,119,6,0.15); }
+  .btn { width: 100%; padding: 14px; background: var(--primary); color: #000; border: none; border-radius: 6px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: var(--body); transition: background 0.2s; }
+  .btn:hover { background: var(--primary-hover); }
   .btn:disabled { opacity: 0.5; cursor: not-allowed; }
   .sucesso { text-align: center; padding: 40px 0; }
   .sucesso .icon { font-size: 64px; margin-bottom: 16px; }
-  .sucesso h2 { margin-bottom: 8px; color: #3fb950; }
+  .sucesso h2 { margin-bottom: 8px; color: var(--success); }
   .erro { text-align: center; padding: 40px 0; }
   .erro .icon { font-size: 64px; margin-bottom: 16px; }
-  .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #484f58; }
+  .footer { text-align: center; margin-top: 20px; font-size: 12px; color: var(--text-muted); }
 </style>
 </head>
 <body>
 
+<div class="hazard-p"></div>
 <div class="container">
   <div class="logo">
     <h1><span class="rpm">RPM</span><span class="pro">PRO</span></h1>
@@ -47,7 +50,7 @@
     <div style="text-align:center;padding:30px;color:#8b949e;">Carregando...</div>
   </div>
 
-  <div class="footer"><a href="https://rpmpro.com.br/landing.html" target="_blank" style="color:#484f58;text-decoration:none;">Powered by <strong style="color:#FF4500;">RPM Pro</strong></a> — Sistema de gestao para oficinas</div>
+  <div class="footer"><a href="https://rpmpro.com.br/landing.html" target="_blank" style="color:var(--text-muted);text-decoration:none;">Powered by <strong style="color:var(--primary);">RPM Pro</strong></a> — Sistema de gestao para oficinas</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

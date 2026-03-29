@@ -4,30 +4,35 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro — Login</title>
-<meta name="theme-color" content="#FF4500">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a1d23'/><text x='50' y='68' font-size='48' font-weight='900' font-family='Arial' text-anchor='middle' fill='%23FF4500'>R</text></svg>">
-<link rel="stylesheet" href="css/style.css?v=03280944">
+<meta name="theme-color" content="#D97706">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='8' fill='%2318181C'/><text x='50' y='68' font-size='48' font-weight='900' font-family='Arial' text-anchor='middle' fill='%23D97706'>R</text></svg>">
+<link rel="stylesheet" href="css/style.css?v=03291751">
 <style>
   body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+  .hazard-login { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: repeating-linear-gradient(-45deg, var(--primary), var(--primary) 6px, transparent 6px, transparent 12px); opacity: 0.5; }
   .login-container { width: 100%; max-width: 400px; padding: 24px; }
   .login-logo { text-align: center; margin-bottom: 40px; }
-  .login-logo h1 { font-size: 48px; font-weight: 900; letter-spacing: -2px; }
+  .login-logo h1 { font-family: var(--heading); font-size: 48px; font-weight: 800; letter-spacing: 3px; }
   .login-logo h1 .rpm { color: var(--primary); }
-  .login-logo h1 .pro { color: #fff; }
+  .login-logo h1 .pro { color: var(--text); }
   .login-logo p { color: var(--text-secondary); font-size: 14px; margin-top: 4px; }
-  .login-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 32px; }
-  .login-card h2 { font-size: 20px; margin-bottom: 24px; text-align: center; }
+  .login-card { background: var(--bg-card); border: 1px solid var(--border); border-top: 3px solid var(--primary); border-radius: var(--radius-lg); padding: 32px; transition: background .3s; }
+  .login-card h2 { font-family: var(--heading); font-size: 20px; margin-bottom: 24px; text-align: center; letter-spacing: 1px; text-transform: uppercase; }
   .login-btn { width: 100%; padding: 12px; font-size: 15px; margin-top: 8px; }
   .login-footer { text-align: center; margin-top: 20px; font-size: 13px; color: var(--text-secondary); }
   .login-footer a { color: var(--primary); text-decoration: none; font-weight: 600; }
   .login-error { background: var(--danger-bg); color: var(--danger); padding: 10px 14px; border-radius: var(--radius); font-size: 13px; margin-bottom: 16px; display: none; }
   .tab-switch { display: flex; gap: 0; margin-bottom: 24px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
-  .tab-switch button { flex: 1; padding: 10px; background: var(--bg-input); color: var(--text-secondary); border: none; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
-  .tab-switch button.active { background: var(--primary); color: #fff; }
+  .tab-switch button { flex: 1; padding: 10px; background: var(--bg-input); color: var(--text-secondary); border: none; font-size: 14px; font-weight: 600; cursor: pointer; font-family: var(--body); transition: background .3s; }
+  .tab-switch button.active { background: var(--primary); color: #000; }
 </style>
+<script>
+  (function(){ var t = localStorage.getItem('rpmpro-theme') || 'dark'; document.documentElement.setAttribute('data-theme', t); })();
+</script>
 </head>
 <body>
 
+<div class="hazard-login"></div>
 <div class="login-container">
   <div class="login-logo">
     <h1><span class="rpm">RPM</span><span class="pro">PRO</span></h1>
@@ -86,8 +91,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/config.js?v=03280944"></script>
-<script src="js/auth.js?v=03280944"></script>
+<script src="js/config.js?v=03291751"></script>
+<script src="js/auth.js?v=03291751"></script>
 <script>
   // Checa se ja ta logado
   (async () => {

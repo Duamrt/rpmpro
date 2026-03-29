@@ -4,21 +4,26 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro — Gestao de Oficina</title>
-<meta name="theme-color" content="#FF4500">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a1d23'/><text x='50' y='68' font-size='48' font-weight='900' font-family='Arial' text-anchor='middle' fill='%23FF4500'>R</text></svg>">
-<link rel="stylesheet" href="css/style.css?v=03280944">
+<meta name="theme-color" content="#D97706">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='8' fill='%2318181C'/><text x='50' y='68' font-size='48' font-weight='900' font-family='Arial' text-anchor='middle' fill='%23D97706'>R</text></svg>">
+<link rel="stylesheet" href="css/style.css?v=03291751">
 </head>
 <body>
+<div class="hazard-top"></div>
 
 <div class="app-layout">
   <!-- SIDEBAR DESKTOP -->
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-logo" style="display:flex;align-items:center;gap:12px;">
+    <div class="sidebar-logo">
       <div style="flex:1;">
         <h1><span class="rpm">RPM</span><span class="pro">PRO</span></h1>
         <div class="oficina-name" id="oficina-nome">Carregando...</div>
       </div>
       <div id="sidebar-logo-img"></div>
+      <div class="theme-toggle" onclick="toggleTheme()" title="Dia / Noite">
+        <span class="theme-icon moon">&#127769;</span>
+        <span class="theme-icon sun">&#9728;&#65039;</span>
+      </div>
     </div>
 
     <nav class="sidebar-nav">
@@ -372,35 +377,35 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=03280944"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=03280944"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=03280944"></script>
-<script src="js/utils.js?v=03280944"></script>
-<script src="js/config.js?v=03280944"></script>
-<script src="js/auth.js?v=03280944"></script>
-<script src="js/app.js?v=03280944"></script>
-<script src="js/dashboard.js?v=03280944"></script>
-<script src="js/os.js?v=03280944"></script>
-<script src="js/clientes.js?v=03280944"></script>
-<script src="js/catalogo-veiculos.js?v=03280944"></script>
-<script src="js/catalogo-servicos.js?v=03280944"></script>
-<script src="js/veiculos.js?v=03280944"></script>
-<script src="js/servicos.js?v=03280944"></script>
-<script src="js/pecas.js?v=03280944"></script>
-<script src="js/equipe.js?v=03280944"></script>
-<script src="js/kanban.js?v=03280944"></script>
-<script src="js/config-oficina.js?v=03280944"></script>
-<script src="js/financeiro.js?v=03280944"></script>
-<script src="js/comissao.js?v=03280944"></script>
-<script src="js/super-admin.js?v=03280944"></script>
-<script src="js/fila.js?v=03280944"></script>
-<script src="js/crm.js?v=03280944"></script>
-<script src="js/agendamentos.js?v=03280944"></script>
-<script src="js/contas.js?v=03280944"></script>
-<script src="js/pesquisa.js?v=03280944"></script>
-<script src="js/ajuda.js?v=03280944"></script>
-<script src="js/onboarding.js?v=03280944"></script>
-<script src="js/pdf-os.js?v=03280944"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=03291751"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js?v=03291751"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js?v=03291751"></script>
+<script src="js/utils.js?v=03291751"></script>
+<script src="js/config.js?v=03291751"></script>
+<script src="js/auth.js?v=03291751"></script>
+<script src="js/app.js?v=03291751"></script>
+<script src="js/dashboard.js?v=03291751"></script>
+<script src="js/os.js?v=03291751"></script>
+<script src="js/clientes.js?v=03291751"></script>
+<script src="js/catalogo-veiculos.js?v=03291751"></script>
+<script src="js/catalogo-servicos.js?v=03291751"></script>
+<script src="js/veiculos.js?v=03291751"></script>
+<script src="js/servicos.js?v=03291751"></script>
+<script src="js/pecas.js?v=03291751"></script>
+<script src="js/equipe.js?v=03291751"></script>
+<script src="js/kanban.js?v=03291751"></script>
+<script src="js/config-oficina.js?v=03291751"></script>
+<script src="js/financeiro.js?v=03291751"></script>
+<script src="js/comissao.js?v=03291751"></script>
+<script src="js/super-admin.js?v=03291751"></script>
+<script src="js/fila.js?v=03291751"></script>
+<script src="js/crm.js?v=03291751"></script>
+<script src="js/agendamentos.js?v=03291751"></script>
+<script src="js/contas.js?v=03291751"></script>
+<script src="js/pesquisa.js?v=03291751"></script>
+<script src="js/ajuda.js?v=03291751"></script>
+<script src="js/onboarding.js?v=03291751"></script>
+<script src="js/pdf-os.js?v=03291751"></script>
 <script>
   // Modal helpers
   function openModal(html) {
@@ -421,6 +426,19 @@
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeModal();
   });
+
+  // Theme toggle
+  function toggleTheme() {
+    const html = document.documentElement;
+    const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('rpmpro-theme', next);
+    document.querySelector('meta[name="theme-color"]').content = next === 'dark' ? '#D97706' : '#B45309';
+  }
+  (function() {
+    var saved = localStorage.getItem('rpmpro-theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', saved);
+  })();
 
   // Init
   APP.init();

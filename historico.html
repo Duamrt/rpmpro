@@ -4,29 +4,31 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Historico do Veiculo — RPM Pro</title>
-<meta name="theme-color" content="#FF4500">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a1d23'/><text x='50' y='68' font-size='48' font-weight='900' font-family='Arial' text-anchor='middle' fill='%23FF4500'>R</text></svg>">
+<meta name="theme-color" content="#D97706">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='8' fill='%2318181C'/><text x='50' y='68' font-size='48' font-weight='900' font-family='Arial' text-anchor='middle' fill='%23D97706'>R</text></svg>">
 <meta property="og:title" content="Historico do Veiculo — RPM Pro">
 <meta property="og:description" content="Consulte o historico de manutencoes do seu veiculo">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-  :root { --primary: #FF4500; --bg: #0d1117; --bg-card: #161b22; --border: #21262d; --text: #e6edf3; --text-secondary: #8b949e; --text-muted: #484f58; --success: #3fb950; --warning: #f0883e; --radius: 10px; }
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+  :root { --primary: #D97706; --primary-hover: #B45309; --bg: #131316; --bg-card: #1E1E22; --border: #2E2E36; --text: #F5F5F5; --text-secondary: #A1A1AA; --text-muted: #71717A; --success: #16A34A; --warning: #FBBF24; --radius: 6px; --heading: 'Barlow Condensed', sans-serif; --body: 'IBM Plex Sans', sans-serif; }
   * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+  body { font-family:var(--body); background:var(--bg); color:var(--text); min-height:100vh; -webkit-font-smoothing:antialiased; }
+  .hazard-h { position:fixed; top:0; left:0; right:0; height:3px; background:repeating-linear-gradient(-45deg,var(--primary),var(--primary) 6px,transparent 6px,transparent 12px); opacity:.5; z-index:10; }
   .container { max-width:700px; margin:0 auto; padding:24px 16px; }
   .header { text-align:center; margin-bottom:32px; }
-  .header h1 { font-size:14px; }
+  .header h1 { font-family:var(--heading); font-size:14px; letter-spacing:2px; }
   .header h1 .rpm { color:var(--primary); }
   .header h1 .pro { color:#fff; }
   .busca { display:flex; gap:8px; margin-bottom:24px; }
-  .busca input { flex:1; padding:14px 16px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); color:var(--text); font-size:16px; font-family:inherit; text-transform:uppercase; }
-  .busca input:focus { outline:none; border-color:var(--primary); }
-  .busca button { padding:14px 24px; background:var(--primary); color:#fff; border:none; border-radius:var(--radius); font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }
-  .card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:12px; }
+  .busca input { flex:1; padding:14px 16px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); color:var(--text); font-size:16px; font-family:var(--body); text-transform:uppercase; }
+  .busca input:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(217,119,6,0.15); }
+  .busca button { padding:14px 24px; background:var(--primary); color:#000; border:none; border-radius:var(--radius); font-size:14px; font-weight:700; cursor:pointer; font-family:var(--body); }
+  .busca button:hover { background:var(--primary-hover); }
+  .card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:12px; box-shadow:0 2px 6px rgba(0,0,0,0.3); }
   .card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; }
-  .badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; }
-  .badge-ok { background:#3fb95022; color:#3fb950; }
-  .badge-pendente { background:#f0883e22; color:#f0883e; }
+  .badge { display:inline-block; padding:3px 10px; border-radius:4px; font-size:11px; font-weight:600; }
+  .badge-ok { background:rgba(22,163,74,0.15); color:#16A34A; }
+  .badge-pendente { background:rgba(251,191,36,0.15); color:#FBBF24; }
   .item { padding:8px 0; border-bottom:1px solid var(--border); font-size:13px; display:flex; justify-content:space-between; }
   .item:last-child { border:0; }
   .empty { text-align:center; padding:60px 20px; color:var(--text-muted); }
@@ -39,6 +41,7 @@
 </style>
 </head>
 <body>
+<div class="hazard-h"></div>
 <div class="container">
   <div class="header">
     <h1><span class="rpm">RPM </span><span class="pro">PRO</span></h1>
