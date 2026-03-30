@@ -580,7 +580,7 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 @media (max-width: 768px) {
   #admin-barra { left: 0 !important; }
 
-  .sidebar { transform: translateX(-100%); padding-bottom: 80px; }
+  .sidebar { transform: translateX(-100%); z-index: 200; }
   .sidebar.open { transform: translateX(0); }
 
   .sidebar-overlay {
