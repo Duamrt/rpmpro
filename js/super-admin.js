@@ -470,7 +470,7 @@ const SUPER_ADMIN = {
         <span style="font-size:15px;">🏢 ${esc(nomeOficina)}</span>
         ${cidadeUF ? `<span style="opacity:0.7;margin-left:8px;font-size:12px;font-weight:400;">${esc(cidadeUF)}</span>` : ''}
       </div>
-      <button onclick="SUPER_ADMIN.voltarAdmin()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;padding:6px 16px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">← Voltar ao Admin</button>
+      <button onclick="SUPER_ADMIN.voltarAdmin()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;padding:6px 16px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">← Voltar ao Master</button>
     `;
 
     APP.toast('Acessando: ' + (oficina?.nome || nome));
