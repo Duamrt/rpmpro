@@ -14,7 +14,7 @@ const OS = {
     let query = db
       .from('ordens_servico')
       .select('*, veiculos(placa, marca, modelo), clientes(nome), profiles!ordens_servico_mecanico_id_fkey(nome)', { count: 'exact' })
-      .eq('oficina_id', APP.profile.oficina_id)
+      .eq('oficina_id', APP.oficinaId)
       .order('created_at', { ascending: false });
 
     if (this._filtroStatus) {
@@ -137,7 +137,7 @@ const OS = {
     const { data: mecanicos } = await db
       .from('profiles')
       .select('id, nome')
-      .eq('oficina_id', APP.profile.oficina_id)
+      .eq('oficina_id', APP.oficinaId)
       .in('role', ['mecanico', 'aux_mecanico', 'dono', 'gerente'])
       .eq('ativo', true)
       .order('nome');
@@ -425,7 +425,7 @@ const OS = {
       const { data: veiculos } = await db
         .from('veiculos')
         .select('*, clientes(id, nome, whatsapp)')
-        .eq('oficina_id', APP.profile.oficina_id)
+        .eq('oficina_id', APP.oficinaId)
         .ilike('placa', placa + '%')
         .order('placa')
         .limit(8);
@@ -487,7 +487,7 @@ const OS = {
       return;
     }
 
-    const oficina_id = APP.profile.oficina_id;
+    const oficina_id = APP.oficinaId;
     let veiculo_id = document.getElementById('os-veiculo-id').value;
     let cliente_id = document.getElementById('os-cliente-id').value;
 
@@ -933,7 +933,7 @@ const OS = {
     if (tipo === 'estoque' && !this._pecasEstoque) {
       const { data } = await db.from('pecas')
         .select('id, nome, codigo, marca, preco_venda, quantidade, compatibilidade')
-        .eq('oficina_id', APP.profile.oficina_id)
+        .eq('oficina_id', APP.oficinaId)
         .order('nome');
       this._pecasEstoque = data || [];
     }
@@ -1274,7 +1274,7 @@ const OS = {
     // Busca mecanicos
     const { data: mecanicos } = await db.from('profiles')
       .select('id, nome')
-      .eq('oficina_id', APP.profile.oficina_id)
+      .eq('oficina_id', APP.oficinaId)
       .in('role', ['mecanico', 'aux_mecanico', 'dono', 'gerente'])
       .order('nome');
 
@@ -1322,7 +1322,7 @@ const OS = {
       km_entrada: document.getElementById('edit-km').value ? parseInt(document.getElementById('edit-km').value) : null,
       desconto: parseFloat(document.getElementById('edit-desconto').value) || 0,
       updated_at: new Date().toISOString()
-    }).eq('id', id).eq('oficina_id', APP.profile.oficina_id);
+    }).eq('id', id).eq('oficina_id', APP.oficinaId);
 
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
     closeModal();
@@ -1333,7 +1333,7 @@ const OS = {
   async excluirOS(id) {
     if (!confirm('Tem certeza que quer excluir esta OS? Essa acao nao pode ser desfeita.')) return;
 
-    const oficina_id = APP.profile.oficina_id;
+    const oficina_id = APP.oficinaId;
 
     // Verifica se não é entregue
     const { data: os } = await db.from('ordens_servico').select('status').eq('id', id).single();
@@ -1419,7 +1419,7 @@ const OS = {
 
   // Lança OS no caixa automaticamente (se entregue + paga + ainda não lançada)
   async _lancarNoCaixa(osId) {
-    const oficina_id = APP.profile.oficina_id;
+    const oficina_id = APP.oficinaId;
 
     // Busca OS pra verificar se tá paga e entregue
     const { data: os } = await db.from('ordens_servico')
@@ -1675,7 +1675,7 @@ const OS = {
     } else {
       const { error } = await db.from('checklists_entrada')
         .insert({
-          oficina_id: APP.profile.oficina_id,
+          oficina_id: APP.oficinaId,
           os_id: osId,
           itens,
           observacoes,
@@ -1751,7 +1751,7 @@ const OS = {
     } else {
       const { error } = await db.from('checklists_saida')
         .insert({
-          oficina_id: APP.profile.oficina_id,
+          oficina_id: APP.oficinaId,
           os_id: osId,
           itens,
           observacoes,
@@ -1795,7 +1795,7 @@ const OS = {
 
   async uploadFotos(files, osId, tipo) {
     if (!files || !files.length) return;
-    const oficina_id = APP.profile.oficina_id;
+    const oficina_id = APP.oficinaId;
 
     for (const file of files) {
       if (file.size > 2 * 1024 * 1024) { APP.toast('Foto muito grande (max 2MB): ' + file.name, 'error'); continue; }

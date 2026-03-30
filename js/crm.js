@@ -5,7 +5,7 @@ const CRM = {
   async carregar() {
     const container = document.getElementById('crm-content');
     if (!container) return;
-    const oficina_id = APP.profile.oficina_id;
+    const oficina_id = APP.oficinaId;
 
     // Busca todos os clientes com data da última OS
     const { data: clientes } = await db

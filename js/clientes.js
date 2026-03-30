@@ -16,7 +16,7 @@ const CLIENTES = {
     let query = db
       .from('clientes')
       .select('*, veiculos(count)')
-      .eq('oficina_id', APP.profile.oficina_id)
+      .eq('oficina_id', APP.oficinaId)
       .order('nome')
       .range(this._offset, this._offset + this._limit - 1);
 
@@ -286,7 +286,7 @@ const CLIENTES = {
 
   async salvar(e, id) {
     e.preventDefault();
-    const oficina_id = APP.profile.oficina_id;
+    const oficina_id = APP.oficinaId;
     const dadosCliente = {
       oficina_id,
       nome: document.getElementById('cli-nome').value.trim(),
@@ -378,7 +378,7 @@ const CLIENTES = {
   async excluir(id, nome) {
     if (!confirm(`Excluir o cliente "${nome}" e todos os veiculos dele? Essa acao nao pode ser desfeita.`)) return;
 
-    const oficina_id = APP.profile.oficina_id;
+    const oficina_id = APP.oficinaId;
     // Remove veículos do cliente primeiro
     await db.from('veiculos').delete().eq('cliente_id', id).eq('oficina_id', oficina_id);
     // Remove cliente
@@ -391,7 +391,7 @@ const CLIENTES = {
 
   async excluirVeiculo(veiculoId, placa, clienteId) {
     if (!confirm(`Excluir o veiculo ${placa}?`)) return;
-    const { error } = await db.from('veiculos').delete().eq('id', veiculoId).eq('oficina_id', APP.profile.oficina_id);
+    const { error } = await db.from('veiculos').delete().eq('id', veiculoId).eq('oficina_id', APP.oficinaId);
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
     APP.toast('Veiculo excluido');
     // Reabre o modal do cliente pra atualizar a lista
@@ -410,17 +410,17 @@ const CLIENTES = {
       db.from('ordens_servico')
         .select('*, veiculos(placa, marca, modelo), itens_os(tipo, descricao, valor), profiles!ordens_servico_mecanico_id_fkey(nome)')
         .eq('cliente_id', clienteId)
-        .eq('oficina_id', APP.profile.oficina_id)
+        .eq('oficina_id', APP.oficinaId)
         .order('created_at', { ascending: false }),
       db.from('veiculos')
         .select('*')
         .eq('cliente_id', clienteId)
-        .eq('oficina_id', APP.profile.oficina_id)
+        .eq('oficina_id', APP.oficinaId)
         .order('placa'),
       db.from('agendamentos')
         .select('*, veiculos(placa)')
         .eq('cliente_id', clienteId)
-        .eq('oficina_id', APP.profile.oficina_id)
+        .eq('oficina_id', APP.oficinaId)
         .order('data_prevista', { ascending: false })
         .limit(10)
     ]);

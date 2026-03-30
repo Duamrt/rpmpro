@@ -11,7 +11,7 @@ const AGENDAMENTOS = {
   async carregar() {
     const container = document.getElementById('agendamentos-content');
     if (!container) return;
-    const oficina_id = APP.profile.oficina_id;
+    const oficina_id = APP.oficinaId;
 
     // Busca todos os agendamentos do mes visivel (+/- 1 mes pra dias do mes anterior/proximo)
     const inicio = new Date(this._anoAtual, this._mesAtual - 1, 1).toISOString().split('T')[0];
@@ -297,7 +297,7 @@ const AGENDAMENTOS = {
   },
 
   async abrirModal(prefill = {}) {
-    const oficina_id = APP.profile.oficina_id;
+    const oficina_id = APP.oficinaId;
 
     const [cliRes, veiRes] = await Promise.all([
       db.from('clientes').select('id, nome').eq('oficina_id', oficina_id).order('nome'),
@@ -416,7 +416,7 @@ const AGENDAMENTOS = {
     if (!container) return;
 
     const capacidade = APP.oficina?.capacidade_diaria || 5;
-    const oficina_id = APP.profile.oficina_id;
+    const oficina_id = APP.oficinaId;
 
     // Busca agendamentos dos próximos 14 dias
     const hoje = new Date();
@@ -508,7 +508,7 @@ const AGENDAMENTOS = {
   },
 
   async _recarregarEReabrir() {
-    const oficina_id = APP.profile.oficina_id;
+    const oficina_id = APP.oficinaId;
     const { data } = await db.from('clientes').select('id, nome').eq('oficina_id', oficina_id).order('nome');
     this._clientes = data || [];
     const { data: veic } = await db.from('veiculos').select('id, placa, marca, modelo, cliente_id').eq('oficina_id', oficina_id).order('placa');
@@ -568,7 +568,7 @@ const AGENDAMENTOS = {
 
   async salvar(e, id) {
     e.preventDefault();
-    const oficina_id = APP.profile.oficina_id;
+    const oficina_id = APP.oficinaId;
     const dataSel = document.getElementById('ag-data').value;
 
     if (!id) {
@@ -635,7 +635,7 @@ const AGENDAMENTOS = {
     const update = { status: novoStatus };
     if (novoStatus === 'notificado') update.notificado_em = new Date().toISOString();
 
-    const { error } = await db.from('agendamentos').update(update).eq('id', id).eq('oficina_id', APP.profile.oficina_id);
+    const { error } = await db.from('agendamentos').update(update).eq('id', id).eq('oficina_id', APP.oficinaId);
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
     APP.toast('Status atualizado');
     this.carregar();

@@ -3,7 +3,7 @@ const PESQUISA = {
   async carregar() {
     const container = document.getElementById('pesquisa-content');
     if (!container) return;
-    const oficina_id = APP.profile.oficina_id;
+    const oficina_id = APP.oficinaId;
 
     const { data } = await db
       .from('pesquisas_satisfacao')
@@ -98,7 +98,7 @@ const PESQUISA = {
   async criarEEnviar(osId, clienteId, clienteNome, clienteWhatsapp, osNumero) {
     if (!clienteWhatsapp) return;
 
-    const oficina_id = APP.profile.oficina_id;
+    const oficina_id = APP.oficinaId;
 
     // Verifica se já existe pesquisa pra essa OS
     const { data: existe } = await db.from('pesquisas_satisfacao')

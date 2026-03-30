@@ -4,7 +4,7 @@ const EQUIPE = {
     const { data, error } = await db
       .from('profiles')
       .select('id, nome, email, telefone, role, comissao_percent, ativo, user_id')
-      .eq('oficina_id', APP.profile.oficina_id)
+      .eq('oficina_id', APP.oficinaId)
       .order('nome');
 
     if (error) { APP.toast('Erro ao carregar equipe', 'error'); return; }
@@ -144,11 +144,11 @@ const EQUIPE = {
 
     if (id) {
       // Edita membro existente
-      const { error } = await db.from('profiles').update(dados).eq('id', id).eq('oficina_id', APP.profile.oficina_id);
+      const { error } = await db.from('profiles').update(dados).eq('id', id).eq('oficina_id', APP.oficinaId);
       if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
     } else {
       // Novo membro — usa RPC pra criar sem FK do auth
-      dados.oficina_id = APP.profile.oficina_id;
+      dados.oficina_id = APP.oficinaId;
       const { error } = await db.rpc('criar_membro_equipe', {
         p_oficina_id: dados.oficina_id,
         p_nome: dados.nome,
@@ -302,7 +302,7 @@ const EQUIPE = {
   async excluir(id, nome) {
     if (!confirm(`Excluir ${nome} da equipe? Essa acao nao pode ser desfeita.`)) return;
 
-    const { error } = await db.from('profiles').delete().eq('id', id).eq('oficina_id', APP.profile.oficina_id);
+    const { error } = await db.from('profiles').delete().eq('id', id).eq('oficina_id', APP.oficinaId);
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
     APP.toast(nome + ' removido da equipe');
     this.carregar();

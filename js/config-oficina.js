@@ -7,7 +7,7 @@ const CONFIG = {
     const { data: oficina } = await db
       .from('oficinas')
       .select('*')
-      .eq('id', APP.profile.oficina_id)
+      .eq('id', APP.oficinaId)
       .single();
 
     if (!oficina) { container.innerHTML = '<div class="empty-state"><h3>Erro ao carregar</h3></div>'; return; }
@@ -266,7 +266,7 @@ const CONFIG = {
       bairro: document.getElementById('cfg-bairro').value.trim(),
       cidade: document.getElementById('cfg-cidade').value.trim(),
       estado: document.getElementById('cfg-estado').value.trim().toUpperCase()
-    }).eq('id', APP.profile.oficina_id);
+    }).eq('id', APP.oficinaId);
 
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
 
@@ -286,7 +286,7 @@ const CONFIG = {
       const fechamento = document.querySelector(`.cfg-fechamento[data-dia="${dia}"]`)?.value || '';
       horario[dia] = { ativo, abertura, fechamento };
     });
-    const { error } = await db.from('oficinas').update({ horario }).eq('id', APP.profile.oficina_id);
+    const { error } = await db.from('oficinas').update({ horario }).eq('id', APP.oficinaId);
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
     if (APP.oficina) APP.oficina.horario = horario;
     APP.toast('Horários salvos');
@@ -299,7 +299,7 @@ const CONFIG = {
       campos['msg_' + tipo + '_abertura'] = document.getElementById('cfg-msg-' + tipo + '-abertura').value.trim();
       campos['msg_' + tipo + '_fechamento'] = document.getElementById('cfg-msg-' + tipo + '-fechamento').value.trim();
     });
-    const { error } = await db.from('oficinas').update(campos).eq('id', APP.profile.oficina_id);
+    const { error } = await db.from('oficinas').update(campos).eq('id', APP.oficinaId);
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
     if (APP.oficina) Object.assign(APP.oficina, campos);
     APP.toast('Mensagens salvas');
@@ -318,7 +318,7 @@ const CONFIG = {
       comissao_padrao,
       margem_padrao,
       capacidade_diaria
-    }).eq('id', APP.profile.oficina_id);
+    }).eq('id', APP.oficinaId);
 
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
 
@@ -338,7 +338,7 @@ const CONFIG = {
 
     const { error } = await db.from('oficinas').update({
       pix_tipo, pix_chave, pix_nome
-    }).eq('id', APP.profile.oficina_id);
+    }).eq('id', APP.oficinaId);
 
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
 
@@ -354,7 +354,7 @@ const CONFIG = {
     if (file.size > 512000) { APP.toast('Imagem muito grande. Max 500KB.', 'error'); return; }
     if (!file.type.startsWith('image/')) { APP.toast('Selecione uma imagem.', 'error'); return; }
 
-    const oficina_id = APP.profile.oficina_id;
+    const oficina_id = APP.oficinaId;
     const ext = file.name.split('.').pop().toLowerCase();
     const path = `${oficina_id}/logo.${ext}`;
 
@@ -382,7 +382,7 @@ const CONFIG = {
   },
 
   async removerLogo() {
-    const oficina_id = APP.profile.oficina_id;
+    const oficina_id = APP.oficinaId;
     await db.storage.from('logos').remove([`${oficina_id}/logo.png`, `${oficina_id}/logo.jpg`, `${oficina_id}/logo.jpeg`, `${oficina_id}/logo.webp`]);
     await db.from('oficinas').update({ logo_url: null }).eq('id', oficina_id);
     APP.oficina.logo_url = null;

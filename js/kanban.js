@@ -33,12 +33,12 @@ const KANBAN = {
     const [ativasRes, entreguesRes] = await Promise.all([
       db.from('ordens_servico')
         .select('*, veiculos(placa, marca, modelo, cor), clientes(nome, whatsapp), profiles!ordens_servico_mecanico_id_fkey(nome)')
-        .eq('oficina_id', APP.profile.oficina_id)
+        .eq('oficina_id', APP.oficinaId)
         .not('status', 'in', '("entregue","cancelada")')
         .order('created_at', { ascending: true }),
       db.from('ordens_servico')
         .select('*, veiculos(placa, marca, modelo, cor), clientes(nome, whatsapp), profiles!ordens_servico_mecanico_id_fkey(nome)')
-        .eq('oficina_id', APP.profile.oficina_id)
+        .eq('oficina_id', APP.oficinaId)
         .eq('status', 'entregue')
         .gte('data_entrega', seteDiasAtras)
         .order('data_entrega', { ascending: false })
@@ -61,7 +61,7 @@ const KANBAN = {
     const { data: mecanicos } = await db
       .from('profiles')
       .select('id, nome')
-      .eq('oficina_id', APP.profile.oficina_id)
+      .eq('oficina_id', APP.oficinaId)
       .in('role', ['mecanico', 'aux_mecanico', 'dono', 'gerente'])
       .eq('ativo', true)
       .order('nome');
@@ -529,7 +529,7 @@ const KANBAN = {
     // Evita duplicar
     if (this._realtimeChannel) return;
 
-    const oficina_id = APP.profile.oficina_id;
+    const oficina_id = APP.oficinaId;
     if (!oficina_id) return;
 
     this._realtimeChannel = db

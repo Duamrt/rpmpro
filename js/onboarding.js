@@ -9,13 +9,13 @@ const ONBOARDING = {
     if (SUPER_ADMIN.isSuperAdmin) return false;
 
     // Checa se já fez onboarding (flag no localStorage + verifica se tem dados)
-    const feito = localStorage.getItem('rpmpro-onboarding-' + APP.profile.oficina_id);
+    const feito = localStorage.getItem('rpmpro-onboarding-' + APP.oficinaId);
     if (feito) return false;
 
     // Verifica se oficina tem dados (se já tem cliente ou mecanico, pula)
     const [clientesRes, equipRes] = await Promise.all([
-      db.from('clientes').select('id', { count: 'exact', head: true }).eq('oficina_id', APP.profile.oficina_id),
-      db.from('profiles').select('id', { count: 'exact', head: true }).eq('oficina_id', APP.profile.oficina_id).neq('role', 'dono')
+      db.from('clientes').select('id', { count: 'exact', head: true }).eq('oficina_id', APP.oficinaId),
+      db.from('profiles').select('id', { count: 'exact', head: true }).eq('oficina_id', APP.oficinaId).neq('role', 'dono')
     ]);
 
     const temClientes = (clientesRes.count || 0) > 0;
@@ -37,7 +37,7 @@ const ONBOARDING = {
   },
 
   _marcarFeito() {
-    localStorage.setItem('rpmpro-onboarding-' + APP.profile.oficina_id, '1');
+    localStorage.setItem('rpmpro-onboarding-' + APP.oficinaId, '1');
   },
 
   _render() {
@@ -189,7 +189,7 @@ const ONBOARDING = {
     if (dados.estado) update.estado = dados.estado;
 
     if (Object.keys(update).length) {
-      await db.from('oficinas').update(update).eq('id', APP.profile.oficina_id);
+      await db.from('oficinas').update(update).eq('id', APP.oficinaId);
       Object.assign(APP.oficina, update);
     }
 
@@ -239,7 +239,7 @@ const ONBOARDING = {
     if (!nome) { APP.toast('Preencha o nome', 'error'); return; }
 
     const { error } = await db.from('profiles').insert({
-      oficina_id: APP.profile.oficina_id,
+      oficina_id: APP.oficinaId,
       nome,
       role,
       comissao_percent: comissao,
@@ -321,7 +321,7 @@ const ONBOARDING = {
 
     // Insere cliente
     const { data: cliente, error: errCli } = await db.from('clientes').insert({
-      oficina_id: APP.profile.oficina_id,
+      oficina_id: APP.oficinaId,
       nome,
       whatsapp: whatsapp || null
     }).select().single();
@@ -330,7 +330,7 @@ const ONBOARDING = {
 
     // Insere veículo
     const { error: errVei } = await db.from('veiculos').insert({
-      oficina_id: APP.profile.oficina_id,
+      oficina_id: APP.oficinaId,
       cliente_id: cliente.id,
       placa,
       marca: marca || null,

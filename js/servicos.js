@@ -9,7 +9,7 @@ const SERVICOS = {
     const { data, error } = await db
       .from('servicos_catalogo')
       .select('*')
-      .eq('oficina_id', APP.profile.oficina_id)
+      .eq('oficina_id', APP.oficinaId)
       .order('categoria')
       .order('nome');
 
@@ -167,7 +167,7 @@ const SERVICOS = {
   async salvar(e, id) {
     e.preventDefault();
     const dados = {
-      oficina_id: APP.profile.oficina_id,
+      oficina_id: APP.oficinaId,
       categoria: document.getElementById('svc-categoria').value.trim(),
       nome: document.getElementById('svc-nome').value.trim(),
       valor_padrao: parseFloat(document.getElementById('svc-valor').value) || 0,
@@ -177,7 +177,7 @@ const SERVICOS = {
 
     let error;
     if (id) {
-      ({ error } = await db.from('servicos_catalogo').update(dados).eq('id', id).eq('oficina_id', APP.profile.oficina_id));
+      ({ error } = await db.from('servicos_catalogo').update(dados).eq('id', id).eq('oficina_id', APP.oficinaId));
     } else {
       ({ error } = await db.from('servicos_catalogo').insert(dados));
     }
@@ -189,13 +189,13 @@ const SERVICOS = {
   },
 
   async editar(id) {
-    const { data } = await db.from('servicos_catalogo').select('*').eq('id', id).eq('oficina_id', APP.profile.oficina_id).single();
+    const { data } = await db.from('servicos_catalogo').select('*').eq('id', id).eq('oficina_id', APP.oficinaId).single();
     if (data) this.abrirModal(data);
   },
 
   async excluir(id, nome) {
     if (!confirm(`Excluir o servico "${nome}"?`)) return;
-    const { error } = await db.from('servicos_catalogo').delete().eq('id', id).eq('oficina_id', APP.profile.oficina_id);
+    const { error } = await db.from('servicos_catalogo').delete().eq('id', id).eq('oficina_id', APP.oficinaId);
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
     APP.toast('Servico excluido');
     this.carregar();
@@ -247,7 +247,7 @@ const SERVICOS = {
     if (!cats.length) { APP.toast('Selecione pelo menos uma categoria'); return; }
 
     const existentes = new Set((this._dados || []).map(s => s.nome.toLowerCase()));
-    const oficina_id = APP.profile.oficina_id;
+    const oficina_id = APP.oficinaId;
     const itens = [];
 
     cats.forEach(cat => {
@@ -279,7 +279,7 @@ const SERVICOS = {
     const { data } = await db
       .from('servicos_catalogo')
       .select('*')
-      .eq('oficina_id', APP.profile.oficina_id)
+      .eq('oficina_id', APP.oficinaId)
       .eq('ativo', true)
       .order('categoria')
       .order('nome');

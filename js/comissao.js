@@ -9,7 +9,7 @@ const COMISSAO = {
     if (!this._ano) this._ano = agora.getFullYear();
 
     const container = document.getElementById('comissao-content');
-    const oficina_id = APP.profile.oficina_id;
+    const oficina_id = APP.oficinaId;
 
     // Periodo
     const inicio = new Date(this._ano, this._mes - 1, 1).toISOString();

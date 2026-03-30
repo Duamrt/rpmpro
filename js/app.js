@@ -3,6 +3,11 @@ const APP = {
   profile: null,
   oficina: null,
 
+  // Retorna oficina_id correto (se super-admin acessando outra, usa APP.oficina.id)
+  get oficinaId() {
+    return this.oficina?.id || this.profile?.oficina_id;
+  },
+
   async init() {
     const user = await AUTH.requireAuth();
     if (!user) return;

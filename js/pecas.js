@@ -4,7 +4,7 @@ const PECAS = {
     const { data, error } = await db
       .from('pecas')
       .select('*')
-      .eq('oficina_id', APP.profile.oficina_id)
+      .eq('oficina_id', APP.oficinaId)
       .order('nome');
 
     if (error) { APP.toast('Erro ao carregar peças', 'error'); return; }
@@ -297,7 +297,7 @@ const PECAS = {
   async salvar(e, id) {
     e.preventDefault();
     const dados = {
-      oficina_id: APP.profile.oficina_id,
+      oficina_id: APP.oficinaId,
       nome: document.getElementById('peca-nome').value.trim(),
       codigo: document.getElementById('peca-codigo').value.trim(),
       marca: document.getElementById('peca-marca').value.trim(),
@@ -311,7 +311,7 @@ const PECAS = {
 
     let error;
     if (id) {
-      ({ error } = await db.from('pecas').update(dados).eq('id', id).eq('oficina_id', APP.profile.oficina_id));
+      ({ error } = await db.from('pecas').update(dados).eq('id', id).eq('oficina_id', APP.oficinaId));
     } else {
       ({ error } = await db.from('pecas').insert(dados));
     }
@@ -323,13 +323,13 @@ const PECAS = {
   },
 
   async editar(id) {
-    const { data } = await db.from('pecas').select('*').eq('id', id).eq('oficina_id', APP.profile.oficina_id).single();
+    const { data } = await db.from('pecas').select('*').eq('id', id).eq('oficina_id', APP.oficinaId).single();
     if (data) this.abrirModal(data);
   },
 
   async excluir(id, nome) {
     if (!confirm(`Excluir a peca "${nome}"?`)) return;
-    const { error } = await db.from('pecas').delete().eq('id', id).eq('oficina_id', APP.profile.oficina_id);
+    const { error } = await db.from('pecas').delete().eq('id', id).eq('oficina_id', APP.oficinaId);
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
     APP.toast('Peca excluida');
     this.carregar();
@@ -559,11 +559,11 @@ const PECAS = {
     else novaQtd = qtd; // ajuste = define valor exato
 
     // Atualiza quantidade
-    await db.from('pecas').update({ quantidade: novaQtd }).eq('id', pecaId).eq('oficina_id', APP.profile.oficina_id);
+    await db.from('pecas').update({ quantidade: novaQtd }).eq('id', pecaId).eq('oficina_id', APP.oficinaId);
 
     // Registra movimento
     await db.from('estoque_movimentos').insert({
-      oficina_id: APP.profile.oficina_id,
+      oficina_id: APP.oficinaId,
       peca_id: pecaId,
       tipo,
       quantidade: tipo === 'ajuste' ? novaQtd - qtdAtual : qtd,

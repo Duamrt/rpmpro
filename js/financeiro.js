@@ -6,7 +6,7 @@ const FINANCEIRO = {
     const container = document.getElementById('financeiro-content');
     if (!container) return;
 
-    const oficina_id = APP.profile.oficina_id;
+    const oficina_id = APP.oficinaId;
     const agora = new Date();
 
     // Períodos
@@ -251,7 +251,7 @@ const FINANCEIRO = {
   async salvar(e, tipo) {
     e.preventDefault();
     const { error } = await db.from('caixa').insert({
-      oficina_id: APP.profile.oficina_id,
+      oficina_id: APP.oficinaId,
       tipo,
       categoria: document.getElementById('fin-categoria').value,
       descricao: document.getElementById('fin-descricao').value.trim(),
@@ -268,7 +268,7 @@ const FINANCEIRO = {
 
   async excluir(id) {
     if (!confirm('Excluir este lancamento?')) return;
-    const { error } = await db.from('caixa').delete().eq('id', id).eq('oficina_id', APP.profile.oficina_id);
+    const { error } = await db.from('caixa').delete().eq('id', id).eq('oficina_id', APP.oficinaId);
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
     APP.toast('Lancamento excluido');
     this.carregar();
@@ -278,7 +278,7 @@ const FINANCEIRO = {
     try {
     await PDF_OS._carregarLogo();
     const oficina = APP.oficina || {};
-    const oficina_id = APP.profile.oficina_id;
+    const oficina_id = APP.oficinaId;
     const periodoLabel = { hoje: 'Hoje', semana: 'Esta semana', mes: 'Este mês' };
     const formaLabel = { dinheiro: 'Dinheiro', pix: 'Pix', debito: 'Débito', credito: 'Crédito', boleto: 'Boleto', transferencia: 'Transferência', outros: 'Outros' };
     const agora = new Date();

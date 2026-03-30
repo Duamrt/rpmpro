@@ -4,7 +4,7 @@ const VEICULOS = {
     const { data, error } = await db
       .from('veiculos')
       .select('*, clientes(nome)')
-      .eq('oficina_id', APP.profile.oficina_id)
+      .eq('oficina_id', APP.oficinaId)
       .order('created_at', { ascending: false });
 
     if (error) { APP.toast('Erro ao carregar veiculos', 'error'); return; }
@@ -76,7 +76,7 @@ const VEICULOS = {
     const { data: clientes } = await db
       .from('clientes')
       .select('id, nome')
-      .eq('oficina_id', APP.profile.oficina_id)
+      .eq('oficina_id', APP.oficinaId)
       .order('nome');
 
     openModal(`
@@ -165,7 +165,7 @@ const VEICULOS = {
       return;
     }
     const dados = {
-      oficina_id: APP.profile.oficina_id,
+      oficina_id: APP.oficinaId,
       cliente_id: document.getElementById('vei-cliente').value,
       placa: placaVal,
       marca: document.getElementById('vei-marca').value.trim(),
@@ -178,7 +178,7 @@ const VEICULOS = {
 
     let error;
     if (id) {
-      ({ error } = await db.from('veiculos').update(dados).eq('id', id).eq('oficina_id', APP.profile.oficina_id));
+      ({ error } = await db.from('veiculos').update(dados).eq('id', id).eq('oficina_id', APP.oficinaId));
     } else {
       ({ error } = await db.from('veiculos').insert(dados));
     }
@@ -191,13 +191,13 @@ const VEICULOS = {
   },
 
   async editar(id) {
-    const { data } = await db.from('veiculos').select('*').eq('id', id).eq('oficina_id', APP.profile.oficina_id).single();
+    const { data } = await db.from('veiculos').select('*').eq('id', id).eq('oficina_id', APP.oficinaId).single();
     if (data) this.abrirModal(data);
   },
 
   async excluir(id, placa) {
     if (!confirm(`Excluir o veiculo ${placa}? Isso vai remover o historico de OS vinculado.`)) return;
-    const { error } = await db.from('veiculos').delete().eq('id', id).eq('oficina_id', APP.profile.oficina_id);
+    const { error } = await db.from('veiculos').delete().eq('id', id).eq('oficina_id', APP.oficinaId);
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
     APP.toast('Veiculo excluido');
     this.carregar();
@@ -208,7 +208,7 @@ const VEICULOS = {
     const { data: osList, error } = await db
       .from('ordens_servico')
       .select('*, profiles!ordens_servico_mecanico_id_fkey(nome)')
-      .eq('oficina_id', APP.profile.oficina_id)
+      .eq('oficina_id', APP.oficinaId)
       .eq('veiculo_id', veiculoId)
       .order('data_entrada', { ascending: false });
 
@@ -260,7 +260,7 @@ const VEICULOS = {
     const { data } = await db
       .from('veiculos')
       .select('*, clientes(id, nome, whatsapp)')
-      .eq('oficina_id', APP.profile.oficina_id)
+      .eq('oficina_id', APP.oficinaId)
       .eq('placa', placa.toUpperCase())
       .single();
     return data;

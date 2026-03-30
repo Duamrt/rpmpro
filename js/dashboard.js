@@ -1,7 +1,7 @@
 // RPM Pro — Dashboard Avancado
 const DASHBOARD = {
   async carregar() {
-    const oficina_id = APP.profile.oficina_id;
+    const oficina_id = APP.oficinaId;
     const inicioMes = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
 
     const [osAbertas, aguardando, prontas, faturamento, fila, osEntreguesMes, osTodas, mecanicosRes] = await Promise.all([

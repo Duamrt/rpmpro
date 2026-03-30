@@ -10,7 +10,7 @@ const CONTAS = {
   async carregar() {
     const container = document.getElementById('contas-content');
     if (!container) return;
-    const oficina_id = APP.profile.oficina_id;
+    const oficina_id = APP.oficinaId;
     const hoje = new Date().toISOString().split('T')[0];
 
     // Busca TODAS as contas do mês do calendário
@@ -298,7 +298,7 @@ const CONTAS = {
   async salvar(e, tipo, id) {
     e.preventDefault();
     const obj = {
-      oficina_id: APP.profile.oficina_id,
+      oficina_id: APP.oficinaId,
       tipo,
       descricao: document.getElementById('ct-descricao').value.trim(),
       valor: parseFloat(document.getElementById('ct-valor').value) || 0,
@@ -312,7 +312,7 @@ const CONTAS = {
 
     let error;
     if (id) {
-      ({ error } = await db.from('contas').update(obj).eq('id', id).eq('oficina_id', APP.profile.oficina_id));
+      ({ error } = await db.from('contas').update(obj).eq('id', id).eq('oficina_id', APP.oficinaId));
     } else {
       ({ error } = await db.from('contas').insert(obj));
     }
@@ -324,7 +324,7 @@ const CONTAS = {
   },
 
   async marcarPago(id) {
-    const { error } = await db.from('contas').update({ status: 'pago', pago_em: new Date().toISOString() }).eq('id', id).eq('oficina_id', APP.profile.oficina_id);
+    const { error } = await db.from('contas').update({ status: 'pago', pago_em: new Date().toISOString() }).eq('id', id).eq('oficina_id', APP.oficinaId);
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
     APP.toast('Conta marcada como paga');
     this.carregar();
@@ -337,7 +337,7 @@ const CONTAS = {
 
   async excluir(id) {
     if (!confirm('Excluir esta conta?')) return;
-    const { error } = await db.from('contas').delete().eq('id', id).eq('oficina_id', APP.profile.oficina_id);
+    const { error } = await db.from('contas').delete().eq('id', id).eq('oficina_id', APP.oficinaId);
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
     APP.toast('Conta excluida');
     this.carregar();

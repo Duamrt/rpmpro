@@ -5,7 +5,7 @@ const FILA = {
   async carregar() {
     const container = document.getElementById('fila-content');
     if (!container) return;
-    const oficina_id = APP.profile.oficina_id;
+    const oficina_id = APP.oficinaId;
 
     let query = db.from('fila_espera').select('*').eq('oficina_id', oficina_id).order('created_at', { ascending: false });
 
@@ -91,8 +91,8 @@ const FILA = {
   async abrirModal() {
     // Carrega clientes e veículos pra autocomplete
     const [cliRes, veiRes] = await Promise.all([
-      db.from('clientes').select('id, nome, whatsapp').eq('oficina_id', APP.profile.oficina_id).order('nome'),
-      db.from('veiculos').select('id, placa, marca, modelo, cliente_id').eq('oficina_id', APP.profile.oficina_id).order('placa')
+      db.from('clientes').select('id, nome, whatsapp').eq('oficina_id', APP.oficinaId).order('nome'),
+      db.from('veiculos').select('id, placa, marca, modelo, cliente_id').eq('oficina_id', APP.oficinaId).order('placa')
     ]);
     this._cliCache = cliRes.data || [];
     this._veiCache = veiRes.data || [];
@@ -220,7 +220,7 @@ const FILA = {
       sintoma: document.getElementById('fila-ed-sintoma').value.trim(),
       urgencia: document.getElementById('fila-ed-urgencia').value,
       observacoes: document.getElementById('fila-ed-obs').value.trim() || null
-    }).eq('id', id).eq('oficina_id', APP.profile.oficina_id);
+    }).eq('id', id).eq('oficina_id', APP.oficinaId);
 
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
     closeModal();
@@ -230,7 +230,7 @@ const FILA = {
 
   async salvar(e) {
     e.preventDefault();
-    const oficina_id = APP.profile.oficina_id;
+    const oficina_id = APP.oficinaId;
     const nome = document.getElementById('fila-nome').value.trim();
     const whatsapp = document.getElementById('fila-whatsapp').value.trim() || null;
     const placa = document.getElementById('fila-placa').value.trim().toUpperCase() || null;
@@ -395,7 +395,7 @@ const FILA = {
     // Busca cliente pela placa ou nome
     let clienteId = null;
     let veiculoId = null;
-    const oficina_id = APP.profile.oficina_id;
+    const oficina_id = APP.oficinaId;
 
     if (placa) {
       const { data: vei } = await db.from('veiculos').select('id, cliente_id').eq('oficina_id', oficina_id).eq('placa', placa).maybeSingle();
@@ -450,7 +450,7 @@ const FILA = {
   },
 
   async mudarStatus(id, novoStatus) {
-    const { error } = await db.from('fila_espera').update({ status: novoStatus }).eq('id', id).eq('oficina_id', APP.profile.oficina_id);
+    const { error } = await db.from('fila_espera').update({ status: novoStatus }).eq('id', id).eq('oficina_id', APP.oficinaId);
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
     APP.toast('Status atualizado');
     this.carregar();
