@@ -7,7 +7,7 @@ const ASSISTENTE = {
 
   // Base de conhecimento do RPM Pro
   _respostas: {
-    preco: 'Temos 3 planos:\n\n• <strong>Essencial</strong> — R$ 189/mês (OS, clientes, estoque)\n• <strong>Profissional</strong> — R$ 324/mês (+ financeiro, CRM, agendamentos)\n• <strong>Rede</strong> — R$ 494/mês (multi-unidade)\n\nTodos com <strong>14 dias grátis</strong> pra testar sem compromisso.',
+    preco: 'Temos 2 planos:\n\n• <strong>Essencial</strong> — R$ 189/mês (OS, clientes, estoque básico)\n• <strong>Profissional</strong> — R$ 324/mês (+ financeiro, CRM, agendamentos, comissão)\n\nTodos com <strong>14 dias grátis</strong> pra testar sem compromisso.',
     trial: 'O teste é <strong>grátis por 14 dias</strong>, sem precisar de cartão. Você tem acesso a todas as funcionalidades do plano Profissional. Se gostar, escolhe o plano. Se não, sem compromisso nenhum.',
     funcionalidades: 'O RPM Pro tem tudo que uma oficina precisa:\n\n• <strong>Pátio visual</strong> — veja cada carro e o status em tempo real\n• <strong>OS completa</strong> — serviços, peças, checklist, PDF\n• <strong>Agendamentos</strong> — calendário com lotação por dia\n• <strong>Estoque</strong> — controle de peças com alerta de mínimo\n• <strong>Financeiro</strong> — caixa, contas a pagar/receber\n• <strong>Equipe</strong> — perfis com permissão por função\n• <strong>CRM</strong> — reativação de clientes inativos\n• <strong>Pesquisa de satisfação</strong> automática',
     patio: 'O Pátio é o coração do sistema. É um <strong>quadro visual</strong> (tipo Kanban) onde cada coluna é uma fase:\n\nAvaliação → Diagnóstico → Aprovação → Peça → Execução → Pronto\n\nVocê arrasta o carro conforme o trabalho avança. Bate o olho e sabe tudo.',
@@ -20,7 +20,7 @@ const ASSISTENTE = {
     suporte: 'O suporte é direto pelo <strong>WhatsApp</strong> com a equipe que construiu o sistema. Sem robô, sem fila. Você fala com quem entende.',
     migrar: 'Se você já usa outro sistema, a gente te ajuda a <strong>importar os dados</strong> (clientes, veículos, peças). É parte do onboarding, sem custo extra.',
     contrato: 'Sem contrato de fidelidade. Você paga mês a mês e pode cancelar quando quiser. Simples assim.',
-    seguranca: 'Seus dados ficam em servidores seguros com <strong>criptografia</strong> e backup diário. Cada oficina só vê os próprios dados — isolamento total.',
+    seguranca: 'Seus dados ficam em servidores seguros com <strong>criptografia</strong> e backup diário. Cada oficina só vê os próprios dados — isolamento total por empresa.',
   },
 
   // Palavras-chave → resposta

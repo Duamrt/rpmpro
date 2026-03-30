@@ -82,7 +82,7 @@
     }
 
     card.innerHTML = `
-      ${data.logo ? `<div style="text-align:center;margin-bottom:16px;"><img src="${esc(data.logo)}" style="max-height:60px;max-width:200px;object-fit:contain;"></div>` : ''}
+      ${data.logo ? `<div style="text-align:center;margin-bottom:16px;"><img src="${escAttr(data.logo)}" style="max-height:60px;max-width:200px;object-fit:contain;"></div>` : ''}
       <h2>Como foi nosso servico?</h2>
       <p class="sub">Sua avaliacao ajuda a ${esc(data.oficina)} a melhorar</p>
 
@@ -107,6 +107,10 @@
     const d = document.createElement('div');
     d.textContent = String(str);
     return d.innerHTML;
+  }
+  function escAttr(str) {
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/'/g,'&#39;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
   function selNota(n) {
