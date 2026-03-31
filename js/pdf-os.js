@@ -491,36 +491,40 @@ const PDF_OS = {
           const qrImg = await this._gerarQRBase64(qrData);
           if (qrImg) {
             blocoPix = {
-              columns: [
-                { stack: [
-                  { text: 'Pague com Pix', fontSize: 12, bold: true, color: '#1a1a1a', margin: [0, 0, 0, 6] },
-                  { image: qrImg, width: 120, height: 120 },
-                  { text: 'Chave: ' + oficina.pix_chave, fontSize: 8, color: '#666', margin: [0, 4, 0, 0] },
-                  { text: oficina.pix_nome || oficina.nome, fontSize: 8, color: '#666' }
-                ], alignment: 'center', width: 160 },
-                { text: '', width: '*' },
-                { stack: [
-                  { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.5, lineColor: '#999' }], margin: [0, 40, 0, 0] },
-                  { text: 'Assinatura do cliente', fontSize: 8, color: '#999', alignment: 'center', margin: [0, 4, 0, 20] },
-                  { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.5, lineColor: '#999' }] },
-                  { text: 'Assinatura da oficina', fontSize: 8, color: '#999', alignment: 'center', margin: [0, 4, 0, 0] }
-                ], width: 220 }
-              ],
-              margin: [0, 10, 0, 0]
+              stack: [
+                { text: 'Pague com Pix', fontSize: 10, bold: true, color: '#1a1a1a', margin: [0, 0, 0, 4] },
+                { image: qrImg, width: 85, height: 85 },
+                { text: 'Chave: ' + oficina.pix_chave, fontSize: 7, color: '#666', margin: [0, 2, 0, 0] },
+                { text: oficina.pix_nome || oficina.nome, fontSize: 7, color: '#666' }
+              ], alignment: 'center', width: 120
             };
           }
         }
       }
     } catch(qe) { /* ignora erro do QR */ }
 
+    // Bloco final: totais + QR lado a lado, assinaturas embaixo
+    const blocoFinal = [];
+    if (blocoPix) {
+      blocoFinal.push({
+        columns: [
+          { ...blocoTotais, width: '*', margin: [0, 0, 0, 6] },
+          blocoPix
+        ],
+        margin: [0, 0, 0, 6]
+      });
+    } else {
+      blocoFinal.push(blocoTotais);
+    }
+    blocoFinal.push(obs);
+    blocoFinal.push(assinaturas);
+
     const content = [
       ...header.filter(h => h && (h.text || h.columns || h.canvas)),
       infoOS,
       tabelaServicos,
       tabelaPecas,
-      blocoTotais,
-      obs,
-      blocoPix || assinaturas
+      ...blocoFinal
     ];
 
     const docDef = {

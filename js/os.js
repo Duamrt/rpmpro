@@ -1623,8 +1623,8 @@ const OS = {
           <div id="fotos-entrada-lista" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
             ${fotosExistentes.map(f => `
               <div style="position:relative;width:80px;height:80px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);">
-                <img src="${esc(f.url)}" style="width:100%;height:100%;object-fit:cover;">
-                <button onclick="OS.excluirFoto('${f.id}','${osId}')" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.7);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer;line-height:1;">X</button>
+                <img src="${esc(f.url)}" style="width:100%;height:100%;object-fit:cover;cursor:pointer;" onclick="OS.ampliarFoto('${esc(f.url)}')">
+                <button onclick="event.stopPropagation();OS.excluirFoto('${f.id}','${osId}')" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.7);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer;line-height:1;">X</button>
               </div>
             `).join('')}
           </div>
@@ -1821,6 +1821,22 @@ const OS = {
     // Recarrega o checklist pra mostrar as fotos
     if (tipo === 'entrada') this.abrirChecklistEntrada(osId);
     else this.abrirDetalhes(osId);
+  },
+
+  ampliarFoto(url) {
+    var overlay = document.getElementById('foto-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'foto-overlay';
+      overlay.style.cssText = 'display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.95);z-index:99999;cursor:zoom-out;align-items:center;justify-content:center;padding:20px;';
+      overlay.innerHTML = '<img id="foto-overlay-img" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;">';
+      overlay.onclick = function() { overlay.style.display = 'none'; document.body.style.overflow = ''; };
+      document.body.appendChild(overlay);
+      document.addEventListener('keydown', function(e) { if (e.key === 'Escape') { overlay.style.display = 'none'; document.body.style.overflow = ''; } });
+    }
+    document.getElementById('foto-overlay-img').src = url;
+    overlay.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
   },
 
   async excluirFoto(fotoId, osId) {

@@ -44,6 +44,8 @@ const KANBAN = {
         .order('data_entrega', { ascending: false })
     ]);
 
+    if (ativasRes.error) { APP.toast('Erro ao carregar patio: ' + ativasRes.error.message, 'error'); }
+
     const lista = [...(ativasRes.data || []), ...(entreguesRes.data || [])];
 
     // Filtro por mecânico (se não for dono/gerente)

@@ -309,14 +309,15 @@ const PECAS = {
       compatibilidade: this._compatTemp.length ? this._compatTemp : []
     };
 
-    let error;
+    let res;
     if (id) {
-      ({ error } = await db.from('pecas').update(dados).eq('id', id).eq('oficina_id', APP.oficinaId));
+      res = await db.from('pecas').update(dados).eq('id', id).eq('oficina_id', APP.oficinaId).select();
     } else {
-      ({ error } = await db.from('pecas').insert(dados));
+      res = await db.from('pecas').insert(dados).select();
     }
 
-    if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
+    if (res.error) { APP.toast('Erro: ' + res.error.message, 'error'); return; }
+    if (!res.data || !res.data.length) { APP.toast('Erro: produto nao foi salvo (verifique permissoes)', 'error'); return; }
     closeModal();
     APP.toast(id ? 'Peca atualizada' : 'Peca cadastrada');
     this.carregar();

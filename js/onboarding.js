@@ -345,8 +345,11 @@ const ONBOARDING = {
     this.finalizar();
   },
 
-  finalizar() {
+  async finalizar() {
     this._marcarFeito();
+
+    // Importa catálogo base de serviços pra oficina nova
+    await this._importarCatalogoBase();
 
     const overlay = document.getElementById('onboarding-overlay');
     if (overlay) {
@@ -355,11 +358,42 @@ const ONBOARDING = {
           <div style="font-size:64px;margin-bottom:16px;">🎉</div>
           <h2 style="font-size:22px;font-weight:800;margin-bottom:8px;">Tudo pronto!</h2>
           <p style="color:var(--text-secondary);font-size:14px;margin-bottom:24px;">
-            Sua oficina ta configurada. Agora voce pode abrir<br>ordens de servico e acompanhar tudo pelo Patio.
+            Sua oficina ta configurada com mais de 100 servicos prontos.<br>Agora voce pode abrir ordens de servico e acompanhar tudo pelo Patio.
           </p>
           <button class="btn btn-primary" style="padding:12px 32px;font-size:15px;" onclick="ONBOARDING.fechar()">Comecar a usar</button>
         </div>
       `;
+    }
+  },
+
+  async _importarCatalogoBase() {
+    if (typeof CATALOGO_SERVICOS === 'undefined') return;
+    try {
+      // Verifica se oficina já tem serviços (evita duplicar)
+      const { count } = await db.from('servicos_catalogo')
+        .select('id', { count: 'exact', head: true })
+        .eq('oficina_id', APP.oficinaId);
+      if (count > 0) return;
+
+      // Monta array de inserção com todos os serviços
+      const rows = [];
+      for (const [cat, servicos] of Object.entries(CATALOGO_SERVICOS)) {
+        servicos.forEach(s => {
+          rows.push({
+            oficina_id: APP.oficinaId,
+            categoria: cat,
+            nome: s.nome,
+            valor_padrao: s.valor,
+            ativo: true
+          });
+        });
+      }
+
+      if (rows.length) {
+        await db.from('servicos_catalogo').insert(rows);
+      }
+    } catch (e) {
+      console.warn('Erro ao importar catálogo base:', e);
     }
   },
 
@@ -370,8 +404,9 @@ const ONBOARDING = {
     APP.loadPage('kanban');
   },
 
-  pular() {
+  async pular() {
     this._marcarFeito();
+    await this._importarCatalogoBase();
     const overlay = document.getElementById('onboarding-overlay');
     if (overlay) overlay.remove();
   }
