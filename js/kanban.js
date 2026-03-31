@@ -24,7 +24,7 @@ const KANBAN = {
     const container = document.getElementById('kanban-board');
     if (!container) return;
 
-    const isDono = ['dono', 'gerente'].includes(APP.profile.role);
+    const isDono = ['dono', 'gerente', 'atendente', 'aux_admin'].includes(APP.profile.role);
     this._cachedIsDono = isDono;
 
     // Busca OS ativas (não entregue/cancelada) + entregues dos últimos 7 dias
@@ -48,7 +48,7 @@ const KANBAN = {
 
     const lista = [...(ativasRes.data || []), ...(entreguesRes.data || [])];
 
-    // Filtro por mecânico (se não for dono/gerente)
+    // Filtro por mecânico (mecanico e aux_mecanico só veem suas OS)
     const filtradas = isDono ? lista : lista.filter(os => os.mecanico_id === APP.profile.id);
 
     // Agrupa por status
