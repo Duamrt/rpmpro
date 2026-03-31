@@ -1,15 +1,18 @@
 // RPM Pro — Peças / Estoque
 const PECAS = {
   async carregar() {
-    const { data, error } = await db
-      .from('pecas')
-      .select('*')
-      .eq('oficina_id', APP.oficinaId)
-      .order('nome')
-      .range(0, 4999);
-
-    if (error) { APP.toast('Erro ao carregar peças', 'error'); return; }
-    this.render(data || []);
+    // Pagina em lotes de 1000 (limite do Supabase)
+    let todas = [], from = 0;
+    while (true) {
+      const { data, error } = await db.from('pecas').select('*')
+        .eq('oficina_id', APP.oficinaId).order('nome')
+        .range(from, from + 999);
+      if (error) { APP.toast('Erro ao carregar peças', 'error'); return; }
+      todas = todas.concat(data || []);
+      if (!data || data.length < 1000) break;
+      from += 1000;
+    }
+    this.render(todas);
   },
 
   render(lista) {
