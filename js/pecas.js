@@ -5,7 +5,8 @@ const PECAS = {
       .from('pecas')
       .select('*')
       .eq('oficina_id', APP.oficinaId)
-      .order('nome');
+      .order('nome')
+      .range(0, 4999);
 
     if (error) { APP.toast('Erro ao carregar peças', 'error'); return; }
     this.render(data || []);
@@ -308,6 +309,17 @@ const PECAS = {
       localizacao: document.getElementById('peca-local').value.trim(),
       compatibilidade: this._compatTemp.length ? this._compatTemp : []
     };
+
+    // Bloqueia duplicata (mesmo nome na mesma oficina)
+    if (!id) {
+      const { data: existe } = await db.from('pecas').select('id, nome')
+        .eq('oficina_id', APP.oficinaId)
+        .ilike('nome', dados.nome).limit(1);
+      if (existe && existe.length) {
+        APP.toast('Ja existe uma peca com esse nome: ' + existe[0].nome, 'error');
+        return;
+      }
+    }
 
     let res;
     if (id) {
