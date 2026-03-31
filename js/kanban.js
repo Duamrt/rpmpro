@@ -526,6 +526,8 @@ const KANBAN = {
 
   // ========== REALTIME ==========
   _realtimeChannel: null,
+  _realtimeOk: false,
+  _pollInterval: null,
 
   iniciarRealtime() {
     // Evita duplicar
@@ -541,28 +543,53 @@ const KANBAN = {
         schema: 'public',
         table: 'ordens_servico',
         filter: 'oficina_id=eq.' + oficina_id
-      }, (payload) => {
-        // Só recarrega se tá na página do kanban
-        const paginaAtual = localStorage.getItem('rpmpro-page');
-        if (paginaAtual === 'kanban' || paginaAtual === 'dashboard') {
-          // Debounce pra não recarregar 10x seguidas
-          clearTimeout(this._realtimeTimer);
-          this._realtimeTimer = setTimeout(() => {
-            // Mostra indicador discreto
-            this._mostrarIndicadorSync();
-            if (paginaAtual === 'kanban') this.carregar();
-            if (paginaAtual === 'dashboard') DASHBOARD.carregar();
-          }, 500);
-        }
+      }, () => {
+        this._recarregarSeVisivel();
       })
-      .subscribe();
+      .subscribe((status) => {
+        this._realtimeOk = (status === 'SUBSCRIBED');
+        if (status === 'SUBSCRIBED') {
+          // Realtime ok — polling lento como fallback
+          this._iniciarPolling(30000);
+        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+          // Reconecta em 3s + polling rápido
+          this._realtimeOk = false;
+          this._iniciarPolling(10000);
+          setTimeout(() => {
+            this.pararRealtime();
+            this.iniciarRealtime();
+          }, 3000);
+        }
+      });
+  },
+
+  _recarregarSeVisivel() {
+    const paginaAtual = localStorage.getItem('rpmpro-page');
+    if (paginaAtual === 'kanban' || paginaAtual === 'dashboard') {
+      clearTimeout(this._realtimeTimer);
+      this._realtimeTimer = setTimeout(() => {
+        this._mostrarIndicadorSync();
+        if (paginaAtual === 'kanban') this.carregar();
+        if (paginaAtual === 'dashboard' && typeof DASHBOARD !== 'undefined') DASHBOARD.carregar();
+      }, 300);
+    }
+  },
+
+  _iniciarPolling(ms) {
+    clearInterval(this._pollInterval);
+    this._pollInterval = setInterval(() => {
+      const paginaAtual = localStorage.getItem('rpmpro-page');
+      if (paginaAtual === 'kanban') this.carregar();
+    }, ms);
   },
 
   pararRealtime() {
     if (this._realtimeChannel) {
       db.removeChannel(this._realtimeChannel);
       this._realtimeChannel = null;
+      this._realtimeOk = false;
     }
+    clearInterval(this._pollInterval);
   },
 
   _mostrarIndicadorSync() {
