@@ -18,7 +18,7 @@ const FOLHA = {
     // Busca tudo em paralelo
     const [membrosRes, osRes, valesRes] = await Promise.all([
       db.from('profiles')
-        .select('id, nome, role, salario_base, comissao_percent')
+        .select('id, nome, role, salario_base, comissao_percent, vale_refeicao')
         .eq('oficina_id', oficina_id)
         .eq('ativo', true)
         .in('role', ['mecanico', 'aux_mecanico', 'gerente', 'atendente', 'aux_admin'])
@@ -61,22 +61,24 @@ const FOLHA = {
     const roleLabel = { mecanico: 'Mecânico', aux_mecanico: 'Aux. Mecânico', gerente: 'Gerente', atendente: 'Atendente', aux_admin: 'Aux. Admin' };
 
     // Monta dados
-    let totalSalarios = 0, totalComissoes = 0, totalVales = 0, totalLiquido = 0;
+    let totalSalarios = 0, totalComissoes = 0, totalVales = 0, totalVR = 0, totalLiquido = 0;
 
     const linhas = membros.map(m => {
       const salario = m.salario_base || 0;
+      const vr = m.vale_refeicao || 0;
       const faturado = faturadoPor[m.id] || 0;
       const comissao = faturado * (m.comissao_percent || 0) / 100;
       const mVales = valesPor[m.id] || [];
       const totalVale = mVales.reduce((s, v) => s + (v.valor || 0), 0);
-      const liquido = salario + comissao - totalVale;
+      const liquido = salario + vr + comissao - totalVale;
 
       totalSalarios += salario;
+      totalVR += vr;
       totalComissoes += comissao;
       totalVales += totalVale;
       totalLiquido += liquido;
 
-      return { m, salario, faturado, comissao, vales: mVales, totalVale, liquido };
+      return { m, salario, vr, faturado, comissao, vales: mVales, totalVale, liquido };
     });
 
     const _mob = window.innerWidth <= 768;
@@ -98,6 +100,10 @@ const FOLHA = {
         <div class="kpi-card">
           <div class="label">Salarios</div>
           <div class="value primary">${APP.formatMoney(totalSalarios)}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="label">Vale Refeicao</div>
+          <div class="value" style="color:var(--text-secondary);">${APP.formatMoney(totalVR)}</div>
         </div>
         <div class="kpi-card">
           <div class="label">Comissoes</div>
@@ -137,10 +143,14 @@ const FOLHA = {
             </div>
 
             <!-- Linha de valores -->
-            <div style="display:grid;grid-template-columns:${_mob ? '1fr 1fr' : 'repeat(4, 1fr)'};gap:12px;padding:12px;background:var(--bg-input);border-radius:var(--radius);">
+            <div style="display:grid;grid-template-columns:${_mob ? '1fr 1fr' : 'repeat(5, 1fr)'};gap:12px;padding:12px;background:var(--bg-input);border-radius:var(--radius);">
               <div>
                 <div style="font-size:11px;color:var(--text-secondary);">Salario fixo</div>
                 <div style="font-size:15px;font-weight:600;">${APP.formatMoney(l.salario)}</div>
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--text-secondary);">Vale Refeicao</div>
+                <div style="font-size:15px;font-weight:600;">${l.vr > 0 ? '+' + APP.formatMoney(l.vr) : '-'}</div>
               </div>
               <div>
                 <div style="font-size:11px;color:var(--text-secondary);">Comissao (${l.m.comissao_percent || 0}%)</div>
@@ -192,7 +202,7 @@ const FOLHA = {
       const fim = `${this._ano}-${String(this._mes).padStart(2, '0')}-${ultimoDia}`;
 
       const [membrosRes, osRes, valesRes] = await Promise.all([
-        db.from('profiles').select('id, nome, role, salario_base, comissao_percent')
+        db.from('profiles').select('id, nome, role, salario_base, comissao_percent, vale_refeicao')
           .eq('oficina_id', APP.oficinaId).eq('ativo', true)
           .in('role', ['mecanico','aux_mecanico','gerente','atendente','aux_admin']).order('nome'),
         db.from('ordens_servico').select('valor_total, mecanico_id')
@@ -219,14 +229,16 @@ const FOLHA = {
 
       const rows = membros.map(m => {
         const sal = m.salario_base || 0;
+        const vr = m.vale_refeicao || 0;
         const fat = faturadoPor[m.id] || 0;
         const com = fat * (m.comissao_percent || 0) / 100;
         const vale = valePor[m.id] || 0;
-        const liq = sal + com - vale;
+        const liq = sal + vr + com - vale;
         totalLiq += liq;
         return [
           { text: m.nome + ' (' + (roleLabel[m.role] || m.role) + ')', fontSize: 9 },
           { text: fmt(sal), fontSize: 9, alignment: 'right' },
+          { text: vr > 0 ? fmt(vr) : '-', fontSize: 9, alignment: 'right' },
           { text: fmt(com), fontSize: 9, alignment: 'right', color: '#3fb950' },
           { text: vale > 0 ? '-' + fmt(vale) : '-', fontSize: 9, alignment: 'right', color: '#f85149' },
           { text: fmt(liq), fontSize: 10, bold: true, alignment: 'right' }
@@ -242,12 +254,13 @@ const FOLHA = {
           {
             table: {
               headerRows: 1,
-              widths: ['*', 70, 70, 70, 80],
+              widths: ['*', 60, 50, 60, 60, 70],
               body: [
-                ['Funcionario', 'Salario', 'Comissao', 'Vales', 'Liquido'].map(t => ({ text: t, fontSize: 9, bold: true, color: '#666', fillColor: '#f5f5f5' })),
+                ['Funcionario', 'Salario', 'VR', 'Comissao', 'Vales', 'Liquido'].map(t => ({ text: t, fontSize: 9, bold: true, color: '#666', fillColor: '#f5f5f5' })),
                 ...rows,
                 [
                   { text: 'TOTAL A PAGAR', bold: true, fontSize: 10, fillColor: '#f5f5f5' },
+                  { text: '', fillColor: '#f5f5f5' },
                   { text: '', fillColor: '#f5f5f5' },
                   { text: '', fillColor: '#f5f5f5' },
                   { text: '', fillColor: '#f5f5f5' },

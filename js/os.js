@@ -1913,6 +1913,10 @@ const OS = {
       return;
     }
 
+    // Carrega maquininhas pra mostrar no modal se tiver
+    const { data: maquininhas } = await db.from('maquininhas').select('id, nome, taxa_debito, taxa_credito').eq('oficina_id', APP.oficinaId).eq('ativo', true).order('nome');
+    OS._maquininhasCache = maquininhas || [];
+
     // Pergunta forma de pagamento
     openModal(`
       <div class="modal-header">
@@ -1922,10 +1926,10 @@ const OS = {
       <div class="modal-body">
         <div style="font-size:14px;color:var(--text-secondary);margin-bottom:16px;">Total: <strong style="font-size:18px;color:var(--success);">${APP.formatMoney(osCheck.valor_total)}</strong></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-          <button class="btn btn-success" style="padding:16px;font-size:15px;" onclick="OS._entregarComPagamento('${osId}','dinheiro')">💵 Dinheiro</button>
-          <button class="btn btn-success" style="padding:16px;font-size:15px;" onclick="OS._entregarComPagamento('${osId}','pix')">📱 Pix</button>
-          <button class="btn btn-success" style="padding:16px;font-size:15px;" onclick="OS._entregarComPagamento('${osId}','debito')">💳 Debito</button>
-          <button class="btn btn-success" style="padding:16px;font-size:15px;" onclick="OS._entregarComPagamento('${osId}','credito')">💳 Credito</button>
+          <button class="btn btn-success" style="padding:16px;font-size:15px;" onclick="OS._entregarComPagamento('${osId}','dinheiro')">Dinheiro</button>
+          <button class="btn btn-success" style="padding:16px;font-size:15px;" onclick="OS._entregarComPagamento('${osId}','pix')">Pix</button>
+          <button class="btn btn-success" style="padding:16px;font-size:15px;" onclick="OS._escolherMaquininha('${osId}','debito')">Debito</button>
+          <button class="btn btn-success" style="padding:16px;font-size:15px;" onclick="OS._escolherMaquininha('${osId}','credito')">Credito</button>
         </div>
         <div style="margin-top:12px;">
           <button class="btn btn-danger" style="width:100%;padding:14px;font-size:14px;" onclick="OS._entregarComPagamento('${osId}','fiado')">Fiado (nao pagou)</button>
@@ -1935,22 +1939,64 @@ const OS = {
     return; // Espera seleção
   },
 
-  async _entregarComPagamento(osId, forma) {
-    const pago = forma !== 'fiado';
-    const taxaDebito = APP.oficina?.taxa_debito || 2;
-    const taxaCredito = APP.oficina?.taxa_credito || 3.5;
-    let taxa = 0;
-    if (forma === 'debito') taxa = taxaDebito;
-    if (forma === 'credito') taxa = taxaCredito;
+  _maquininhasCache: [],
 
-    await db.from('ordens_servico').update({
+  _escolherMaquininha(osId, forma) {
+    const maqs = OS._maquininhasCache;
+    if (!maqs.length) {
+      // Sem maquininhas cadastradas, usa taxa genérica da oficina
+      OS._entregarComPagamento(osId, forma);
+      return;
+    }
+    if (maqs.length === 1) {
+      // Só tem uma, usa direto
+      const m = maqs[0];
+      const taxa = forma === 'debito' ? m.taxa_debito : m.taxa_credito;
+      OS._entregarComPagamento(osId, forma, m.id, taxa);
+      return;
+    }
+    // Múltiplas: mostra seleção
+    openModal(`
+      <div class="modal-header">
+        <h3>Qual maquininha?</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">${forma === 'debito' ? 'Debito' : 'Credito'} — escolha a maquininha usada:</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          ${maqs.map(m => {
+            const taxa = forma === 'debito' ? m.taxa_debito : m.taxa_credito;
+            return `<button class="btn btn-success" style="padding:16px;font-size:15px;display:flex;justify-content:space-between;" onclick="OS._entregarComPagamento('${osId}','${forma}','${m.id}',${taxa})">
+              <span>${esc(m.nome)}</span>
+              <span style="font-size:13px;opacity:0.8;">taxa ${taxa}%</span>
+            </button>`;
+          }).join('')}
+        </div>
+      </div>
+    `);
+  },
+
+  async _entregarComPagamento(osId, forma, maquininhaId, taxaOverride) {
+    const pago = forma !== 'fiado';
+    let taxa = 0;
+    if (taxaOverride !== undefined) {
+      taxa = taxaOverride;
+    } else if (forma === 'debito') {
+      taxa = APP.oficina?.taxa_debito || 0;
+    } else if (forma === 'credito') {
+      taxa = APP.oficina?.taxa_credito || 0;
+    }
+
+    const updateOS = {
       forma_pagamento: forma === 'fiado' ? 'pendente' : forma,
       pago,
       taxa_cartao: taxa,
       status: 'entregue',
       data_entrega: new Date().toISOString(),
       updated_at: new Date().toISOString()
-    }).eq('id', osId);
+    };
+    if (maquininhaId) updateOS.maquininha_id = maquininhaId;
+    await db.from('ordens_servico').update(updateOS).eq('id', osId);
 
     // Lança no caixa se pagou
     if (pago && typeof OS._lancarNoCaixa === 'function') await OS._lancarNoCaixa(osId);

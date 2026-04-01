@@ -100,23 +100,14 @@ const CONFIG = {
           </form>
         </div>
 
-        <!-- TAXAS MAQUINETA -->
+        <!-- MAQUININHAS -->
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;">
-          <h3 style="font-size:16px;margin-bottom:4px;">Taxas de Maquineta</h3>
-          <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;">Taxas aplicadas automaticamente quando a forma de pagamento for cartao. Aparece na OS e no fechamento do dia.</p>
-          <form id="form-config-taxas" onsubmit="CONFIG.salvarTaxas(event)">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-              <div class="form-group">
-                <label>Taxa Debito (%)</label>
-                <input type="number" class="form-control" id="cfg-taxa-debito" value="${oficina.taxa_debito || 2}" min="0" max="20" step="0.1">
-              </div>
-              <div class="form-group">
-                <label>Taxa Credito (%)</label>
-                <input type="number" class="form-control" id="cfg-taxa-credito" value="${oficina.taxa_credito || 3.5}" min="0" max="20" step="0.1">
-              </div>
-            </div>
-            <button type="submit" class="btn btn-primary" style="margin-top:8px;">Salvar taxas</button>
-          </form>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <h3 style="font-size:16px;">Maquininhas</h3>
+            <button class="btn btn-primary btn-sm" onclick="CONFIG._novaMaquininha()">+ Adicionar</button>
+          </div>
+          <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;">Cadastre suas maquininhas com as taxas de cada uma. Na entrega, o sistema pergunta qual foi usada.</p>
+          <div id="cfg-maquininhas"><div class="loading">Carregando...</div></div>
         </div>
 
         <!-- HORÁRIO DE FUNCIONAMENTO -->
@@ -247,7 +238,8 @@ const CONFIG = {
       </div>
     `;
 
-    // Carrega equipe na calculadora de custo
+    // Carrega maquininhas e equipe
+    this._carregarMaquininhas();
     this._carregarEquipeCalc();
   },
 
@@ -397,17 +389,92 @@ const CONFIG = {
     }
   },
 
-  async salvarTaxas(e) {
+  // === MAQUININHAS ===
+  _maquininhas: [],
+
+  async _carregarMaquininhas() {
+    const el = document.getElementById('cfg-maquininhas');
+    if (!el) return;
+    const { data } = await db.from('maquininhas').select('*').eq('oficina_id', APP.oficinaId).eq('ativo', true).order('nome');
+    this._maquininhas = data || [];
+    if (!this._maquininhas.length) {
+      el.innerHTML = '<div style="font-size:13px;color:var(--text-secondary);padding:12px 0;">Nenhuma maquininha cadastrada. Clique em "+ Adicionar".</div>';
+      return;
+    }
+    el.innerHTML = this._maquininhas.map(m => `
+      <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg-input);border-radius:var(--radius);margin-bottom:8px;">
+        <div style="flex:1;">
+          <div style="font-weight:700;font-size:14px;">${esc(m.nome)}</div>
+          <div style="font-size:12px;color:var(--text-secondary);">Debito: ${m.taxa_debito}% · Credito: ${m.taxa_credito}%</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="CONFIG._editarMaquininha('${escAttr(m.id)}','${escAttr(m.nome)}',${m.taxa_debito},${m.taxa_credito})">Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="CONFIG._excluirMaquininha('${escAttr(m.id)}','${escAttr(m.nome)}')">X</button>
+      </div>
+    `).join('');
+  },
+
+  _novaMaquininha() {
+    openModal(`
+      <div class="modal-header"><h3>Nova Maquininha</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+      <div class="modal-body">
+        <form onsubmit="CONFIG._salvarMaquininha(event)">
+          <div class="form-group"><label>Nome (ex: Stone, Itau, Cielo...)</label><input type="text" class="form-control" id="maq-nome" required></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="form-group"><label>Taxa Debito (%)</label><input type="number" class="form-control" id="maq-debito" value="2" min="0" max="20" step="0.01"></div>
+            <div class="form-group"><label>Taxa Credito (%)</label><input type="number" class="form-control" id="maq-credito" value="3.5" min="0" max="20" step="0.01"></div>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%;margin-top:8px;">Salvar</button>
+        </form>
+      </div>
+    `);
+  },
+
+  async _salvarMaquininha(e) {
     e.preventDefault();
-    const taxa_debito = parseFloat(document.getElementById('cfg-taxa-debito').value) || 0;
-    const taxa_credito = parseFloat(document.getElementById('cfg-taxa-credito').value) || 0;
-
-    const { error } = await db.from('oficinas').update({ taxa_debito, taxa_credito }).eq('id', APP.oficinaId);
+    const nome = document.getElementById('maq-nome').value.trim();
+    const taxa_debito = parseFloat(document.getElementById('maq-debito').value) || 0;
+    const taxa_credito = parseFloat(document.getElementById('maq-credito').value) || 0;
+    if (!nome) { APP.toast('Preencha o nome', 'error'); return; }
+    const { error } = await db.from('maquininhas').insert({ oficina_id: APP.oficinaId, nome, taxa_debito, taxa_credito });
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
+    closeModal();
+    APP.toast('Maquininha adicionada');
+    this._carregarMaquininhas();
+  },
 
-    APP.oficina.taxa_debito = taxa_debito;
-    APP.oficina.taxa_credito = taxa_credito;
-    APP.toast('Taxas salvas');
+  _editarMaquininha(id, nome, debito, credito) {
+    openModal(`
+      <div class="modal-header"><h3>Editar ${esc(nome)}</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+      <div class="modal-body">
+        <form onsubmit="CONFIG._atualizarMaquininha(event,'${escAttr(id)}')">
+          <div class="form-group"><label>Nome</label><input type="text" class="form-control" id="maq-nome" value="${esc(nome)}" required></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="form-group"><label>Taxa Debito (%)</label><input type="number" class="form-control" id="maq-debito" value="${debito}" min="0" max="20" step="0.01"></div>
+            <div class="form-group"><label>Taxa Credito (%)</label><input type="number" class="form-control" id="maq-credito" value="${credito}" min="0" max="20" step="0.01"></div>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%;margin-top:8px;">Salvar</button>
+        </form>
+      </div>
+    `);
+  },
+
+  async _atualizarMaquininha(e, id) {
+    e.preventDefault();
+    const nome = document.getElementById('maq-nome').value.trim();
+    const taxa_debito = parseFloat(document.getElementById('maq-debito').value) || 0;
+    const taxa_credito = parseFloat(document.getElementById('maq-credito').value) || 0;
+    const { error } = await db.from('maquininhas').update({ nome, taxa_debito, taxa_credito }).eq('id', id);
+    if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
+    closeModal();
+    APP.toast('Maquininha atualizada');
+    this._carregarMaquininhas();
+  },
+
+  async _excluirMaquininha(id, nome) {
+    if (!confirm('Excluir maquininha ' + nome + '?')) return;
+    await db.from('maquininhas').update({ ativo: false }).eq('id', id);
+    APP.toast('Maquininha removida');
+    this._carregarMaquininhas();
   },
 
   _calcEquipe: [], // cache da equipe carregada
