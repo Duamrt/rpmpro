@@ -334,12 +334,14 @@ const FINANCEIRO = {
     const periodoLabel = { hoje: 'Hoje', semana: 'Semana', mes: 'Mês inteiro' };
     const nomeMesCaixa = new Date(this._caixaAno, this._caixaMes).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 
+    const _mob = window.innerWidth <= 768;
+
     el.innerHTML = `
-      <!-- Navegação mês + sub-filtro -->
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+      <!-- Navegação mês + botões -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
         <div style="display:flex;align-items:center;gap:12px;">
           <button class="btn btn-secondary btn-sm" onclick="FINANCEIRO._caixaNavegar(-1)" style="padding:6px 12px;font-size:16px;">&lt;</button>
-          <div style="font-size:18px;font-weight:700;text-transform:capitalize;">${nomeMesCaixa}</div>
+          <div style="font-size:18px;font-weight:700;text-transform:capitalize;font-family:var(--heading);">${nomeMesCaixa}</div>
           <button class="btn btn-secondary btn-sm" onclick="FINANCEIRO._caixaNavegar(1)" style="padding:6px 12px;font-size:16px;">&gt;</button>
         </div>
         <div style="display:flex;gap:6px;">
@@ -347,36 +349,38 @@ const FINANCEIRO = {
           <button class="btn btn-danger btn-sm" onclick="FINANCEIRO.novaMovimentacao('saida')">+ Saida</button>
         </div>
       </div>
-      <div style="display:flex;gap:6px;margin-bottom:20px;">
+      <div style="display:flex;gap:4px;margin-bottom:24px;">
         ${['mes','semana','hoje'].map(p => `
           <button class="btn ${this._periodo === p ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="FINANCEIRO._periodo='${p}'; FINANCEIRO.carregar();">${periodoLabel[p]}</button>
         `).join('')}
       </div>
 
-      <!-- KPIs -->
-      <div class="kpi-grid" style="margin-bottom:20px;">
-        <div class="kpi-card">
-          <div class="label">Entradas (OS + Caixa)</div>
-          <div class="value success">${APP.formatMoney(totalEntradas + totalOS)}</div>
+      <!-- SALDO HERO -->
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+        <div style="display:flex;gap:${_mob ? '16px' : '28px'};flex-wrap:wrap;">
+          <div>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">Entradas</div>
+            <div style="font-size:18px;font-weight:700;">${APP.formatMoney(totalEntradas + totalOS)}</div>
+          </div>
+          <div>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">Saidas</div>
+            <div style="font-size:18px;font-weight:700;">-${APP.formatMoney(totalSaidas)}</div>
+          </div>
+          <div>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">OS Pagas</div>
+            <div style="font-size:18px;font-weight:700;">${osPagas.length}</div>
+          </div>
         </div>
-        <div class="kpi-card">
-          <div class="label">Saidas</div>
-          <div class="value" style="color:var(--danger);">${APP.formatMoney(totalSaidas)}</div>
-        </div>
-        <div class="kpi-card">
-          <div class="label">Saldo</div>
-          <div class="value ${saldo >= 0 ? 'success' : ''}" style="${saldo < 0 ? 'color:var(--danger);' : ''}">${APP.formatMoney(saldo)}</div>
-        </div>
-        <div class="kpi-card">
-          <div class="label">OS Pagas</div>
-          <div class="value primary">${osPagas.length}</div>
+        <div style="text-align:right;${_mob ? 'width:100%;text-align:center;border-top:1px solid var(--border);padding-top:12px;' : ''}">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">Saldo do Periodo</div>
+          <div style="font-size:30px;font-weight:800;font-family:var(--heading);color:${saldo >= 0 ? 'var(--success)' : 'var(--danger)'};">${APP.formatMoney(saldo)}</div>
         </div>
       </div>
 
-      <!-- Recebimentos por forma de pagamento -->
-      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:20px;">
-        <h3 style="font-size:14px;margin-bottom:12px;color:var(--text-secondary);">Recebimentos por forma de pagamento</h3>
-        <div style="display:grid;grid-template-columns:repeat(${window.innerWidth <= 768 ? 2 : 4}, 1fr);gap:12px;">
+      <!-- FORMAS DE PAGAMENTO -->
+      <div style="margin-bottom:24px;">
+        <div style="font-size:13px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Por forma de pagamento</div>
+        <div style="display:grid;grid-template-columns:repeat(${_mob ? 2 : 4}, 1fr);gap:10px;">
           ${['dinheiro','pix','debito','credito'].map(f => {
             const bruto = porForma[f] || 0;
             const temTaxa = (f === 'debito' || f === 'credito') && bruto > 0;
@@ -384,132 +388,159 @@ const FINANCEIRO = {
             const vlrTaxa = bruto * pctTaxa / 100;
             const liquido = bruto - vlrTaxa;
             return `
-            <div style="background:var(--bg-input);padding:12px 16px;border-radius:var(--radius);${bruto > 0 ? '' : 'opacity:0.5;'}">
-              <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">${esc(formaLabel[f])}</div>
-              <div style="font-size:18px;font-weight:700;color:var(--success);">${APP.formatMoney(bruto)}</div>
+            <div style="background:var(--bg-card);border:1px solid var(--border);padding:14px 16px;border-radius:var(--radius);${bruto === 0 ? 'opacity:0.35;' : ''}">
+              <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px;">${esc(formaLabel[f])}</div>
+              <div style="font-size:20px;font-weight:700;">${APP.formatMoney(bruto)}</div>
               ${temTaxa ? `
-                <div style="font-size:12px;color:var(--danger);margin-top:4px;">-${APP.formatMoney(vlrTaxa)} <span style="font-size:10px;color:var(--text-muted);">(${pctTaxa}%)</span></div>
-                <div style="font-size:14px;font-weight:700;color:var(--text-primary);margin-top:2px;border-top:1px solid var(--border);padding-top:4px;">Liquido ${APP.formatMoney(liquido)}</div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:6px;">taxa -${APP.formatMoney(vlrTaxa)} (${pctTaxa}%)</div>
+                <div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-top:4px;padding-top:4px;border-top:1px solid var(--border);">Liq. ${APP.formatMoney(liquido)}</div>
               ` : ''}
             </div>`;
           }).join('')}
           ${Object.entries(porForma).filter(([f]) => !['dinheiro','pix','debito','credito'].includes(f)).map(([f, v]) => `
-            <div style="background:var(--bg-input);padding:12px 16px;border-radius:var(--radius);">
-              <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">${esc(formaLabel[f] || f)}</div>
-              <div style="font-size:18px;font-weight:700;color:var(--success);">${APP.formatMoney(v)}</div>
+            <div style="background:var(--bg-card);border:1px solid var(--border);padding:14px 16px;border-radius:var(--radius);">
+              <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px;">${esc(formaLabel[f] || f)}</div>
+              <div style="font-size:20px;font-weight:700;">${APP.formatMoney(v)}</div>
             </div>
           `).join('')}
         </div>
       </div>
 
-      <!-- Peças Movimentadas -->
+      <!-- PEÇAS (tabela, não tags) -->
       ${pecasMovimentadas.length ? `
-      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:20px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-          <h3 style="font-size:14px;color:var(--text-secondary);">Pecas movimentadas (${pecasMovimentadas.length})</h3>
-          <div style="font-size:13px;">
-            Custo <strong style="color:var(--danger);">${APP.formatMoney(pecasCusto)}</strong>
-            · Vendeu <strong style="color:var(--success);">${APP.formatMoney(pecasVenda)}</strong>
-            · Lucro <strong style="color:${pecasLucro >= 0 ? 'var(--success)' : 'var(--danger)'};">${APP.formatMoney(pecasLucro)}</strong>
+      <div style="margin-bottom:24px;">
+        <div style="font-size:13px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Pecas movimentadas (${pecasMovimentadas.length})</div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;">
+          <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:20px;font-size:13px;">
+            <span>Custo <strong>${APP.formatMoney(pecasCusto)}</strong></span>
+            <span>Vendeu <strong>${APP.formatMoney(pecasVenda)}</strong></span>
+            <span>Lucro <strong style="color:${pecasLucro >= 0 ? 'var(--success)' : 'var(--danger)'};">${APP.formatMoney(pecasLucro)}</strong></span>
           </div>
-        </div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;">
-          ${pecasMovimentadas.map(p => {
-            const custo = p.peca_id && p.pecas?.custo ? p.pecas.custo * (p.quantidade || 1) : 0;
-            const lucro = (p.valor_total || 0) - custo;
-            return `<div style="background:var(--bg-input);padding:6px 10px;border-radius:var(--radius);font-size:12px;display:flex;gap:8px;align-items:center;">
-              <span>${p.quantidade || 1}x ${esc(p.pecas?.nome || p.descricao || '-')}</span>
-              <span style="color:var(--success);font-weight:600;">${APP.formatMoney(p.valor_total)}</span>
-              ${custo > 0 ? `<span style="color:var(--text-muted);font-size:10px;">(+${APP.formatMoney(lucro)})</span>` : '<span style="color:var(--warning);font-size:10px;">(sem custo)</span>'}
-            </div>`;
-          }).join('')}
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr style="border-bottom:1px solid var(--border);">
+                <th style="text-align:left;padding:8px 16px;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Peca</th>
+                <th style="text-align:center;padding:8px 12px;font-size:11px;color:var(--text-muted);text-transform:uppercase;">Qtd</th>
+                <th style="text-align:right;padding:8px 16px;font-size:11px;color:var(--text-muted);text-transform:uppercase;">Venda</th>
+                <th style="text-align:right;padding:8px 16px;font-size:11px;color:var(--text-muted);text-transform:uppercase;">Lucro</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${pecasMovimentadas.slice(0, 5).map(p => {
+                const custo = p.peca_id && p.pecas?.custo ? p.pecas.custo * (p.quantidade || 1) : 0;
+                const lucro = (p.valor_total || 0) - custo;
+                return `<tr style="border-bottom:1px solid rgba(46,46,54,0.4);">
+                  <td style="padding:8px 16px;font-size:13px;">${p.quantidade || 1}x ${esc(p.pecas?.nome || p.descricao || '-')}</td>
+                  <td style="padding:8px 12px;font-size:13px;text-align:center;">${p.quantidade || 1}</td>
+                  <td style="padding:8px 16px;font-size:13px;text-align:right;font-weight:600;">${APP.formatMoney(p.valor_total)}</td>
+                  <td style="padding:8px 16px;font-size:13px;text-align:right;font-weight:600;color:${custo > 0 ? (lucro >= 0 ? 'var(--success)' : 'var(--danger)') : 'var(--text-muted)'};">${custo > 0 ? APP.formatMoney(lucro) : 'sem custo'}</td>
+                </tr>`;
+              }).join('')}
+              ${pecasMovimentadas.length > 5 ? `<tr><td colspan="4" style="text-align:center;padding:10px;"><button class="btn btn-secondary btn-sm" onclick="this.parentElement.parentElement.parentElement.querySelectorAll('.peca-extra').forEach(r=>r.style.display='');this.parentElement.parentElement.remove();">Ver todas (${pecasMovimentadas.length})</button></td></tr>` : ''}
+              ${pecasMovimentadas.slice(5).map(p => {
+                const custo = p.peca_id && p.pecas?.custo ? p.pecas.custo * (p.quantidade || 1) : 0;
+                const lucro = (p.valor_total || 0) - custo;
+                return `<tr class="peca-extra" style="display:none;border-bottom:1px solid rgba(46,46,54,0.4);">
+                  <td style="padding:8px 16px;font-size:13px;">${p.quantidade || 1}x ${esc(p.pecas?.nome || p.descricao || '-')}</td>
+                  <td style="padding:8px 12px;font-size:13px;text-align:center;">${p.quantidade || 1}</td>
+                  <td style="padding:8px 16px;font-size:13px;text-align:right;font-weight:600;">${APP.formatMoney(p.valor_total)}</td>
+                  <td style="padding:8px 16px;font-size:13px;text-align:right;font-weight:600;color:${custo > 0 ? (lucro >= 0 ? 'var(--success)' : 'var(--danger)') : 'var(--text-muted)'};">${custo > 0 ? APP.formatMoney(lucro) : 'sem custo'}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
         </div>
       </div>` : ''}
 
-      <!-- OS Pagas -->
-      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:20px;">
-        <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
-          <h3 style="font-size:14px;">OS Pagas — ${esc(periodoLabel[this._periodo])}</h3>
-          <span style="font-size:13px;color:var(--success);font-weight:700;">${APP.formatMoney(totalOS)}</span>
-        </div>
-        ${osPagas.length ? (window.innerWidth <= 768 ? `
-        <div class="mobile-card-list" style="padding:10px;">
-          ${osPagas.map(o => `
-            <div class="mobile-card" onclick="OS.abrirDetalhes('${o.id}')">
-              <div class="mobile-card-header">
-                <div>
-                  <div class="mobile-card-title">#${esc(o.numero || '-')} · ${esc(o.veiculos?.placa || '-')}</div>
-                  <div class="mobile-card-subtitle">${esc(o.clientes?.nome || '-')}</div>
-                </div>
-                <span style="font-weight:700;color:var(--success);">${APP.formatMoney(o.valor_total)}</span>
-              </div>
-              <div class="mobile-card-row"><span>${esc(formaLabel[o.forma_pagamento] || o.forma_pagamento || '-')}</span></div>
-            </div>
-          `).join('')}
-        </div>` : `
-        <table class="data-table">
-          <thead>
-            <tr><th>OS</th><th>Veiculo</th><th>Cliente</th><th>Pagamento</th><th>Valor</th></tr>
-          </thead>
-          <tbody>
-            ${osPagas.map(o => `
-              <tr style="cursor:pointer;" onclick="OS.abrirDetalhes('${o.id}')">
-                <td><strong>#${esc(o.numero || '-')}</strong></td>
-                <td>${esc(o.veiculos?.placa || '-')}</td>
-                <td>${esc(o.clientes?.nome || '-')}</td>
-                <td><span class="badge badge-pronto">${esc(formaLabel[o.forma_pagamento] || o.forma_pagamento || '-')}</span></td>
-                <td style="font-weight:700;color:var(--success);">${APP.formatMoney(o.valor_total)}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>`) : '<div style="padding:30px;text-align:center;color:var(--text-muted);font-size:13px;">Nenhuma OS paga nesse periodo</div>'}
-      </div>
+      <!-- OS PAGAS + MOVIMENTAÇÕES (lado a lado desktop) -->
+      <div style="display:grid;grid-template-columns:${_mob ? '1fr' : '1fr 1fr'};gap:16px;margin-bottom:20px;">
 
-      <!-- Movimentações do caixa -->
-      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;">
-        <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
-          <h3 style="font-size:14px;">Movimentacoes do Caixa</h3>
-          <span style="font-size:13px;color:var(--text-secondary);">${movimentacoes.length} lancamentos</span>
-        </div>
-        ${movimentacoes.length ? (window.innerWidth <= 768 ? `
-        <div class="mobile-card-list" style="padding:10px;">
-          ${movimentacoes.map(m => `
-            <div class="mobile-card">
-              <div class="mobile-card-header">
-                <div>
-                  <div class="mobile-card-title">${esc(m.descricao)}</div>
-                  <div class="mobile-card-subtitle">${esc(FINANCEIRO._catLabel(m.categoria))} · ${APP.formatDate(m.created_at)}</div>
+        <!-- OS Pagas (borda esquerda sutil) -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-left:3px solid var(--text-muted);border-radius:var(--radius-lg);overflow:hidden;">
+          <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+            <h3 style="font-size:15px;font-family:var(--heading);font-weight:700;">OS Pagas</h3>
+            <span style="font-size:14px;font-weight:700;">${APP.formatMoney(totalOS)}</span>
+          </div>
+          ${osPagas.length ? (_mob ? `
+          <div class="mobile-card-list" style="padding:10px;">
+            ${osPagas.map(o => `
+              <div class="mobile-card" onclick="OS.abrirDetalhes('${o.id}')">
+                <div class="mobile-card-header">
+                  <div>
+                    <div class="mobile-card-title">#${esc(o.numero || '-')} · ${esc(o.veiculos?.placa || '-')}</div>
+                    <div class="mobile-card-subtitle">${esc(o.clientes?.nome || '-')}</div>
+                  </div>
+                  <span style="font-weight:700;">${APP.formatMoney(o.valor_total)}</span>
                 </div>
-                <span style="font-weight:700;color:${m.tipo === 'entrada' ? 'var(--success)' : 'var(--danger)'};">${m.tipo === 'saida' ? '-' : ''}${APP.formatMoney(m.valor)}</span>
+                <div class="mobile-card-row"><span style="font-size:12px;color:var(--text-muted);">${esc(formaLabel[o.forma_pagamento] || o.forma_pagamento || '-')}</span></div>
               </div>
-              <div class="mobile-card-row">
-                <span class="badge badge-${m.tipo === 'entrada' ? 'pronto' : 'cancelada'}">${m.tipo === 'entrada' ? 'Entrada' : 'Saída'}</span>
-                <button class="btn btn-danger btn-sm" style="flex:0;" onclick="FINANCEIRO.excluir('${m.id}')">X</button>
-              </div>
-            </div>
-          `).join('')}
-        </div>` : `
-        <table class="data-table">
-          <thead>
-            <tr><th>Data</th><th>Tipo</th><th>Categoria</th><th>Descricao</th><th>Valor</th><th></th></tr>
-          </thead>
-          <tbody>
-            ${movimentacoes.map(m => `
-              <tr>
-                <td style="font-size:12px;color:var(--text-secondary);">${APP.formatDateTime(m.created_at)}</td>
-                <td><span class="badge badge-${m.tipo === 'entrada' ? 'pronto' : 'cancelada'}">${m.tipo === 'entrada' ? 'Entrada' : 'Saida'}</span></td>
-                <td style="font-size:13px;">${esc(FINANCEIRO._catLabel(m.categoria))}</td>
-                <td style="font-size:13px;">${esc(m.descricao)}</td>
-                <td style="font-weight:700;color:${m.tipo === 'entrada' ? 'var(--success)' : 'var(--danger)'};">${m.tipo === 'saida' ? '-' : ''}${APP.formatMoney(m.valor)}</td>
-                <td><button class="btn btn-danger btn-sm" onclick="FINANCEIRO.excluir('${m.id}')">X</button></td>
-              </tr>
             `).join('')}
-          </tbody>
-        </table>`) : '<div style="padding:30px;text-align:center;color:var(--text-muted);font-size:13px;">Nenhuma movimentacao registrada</div>'}
+          </div>` : `
+          <table class="data-table">
+            <thead>
+              <tr><th>OS</th><th>Veiculo</th><th>Cliente</th><th>Pagto</th><th>Valor</th></tr>
+            </thead>
+            <tbody>
+              ${osPagas.map(o => `
+                <tr style="cursor:pointer;" onclick="OS.abrirDetalhes('${o.id}')">
+                  <td><strong>#${esc(o.numero || '-')}</strong></td>
+                  <td>${esc(o.veiculos?.placa || '-')}</td>
+                  <td>${esc(o.clientes?.nome || '-')}</td>
+                  <td style="font-size:12px;color:var(--text-secondary);">${esc(formaLabel[o.forma_pagamento] || o.forma_pagamento || '-')}</td>
+                  <td style="font-weight:700;">${APP.formatMoney(o.valor_total)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>`) : '<div style="padding:30px;text-align:center;color:var(--text-muted);font-size:13px;">Nenhuma OS paga nesse periodo</div>'}
+        </div>
+
+        <!-- Movimentações (borda esquerda âmbar) -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-left:3px solid var(--primary);border-radius:var(--radius-lg);overflow:hidden;">
+          <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+            <h3 style="font-size:15px;font-family:var(--heading);font-weight:700;">Movimentacoes</h3>
+            <span style="font-size:13px;color:var(--text-muted);">${movimentacoes.length} lanc.</span>
+          </div>
+          ${movimentacoes.length ? (_mob ? `
+          <div class="mobile-card-list" style="padding:10px;">
+            ${movimentacoes.map(m => `
+              <div class="mobile-card">
+                <div class="mobile-card-header">
+                  <div>
+                    <div class="mobile-card-title">${esc(m.descricao)}</div>
+                    <div class="mobile-card-subtitle">${esc(FINANCEIRO._catLabel(m.categoria))} · ${APP.formatDate(m.created_at)}</div>
+                  </div>
+                  <span style="font-weight:700;color:${m.tipo === 'entrada' ? 'var(--success)' : 'var(--danger)'};">${m.tipo === 'saida' ? '-' : ''}${APP.formatMoney(m.valor)}</span>
+                </div>
+                <div class="mobile-card-row">
+                  <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${m.tipo === 'entrada' ? 'var(--success-bg)' : 'var(--danger-bg)'};color:${m.tipo === 'entrada' ? 'var(--success)' : 'var(--danger)'};">${m.tipo === 'entrada' ? 'Entrada' : 'Saida'}</span>
+                  <button class="btn btn-danger btn-sm" style="flex:0;" onclick="FINANCEIRO.excluir('${m.id}')">X</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>` : `
+          <table class="data-table">
+            <thead>
+              <tr><th>Descricao</th><th>Tipo</th><th>Valor</th><th></th></tr>
+            </thead>
+            <tbody>
+              ${movimentacoes.map(m => `
+                <tr>
+                  <td>
+                    <div style="font-weight:600;font-size:13px;">${esc(m.descricao)}</div>
+                    <div style="font-size:11px;color:var(--text-muted);">${esc(FINANCEIRO._catLabel(m.categoria))} · ${APP.formatDateTime(m.created_at)}</div>
+                  </td>
+                  <td><span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${m.tipo === 'entrada' ? 'var(--success-bg)' : 'var(--danger-bg)'};color:${m.tipo === 'entrada' ? 'var(--success)' : 'var(--danger)'};">${m.tipo === 'entrada' ? 'Entrada' : 'Saida'}</span></td>
+                  <td style="font-weight:700;color:${m.tipo === 'entrada' ? 'var(--text)' : 'var(--text-secondary)'};">${m.tipo === 'saida' ? '-' : ''}${APP.formatMoney(m.valor)}</td>
+                  <td><button class="btn btn-danger btn-sm" onclick="FINANCEIRO.excluir('${m.id}')">X</button></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>`) : '<div style="padding:30px;text-align:center;color:var(--text-muted);font-size:13px;">Nenhuma movimentacao</div>'}
+        </div>
       </div>
 
       <!-- Botão PDF -->
-      <div style="margin-top:16px;display:flex;gap:8px;">
+      <div style="display:flex;gap:8px;">
         <button class="btn btn-secondary" onclick="FINANCEIRO.gerarPDF()">Gerar Relatorio PDF</button>
       </div>
     `;
