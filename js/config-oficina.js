@@ -492,11 +492,10 @@ const CONFIG = {
       .select('id, nome, role, salario_base, comissao_percent, vale_refeicao')
       .eq('oficina_id', APP.oficinaId)
       .eq('ativo', true)
-      .in('role', ['mecanico', 'aux_mecanico', 'gerente', 'atendente', 'aux_admin'])
       .order('nome');
 
     this._calcEquipe = membros || [];
-    const roleLabel = { mecanico: 'Mecânico', aux_mecanico: 'Aux.Mec', gerente: 'Gerente', atendente: 'Atendente', aux_admin: 'Aux.Admin' };
+    const roleLabel = { dono: 'Dono', mecanico: 'Mecânico', aux_mecanico: 'Aux.Mec', gerente: 'Gerente', atendente: 'Atendente', aux_admin: 'Aux.Admin' };
 
     if (!this._calcEquipe.length) {
       el.innerHTML = '<div style="font-size:13px;color:var(--warning);padding:8px 0;">Nenhum funcionario ativo. Cadastre na aba Equipe.</div>';
