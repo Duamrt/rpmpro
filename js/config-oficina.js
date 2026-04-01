@@ -162,6 +162,23 @@ const CONFIG = {
               <span style="font-size:11px;color:var(--text-secondary);">Preco da hora de mao de obra</span>
             </div>
           </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:8px;">
+            <div class="form-group">
+              <label>Comissao mecanicos (%)</label>
+              <input type="number" class="form-control" id="calc-comissao" value="5" min="0" max="30" step="1" oninput="CONFIG._calcularCusto()">
+              <span style="font-size:11px;color:var(--text-secondary);">% sobre MO faturada</span>
+            </div>
+            <div class="form-group">
+              <label>Impostos (%)</label>
+              <input type="number" class="form-control" id="calc-imposto" value="6" min="0" max="30" step="0.5" oninput="CONFIG._calcularCusto()">
+              <span style="font-size:11px;color:var(--text-secondary);">Simples Nacional ou regime</span>
+            </div>
+            <div class="form-group">
+              <label>Taxa media cartao (%)</label>
+              <input type="number" class="form-control" id="calc-taxacartao" value="3" min="0" max="15" step="0.5" oninput="CONFIG._calcularCusto()">
+              <span style="font-size:11px;color:var(--text-secondary);">Media entre debito e credito</span>
+            </div>
+          </div>
           <div id="calc-resultado" style="margin-top:16px;"></div>
         </div>
 
@@ -552,27 +569,40 @@ const CONFIG = {
     const fixos = parseFloat(document.getElementById('calc-fixos')?.value) || 0;
     const vagas = parseInt(document.getElementById('calc-vagas')?.value) || 3;
     const cobrado = parseFloat(document.getElementById('calc-cobrado')?.value) || 120;
+    const pctComissao = parseFloat(document.getElementById('calc-comissao')?.value) || 5;
+    const pctImposto = parseFloat(document.getElementById('calc-imposto')?.value) || 6;
+    const pctTaxaCartao = parseFloat(document.getElementById('calc-taxacartao')?.value) || 3;
 
-    // Custo total mensal
-    const custoTotal = salarios + valeRefeicao + fixos;
+    // Custo FIXO mensal
+    const custoFixo = salarios + valeRefeicao + fixos;
 
     // Horas faturáveis = vagas × horas/dia × dias/mês × 75% eficiência
     const eficiencia = 0.75;
     const horasFaturaveis = vagas * horasDia * diasMes * eficiencia;
 
-    // Custo por hora (piso mínimo)
-    const custoHora = horasFaturaveis > 0 ? custoTotal / horasFaturaveis : 0;
+    // Custo fixo por hora
+    const custoFixoHora = horasFaturaveis > 0 ? custoFixo / horasFaturaveis : 0;
 
-    // Análise do valor cobrado
-    const lucroHora = cobrado - custoHora;
-    const margemReal = custoHora > 0 ? ((cobrado / custoHora - 1) * 100) : 0;
-    const multiplicador = custoHora > 0 ? (cobrado / custoHora) : 0;
+    // Custos VARIÁVEIS por hora (% sobre valor cobrado)
+    const pctVariavel = pctComissao + pctImposto + pctTaxaCartao;
+    const custoVariavelHora = cobrado * pctVariavel / 100;
+
+    // Custo TOTAL por hora = fixo + variável
+    const custoTotalHora = custoFixoHora + custoVariavelHora;
+
+    // Lucro REAL por hora
+    const lucroRealHora = cobrado - custoTotalHora;
+    const margemReal = cobrado > 0 ? (lucroRealHora / cobrado * 100) : 0;
+
+    // Projeções mensais
     const faturamentoPotencial = cobrado * horasFaturaveis;
-    const lucroPotencial = faturamentoPotencial - custoTotal;
-    const pontoEquilibrio = cobrado > 0 ? custoTotal / cobrado : 0;
+    const custoVariavelMes = faturamentoPotencial * pctVariavel / 100;
+    const custoTotalMes = custoFixo + custoVariavelMes;
+    const lucroPotencial = faturamentoPotencial - custoTotalMes;
+    const pontoEquilibrio = (cobrado - custoVariavelHora) > 0 ? custoFixo / (cobrado - custoVariavelHora) : 0;
 
-    const saudavel = cobrado >= custoHora * 2;
-    const prejuizo = cobrado < custoHora;
+    const saudavel = lucroRealHora > 0 && margemReal >= 40;
+    const prejuizo = lucroRealHora <= 0;
 
     const el = document.getElementById('calc-resultado');
     if (!el) return;
@@ -581,42 +611,64 @@ const CONFIG = {
       <div style="background:var(--bg-input);border-radius:var(--radius-lg);padding:20px;">
         <!-- Resultado principal -->
         <div style="text-align:center;margin-bottom:20px;">
-          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">Cobrando R$ ${cobrado.toFixed(0)}/hora voce tem</div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">Cobrando R$ ${cobrado.toFixed(0)}/hora, seu lucro REAL e</div>
           <div style="font-size:36px;font-weight:900;color:${prejuizo ? 'var(--danger)' : saudavel ? 'var(--success)' : 'var(--warning)'};">
-            ${prejuizo ? 'PREJUIZO' : 'R$ ' + lucroHora.toFixed(2) + '/hora de lucro'}
+            ${prejuizo ? 'PREJUIZO' : 'R$ ' + lucroRealHora.toFixed(2) + '/hora'}
           </div>
           <div style="font-size:13px;color:var(--text-secondary);margin-top:4px;">
-            Margem de ${margemReal.toFixed(0)}% · Multiplicador ${multiplicador.toFixed(1)}x sobre o custo
-            ${saudavel ? ' · Saudavel' : prejuizo ? '' : ' · Abaixo do ideal (2x+)'}
+            Margem liquida de ${margemReal.toFixed(0)}%
+            ${saudavel ? ' — Saudavel' : prejuizo ? ' — Voce perde dinheiro a cada hora!' : ' — Apertado, margem abaixo de 40%'}
           </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;text-align:center;margin-bottom:16px;">
-          <div>
-            <div style="font-size:10px;color:var(--text-secondary);">Custo/hora</div>
-            <div style="font-size:18px;font-weight:800;color:var(--danger);">R$ ${custoHora.toFixed(2)}</div>
-            <div style="font-size:10px;color:var(--text-muted);">Piso minimo</div>
+        <!-- Decomposição da hora -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px;">
+          <div style="font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;">Decomposicao de cada R$ ${cobrado.toFixed(0)} cobrado</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div style="display:flex;justify-content:space-between;font-size:13px;">
+              <span>Custo fixo (salarios + VR + despesas)</span>
+              <span style="color:var(--danger);font-weight:600;">-R$ ${custoFixoHora.toFixed(2)}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;">
+              <span>Comissao mecanicos (${pctComissao}%)</span>
+              <span style="color:var(--danger);font-weight:600;">-R$ ${(cobrado * pctComissao / 100).toFixed(2)}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;">
+              <span>Impostos (${pctImposto}%)</span>
+              <span style="color:var(--danger);font-weight:600;">-R$ ${(cobrado * pctImposto / 100).toFixed(2)}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;">
+              <span>Taxa maquineta (${pctTaxaCartao}%)</span>
+              <span style="color:var(--danger);font-weight:600;">-R$ ${(cobrado * pctTaxaCartao / 100).toFixed(2)}</span>
+            </div>
+            <div style="border-top:2px solid var(--border);padding-top:8px;margin-top:4px;display:flex;justify-content:space-between;font-size:15px;font-weight:800;">
+              <span>= Lucro liquido por hora</span>
+              <span style="color:${lucroRealHora > 0 ? 'var(--success)' : 'var(--danger)'};">R$ ${lucroRealHora.toFixed(2)}</span>
+            </div>
           </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;text-align:center;margin-bottom:16px;">
           <div>
             <div style="font-size:10px;color:var(--text-secondary);">Lucro potencial/mes</div>
-            <div style="font-size:18px;font-weight:800;color:var(--success);">R$ ${(lucroPotencial/1000).toFixed(1)}k</div>
-            <div style="font-size:10px;color:var(--text-muted);">Se faturar 75%</div>
+            <div style="font-size:20px;font-weight:800;color:${lucroPotencial > 0 ? 'var(--success)' : 'var(--danger)'};">R$ ${(lucroPotencial/1000).toFixed(1)}k</div>
+            <div style="font-size:10px;color:var(--text-muted);">So de mao de obra</div>
           </div>
           <div>
             <div style="font-size:10px;color:var(--text-secondary);">Ponto equilibrio</div>
-            <div style="font-size:18px;font-weight:800;color:var(--warning);">${pontoEquilibrio.toFixed(0)}h</div>
+            <div style="font-size:20px;font-weight:800;color:var(--warning);">${pontoEquilibrio.toFixed(0)}h/mes</div>
             <div style="font-size:10px;color:var(--text-muted);">de ${horasFaturaveis.toFixed(0)}h disponiveis</div>
           </div>
           <div>
-            <div style="font-size:10px;color:var(--text-secondary);">Faturamento max</div>
-            <div style="font-size:18px;font-weight:800;">R$ ${(faturamentoPotencial/1000).toFixed(1)}k</div>
-            <div style="font-size:10px;color:var(--text-muted);">MO/mes (${vagas} vagas)</div>
+            <div style="font-size:10px;color:var(--text-secondary);">Faturamento MO max</div>
+            <div style="font-size:20px;font-weight:800;">R$ ${(faturamentoPotencial/1000).toFixed(1)}k</div>
+            <div style="font-size:10px;color:var(--text-muted);">${vagas} vagas · ${horasFaturaveis.toFixed(0)}h</div>
           </div>
         </div>
 
-        <div style="font-size:12px;color:var(--text-secondary);text-align:center;margin-bottom:16px;line-height:1.8;">
-          ${vagas} vaga${vagas > 1 ? 's' : ''} · ${horasDia.toFixed(0)}h/dia · ${diasMes} dias/mes · 75% eficiencia = <strong>${horasFaturaveis.toFixed(0)}h faturaveis</strong><br>
-          Salarios: R$ ${salarios.toFixed(0)} + VR: R$ ${valeRefeicao.toFixed(0)} + Fixos: R$ ${fixos.toFixed(0)} = <strong>R$ ${custoTotal.toFixed(0)}/mes</strong>
+        <div style="font-size:11px;color:var(--text-secondary);text-align:center;margin-bottom:16px;line-height:1.8;">
+          Custos fixos: R$ ${custoFixo.toFixed(0)}/mes · Variaveis: ${pctVariavel}% por hora faturada<br>
+          ${vagas} vaga${vagas > 1 ? 's' : ''} · ${horasDia.toFixed(0)}h/dia · ${diasMes} dias/mes · 75% eficiencia
         </div>
 
         <div style="text-align:center;">
