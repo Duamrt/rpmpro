@@ -204,65 +204,6 @@ const FINANCEIRO = {
         </div>
       </div>
 
-      <!-- OS do dia -->
-      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:20px;">
-        <div style="padding:14px 20px;border-bottom:1px solid var(--border);">
-          <h3 style="font-size:14px;">OS Entregues Hoje</h3>
-        </div>
-        ${osDia.length ? (_mob ? `
-        <div class="mobile-card-list" style="padding:10px;">
-          ${osDia.map(o => {
-            const taxa = o.taxa_cartao || 0;
-            const vlrTaxa = o.valor_total * taxa / 100;
-            const liquido = o.valor_total - vlrTaxa;
-            return `
-            <div class="mobile-card" onclick="OS.abrirDetalhes('${o.id}')">
-              <div class="mobile-card-header">
-                <div>
-                  <div class="mobile-card-title">#${esc(o.numero || '-')} · ${esc(o.veiculos?.placa || '-')}</div>
-                  <div class="mobile-card-subtitle">${esc(o.clientes?.nome || '-')}</div>
-                </div>
-                <div style="text-align:right;">
-                  <div style="font-weight:700;color:var(--success);">${APP.formatMoney(o.valor_total)}</div>
-                  ${taxa > 0 ? `<div style="font-size:11px;color:var(--danger);">-${taxa}% = ${APP.formatMoney(liquido)}</div>` : ''}
-                </div>
-              </div>
-              <div class="mobile-card-row"><span class="badge badge-pronto">${esc(formaLabel[o.forma_pagamento] || o.forma_pagamento || '-')}</span></div>
-            </div>`;
-          }).join('')}
-        </div>` : `
-        <table class="data-table">
-          <thead>
-            <tr><th>OS</th><th>Veiculo</th><th>Cliente</th><th>Pagamento</th><th>Bruto</th><th>Taxa</th><th>Liquido</th></tr>
-          </thead>
-          <tbody>
-            ${osDia.map(o => {
-              const taxa = o.taxa_cartao || 0;
-              const vlrTaxa = o.valor_total * taxa / 100;
-              const liquido = o.valor_total - vlrTaxa;
-              return `
-              <tr style="cursor:pointer;" onclick="OS.abrirDetalhes('${o.id}')">
-                <td><strong>#${esc(o.numero || '-')}</strong></td>
-                <td>${esc(o.veiculos?.placa || '-')}</td>
-                <td>${esc(o.clientes?.nome || '-')}</td>
-                <td><span class="badge badge-pronto">${esc(formaLabel[o.forma_pagamento] || o.forma_pagamento || '-')}</span></td>
-                <td style="font-weight:700;color:var(--success);">${APP.formatMoney(o.valor_total)}</td>
-                <td style="color:var(--danger);">${taxa > 0 ? `-${taxa}%` : '-'}</td>
-                <td style="font-weight:700;">${APP.formatMoney(liquido)}</td>
-              </tr>`;
-            }).join('')}
-          </tbody>
-          <tfoot>
-            <tr style="border-top:2px solid var(--border);font-weight:700;">
-              <td colspan="4">TOTAL</td>
-              <td style="color:var(--success);">${APP.formatMoney(faturamentoBruto)}</td>
-              <td style="color:var(--danger);">${totalTaxas > 0 ? '-' + APP.formatMoney(totalTaxas) : '-'}</td>
-              <td>${APP.formatMoney(faturamentoBruto - totalTaxas)}</td>
-            </tr>
-          </tfoot>
-        </table>`) : '<div style="padding:30px;text-align:center;color:var(--text-muted);font-size:13px;">Nenhuma OS entregue hoje</div>'}
-      </div>
-
       <button class="btn btn-secondary" onclick="FINANCEIRO._gerarPDFFechamento()">Gerar PDF do Fechamento</button>
     `;
   },
