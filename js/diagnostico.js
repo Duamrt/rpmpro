@@ -376,7 +376,7 @@ const DIAGNOSTICO = {
     });
 
     // Se tudo OK, marca como verificado
-    if (allOk) dados._ok = true;
+    if (!temProblema) dados._ok = true;
     this._dados[setorKey] = dados;
     this.abrir(osId);
   },
