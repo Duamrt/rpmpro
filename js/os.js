@@ -1404,10 +1404,15 @@ const OS = {
       return;
     }
 
+    // Se SAINDO de entregue → limpa caixa e reseta pagamento
+    if (statusAtual === 'entregue' && status !== 'entregue') {
+      await db.from('caixa').delete().eq('os_id', id).eq('oficina_id', APP.oficinaId);
+      await db.from('ordens_servico').update({ pago: false, forma_pagamento: 'pendente', data_entrega: null }).eq('id', id);
+    }
+
     const update = { status, updated_at: new Date().toISOString() };
     if (status === 'aprovada') update.data_aprovacao = new Date().toISOString();
     if (status === 'pronto') update.data_conclusao = new Date().toISOString();
-    if (status === 'entregue') update.data_entrega = new Date().toISOString();
 
     await db.from('ordens_servico').update(update).eq('id', id);
 
@@ -1462,7 +1467,10 @@ const OS = {
 
     if (!os || !os.pago || os.status !== 'entregue') return;
 
-    // Verifica se já foi lançada (evita duplicata)
+    // Remove lançamentos anteriores dessa OS (previne duplicata)
+    await db.from('caixa').delete().eq('oficina_id', oficina_id).eq('os_id', osId);
+
+    // Guard extra (não deveria chegar aqui com duplicatas, mas garante)
     const { data: jaLancou } = await db.from('caixa')
       .select('id')
       .eq('oficina_id', oficina_id)
