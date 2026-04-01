@@ -47,12 +47,13 @@ const PRODUTIVIDADE = {
     const periodoLabel = { hoje: 'Hoje', semana: 'Esta semana', mes: 'Este mes' };
     const _mob = window.innerWidth <= 768;
 
-    // Calcula acoes por usuario
+    // Calcula acoes por usuario (admin) e por mecanico (OS atribuidas)
     const dadosUser = usuarios.map(u => {
       const osAbertas = osList.filter(o => o.created_by === u.id);
-      const osFechadas = osList.filter(o => o.mecanico_id === u.id && o.status === 'entregue' && o.pago);
       const osFechadasBy = osList.filter(o => o.created_by === u.id && o.status === 'entregue');
       const clientesCad = clientes.filter(c => c.created_by === u.id);
+      const veiculosCad = veiculos.filter(v => v.created_by === u.id);
+      const pecasCad = pecas.filter(p => p.created_by === u.id);
       const despesas = caixa.filter(c => c.created_by === u.id && c.tipo === 'saida');
       const pagtos = caixa.filter(c => c.created_by === u.id && c.tipo === 'entrada' && c.categoria === 'servico');
 
@@ -61,12 +62,14 @@ const PRODUTIVIDADE = {
       osAbertas.forEach(o => timeline.push({ hora: o.created_at, desc: `Abriu OS #${o.numero || '-'} — ${o.veiculos?.placa || '-'} (${o.clientes?.nome || '-'})`, tipo: 'OS', cor: 'primary' }));
       osFechadasBy.forEach(o => timeline.push({ hora: o.data_entrega || o.created_at, desc: `Entregou OS #${o.numero || '-'}`, tipo: 'Entrega', cor: 'success' }));
       clientesCad.forEach(c => timeline.push({ hora: c.created_at, desc: `Cadastrou cliente: ${c.nome}`, tipo: 'Cliente', cor: 'success' }));
+      veiculosCad.forEach(v => timeline.push({ hora: v.created_at, desc: `Cadastrou veiculo: ${v.placa}`, tipo: 'Veiculo', cor: 'success' }));
+      pecasCad.forEach(p => timeline.push({ hora: p.created_at, desc: `Cadastrou peca: ${p.nome}`, tipo: 'Peca', cor: 'warning' }));
       despesas.forEach(d => timeline.push({ hora: d.created_at, desc: `Despesa: ${d.descricao} — ${APP.formatMoney(d.valor)}`, tipo: 'Despesa', cor: 'danger' }));
       pagtos.forEach(p => timeline.push({ hora: p.created_at, desc: `Recebeu pagamento — ${APP.formatMoney(p.valor)}`, tipo: 'Pagto', cor: 'success' }));
 
       timeline.sort((a, b) => new Date(b.hora) - new Date(a.hora));
 
-      const totalAcoes = osAbertas.length + osFechadasBy.length + clientesCad.length + despesas.length + pagtos.length;
+      const totalAcoes = osAbertas.length + osFechadasBy.length + clientesCad.length + veiculosCad.length + pecasCad.length + despesas.length + pagtos.length;
 
       // Tempo desde ultima acao
       const ultimaAcao = timeline.length ? new Date(timeline[0].hora) : null;
@@ -77,8 +80,8 @@ const PRODUTIVIDADE = {
         osAbertas: osAbertas.length,
         osFechadas: osFechadasBy.length,
         clientesCad: clientesCad.length,
-        veiculosCad: veiculos.length, // veiculos nao tem created_by, aproxima
-        pecasCad: 0, // pecas nao tem created_by
+        veiculosCad: veiculosCad.length,
+        pecasCad: pecasCad.length,
         despesas: despesas.length,
         pagtos: pagtos.length,
         totalAcoes,
@@ -91,7 +94,8 @@ const PRODUTIVIDADE = {
     const dadosMec = mecanicos.map(m => {
       const osAtribuidas = osList.filter(o => o.mecanico_id === m.id);
       const osEntregues = osAtribuidas.filter(o => o.status === 'entregue');
-      return { ...m, osAtribuidas: osAtribuidas.length, osEntregues: osEntregues.length };
+      const valorTotal = osEntregues.reduce((s, o) => s + (o.valor_total || 0), 0);
+      return { ...m, osAtribuidas: osAtribuidas.length, osEntregues: osEntregues.length, valorTotal };
     });
 
     // Gaps
@@ -143,11 +147,13 @@ const PRODUTIVIDADE = {
             </div>
 
             <!-- Grid atividades -->
-            <div style="display:grid;grid-template-columns:repeat(5, 1fr);border-bottom:1px solid var(--border);">
+            <div style="display:grid;grid-template-columns:repeat(${_mob ? 4 : 7}, 1fr);border-bottom:1px solid var(--border);">
               ${[
                 ['Clientes', u.clientesCad],
+                ['Veiculos', u.veiculosCad],
                 ['OS abertas', u.osAbertas],
                 ['OS fechadas', u.osFechadas],
+                ['Pecas', u.pecasCad],
                 ['Despesas', u.despesas],
                 ['Pagtos rec.', u.pagtos]
               ].map(([lbl, num]) => `
@@ -194,6 +200,7 @@ const PRODUTIVIDADE = {
               <div style="font-family:var(--heading);font-size:22px;font-weight:800;">${m.osAtribuidas}</div>
               <div style="font-size:10px;color:var(--text-muted);">OS atribuidas</div>
               <div style="font-size:13px;font-weight:600;color:var(--success);margin-top:4px;">${m.osEntregues} entregues</div>
+              ${m.valorTotal ? `<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${APP.formatMoney(m.valorTotal)}</div>` : ''}
             </div>
           `).join('')}
         </div>

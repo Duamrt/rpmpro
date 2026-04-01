@@ -326,6 +326,7 @@ const CLIENTES = {
         if (!confirm(`Ja existe um cliente "${dadosCliente.nome}". Criar mesmo assim?`)) return;
       }
 
+      dadosCliente.created_by = APP.profile?.id || null;
       const res = await db.from('clientes').insert(dadosCliente).select().single();
       error = res.error;
       if (res.data) clienteId = res.data.id;
@@ -369,6 +370,7 @@ const CLIENTES = {
           APP.toast('Veículo ' + vei.placa + ' vinculado ao cliente');
         }
       } else {
+        vei.created_by = APP.profile?.id || null;
         const { error: vErr } = await db.from('veiculos').insert(vei);
         if (vErr) APP.toast('Erro no veículo: ' + vErr.message, 'error');
       }

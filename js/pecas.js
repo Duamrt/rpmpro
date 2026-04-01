@@ -328,6 +328,7 @@ const PECAS = {
     if (id) {
       res = await db.from('pecas').update(dados).eq('id', id).eq('oficina_id', APP.oficinaId).select();
     } else {
+      dados.created_by = APP.profile?.id || null;
       res = await db.from('pecas').insert(dados).select();
     }
 
