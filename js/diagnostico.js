@@ -216,7 +216,7 @@ const DIAGNOSTICO = {
                 background:${temDados ? 'rgba(34,197,94,0.08)' : 'var(--bg-input)'};cursor:pointer;text-align:center;
                 display:flex;flex-direction:column;align-items:center;gap:6px;min-height:80px;justify-content:center;">
                 <span style="font-size:24px;">${s.icone}</span>
-                <span style="font-size:12px;font-weight:700;color:var(--text-primary);">${esc(s.nome)}</span>
+                <span style="font-size:12px;font-weight:700;color:#fff;">${esc(s.nome)}</span>
                 ${temDados ? `<span style="font-size:10px;color:${qtdProblemas > 0 ? 'var(--danger)' : 'var(--success)'};">${qtdProblemas > 0 ? qtdProblemas + ' problema(s)' : 'OK'}</span>` : ''}
               </button>`;
           }).join('')}
