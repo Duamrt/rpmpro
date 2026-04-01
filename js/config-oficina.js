@@ -107,12 +107,23 @@ const CONFIG = {
           </div>
           <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;">Link para exibir o pátio num monitor/TV. Mostra o fluxo dos veículos em tempo real, sem valores financeiros.</p>
           ${oficina.tv_token
-            ? `<div style="display:flex;gap:8px;align-items:center;">
-                <input type="text" class="form-control" readonly value="${location.origin}/tv.html?t=${oficina.tv_token}" id="cfg-tv-link" style="font-size:12px;flex:1;" onclick="this.select()">
-                <button class="btn btn-primary btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('cfg-tv-link').value);APP.toast('Link copiado!');">Copiar</button>
-                <button class="btn btn-secondary btn-sm" onclick="window.open(document.getElementById('cfg-tv-link').value,'_blank')">Abrir</button>
+            ? `<div style="margin-bottom:12px;">
+                <label style="font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:4px;display:block;">🏪 Recepção (clientes acompanham o veículo)</label>
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <input type="text" class="form-control" readonly value="${location.origin}/tv.html?t=${oficina.tv_token}" id="cfg-tv-link1" style="font-size:12px;flex:1;" onclick="this.select()">
+                  <button class="btn btn-primary btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('cfg-tv-link1').value);APP.toast('Link copiado!');">Copiar</button>
+                  <button class="btn btn-secondary btn-sm" onclick="window.open(document.getElementById('cfg-tv-link1').value,'_blank')">Abrir</button>
+                </div>
               </div>
-              <div style="font-size:11px;color:var(--text-muted);margin-top:8px;">Abra em tela cheia (F11) numa TV ou monitor da oficina.</div>`
+              <div>
+                <label style="font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:4px;display:block;">🔧 Equipe (demanda por mecânico)</label>
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <input type="text" class="form-control" readonly value="${location.origin}/tv.html?t=${oficina.tv_token}&v=equipe" id="cfg-tv-link2" style="font-size:12px;flex:1;" onclick="this.select()">
+                  <button class="btn btn-primary btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('cfg-tv-link2').value);APP.toast('Link copiado!');">Copiar</button>
+                  <button class="btn btn-secondary btn-sm" onclick="window.open(document.getElementById('cfg-tv-link2').value,'_blank')">Abrir</button>
+                </div>
+              </div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:10px;">Abra em tela cheia (F11) numa TV ou monitor. Atualiza sozinho a cada 30s.</div>`
             : `<button class="btn btn-primary" onclick="CONFIG._gerarTokenTV()">Gerar link do painel</button>`}
         </div>
 
