@@ -94,7 +94,7 @@ const OS = {
             </div>
             <div class="mobile-card-body">
               <div class="mobile-card-row"><span>${esc(os.profiles?.nome || 'Sem mecânico')}</span> ${os.status === 'entregue' && !os.pago ? '<span style="background:var(--danger-bg);color:var(--danger);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;">PENDENTE</span>' : `<span class="badge badge-${os.status}">${statusLabel[os.status] || esc(os.status)}</span>`}</div>
-              <div class="mobile-card-row"><span style="font-size:11px;">${APP.formatDate(os.data_entrada)}</span>${os.status === 'entregue' && !os.forma_pagamento ? '<span style="background:var(--danger-bg);color:var(--danger);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;">SEM PAGAMENTO</span>' : ''}${os.status === 'cancelada' && os.motivo_cancelamento ? `<span style="font-size:10px;color:var(--text-muted);">${esc(os.motivo_cancelamento)}</span>` : ''}</div>
+              <div class="mobile-card-row"><span style="font-size:11px;">${APP.formatDate(os.data_entrada)}</span>${os.status === 'entregue' && !os.pago ? '<span style="background:var(--danger-bg);color:var(--danger);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;">SEM PAGAMENTO</span>' : ''}${os.status === 'cancelada' && os.motivo_cancelamento ? `<span style="font-size:10px;color:var(--text-muted);">${esc(os.motivo_cancelamento)}</span>` : ''}</div>
             </div>
           </div>
         `).join('')}
@@ -122,7 +122,7 @@ const OS = {
               <td>${esc(os.clientes?.nome || '-')}</td>
               <td>${esc(os.profiles?.nome || '-')}</td>
               <td>${APP.formatMoney(os.valor_total)}</td>
-              <td>${os.status === 'entregue' && !os.pago ? '<span style="background:var(--danger-bg);color:var(--danger);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;">Pendente</span>' : `<span class="badge badge-${os.status}">${statusLabel[os.status] || esc(os.status)}</span>`}${os.status === 'entregue' && !os.forma_pagamento ? '<br><span style="background:var(--danger-bg);color:var(--danger);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;margin-top:4px;display:inline-block;">SEM PAGAMENTO</span>' : ''}${os.status === 'cancelada' && os.motivo_cancelamento ? `<br><span style="font-size:10px;color:var(--text-muted);margin-top:2px;display:inline-block;">${esc(os.motivo_cancelamento)}</span>` : ''}</td>
+              <td>${os.status === 'entregue' && !os.pago ? '<span style="background:var(--danger-bg);color:var(--danger);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;">Pendente</span>' : `<span class="badge badge-${os.status}">${statusLabel[os.status] || esc(os.status)}</span>`}${os.status === 'entregue' && !os.pago ? '<br><span style="background:var(--danger-bg);color:var(--danger);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;margin-top:4px;display:inline-block;">SEM PAGAMENTO</span>' : ''}${os.status === 'cancelada' && os.motivo_cancelamento ? `<br><span style="font-size:10px;color:var(--text-muted);margin-top:2px;display:inline-block;">${esc(os.motivo_cancelamento)}</span>` : ''}</td>
               <td style="font-size:12px;color:var(--text-secondary)">${APP.formatDate(os.data_entrada)}</td>
             </tr>
           `).join('')}

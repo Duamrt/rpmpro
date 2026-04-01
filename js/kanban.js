@@ -189,7 +189,7 @@ const KANBAN = {
           <span style="font-size:12px;color:var(--text-muted);">🔧 ${esc(os.profiles?.nome) || 'Sem mecanico'}</span>
         </div>
         ${isDono && os.valor_total ? `<div style="font-size:13px;font-weight:700;color:var(--success);margin-bottom:8px;">R$ ${(os.valor_total || 0).toFixed(0)}</div>` : ''}
-        ${os.status === 'entregue' && !os.forma_pagamento ? `<div style="background:var(--danger-bg);color:var(--danger);padding:4px 8px;border-radius:var(--radius);font-size:11px;font-weight:700;margin-bottom:8px;text-align:center;">SEM PAGAMENTO DEFINIDO</div>` : ''}
+        ${os.status === 'entregue' && !os.pago ? `<div style="background:var(--danger-bg);color:var(--danger);padding:4px 8px;border-radius:var(--radius);font-size:11px;font-weight:700;margin-bottom:8px;text-align:center;">SEM PAGAMENTO DEFINIDO</div>` : ''}
         <div style="display:flex;gap:6px;border-top:1px solid var(--border);padding-top:8px;">
           ${this._btnVoltar(os.status, os.id)}
           ${this._btnAvancar(os.status, os.id)}
@@ -238,7 +238,7 @@ const KANBAN = {
           <span style="font-size:11px;color:var(--text-muted);">🔧 ${esc(os.profiles?.nome || 'Sem mecânico')}</span>
           ${isDono && os.valor_total ? `<span style="font-size:11px;font-weight:700;color:var(--success);">R$ ${(os.valor_total || 0).toFixed(0)}</span>` : ''}
         </div>
-        ${os.status === 'entregue' && !os.forma_pagamento ? `<div style="background:var(--danger-bg);color:var(--danger);padding:3px 6px;border-radius:var(--radius);font-size:10px;font-weight:700;margin-top:6px;text-align:center;">SEM PAGAMENTO</div>` : ''}
+        ${os.status === 'entregue' && !os.pago ? `<div style="background:var(--danger-bg);color:var(--danger);padding:3px 6px;border-radius:var(--radius);font-size:10px;font-weight:700;margin-top:6px;text-align:center;">SEM PAGAMENTO</div>` : ''}
         <div class="kanban-card-actions" style="display:flex;gap:4px;margin-top:8px;border-top:1px solid var(--border);padding-top:8px;">
           ${this._btnVoltar(os.status, os.id)}
           ${this._btnAvancar(os.status, os.id)}
