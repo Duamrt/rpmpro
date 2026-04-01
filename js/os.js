@@ -719,6 +719,7 @@ const OS = {
               <option value="pix" ${os.forma_pagamento === 'pix' ? 'selected' : ''}>Pix</option>
               <option value="debito" ${os.forma_pagamento === 'debito' ? 'selected' : ''}>Debito</option>
               <option value="credito" ${os.forma_pagamento === 'credito' ? 'selected' : ''}>Credito</option>
+              <option value="faturado" ${os.forma_pagamento === 'faturado' ? 'selected' : ''}>Faturado</option>
             </select>
           </div>
         </div>
