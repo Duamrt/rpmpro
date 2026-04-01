@@ -434,6 +434,9 @@ const KANBAN = {
   },
 
   async _enviarWhatsAuto(os, novoStatus) {
+    // WhatsApp automático só em pronto e entregue (pedido Marcondes)
+    if (!['pronto', 'entregue'].includes(novoStatus)) return;
+
     const whats = os.clientes?.whatsapp;
     if (!whats) return;
 

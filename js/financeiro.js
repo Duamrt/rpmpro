@@ -1,28 +1,216 @@
-// RPM Pro — Financeiro (Caixa da Oficina)
+// RPM Pro — Financeiro (Caixa da Oficina + Fechamento do Dia)
 const FINANCEIRO = {
   _periodo: 'hoje',
+  _aba: 'fechamento', // fechamento | caixa
 
   async carregar() {
     const container = document.getElementById('financeiro-content');
     if (!container) return;
 
+    container.innerHTML = `
+      <!-- Abas -->
+      <div style="display:flex;gap:6px;margin-bottom:20px;border-bottom:2px solid var(--border);padding-bottom:0;">
+        <button class="kanban-tab ${this._aba === 'fechamento' ? 'active' : ''}" onclick="FINANCEIRO._aba='fechamento';FINANCEIRO.carregar();" style="padding:10px 20px;font-size:14px;font-weight:700;">Fechamento do Dia</button>
+        <button class="kanban-tab ${this._aba === 'caixa' ? 'active' : ''}" onclick="FINANCEIRO._aba='caixa';FINANCEIRO.carregar();" style="padding:10px 20px;font-size:14px;font-weight:700;">Caixa</button>
+        <button class="kanban-tab ${this._aba === 'despesas' ? 'active' : ''}" onclick="FINANCEIRO._aba='despesas';FINANCEIRO.carregar();" style="padding:10px 20px;font-size:14px;font-weight:700;">Despesas Fixas</button>
+      </div>
+      <div id="fin-conteudo"></div>
+    `;
+
+    if (this._aba === 'fechamento') await this._carregarFechamento();
+    else if (this._aba === 'despesas') await this._carregarDespesas();
+    else await this._carregarCaixa();
+  },
+
+  // ==================== FECHAMENTO DO DIA ====================
+  async _carregarFechamento() {
+    const el = document.getElementById('fin-conteudo');
+    const oficina_id = APP.oficinaId;
+    const hoje = new Date().toISOString().split('T')[0];
+
+    // Busca OS entregues hoje + caixa saidas hoje
+    const [osRes, caixaRes] = await Promise.all([
+      db.from('ordens_servico')
+        .select('id, numero, valor_total, valor_mao_obra, valor_pecas, forma_pagamento, taxa_cartao, data_entrega, veiculos(placa), clientes(nome)')
+        .eq('oficina_id', oficina_id)
+        .eq('status', 'entregue')
+        .eq('pago', true)
+        .gte('data_entrega', hoje)
+        .order('data_entrega', { ascending: false }),
+      db.from('caixa')
+        .select('*')
+        .eq('oficina_id', oficina_id)
+        .gte('created_at', hoje)
+        .order('created_at', { ascending: false })
+    ]);
+
+    const osDia = osRes.data || [];
+    const movDia = caixaRes.data || [];
+
+    // Calculos
+    const faturamentoBruto = osDia.reduce((s, o) => s + (o.valor_total || 0), 0);
+    const totalMO = osDia.reduce((s, o) => s + (o.valor_mao_obra || 0), 0);
+    const totalPecas = osDia.reduce((s, o) => s + (o.valor_pecas || 0), 0);
+    const totalTaxas = osDia.reduce((s, o) => {
+      const taxa = o.taxa_cartao || 0;
+      return s + (o.valor_total * taxa / 100);
+    }, 0);
+    const saidasCaixa = movDia.filter(m => m.tipo === 'saida').reduce((s, m) => s + (m.valor || 0), 0);
+    const entradasCaixa = movDia.filter(m => m.tipo === 'entrada' && !m.os_id).reduce((s, m) => s + (m.valor || 0), 0);
+    const lucroLiquido = faturamentoBruto + entradasCaixa - totalTaxas - saidasCaixa;
+
+    // Por forma de pagamento
+    const porForma = {};
+    osDia.forEach(o => {
+      const f = o.forma_pagamento || 'outros';
+      porForma[f] = (porForma[f] || 0) + (o.valor_total || 0);
+    });
+    const formaLabel = { dinheiro: 'Dinheiro', pix: 'Pix', debito: 'Débito', credito: 'Crédito', boleto: 'Boleto', transferencia: 'Transferência', outros: 'Outros' };
+
+    const _mob = window.innerWidth <= 768;
+
+    el.innerHTML = `
+      <div style="text-align:center;margin-bottom:20px;">
+        <div style="font-size:13px;color:var(--text-secondary);">Fechamento de</div>
+        <div style="font-size:18px;font-weight:700;">${new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+      </div>
+
+      <!-- KPIs Principais -->
+      <div class="kpi-grid" style="margin-bottom:20px;">
+        <div class="kpi-card">
+          <div class="label">Faturamento Bruto</div>
+          <div class="value success">${APP.formatMoney(faturamentoBruto)}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="label">Mao de Obra</div>
+          <div class="value primary">${APP.formatMoney(totalMO)}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="label">Pecas</div>
+          <div class="value" style="color:var(--warning);">${APP.formatMoney(totalPecas)}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="label">OS Entregues</div>
+          <div class="value primary">${osDia.length}</div>
+        </div>
+      </div>
+
+      <!-- Descontos e Líquido -->
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px;">
+        <div style="display:grid;grid-template-columns:${_mob ? '1fr' : '1fr 1fr 1fr 1fr'};gap:16px;">
+          <div>
+            <div style="font-size:11px;color:var(--text-secondary);">Taxas Maquineta</div>
+            <div style="font-size:18px;font-weight:700;color:var(--danger);">-${APP.formatMoney(totalTaxas)}</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text-secondary);">Saidas do Caixa</div>
+            <div style="font-size:18px;font-weight:700;color:var(--danger);">-${APP.formatMoney(saidasCaixa)}</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text-secondary);">Entradas Avulsas</div>
+            <div style="font-size:18px;font-weight:700;color:var(--success);">+${APP.formatMoney(entradasCaixa)}</div>
+          </div>
+          <div style="border-left:${_mob ? 'none' : '2px solid var(--border)'};padding-left:${_mob ? '0' : '16px'};">
+            <div style="font-size:11px;color:var(--text-secondary);">LUCRO LIQUIDO</div>
+            <div style="font-size:24px;font-weight:800;color:${lucroLiquido >= 0 ? 'var(--success)' : 'var(--danger)'};">${APP.formatMoney(lucroLiquido)}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Por forma de pagamento -->
+      ${Object.keys(porForma).length ? `
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:20px;">
+        <h3 style="font-size:14px;margin-bottom:12px;color:var(--text-secondary);">Recebimentos por forma de pagamento</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;">
+          ${Object.entries(porForma).map(([f, v]) => `
+            <div style="background:var(--bg-input);padding:10px 16px;border-radius:var(--radius);min-width:120px;">
+              <div style="font-size:12px;color:var(--text-secondary);">${esc(formaLabel[f] || f)}</div>
+              <div style="font-size:16px;font-weight:700;color:var(--success);">${APP.formatMoney(v)}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>` : ''}
+
+      <!-- OS do dia -->
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:20px;">
+        <div style="padding:14px 20px;border-bottom:1px solid var(--border);">
+          <h3 style="font-size:14px;">OS Entregues Hoje</h3>
+        </div>
+        ${osDia.length ? (_mob ? `
+        <div class="mobile-card-list" style="padding:10px;">
+          ${osDia.map(o => {
+            const taxa = o.taxa_cartao || 0;
+            const vlrTaxa = o.valor_total * taxa / 100;
+            const liquido = o.valor_total - vlrTaxa;
+            return `
+            <div class="mobile-card" onclick="OS.abrirDetalhes('${o.id}')">
+              <div class="mobile-card-header">
+                <div>
+                  <div class="mobile-card-title">#${esc(o.numero || '-')} · ${esc(o.veiculos?.placa || '-')}</div>
+                  <div class="mobile-card-subtitle">${esc(o.clientes?.nome || '-')}</div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-weight:700;color:var(--success);">${APP.formatMoney(o.valor_total)}</div>
+                  ${taxa > 0 ? `<div style="font-size:11px;color:var(--danger);">-${taxa}% = ${APP.formatMoney(liquido)}</div>` : ''}
+                </div>
+              </div>
+              <div class="mobile-card-row"><span class="badge badge-pronto">${esc(formaLabel[o.forma_pagamento] || o.forma_pagamento || '-')}</span></div>
+            </div>`;
+          }).join('')}
+        </div>` : `
+        <table class="data-table">
+          <thead>
+            <tr><th>OS</th><th>Veiculo</th><th>Cliente</th><th>Pagamento</th><th>Bruto</th><th>Taxa</th><th>Liquido</th></tr>
+          </thead>
+          <tbody>
+            ${osDia.map(o => {
+              const taxa = o.taxa_cartao || 0;
+              const vlrTaxa = o.valor_total * taxa / 100;
+              const liquido = o.valor_total - vlrTaxa;
+              return `
+              <tr style="cursor:pointer;" onclick="OS.abrirDetalhes('${o.id}')">
+                <td><strong>#${esc(o.numero || '-')}</strong></td>
+                <td>${esc(o.veiculos?.placa || '-')}</td>
+                <td>${esc(o.clientes?.nome || '-')}</td>
+                <td><span class="badge badge-pronto">${esc(formaLabel[o.forma_pagamento] || o.forma_pagamento || '-')}</span></td>
+                <td style="font-weight:700;color:var(--success);">${APP.formatMoney(o.valor_total)}</td>
+                <td style="color:var(--danger);">${taxa > 0 ? `-${taxa}%` : '-'}</td>
+                <td style="font-weight:700;">${APP.formatMoney(liquido)}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+          <tfoot>
+            <tr style="border-top:2px solid var(--border);font-weight:700;">
+              <td colspan="4">TOTAL</td>
+              <td style="color:var(--success);">${APP.formatMoney(faturamentoBruto)}</td>
+              <td style="color:var(--danger);">${totalTaxas > 0 ? '-' + APP.formatMoney(totalTaxas) : '-'}</td>
+              <td>${APP.formatMoney(faturamentoBruto - totalTaxas)}</td>
+            </tr>
+          </tfoot>
+        </table>`) : '<div style="padding:30px;text-align:center;color:var(--text-muted);font-size:13px;">Nenhuma OS entregue hoje</div>'}
+      </div>
+
+      <button class="btn btn-secondary" onclick="FINANCEIRO._gerarPDFFechamento()">Gerar PDF do Fechamento</button>
+    `;
+  },
+
+  // ==================== CAIXA (fluxo original) ====================
+  async _carregarCaixa() {
+    const el = document.getElementById('fin-conteudo');
     const oficina_id = APP.oficinaId;
     const agora = new Date();
 
-    // Períodos
     const hoje = agora.toISOString().split('T')[0];
     const inicioSemana = new Date(agora);
     inicioSemana.setDate(agora.getDate() - agora.getDay());
     const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1);
 
-    // Define filtro de data pelo período selecionado
     let dataInicio;
     if (this._periodo === 'hoje') dataInicio = hoje;
     else if (this._periodo === 'semana') dataInicio = inicioSemana.toISOString().split('T')[0];
     else if (this._periodo === 'mes') dataInicio = inicioMes.toISOString().split('T')[0];
     else dataInicio = inicioMes.toISOString().split('T')[0];
 
-    // Busca movimentações e OS pagas do período
     const [caixaRes, osRes] = await Promise.all([
       db.from('caixa')
         .select('*')
@@ -40,13 +228,11 @@ const FINANCEIRO = {
     const movimentacoes = caixaRes.data || [];
     const osPagas = osRes.data || [];
 
-    // Calcula totais
     const totalEntradas = movimentacoes.filter(m => m.tipo === 'entrada').reduce((s, m) => s + (m.valor || 0), 0);
     const totalSaidas = movimentacoes.filter(m => m.tipo === 'saida').reduce((s, m) => s + (m.valor || 0), 0);
     const totalOS = osPagas.reduce((s, o) => s + (o.valor_total || 0), 0);
     const saldo = totalEntradas + totalOS - totalSaidas;
 
-    // Agrupa por forma de pagamento
     const porForma = {};
     osPagas.forEach(o => {
       const f = o.forma_pagamento || 'outros';
@@ -58,10 +244,9 @@ const FINANCEIRO = {
     });
 
     const formaLabel = { dinheiro: 'Dinheiro', pix: 'Pix', debito: 'Débito', credito: 'Crédito', boleto: 'Boleto', transferencia: 'Transferência', outros: 'Outros' };
-
     const periodoLabel = { hoje: 'Hoje', semana: 'Esta semana', mes: 'Este mês' };
 
-    container.innerHTML = `
+    el.innerHTML = `
       <!-- Filtro de período -->
       <div style="display:flex;gap:8px;margin-bottom:20px;">
         ${['hoje','semana','mes'].map(p => `
@@ -195,8 +380,196 @@ const FINANCEIRO = {
     `;
   },
 
+  // ==================== DESPESAS FIXAS ====================
+  async _carregarDespesas() {
+    const el = document.getElementById('fin-conteudo');
+    const oficina_id = APP.oficinaId;
+    const agora = new Date();
+    const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString().split('T')[0];
+    const fimMes = new Date(agora.getFullYear(), agora.getMonth() + 1, 0, 23, 59, 59).toISOString();
+
+    const { data: despesas } = await db.from('caixa')
+      .select('*')
+      .eq('oficina_id', oficina_id)
+      .eq('tipo', 'saida')
+      .gte('created_at', inicioMes)
+      .lte('created_at', fimMes)
+      .order('created_at', { ascending: false });
+
+    const lista = despesas || [];
+    const totalMes = lista.reduce((s, d) => s + (d.valor || 0), 0);
+
+    // Agrupa por categoria
+    const porCat = {};
+    lista.forEach(d => {
+      const cat = d.categoria || 'outro';
+      porCat[cat] = (porCat[cat] || 0) + (d.valor || 0);
+    });
+
+    const catLabel = {
+      aluguel: 'Aluguel', conta_luz: 'Conta de Luz', conta_agua: 'Conta de Água',
+      internet: 'Internet/Telefone', fornecedor: 'Fornecedor', boleto: 'Boleto',
+      material: 'Material de uso', combustivel: 'Combustível', manutencao: 'Manutenção',
+      retirada: 'Retirada/Pró-labore', despesa: 'Despesa operacional', outro: 'Outro'
+    };
+
+    const _mob = window.innerWidth <= 768;
+
+    el.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <div>
+          <div style="font-size:18px;font-weight:700;">Despesas de ${agora.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</div>
+          <div style="font-size:13px;color:var(--text-secondary);">${lista.length} lançamentos</div>
+        </div>
+        <button class="btn btn-danger" onclick="FINANCEIRO._novaDespesa()">+ Nova Despesa</button>
+      </div>
+
+      <!-- Total do mês -->
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px;text-align:center;">
+        <div style="font-size:12px;color:var(--text-secondary);">Total de despesas no mês</div>
+        <div style="font-size:28px;font-weight:800;color:var(--danger);">${APP.formatMoney(totalMes)}</div>
+      </div>
+
+      <!-- Por categoria -->
+      ${Object.keys(porCat).length ? `
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:20px;">
+        <h3 style="font-size:14px;margin-bottom:12px;color:var(--text-secondary);">Por categoria</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;">
+          ${Object.entries(porCat).sort((a, b) => b[1] - a[1]).map(([c, v]) => `
+            <div style="background:var(--bg-input);padding:10px 16px;border-radius:var(--radius);min-width:120px;">
+              <div style="font-size:12px;color:var(--text-secondary);">${esc(catLabel[c] || c)}</div>
+              <div style="font-size:16px;font-weight:700;color:var(--danger);">${APP.formatMoney(v)}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>` : ''}
+
+      <!-- Lista -->
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;">
+        ${lista.length ? (_mob ? `
+        <div class="mobile-card-list" style="padding:10px;">
+          ${lista.map(d => `
+            <div class="mobile-card">
+              <div class="mobile-card-header">
+                <div>
+                  <div class="mobile-card-title">${esc(d.descricao)}</div>
+                  <div class="mobile-card-subtitle">${esc(catLabel[d.categoria] || d.categoria)} · ${APP.formatDate(d.created_at)}</div>
+                </div>
+                <span style="font-weight:700;color:var(--danger);">-${APP.formatMoney(d.valor)}</span>
+              </div>
+              <div class="mobile-card-row">
+                <span class="badge badge-cancelada">${esc(d.forma_pagamento || '-')}</span>
+                <button class="btn btn-danger btn-sm" onclick="FINANCEIRO.excluir('${d.id}')">X</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>` : `
+        <table class="data-table">
+          <thead>
+            <tr><th>Data</th><th>Categoria</th><th>Descricao</th><th>Pagamento</th><th>Valor</th><th></th></tr>
+          </thead>
+          <tbody>
+            ${lista.map(d => `
+              <tr>
+                <td style="font-size:12px;">${APP.formatDate(d.created_at)}</td>
+                <td style="font-size:13px;">${esc(catLabel[d.categoria] || d.categoria)}</td>
+                <td style="font-size:13px;">${esc(d.descricao)}</td>
+                <td style="font-size:13px;">${esc(d.forma_pagamento || '-')}</td>
+                <td style="font-weight:700;color:var(--danger);">-${APP.formatMoney(d.valor)}</td>
+                <td><button class="btn btn-danger btn-sm" onclick="FINANCEIRO.excluir('${d.id}')">X</button></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>`) : '<div style="padding:30px;text-align:center;color:var(--text-muted);font-size:13px;">Nenhuma despesa registrada este mês</div>'}
+      </div>
+    `;
+  },
+
+  _novaDespesa() {
+    openModal(`
+      <div class="modal-header">
+        <h3>Nova Despesa</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form onsubmit="FINANCEIRO._salvarDespesa(event)">
+          <div class="form-group">
+            <label>Categoria</label>
+            <select class="form-control" id="desp-categoria" required>
+              <option value="aluguel">Aluguel</option>
+              <option value="conta_luz">Conta de Luz</option>
+              <option value="conta_agua">Conta de Água</option>
+              <option value="internet">Internet / Telefone</option>
+              <option value="fornecedor">Fornecedor</option>
+              <option value="boleto">Boleto</option>
+              <option value="material">Material de uso</option>
+              <option value="combustivel">Combustível</option>
+              <option value="manutencao">Manutenção</option>
+              <option value="retirada">Retirada / Pró-labore</option>
+              <option value="outro">Outro</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Descricao *</label>
+            <input type="text" class="form-control" id="desp-descricao" required placeholder="Ex: Aluguel abril, Conta Equatorial, Fornecedor X...">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="form-group">
+              <label>Valor (R$) *</label>
+              <input type="number" class="form-control" id="desp-valor" required min="0.01" step="0.01">
+            </div>
+            <div class="form-group">
+              <label>Forma de pagamento</label>
+              <select class="form-control" id="desp-forma">
+                <option value="dinheiro">Dinheiro</option>
+                <option value="pix">Pix</option>
+                <option value="boleto">Boleto</option>
+                <option value="debito">Débito</option>
+                <option value="credito">Crédito</option>
+                <option value="transferencia">Transferência</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Data (se diferente de hoje)</label>
+            <input type="date" class="form-control" id="desp-data" value="${new Date().toISOString().split('T')[0]}">
+          </div>
+          <div class="modal-footer" style="padding:16px 0 0;border:0;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+            <button type="submit" class="btn btn-danger">Registrar Despesa</button>
+          </div>
+        </form>
+      </div>
+    `);
+  },
+
+  async _salvarDespesa(e) {
+    e.preventDefault();
+    const data = document.getElementById('desp-data').value;
+    const { error } = await db.from('caixa').insert({
+      oficina_id: APP.oficinaId,
+      tipo: 'saida',
+      categoria: document.getElementById('desp-categoria').value,
+      descricao: document.getElementById('desp-descricao').value.trim(),
+      valor: parseFloat(document.getElementById('desp-valor').value) || 0,
+      forma_pagamento: document.getElementById('desp-forma').value,
+      created_by: APP.profile.id,
+      created_at: data ? new Date(data + 'T12:00:00').toISOString() : new Date().toISOString()
+    });
+
+    if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
+    closeModal();
+    APP.toast('Despesa registrada');
+    this.carregar();
+  },
+
   _catLabel(cat) {
-    const labels = { servico: 'Servico', peca: 'Peca', despesa: 'Despesa', retirada: 'Retirada', aporte: 'Aporte', outro: 'Outro' };
+    const labels = {
+      servico: 'Servico', peca: 'Peca', despesa: 'Despesa', retirada: 'Retirada',
+      aporte: 'Aporte', outro: 'Outro', aluguel: 'Aluguel', conta_luz: 'Conta de Luz',
+      conta_agua: 'Conta de Água', internet: 'Internet', fornecedor: 'Fornecedor',
+      boleto: 'Boleto', material: 'Material', combustivel: 'Combustível', manutencao: 'Manutenção'
+    };
     return labels[cat] || cat;
   },
 
@@ -274,6 +647,90 @@ const FINANCEIRO = {
     this.carregar();
   },
 
+  // ==================== PDF Fechamento ====================
+  async _gerarPDFFechamento() {
+    try {
+      await PDF_OS._carregarLogo();
+      const oficina = APP.oficina || {};
+      const hoje = new Date().toISOString().split('T')[0];
+      const fmt = v => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+      const [osRes, caixaRes] = await Promise.all([
+        db.from('ordens_servico')
+          .select('numero, valor_total, valor_mao_obra, valor_pecas, forma_pagamento, taxa_cartao, veiculos(placa), clientes(nome)')
+          .eq('oficina_id', APP.oficinaId).eq('status', 'entregue').eq('pago', true).gte('data_entrega', hoje),
+        db.from('caixa').select('*').eq('oficina_id', APP.oficinaId).gte('created_at', hoje)
+      ]);
+
+      const oss = osRes.data || [];
+      const movs = caixaRes.data || [];
+      const faturamento = oss.reduce((s, o) => s + (o.valor_total || 0), 0);
+      const taxas = oss.reduce((s, o) => s + (o.valor_total * (o.taxa_cartao || 0) / 100), 0);
+      const saidas = movs.filter(m => m.tipo === 'saida').reduce((s, m) => s + (m.valor || 0), 0);
+      const liquido = faturamento - taxas - saidas;
+
+      const formaLabel = { dinheiro: 'Dinheiro', pix: 'Pix', debito: 'Débito', credito: 'Crédito', boleto: 'Boleto', transferencia: 'Transferência', outros: 'Outros' };
+      const header = PDF_OS._montarHeader(oficina, 'FECHAMENTO DO DIA');
+
+      const doc = {
+        pageSize: 'A4',
+        pageMargins: [40, 30, 40, 50],
+        content: [
+          ...header.filter(h => h && (h.text || h.columns || h.canvas)),
+          { text: new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }), fontSize: 12, alignment: 'center', color: '#666', margin: [0, 0, 0, 16] },
+          {
+            table: {
+              widths: ['*', '*', '*', '*'],
+              body: [[
+                { stack: [{ text: 'FATURAMENTO', fontSize: 8, color: '#666' }, { text: fmt(faturamento), fontSize: 14, bold: true, color: '#3fb950' }], alignment: 'center' },
+                { stack: [{ text: 'TAXAS', fontSize: 8, color: '#666' }, { text: '-' + fmt(taxas), fontSize: 14, bold: true, color: '#f85149' }], alignment: 'center' },
+                { stack: [{ text: 'SAÍDAS', fontSize: 8, color: '#666' }, { text: '-' + fmt(saidas), fontSize: 14, bold: true, color: '#f85149' }], alignment: 'center' },
+                { stack: [{ text: 'LÍQUIDO', fontSize: 8, color: '#666' }, { text: fmt(liquido), fontSize: 16, bold: true, color: liquido >= 0 ? '#3fb950' : '#f85149' }], alignment: 'center' }
+              ]]
+            },
+            layout: { hLineWidth: () => 0, vLineWidth: () => 0.3, vLineColor: () => '#ddd', paddingTop: () => 10, paddingBottom: () => 10 },
+            margin: [0, 0, 0, 20]
+          },
+          { text: `OS ENTREGUES (${oss.length})`, fontSize: 10, bold: true, margin: [0, 0, 0, 6] },
+          oss.length ? {
+            table: {
+              headerRows: 1,
+              widths: [35, '*', '*', 60, 60, 40, 60],
+              body: [
+                ['OS', 'Veículo', 'Cliente', 'Pagamento', 'Bruto', 'Taxa', 'Líquido'].map(t => ({ text: t, fontSize: 9, bold: true, color: '#666' })),
+                ...oss.map(o => {
+                  const tx = o.taxa_cartao || 0;
+                  return [
+                    { text: '#' + (o.numero || '-'), fontSize: 9 },
+                    { text: o.veiculos?.placa || '-', fontSize: 9 },
+                    { text: o.clientes?.nome || '-', fontSize: 9 },
+                    { text: formaLabel[o.forma_pagamento] || '-', fontSize: 9 },
+                    { text: fmt(o.valor_total), fontSize: 9, color: '#3fb950' },
+                    { text: tx > 0 ? tx + '%' : '-', fontSize: 9, color: '#f85149' },
+                    { text: fmt(o.valor_total - (o.valor_total * tx / 100)), fontSize: 9, bold: true }
+                  ];
+                })
+              ]
+            },
+            layout: { hLineWidth: (i, node) => (i <= 1 || i === node.table.body.length) ? 0.5 : 0.3, vLineWidth: () => 0, hLineColor: () => '#ccc', paddingLeft: () => 4, paddingRight: () => 4, paddingTop: () => 3, paddingBottom: () => 3 },
+            margin: [0, 0, 0, 16]
+          } : { text: 'Nenhuma OS', fontSize: 10, italics: true, color: '#999' }
+        ],
+        footer: PDF_OS._footer(),
+        styles: PDF_OS._styles()
+      };
+
+      const pdf = pdfMake.createPdf(doc);
+      pdf.getBlob((blob) => {
+        const url = URL.createObjectURL(blob);
+        if (window.innerWidth <= 768) {
+          const a = document.createElement('a'); a.href = url; a.download = 'fechamento-' + hoje + '.pdf'; a.click(); URL.revokeObjectURL(url);
+        } else { window.open(url, '_blank'); }
+      });
+    } catch (e) { APP.toast('Erro ao gerar PDF: ' + e.message, 'error'); console.error(e); }
+  },
+
+  // ==================== PDF Caixa ====================
   async gerarPDF() {
     try {
     await PDF_OS._carregarLogo();
@@ -304,7 +761,6 @@ const FINANCEIRO = {
     const totalSaidas = movs.filter(m => m.tipo === 'saida').reduce((s, m) => s + (m.valor || 0), 0);
     const saldo = totalEntradas + totalOS - totalSaidas;
 
-    // Recebimentos por forma de pagamento
     const porForma = {};
     oss.forEach(o => { const f = o.forma_pagamento || 'outros'; porForma[f] = (porForma[f] || 0) + (o.valor_total || 0); });
     movs.filter(m => m.tipo === 'entrada').forEach(m => { const f = m.forma_pagamento || 'outros'; porForma[f] = (porForma[f] || 0) + (m.valor || 0); });
@@ -317,11 +773,7 @@ const FINANCEIRO = {
       pageMargins: [40, 30, 40, 50],
       content: [
         ...header.filter(h => h && (h.text || h.columns || h.canvas)),
-
-        // Período
         { text: periodoLabel[this._periodo] || 'Período', fontSize: 11, color: '#666', margin: [0, 0, 0, 14] },
-
-        // KPIs resumo
         {
           table: {
             widths: ['*', '*', '*', '*'],
@@ -335,8 +787,6 @@ const FINANCEIRO = {
           layout: { hLineWidth: () => 0, vLineWidth: () => 0.3, vLineColor: () => '#ddd', paddingTop: () => 10, paddingBottom: () => 10, paddingLeft: () => 8, paddingRight: () => 8 },
           margin: [0, 0, 0, 20]
         },
-
-        // Recebimentos por forma de pagamento
         ...(Object.keys(porForma).length ? [
           { text: 'RECEBIMENTOS POR FORMA DE PAGAMENTO', fontSize: 10, bold: true, color: '#333', margin: [0, 0, 0, 8] },
           {
@@ -351,8 +801,6 @@ const FINANCEIRO = {
             margin: [0, 0, 0, 20]
           }
         ] : []),
-
-        // OS Pagas
         { text: `OS PAGAS (${oss.length})`, fontSize: 10, bold: true, color: '#333', fillColor: '#f0f0f0', margin: [0, 0, 0, 6] },
         oss.length ? {
           table: {
@@ -386,8 +834,6 @@ const FINANCEIRO = {
           },
           margin: [0, 0, 0, 20]
         } : { text: 'Nenhuma OS paga no período', fontSize: 10, italics: true, color: '#999', margin: [0, 0, 0, 20] },
-
-        // Movimentações do caixa
         { text: `MOVIMENTAÇÕES DO CAIXA (${movs.length})`, fontSize: 10, bold: true, color: '#333', margin: [0, 0, 0, 6] },
         movs.length ? {
           table: {

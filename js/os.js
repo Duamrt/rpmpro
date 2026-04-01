@@ -696,6 +696,16 @@ const OS = {
             </select>
           </div>
         </div>
+        ${['debito','credito'].includes(os.forma_pagamento) ? `
+        <div style="background:var(--bg-input);border-radius:var(--radius);padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <div style="font-size:12px;color:var(--text-secondary);">Taxa maquineta:</div>
+          <input type="number" class="form-control" id="det-taxa-cartao" value="${os.taxa_cartao || (os.forma_pagamento === 'debito' ? (APP.oficina?.taxa_debito || 2) : (APP.oficina?.taxa_credito || 3.5))}" min="0" max="20" step="0.1" style="width:70px;padding:4px 8px;font-size:13px;" onchange="OS.atualizarTaxa('${os.id}', this.value)">
+          <span style="font-size:12px;color:var(--text-secondary);">%</span>
+          <div style="margin-left:auto;font-size:13px;">
+            <span style="color:var(--danger);">-R$ ${((totalGeral * (os.taxa_cartao || (os.forma_pagamento === 'debito' ? (APP.oficina?.taxa_debito || 2) : (APP.oficina?.taxa_credito || 3.5))) / 100)).toFixed(2)}</span>
+            <span style="margin-left:8px;font-weight:700;color:var(--success);">Liquido: R$ ${(totalGeral - (totalGeral * (os.taxa_cartao || (os.forma_pagamento === 'debito' ? (APP.oficina?.taxa_debito || 2) : (APP.oficina?.taxa_credito || 3.5))) / 100)).toFixed(2)}</span>
+          </div>
+        </div>` : ''}
         ${_mob ? '</div>' : ''}
 
         <!-- SERVICOS -->
@@ -1403,11 +1413,18 @@ const OS = {
 
   async atualizarPagamento(id, forma) {
     const pago = forma !== 'pendente';
-    await db.from('ordens_servico').update({
+    const update = {
       forma_pagamento: forma,
       pago,
       updated_at: new Date().toISOString()
-    }).eq('id', id);
+    };
+
+    // Seta taxa automática quando forma é cartão
+    if (forma === 'debito') update.taxa_cartao = APP.oficina?.taxa_debito || 2;
+    else if (forma === 'credito') update.taxa_cartao = APP.oficina?.taxa_credito || 3.5;
+    else update.taxa_cartao = 0;
+
+    await db.from('ordens_servico').update(update).eq('id', id);
 
     // Se pagou e OS já tá entregue, lança no caixa
     if (pago) {
@@ -1415,6 +1432,15 @@ const OS = {
     }
 
     APP.toast('Pagamento atualizado');
+    this.abrirDetalhes(id); // Recarrega pra mostrar taxa
+  },
+
+  async atualizarTaxa(id, taxa) {
+    await db.from('ordens_servico').update({
+      taxa_cartao: parseFloat(taxa) || 0,
+      updated_at: new Date().toISOString()
+    }).eq('id', id);
+    APP.toast('Taxa atualizada');
   },
 
   // Lança OS no caixa automaticamente (se entregue + paga + ainda não lançada)

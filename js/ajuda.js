@@ -20,8 +20,9 @@ const AJUDA = {
           'Vermelho = mais de 3 dias parado'
         ]},
         { titulo: 'WhatsApp automatico', passos: [
-          'Ao mover pra Orcamento, oferece enviar orcamento pro cliente',
-          'Ao mover pra Pronto, oferece avisar que o carro ta pronto'
+          'Ao mover pra Pronto, oferece avisar que o carro ta pronto',
+          'Ao mover pra Entregue, oferece enviar mensagem de agradecimento',
+          'O WhatsApp so dispara nesses dois momentos — nao incomoda o cliente antes da hora'
         ]},
         { perfil: 'mecanico', dica: 'No celular, use as abas no topo pra filtrar por status.' },
         { dica: 'Clique no card pra abrir os detalhes completos da OS.' }
@@ -143,19 +144,26 @@ const AJUDA = {
       titulo: 'Financeiro',
       perfis: ['dono','gerente'],
       secoes: [
-        { titulo: 'Visao geral', info: 'Caixa da oficina: entradas, saidas e saldo. OS entregues e pagas entram automaticamente — nao precisa lancar manual.' },
-        { titulo: 'Registrar movimentacao', passos: [
-          'Use + Entrada pra aportes e outras receitas',
-          'Use + Saida pra despesas (aluguel, luz, material) e retiradas'
+        { titulo: 'Visao geral', info: 'Tres abas: Fechamento do Dia, Caixa e Despesas Fixas. OS entregues e pagas entram automaticamente no caixa.' },
+        { titulo: 'Fechamento do Dia', passos: [
+          'Mostra tudo que aconteceu hoje: OS entregues, faturamento, taxas de maquineta e lucro liquido',
+          'Veja quanto perdeu em taxa de cartao e quanto sobrou de verdade',
+          'Gere o PDF do fechamento pra levar pra casa ou mandar pelo WhatsApp'
         ]},
-        { titulo: 'Filtrar e analisar', passos: [
+        { titulo: 'Caixa', passos: [
           'Filtre por Hoje, Semana ou Mes',
-          'Veja recebimentos por forma de pagamento (Pix, dinheiro, credito)',
-          'Clique numa OS na lista pra ver os detalhes'
+          'Use + Entrada pra aportes e + Saida pra despesas',
+          'Veja recebimentos por forma de pagamento'
         ]},
-        { titulo: 'Gerar relatorio', passos: [
-          'Clique em Gerar Relatorio PDF',
-          'O PDF mostra resumo, OS pagas e movimentacoes do periodo'
+        { titulo: 'Despesas Fixas', passos: [
+          'Registre aluguel, conta de luz, agua, internet, fornecedor, boleto...',
+          'Categorias separadas pra voce saber pra onde vai o dinheiro',
+          'Total do mes com breakdown por categoria'
+        ]},
+        { titulo: 'Taxa de maquineta', passos: [
+          'Configure a taxa padrao em Configuracoes (Taxas de Maquineta)',
+          'Ao pagar com debito ou credito, a taxa aparece automaticamente na OS',
+          'O fechamento desconta as taxas e mostra o valor liquido real'
         ]},
         { dica: 'OS entregues + pagas lancam no caixa automaticamente. Nao lance manual pra evitar duplicata.' }
       ]
@@ -304,7 +312,38 @@ const AJUDA = {
           'Comissao padrao — ja vem preenchido ao cadastrar mecanico',
           'Margem padrao — ja vem preenchida ao cadastrar peca (ex: 30%)'
         ]},
+        { titulo: 'Taxas de maquineta', passos: [
+          'Configure a taxa de debito (padrao 2%) e credito (padrao 3.5%)',
+          'A taxa e aplicada automaticamente quando voce marca debito ou credito na OS',
+          'Voce pode ajustar a taxa direto na OS se for diferente'
+        ]},
+        { titulo: 'Calculadora de custo hora', passos: [
+          'Some todos os salarios + custos fixos (aluguel, luz, etc)',
+          'Informe quantos mecanicos, horas por dia e dias no mes',
+          'O sistema calcula o custo real da hora e compara com o que voce cobra',
+          'Se der prejuizo, voce precisa aumentar o valor da hora ou reduzir custos'
+        ]},
         { dica: 'Plano e validade do trial aparecem aqui tambem.' }
+      ]
+    },
+
+    folha: {
+      titulo: 'Folha de Pagamento',
+      perfis: ['dono','gerente'],
+      secoes: [
+        { titulo: 'Visao geral', info: 'Controle o pagamento de cada funcionario por quinzena. Salario + comissao + extras - descontos = liquido a pagar.' },
+        { titulo: 'Como usar', passos: [
+          'Selecione o mes, ano e quinzena (1a ou 2a)',
+          'Clique em Editar no funcionario',
+          'O sistema ja calcula a comissao com base nas OS do mecanico',
+          'Preencha salario, horas extra, vales e adiantamentos',
+          'O liquido e calculado automaticamente em tempo real'
+        ]},
+        { titulo: 'Gerar PDF', passos: [
+          'Clique em Gerar PDF Folha',
+          'O PDF traz o resumo de todos os funcionarios da quinzena'
+        ]},
+        { dica: 'O salario base que voce definir na folha fica salvo no perfil do funcionario pra proxima vez.' }
       ]
     },
 

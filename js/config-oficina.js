@@ -100,6 +100,59 @@ const CONFIG = {
           </form>
         </div>
 
+        <!-- TAXAS MAQUINETA -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;">
+          <h3 style="font-size:16px;margin-bottom:4px;">Taxas de Maquineta</h3>
+          <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;">Taxas aplicadas automaticamente quando a forma de pagamento for cartao. Aparece na OS e no fechamento do dia.</p>
+          <form id="form-config-taxas" onsubmit="CONFIG.salvarTaxas(event)">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div class="form-group">
+                <label>Taxa Debito (%)</label>
+                <input type="number" class="form-control" id="cfg-taxa-debito" value="${oficina.taxa_debito || 2}" min="0" max="20" step="0.1">
+              </div>
+              <div class="form-group">
+                <label>Taxa Credito (%)</label>
+                <input type="number" class="form-control" id="cfg-taxa-credito" value="${oficina.taxa_credito || 3.5}" min="0" max="20" step="0.1">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary" style="margin-top:8px;">Salvar taxas</button>
+          </form>
+        </div>
+
+        <!-- CALCULADORA CUSTO HORA -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;">
+          <h3 style="font-size:16px;margin-bottom:4px;">Calculadora: Custo Real da Hora</h3>
+          <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;">Descubra se o valor que voce cobra por hora da lucro ou prejuizo.</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="form-group">
+              <label>Total de salarios (R$/mes)</label>
+              <input type="number" class="form-control" id="calc-salarios" value="0" min="0" step="100" oninput="CONFIG._calcularCusto()">
+            </div>
+            <div class="form-group">
+              <label>Custos fixos mensais (R$)</label>
+              <input type="number" class="form-control" id="calc-fixos" value="0" min="0" step="100" oninput="CONFIG._calcularCusto()">
+              <span style="font-size:11px;color:var(--text-secondary);">Aluguel, luz, agua, internet...</span>
+            </div>
+            <div class="form-group">
+              <label>Mecanicos trabalhando</label>
+              <input type="number" class="form-control" id="calc-mecanicos" value="1" min="1" max="20" oninput="CONFIG._calcularCusto()">
+            </div>
+            <div class="form-group">
+              <label>Horas/dia por mecanico</label>
+              <input type="number" class="form-control" id="calc-horas" value="8" min="1" max="16" oninput="CONFIG._calcularCusto()">
+            </div>
+            <div class="form-group">
+              <label>Dias uteis/mes</label>
+              <input type="number" class="form-control" id="calc-dias" value="22" min="1" max="31" oninput="CONFIG._calcularCusto()">
+            </div>
+            <div class="form-group">
+              <label>Valor cobrado por hora (R$)</label>
+              <input type="number" class="form-control" id="calc-cobrado" value="${oficina.valor_hora || 120}" min="0" step="5" oninput="CONFIG._calcularCusto()">
+            </div>
+          </div>
+          <div id="calc-resultado" style="margin-top:16px;padding:16px;background:var(--bg-input);border-radius:var(--radius);"></div>
+        </div>
+
         <!-- HORÁRIO DE FUNCIONAMENTO -->
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;">
           <h3 style="font-size:16px;margin-bottom:4px;">Horário de Funcionamento</h3>
@@ -398,6 +451,57 @@ const CONFIG = {
         ? `<img src="${url}" style="max-height:32px;max-width:120px;object-fit:contain;">`
         : '';
     }
+  },
+
+  async salvarTaxas(e) {
+    e.preventDefault();
+    const taxa_debito = parseFloat(document.getElementById('cfg-taxa-debito').value) || 0;
+    const taxa_credito = parseFloat(document.getElementById('cfg-taxa-credito').value) || 0;
+
+    const { error } = await db.from('oficinas').update({ taxa_debito, taxa_credito }).eq('id', APP.oficinaId);
+    if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
+
+    APP.oficina.taxa_debito = taxa_debito;
+    APP.oficina.taxa_credito = taxa_credito;
+    APP.toast('Taxas salvas');
+  },
+
+  _calcularCusto() {
+    const salarios = parseFloat(document.getElementById('calc-salarios').value) || 0;
+    const fixos = parseFloat(document.getElementById('calc-fixos').value) || 0;
+    const mecanicos = parseInt(document.getElementById('calc-mecanicos').value) || 1;
+    const horasDia = parseInt(document.getElementById('calc-horas').value) || 8;
+    const diasMes = parseInt(document.getElementById('calc-dias').value) || 22;
+    const cobrado = parseFloat(document.getElementById('calc-cobrado').value) || 0;
+
+    const custoTotal = salarios + fixos;
+    const horasTotais = mecanicos * horasDia * diasMes;
+    const custoHora = horasTotais > 0 ? custoTotal / horasTotais : 0;
+    const lucroHora = cobrado - custoHora;
+    const margem = cobrado > 0 ? (lucroHora / cobrado * 100) : 0;
+
+    const el = document.getElementById('calc-resultado');
+    el.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;text-align:center;">
+        <div>
+          <div style="font-size:11px;color:var(--text-secondary);">Custo real/hora</div>
+          <div style="font-size:20px;font-weight:800;color:var(--danger);">R$ ${custoHora.toFixed(2)}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text-secondary);">Voce cobra</div>
+          <div style="font-size:20px;font-weight:800;color:var(--primary);">R$ ${cobrado.toFixed(2)}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text-secondary);">${lucroHora >= 0 ? 'Lucro/hora' : 'Prejuizo/hora'}</div>
+          <div style="font-size:20px;font-weight:800;color:${lucroHora >= 0 ? 'var(--success)' : 'var(--danger)'};">R$ ${Math.abs(lucroHora).toFixed(2)}</div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:12px;font-size:13px;color:var(--text-secondary);">
+        ${horasTotais} horas/mes · Margem: <strong style="color:${margem >= 0 ? 'var(--success)' : 'var(--danger)'};">${margem.toFixed(1)}%</strong>
+        ${lucroHora < 0 ? '<div style="color:var(--danger);font-weight:700;margin-top:8px;">⚠️ Voce esta perdendo dinheiro! Aumente o valor da hora ou reduza custos.</div>' : ''}
+        ${lucroHora >= 0 && margem < 20 ? '<div style="color:var(--warning);font-weight:700;margin-top:8px;">⚡ Margem baixa. Considere ajustar o valor.</div>' : ''}
+      </div>
+    `;
   },
 
   _maskCNPJ(el) {
