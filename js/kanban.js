@@ -302,6 +302,12 @@ const KANBAN = {
       return;
     }
 
+    // Cancelada: pede motivo
+    if (novoStatus === 'cancelada') {
+      OS._pedirMotivoCancelamento(osId, os.status);
+      return;
+    }
+
     const update = { status: novoStatus, updated_at: new Date().toISOString() };
     if (novoStatus === 'pronto') update.data_conclusao = new Date().toISOString();
 
@@ -365,6 +371,12 @@ const KANBAN = {
     // Entregue: redireciona pro fluxo com pagamento
     if (novoStatus === 'entregue') {
       OS.entregarVeiculo(osId);
+      return;
+    }
+
+    // Cancelada: pede motivo
+    if (novoStatus === 'cancelada') {
+      OS._pedirMotivoCancelamento(osId, os.status);
       return;
     }
 

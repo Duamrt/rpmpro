@@ -92,7 +92,7 @@ const OS = {
             </div>
             <div class="mobile-card-body">
               <div class="mobile-card-row"><span>${esc(os.profiles?.nome || 'Sem mecânico')}</span> <span class="badge badge-${os.status}">${statusLabel[os.status] || esc(os.status)}</span></div>
-              <div class="mobile-card-row"><span style="font-size:11px;">${APP.formatDate(os.data_entrada)}</span>${os.status === 'entregue' && !os.forma_pagamento ? '<span style="background:var(--danger-bg);color:var(--danger);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;">SEM PAGAMENTO</span>' : ''}</div>
+              <div class="mobile-card-row"><span style="font-size:11px;">${APP.formatDate(os.data_entrada)}</span>${os.status === 'entregue' && !os.forma_pagamento ? '<span style="background:var(--danger-bg);color:var(--danger);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;">SEM PAGAMENTO</span>' : ''}${os.status === 'cancelada' && os.motivo_cancelamento ? `<span style="font-size:10px;color:var(--text-muted);">${esc(os.motivo_cancelamento)}</span>` : ''}</div>
             </div>
           </div>
         `).join('')}
@@ -120,7 +120,7 @@ const OS = {
               <td>${esc(os.clientes?.nome || '-')}</td>
               <td>${esc(os.profiles?.nome || '-')}</td>
               <td>${APP.formatMoney(os.valor_total)}</td>
-              <td><span class="badge badge-${os.status}">${statusLabel[os.status] || esc(os.status)}</span>${os.status === 'entregue' && !os.forma_pagamento ? '<br><span style="background:var(--danger-bg);color:var(--danger);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;margin-top:4px;display:inline-block;">SEM PAGAMENTO</span>' : ''}</td>
+              <td><span class="badge badge-${os.status}">${statusLabel[os.status] || esc(os.status)}</span>${os.status === 'entregue' && !os.forma_pagamento ? '<br><span style="background:var(--danger-bg);color:var(--danger);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;margin-top:4px;display:inline-block;">SEM PAGAMENTO</span>' : ''}${os.status === 'cancelada' && os.motivo_cancelamento ? `<br><span style="font-size:10px;color:var(--text-muted);margin-top:2px;display:inline-block;">${esc(os.motivo_cancelamento)}</span>` : ''}</td>
               <td style="font-size:12px;color:var(--text-secondary)">${APP.formatDate(os.data_entrada)}</td>
             </tr>
           `).join('')}
@@ -1402,6 +1402,56 @@ const OS = {
     this.carregar();
   },
 
+  _pedirMotivoCancelamento(osId, statusAnterior) {
+    openModal(`
+      <div class="modal-header">
+        <h3>Cancelar OS</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom:16px;color:var(--text-secondary);">Informe o motivo do cancelamento:</p>
+        <div class="form-group">
+          <select class="form-control" id="cancel-tipo" onchange="document.getElementById('cancel-outro').style.display=this.value==='outro'?'block':'none'">
+            <option value="">Selecione...</option>
+            <option value="Cliente desistiu">Cliente desistiu</option>
+            <option value="Preco alto">Preco alto</option>
+            <option value="Peca indisponivel">Peca indisponivel</option>
+            <option value="Veiculo retirado sem servico">Veiculo retirado sem servico</option>
+            <option value="Erro de cadastro">Erro de cadastro</option>
+            <option value="Cliente nao aprovou orcamento">Cliente nao aprovou orcamento</option>
+            <option value="outro">Outro motivo...</option>
+          </select>
+        </div>
+        <div class="form-group" id="cancel-outro" style="display:none;">
+          <textarea class="form-control" id="cancel-texto" rows="3" placeholder="Descreva o motivo..."></textarea>
+        </div>
+        <div class="modal-footer" style="padding:16px 0 0;border:0;">
+          <button class="btn btn-secondary" onclick="closeModal();if(document.getElementById('det-status'))document.getElementById('det-status').value='${statusAnterior}';">Voltar</button>
+          <button class="btn btn-danger" onclick="OS._confirmarCancelamento('${osId}')">Confirmar Cancelamento</button>
+        </div>
+      </div>
+    `);
+  },
+
+  async _confirmarCancelamento(osId) {
+    const tipo = document.getElementById('cancel-tipo')?.value;
+    const texto = document.getElementById('cancel-texto')?.value?.trim();
+    const motivo = tipo === 'outro' ? (texto || 'Outro') : tipo;
+
+    if (!motivo) { APP.toast('Selecione o motivo do cancelamento', 'error'); return; }
+
+    await db.from('ordens_servico').update({
+      status: 'cancelada',
+      motivo_cancelamento: motivo,
+      updated_at: new Date().toISOString()
+    }).eq('id', osId);
+
+    closeModal();
+    APP.toast('OS cancelada');
+    if (typeof KANBAN !== 'undefined') KANBAN.carregar();
+    this.carregar();
+  },
+
   async atualizarStatus(id, status) {
     // Busca status atual pra validar transicoes
     const { data: osAtual } = await db.from('ordens_servico').select('status').eq('id', id).single();
@@ -1439,6 +1489,12 @@ const OS = {
       const detStatus = document.getElementById('det-status');
       if (detStatus) detStatus.value = statusAtual;
       this.entregarVeiculo(id);
+      return;
+    }
+
+    // Cancelar: pede motivo obrigatório
+    if (status === 'cancelada') {
+      this._pedirMotivoCancelamento(id, statusAtual);
       return;
     }
 
