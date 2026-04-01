@@ -77,8 +77,8 @@ const CONFIG = {
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
               <div class="form-group">
                 <label>Valor da hora (R$)</label>
-                <input type="number" class="form-control" id="cfg-valor-hora" value="${oficina.valor_hora || 0}" min="0" step="0.01">
-                <span style="font-size:11px;color:var(--text-secondary);margin-top:4px;display:block;">Usado no calculo de mao de obra</span>
+                <input type="number" class="form-control" id="cfg-valor-hora" value="${oficina.valor_hora || 0}" readonly style="background:var(--bg-input);opacity:0.8;cursor:not-allowed;">
+                <span style="font-size:11px;color:var(--text-secondary);margin-top:4px;display:block;">Calculado automaticamente em "Quanto cobrar na mao de obra?" abaixo</span>
               </div>
               <div class="form-group">
                 <label>Comissao padrao (%)</label>
