@@ -294,34 +294,19 @@ const KANBAN = {
       }
     }
 
-    // Bloqueio: ir pra "entregue" sem checklist de saida
+    // Entregue: redireciona pro fluxo com pagamento
     if (novoStatus === 'entregue') {
-      const temSaida = await OS._temChecklistSaida(osId);
-      if (!temSaida) {
-        APP.toast('Preencha o checklist de saida antes de entregar', 'error');
-        return;
-      }
-      // Verifica se tem valor
-      const { data: osCheck } = await db.from('ordens_servico').select('valor_total').eq('id', osId).single();
-      if (!osCheck || !osCheck.valor_total || osCheck.valor_total <= 0) {
-        APP.toast('OS sem valor. Adicione servicos ou pecas antes de entregar.', 'error');
-        return;
-      }
+      OS.entregarVeiculo(osId);
+      return;
     }
 
     const update = { status: novoStatus, updated_at: new Date().toISOString() };
     if (novoStatus === 'pronto') update.data_conclusao = new Date().toISOString();
-    if (novoStatus === 'entregue') update.data_entrega = new Date().toISOString();
 
     await db.from('ordens_servico').update(update).eq('id', osId);
 
     // WhatsApp automático por status
     this._enviarWhatsAuto(os, novoStatus);
-
-    // Lança no caixa se entregue
-    if (novoStatus === 'entregue' && typeof OS._lancarNoCaixa === 'function') {
-      await OS._lancarNoCaixa(osId);
-    }
 
     APP.toast('Status: ' + novoStatus);
     this.carregar();
@@ -375,34 +360,20 @@ const KANBAN = {
       }
     }
 
-    // Bloqueio: ir pra "entregue" sem checklist de saida e sem valor
+    // Entregue: redireciona pro fluxo com pagamento
     if (novoStatus === 'entregue') {
-      const temSaida = await OS._temChecklistSaida(osId);
-      if (!temSaida) {
-        APP.toast('Preencha o checklist de saida antes de entregar', 'error');
-        return;
-      }
-      const { data: osCheck } = await db.from('ordens_servico').select('valor_total').eq('id', osId).single();
-      if (!osCheck || !osCheck.valor_total || osCheck.valor_total <= 0) {
-        APP.toast('OS sem valor. Adicione servicos ou pecas antes de entregar.', 'error');
-        return;
-      }
+      OS.entregarVeiculo(osId);
+      return;
     }
 
     // Atualiza status
     const update = { status: novoStatus, updated_at: new Date().toISOString() };
     if (novoStatus === 'pronto') update.data_conclusao = new Date().toISOString();
-    if (novoStatus === 'entregue') update.data_entrega = new Date().toISOString();
 
     await db.from('ordens_servico').update(update).eq('id', osId);
 
     // WhatsApp automático por status
     this._enviarWhatsAuto(os, novoStatus);
-
-    // Lança no caixa se entregue
-    if (novoStatus === 'entregue' && typeof OS._lancarNoCaixa === 'function') {
-      await OS._lancarNoCaixa(osId);
-    }
 
     APP.toast('Status atualizado: ' + novoStatus);
     this.carregar();

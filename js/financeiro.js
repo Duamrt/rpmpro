@@ -36,21 +36,35 @@ const FINANCEIRO = {
     const oficina_id = APP.oficinaId;
     const hoje = new Date().toISOString().split('T')[0];
 
-    // Busca OS entregues hoje + caixa saidas hoje + itens peças
-    const [osRes, caixaRes] = await Promise.all([
+    // Busca OS entregues hoje + fiadas + canceladas + caixa
+    const [osRes, fiadosRes, canceladasRes, caixaRes] = await Promise.all([
       db.from('ordens_servico')
-        .select('id, numero, valor_total, valor_mao_obra, valor_pecas, forma_pagamento, taxa_cartao, data_entrega, veiculos(placa), clientes(nome)')
+        .select('id, numero, valor_total, valor_mao_obra, valor_pecas, forma_pagamento, taxa_cartao, desconto, data_entrega, veiculos(placa), clientes(nome)')
         .eq('oficina_id', oficina_id)
         .eq('status', 'entregue')
         .eq('pago', true)
         .gte('data_entrega', hoje)
         .order('data_entrega', { ascending: false }),
+      db.from('ordens_servico')
+        .select('id, numero, valor_total, data_entrega, veiculos(placa), clientes(nome)')
+        .eq('oficina_id', oficina_id)
+        .eq('status', 'entregue')
+        .eq('pago', false)
+        .order('data_entrega', { ascending: false }),
+      db.from('ordens_servico')
+        .select('id, numero, valor_total, updated_at')
+        .eq('oficina_id', oficina_id)
+        .eq('status', 'cancelada')
+        .gte('updated_at', hoje),
       db.from('caixa')
         .select('*')
         .eq('oficina_id', oficina_id)
         .gte('created_at', hoje)
         .order('created_at', { ascending: false })
     ]);
+
+    const fiados = fiadosRes.data || [];
+    const canceladas = canceladasRes.data || [];
 
     const osDia = osRes.data || [];
     const movDia = caixaRes.data || [];
@@ -77,6 +91,9 @@ const FINANCEIRO = {
     const saidasCaixa = movDia.filter(m => m.tipo === 'saida').reduce((s, m) => s + (m.valor || 0), 0);
     const entradasCaixa = movDia.filter(m => m.tipo === 'entrada' && !m.os_id).reduce((s, m) => s + (m.valor || 0), 0);
     const lucroLiquido = faturamentoBruto + entradasCaixa - totalTaxas - saidasCaixa;
+    const totalDescontos = osDia.reduce((s, o) => s + (o.desconto || 0), 0);
+    const totalFiado = fiados.reduce((s, o) => s + (o.valor_total || 0), 0);
+    const totalCanceladas = canceladas.reduce((s, o) => s + (o.valor_total || 0), 0);
 
     // Lucro peças: vendeu - custou
     let custoPecas = 0;
@@ -203,6 +220,32 @@ const FINANCEIRO = {
           }).join('')}
         </div>
       </div>
+
+      <!-- Alertas: Fiado + Descontos + Canceladas -->
+      ${totalFiado > 0 || totalDescontos > 0 || totalCanceladas > 0 ? `
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:20px;">
+        <h3 style="font-size:14px;margin-bottom:12px;color:var(--text-secondary);">Atencao</h3>
+        <div style="display:grid;grid-template-columns:repeat(${_mob ? 1 : 3}, 1fr);gap:12px;">
+          ${totalFiado > 0 ? `
+          <div style="background:var(--bg-input);padding:12px 16px;border-radius:var(--radius);border-left:3px solid var(--danger);">
+            <div style="font-size:12px;color:var(--text-secondary);">Fiado (nao pago)</div>
+            <div style="font-size:20px;font-weight:800;color:var(--danger);">${APP.formatMoney(totalFiado)}</div>
+            <div style="font-size:11px;color:var(--text-muted);">${fiados.length} OS · ${fiados.map(f => esc(f.clientes?.nome || '?')).join(', ')}</div>
+          </div>` : ''}
+          ${totalDescontos > 0 ? `
+          <div style="background:var(--bg-input);padding:12px 16px;border-radius:var(--radius);border-left:3px solid var(--warning);">
+            <div style="font-size:12px;color:var(--text-secondary);">Descontos concedidos hoje</div>
+            <div style="font-size:20px;font-weight:800;color:var(--warning);">${APP.formatMoney(totalDescontos)}</div>
+            <div style="font-size:11px;color:var(--text-muted);">${osDia.filter(o => o.desconto > 0).length} OS com desconto</div>
+          </div>` : ''}
+          ${totalCanceladas > 0 ? `
+          <div style="background:var(--bg-input);padding:12px 16px;border-radius:var(--radius);border-left:3px solid var(--text-muted);">
+            <div style="font-size:12px;color:var(--text-secondary);">OS canceladas hoje</div>
+            <div style="font-size:20px;font-weight:800;color:var(--text-muted);">${APP.formatMoney(totalCanceladas)}</div>
+            <div style="font-size:11px;color:var(--text-muted);">${canceladas.length} OS perdidas</div>
+          </div>` : ''}
+        </div>
+      </div>` : ''}
 
       <button class="btn btn-secondary" onclick="FINANCEIRO._gerarPDFFechamento()">Gerar PDF do Fechamento</button>
     `;

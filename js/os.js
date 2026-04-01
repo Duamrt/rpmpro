@@ -1396,6 +1396,14 @@ const OS = {
       }
     }
 
+    // Se mudou pra entregue pelo select de status, redireciona pro fluxo com pagamento
+    if (status === 'entregue') {
+      const detStatus = document.getElementById('det-status');
+      if (detStatus) detStatus.value = statusAtual;
+      this.entregarVeiculo(id);
+      return;
+    }
+
     const update = { status, updated_at: new Date().toISOString() };
     if (status === 'aprovada') update.data_aprovacao = new Date().toISOString();
     if (status === 'pronto') update.data_conclusao = new Date().toISOString();
@@ -1885,20 +1893,61 @@ const OS = {
 
   async entregarVeiculo(osId) {
     // Verifica se tem valor
-    const { data: osCheck } = await db.from('ordens_servico').select('valor_total').eq('id', osId).single();
+    const { data: osCheck } = await db.from('ordens_servico').select('valor_total, pago, forma_pagamento').eq('id', osId).single();
     if (!osCheck || !osCheck.valor_total || osCheck.valor_total <= 0) {
-      APP.toast('OS sem valor. Adicione serviços ou peças antes de entregar.', 'error');
+      APP.toast('OS sem valor. Adicione servicos ou pecas antes de entregar.', 'error');
       return;
     }
 
+    // Se já tá pago, entrega direto
+    if (osCheck.pago && osCheck.forma_pagamento && osCheck.forma_pagamento !== 'pendente') {
+      await this._confirmarEntrega(osId);
+      return;
+    }
+
+    // Pergunta forma de pagamento
+    openModal(`
+      <div class="modal-header">
+        <h3>Como o cliente pagou?</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size:14px;color:var(--text-secondary);margin-bottom:16px;">Total: <strong style="font-size:18px;color:var(--success);">${APP.formatMoney(osCheck.valor_total)}</strong></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <button class="btn btn-success" style="padding:16px;font-size:15px;" onclick="OS._entregarComPagamento('${osId}','dinheiro')">💵 Dinheiro</button>
+          <button class="btn btn-success" style="padding:16px;font-size:15px;" onclick="OS._entregarComPagamento('${osId}','pix')">📱 Pix</button>
+          <button class="btn btn-success" style="padding:16px;font-size:15px;" onclick="OS._entregarComPagamento('${osId}','debito')">💳 Debito</button>
+          <button class="btn btn-success" style="padding:16px;font-size:15px;" onclick="OS._entregarComPagamento('${osId}','credito')">💳 Credito</button>
+        </div>
+        <div style="margin-top:12px;">
+          <button class="btn btn-danger" style="width:100%;padding:14px;font-size:14px;" onclick="OS._entregarComPagamento('${osId}','fiado')">Fiado (nao pagou)</button>
+        </div>
+      </div>
+    `);
+    return; // Espera seleção
+  },
+
+  async _entregarComPagamento(osId, forma) {
+    const pago = forma !== 'fiado';
+    const taxaDebito = APP.oficina?.taxa_debito || 2;
+    const taxaCredito = APP.oficina?.taxa_credito || 3.5;
+    let taxa = 0;
+    if (forma === 'debito') taxa = taxaDebito;
+    if (forma === 'credito') taxa = taxaCredito;
+
     await db.from('ordens_servico').update({
+      forma_pagamento: forma === 'fiado' ? 'pendente' : forma,
+      pago,
+      taxa_cartao: taxa,
       status: 'entregue',
       data_entrega: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }).eq('id', osId);
 
-    // Lança no caixa
-    if (typeof OS._lancarNoCaixa === 'function') await OS._lancarNoCaixa(osId);
+    // Lança no caixa se pagou
+    if (pago && typeof OS._lancarNoCaixa === 'function') await OS._lancarNoCaixa(osId);
+
+    closeModal();
 
     // WhatsApp de entrega
     const { data: os } = await db.from('ordens_servico')
