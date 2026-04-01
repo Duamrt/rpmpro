@@ -300,18 +300,33 @@ const FINANCEIRO = {
       </div>
 
       <!-- Recebimentos por forma de pagamento -->
-      ${Object.keys(porForma).length ? `
       <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:20px;">
         <h3 style="font-size:14px;margin-bottom:12px;color:var(--text-secondary);">Recebimentos por forma de pagamento</h3>
-        <div style="display:flex;flex-wrap:wrap;gap:12px;">
-          ${Object.entries(porForma).map(([f, v]) => `
-            <div style="background:var(--bg-input);padding:10px 16px;border-radius:var(--radius);min-width:120px;">
-              <div style="font-size:12px;color:var(--text-secondary);">${esc(formaLabel[f] || f)}</div>
-              <div style="font-size:16px;font-weight:700;color:var(--success);">${APP.formatMoney(v)}</div>
+        <div style="display:grid;grid-template-columns:repeat(${window.innerWidth <= 768 ? 2 : 4}, 1fr);gap:12px;">
+          ${['dinheiro','pix','debito','credito'].map(f => {
+            const bruto = porForma[f] || 0;
+            const temTaxa = (f === 'debito' || f === 'credito') && bruto > 0;
+            const pctTaxa = f === 'debito' ? (APP.oficina?.taxa_debito || 0) : f === 'credito' ? (APP.oficina?.taxa_credito || 0) : 0;
+            const vlrTaxa = bruto * pctTaxa / 100;
+            const liquido = bruto - vlrTaxa;
+            return `
+            <div style="background:var(--bg-input);padding:12px 16px;border-radius:var(--radius);${bruto > 0 ? '' : 'opacity:0.5;'}">
+              <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">${esc(formaLabel[f])}</div>
+              <div style="font-size:18px;font-weight:700;color:var(--success);">${APP.formatMoney(bruto)}</div>
+              ${temTaxa ? `
+                <div style="font-size:12px;color:var(--danger);margin-top:4px;">-${APP.formatMoney(vlrTaxa)} <span style="font-size:10px;color:var(--text-muted);">(${pctTaxa}%)</span></div>
+                <div style="font-size:14px;font-weight:700;color:var(--text-primary);margin-top:2px;border-top:1px solid var(--border);padding-top:4px;">Liquido ${APP.formatMoney(liquido)}</div>
+              ` : ''}
+            </div>`;
+          }).join('')}
+          ${Object.entries(porForma).filter(([f]) => !['dinheiro','pix','debito','credito'].includes(f)).map(([f, v]) => `
+            <div style="background:var(--bg-input);padding:12px 16px;border-radius:var(--radius);">
+              <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">${esc(formaLabel[f] || f)}</div>
+              <div style="font-size:18px;font-weight:700;color:var(--success);">${APP.formatMoney(v)}</div>
             </div>
           `).join('')}
         </div>
-      </div>` : ''}
+      </div>
 
       <!-- OS Pagas -->
       <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:20px;">
