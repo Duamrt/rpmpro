@@ -801,13 +801,13 @@ const OS = {
         <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:12px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
             <label style="font-size:13px;font-weight:700;color:var(--text-secondary);margin:0;">
-              🔍 DIAGNOSTICO TECNICO
+              🔍 DIAGNÓSTICO TÉCNICO
             </label>
             <button class="btn btn-primary btn-sm" onclick="DIAGNOSTICO.abrir('${os.id}')">
-              Abrir diagnostico
+              Abrir diagnóstico
             </button>
           </div>
-          <div style="font-size:12px;color:var(--text-muted);">Inspecao por setor antes de montar o orcamento</div>
+          <div style="font-size:12px;color:var(--text-muted);">Inspeção por setor antes de montar o orçamento</div>
         </div>
 
         <!-- CHECKLIST DE SAIDA -->

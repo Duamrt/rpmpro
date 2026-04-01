@@ -3,7 +3,7 @@ const DIAGNOSTICO = {
   // Setores e itens — só aparece o que o mecânico clicar
   _setores: {
     'injecao': {
-      nome: 'Injecao Eletronica',
+      nome: 'Injeção Eletrônica',
       icone: '⚡',
       itens: [
         'Leitura scanner (codigos DTC)',
@@ -22,7 +22,7 @@ const DIAGNOSTICO = {
       ]
     },
     'suspensao_d': {
-      nome: 'Suspensao Dianteira',
+      nome: 'Suspensão Dianteira',
       icone: '🔩',
       itens: [
         'Amortecedor diant. esquerdo',
@@ -48,7 +48,7 @@ const DIAGNOSTICO = {
       ]
     },
     'suspensao_t': {
-      nome: 'Suspensao Traseira',
+      nome: 'Suspensão Traseira',
       icone: '🔩',
       itens: [
         'Amortecedor tras. esquerdo',
@@ -119,7 +119,7 @@ const DIAGNOSTICO = {
       ]
     },
     'lampadas': {
-      nome: 'Lampadas',
+      nome: 'Lâmpadas',
       icone: '💡',
       itens: [
         'Farol baixo esquerdo',
@@ -153,7 +153,7 @@ const DIAGNOSTICO = {
       ]
     },
     'embreagem': {
-      nome: 'Embreagem / Transmissao',
+      nome: 'Embreagem / Transmissão',
       icone: '🔄',
       itens: [
         'Disco de embreagem',
@@ -198,12 +198,12 @@ const DIAGNOSTICO = {
     // Monta grid de setores (botões grandes)
     openModal(`
       <div class="modal-header">
-        <h3>Diagnostico Tecnico</h3>
+        <h3>Diagnóstico Técnico</h3>
         <button class="modal-close" onclick="closeModal()">&times;</button>
       </div>
       <div class="modal-body" style="padding:12px;">
         <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">
-          Toque no setor pra inspecionar. Verde = verificado.
+          Toque no setor pra inspecionar. Verde = verificado
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;" id="diag-grid">
           ${setoresKeys.map(key => {
@@ -224,20 +224,20 @@ const DIAGNOSTICO = {
 
         ${verificados.length > 0 ? `
         <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
-          <div style="font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:8px;">PECAS NECESSARIAS</div>
+          <div style="font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:8px;">PEÇAS NECESSÁRIAS</div>
           <div id="diag-pecas-resumo">
             ${this._resumoPecas(dados)}
           </div>
         </div>` : ''}
 
         <div class="form-group" style="margin-top:12px;">
-          <label style="font-size:12px;">Observacoes gerais</label>
-          <textarea class="form-control" id="diag-obs" placeholder="Observacoes...">${esc(obs)}</textarea>
+          <label style="font-size:12px;">Observações gerais</label>
+          <textarea class="form-control" id="diag-obs" placeholder="Observações...">${esc(obs)}</textarea>
         </div>
 
         <div style="display:flex;gap:8px;margin-top:12px;">
           <button class="btn btn-secondary" style="flex:1;" onclick="OS.abrirDetalhes('${escAttr(osId)}')">Voltar</button>
-          <button class="btn btn-primary" style="flex:1;" onclick="DIAGNOSTICO._salvar('${escAttr(osId)}')">Salvar diagnostico</button>
+          <button class="btn btn-primary" style="flex:1;" onclick="DIAGNOSTICO._salvar('${escAttr(osId)}')">Salvar diagnóstico</button>
         </div>
       </div>
     `);
@@ -278,7 +278,7 @@ const DIAGNOSTICO = {
                 </label>
                 <div class="diag-item-detalhe" data-idx="${i}" style="display:${d.problema ? 'block' : 'none'};margin-top:8px;margin-left:32px;">
                   <input type="text" class="form-control diag-peca" data-idx="${i}" value="${esc(d.peca || '')}"
-                    placeholder="Peca necessaria..." style="font-size:13px;padding:8px 10px;margin-bottom:4px;">
+                    placeholder="Peça necessária..." style="font-size:13px;padding:8px 10px;margin-bottom:4px;">
                   <input type="text" class="form-control diag-detalhe" data-idx="${i}" value="${esc(d.detalhe || '')}"
                     placeholder="Detalhe do problema..." style="font-size:12px;padding:6px 10px;">
                 </div>
@@ -345,7 +345,7 @@ const DIAGNOSTICO = {
       await db.from('diagnosticos_tecnicos').insert(payload);
     }
 
-    APP.toast('Diagnostico salvo');
+    APP.toast('Diagnóstico salvo');
     closeModal();
     OS.abrirDetalhes(osId);
   },
@@ -363,7 +363,7 @@ const DIAGNOSTICO = {
         }
       }
     }
-    if (!pecas.length) return '<div style="font-size:12px;color:var(--text-muted);">Nenhuma peca listada nos setores verificados.</div>';
+    if (!pecas.length) return '<div style="font-size:12px;color:var(--text-muted);">Nenhuma peça listada nos setores verificados.</div>';
     return pecas.map(p => `
       <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;">
         <div>
