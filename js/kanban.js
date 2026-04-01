@@ -474,11 +474,12 @@ const KANBAN = {
 
     if (!msg) return;
 
+    // Marca como oferecido ANTES do confirm — não pergunta de novo
+    enviados.push(novoStatus);
+    localStorage.setItem(chave, JSON.stringify(enviados));
+
     if (confirm(`Enviar WhatsApp pro cliente?\n\n"${msg}"`)) {
       window.open(`https://wa.me/${fone}?text=${encodeURIComponent(msg)}`, '_blank');
-      // Marca como enviado pra não repetir
-      enviados.push(novoStatus);
-      localStorage.setItem(chave, JSON.stringify(enviados));
     }
   },
 
