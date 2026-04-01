@@ -39,7 +39,7 @@ const CONTAS = {
     const vencidas = mesLista.filter(c => c.status === 'pendente' && c.vencimento < hoje).length;
     const venceHoje = mesLista.filter(c => c.status === 'pendente' && c.vencimento === hoje).length;
 
-    const catLabel = { aluguel: 'Aluguel', energia: 'Energia', agua: 'Agua', internet: 'Internet/Telefone', fornecedor: 'Fornecedor', funcionario: 'Funcionario', imposto: 'Imposto', contador: 'Contador', manutencao: 'Manutencao', seguro: 'Seguro', combustivel: 'Combustivel', material: 'Material/Insumo', cliente: 'Cliente', servico: 'Servico', outro: 'Outro' };
+    const catLabel = { aluguel: 'Aluguel', energia: 'Energia', agua: 'Agua', internet: 'Internet/Telefone', fornecedor: 'Fornecedor', funcionario: 'Funcionario', imposto: 'Imposto', contador: 'Contador', manutencao: 'Manutencao', seguro: 'Seguro', combustivel: 'Combustivel', material: 'Material/Insumo', cliente: 'Cliente', seguradora: 'Seguradora', terceiros: 'Frota/Empresa', acordo: 'Acordo/Parcelamento', garantia: 'Garantia/Ressarcimento', servico: 'Servico avulso', outro: 'Outro' };
     const nomeMes = ['Janeiro','Fevereiro','Marco','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
     container.innerHTML = `
@@ -143,7 +143,7 @@ const CONTAS = {
     const diaStr = `${this._calAno}-${String(this._calMes+1).padStart(2,'0')}-${String(this._calDiaSel).padStart(2,'0')}`;
     const hoje = new Date().toISOString().split('T')[0];
     const contas = this._todasContas.filter(c => c.vencimento === diaStr && c.status === 'pendente');
-    const catLabel = { aluguel: 'Aluguel', energia: 'Energia', agua: 'Agua', internet: 'Internet/Telefone', fornecedor: 'Fornecedor', funcionario: 'Funcionario', imposto: 'Imposto', contador: 'Contador', manutencao: 'Manutencao', seguro: 'Seguro', combustivel: 'Combustivel', material: 'Material/Insumo', cliente: 'Cliente', servico: 'Servico', outro: 'Outro' };
+    const catLabel = { aluguel: 'Aluguel', energia: 'Energia', agua: 'Agua', internet: 'Internet/Telefone', fornecedor: 'Fornecedor', funcionario: 'Funcionario', imposto: 'Imposto', contador: 'Contador', manutencao: 'Manutencao', seguro: 'Seguro', combustivel: 'Combustivel', material: 'Material/Insumo', cliente: 'Cliente', seguradora: 'Seguradora', terceiros: 'Frota/Empresa', acordo: 'Acordo/Parcelamento', garantia: 'Garantia/Ressarcimento', servico: 'Servico avulso', outro: 'Outro' };
     const total = contas.reduce((s, c) => s + (c.tipo === 'pagar' ? -Number(c.valor) : Number(c.valor)), 0);
 
     if (!contas.length) {
@@ -233,7 +233,7 @@ const CONTAS = {
 
   abrirModal(tipo, dados = {}) {
     const catsPagar = [['aluguel','Aluguel'],['energia','Energia'],['agua','Agua'],['internet','Internet/Telefone'],['fornecedor','Fornecedor'],['funcionario','Funcionario'],['contador','Contador'],['imposto','Imposto'],['manutencao','Manutencao'],['seguro','Seguro'],['combustivel','Combustivel'],['material','Material/Insumo'],['outro','Outro']];
-    const catsReceber = [['cliente','Cliente'],['servico','Servico'],['outro','Outro']];
+    const catsReceber = [['cliente','Cliente'],['seguradora','Seguradora'],['terceiros','Frota/Empresa'],['acordo','Acordo/Parcelamento'],['garantia','Garantia/Ressarcimento'],['servico','Servico avulso'],['outro','Outro']];
     const cats = tipo === 'pagar' ? catsPagar : catsReceber;
 
     openModal(`
