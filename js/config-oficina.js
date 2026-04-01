@@ -121,8 +121,8 @@ const CONFIG = {
 
         <!-- CALCULADORA CUSTO HORA -->
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;">
-          <h3 style="font-size:16px;margin-bottom:4px;">Custo Real da Hora</h3>
-          <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;">Quanto custa cada hora de trabalho da oficina de verdade? Preencha os salarios e custos — o sistema calcula.</p>
+          <h3 style="font-size:16px;margin-bottom:4px;">Quanto cobrar na mao de obra?</h3>
+          <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;">Preencha os salarios da equipe e os custos fixos. O sistema calcula o minimo que voce precisa cobrar por hora pra nao ter prejuizo.</p>
 
           <!-- Equipe (carregada automaticamente) -->
           <div id="calc-equipe" style="margin-bottom:16px;">
@@ -144,12 +144,12 @@ const CONFIG = {
               <input type="number" class="form-control" id="calc-dias" value="22" min="1" max="31" oninput="CONFIG._calcularCusto()">
             </div>
             <div class="form-group">
-              <label>Valor que voce cobra por hora (R$)</label>
-              <input type="number" class="form-control" id="calc-cobrado" value="${oficina.valor_hora || 0}" min="0" step="5" oninput="CONFIG._calcularCusto()">
-              <span style="font-size:11px;color:var(--text-secondary);">O que voce cobra do cliente na mao de obra</span>
+              <label>Margem de lucro desejada (%)</label>
+              <input type="number" class="form-control" id="calc-margem" value="30" min="0" max="200" step="5" oninput="CONFIG._calcularCusto()">
+              <span style="font-size:11px;color:var(--text-secondary);">Quanto quer ganhar acima do custo</span>
             </div>
           </div>
-          <div id="calc-resultado" style="margin-top:16px;padding:16px;background:var(--bg-input);border-radius:var(--radius);"></div>
+          <div id="calc-resultado" style="margin-top:16px;"></div>
         </div>
 
         <!-- HORÁRIO DE FUNCIONAMENTO -->
@@ -473,39 +473,69 @@ const CONFIG = {
     const fixos = parseFloat(document.getElementById('calc-fixos')?.value) || 0;
     const horasDia = parseInt(document.getElementById('calc-horas')?.value) || 8;
     const diasMes = parseInt(document.getElementById('calc-dias')?.value) || 22;
-    const cobrado = parseFloat(document.getElementById('calc-cobrado')?.value) || 0;
+    const margemDesejada = parseFloat(document.getElementById('calc-margem')?.value) || 30;
 
     const custoTotal = salarios + fixos;
     const horasTotais = qtdMecanicos * horasDia * diasMes;
     const custoHora = horasTotais > 0 ? custoTotal / horasTotais : 0;
-    const lucroHora = cobrado - custoHora;
-    const margem = cobrado > 0 ? (lucroHora / cobrado * 100) : 0;
+    const sugerido = custoHora * (1 + margemDesejada / 100);
+    const lucroHora = sugerido - custoHora;
+    const valorAtual = APP.oficina?.valor_hora || 0;
 
     const el = document.getElementById('calc-resultado');
     if (!el) return;
 
     el.innerHTML = `
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;text-align:center;">
-        <div>
-          <div style="font-size:11px;color:var(--text-secondary);">Custo real/hora</div>
-          <div style="font-size:20px;font-weight:800;color:var(--danger);">R$ ${custoHora.toFixed(2)}</div>
+      <div style="background:var(--bg-input);border-radius:var(--radius-lg);padding:20px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;text-align:center;margin-bottom:16px;">
+          <div>
+            <div style="font-size:11px;color:var(--text-secondary);">Custo real/hora</div>
+            <div style="font-size:22px;font-weight:800;color:var(--danger);">R$ ${custoHora.toFixed(2)}</div>
+            <div style="font-size:11px;color:var(--text-muted);">Minimo pra nao perder</div>
+          </div>
+          <div style="border-left:2px solid var(--border);border-right:2px solid var(--border);padding:0 12px;">
+            <div style="font-size:11px;color:var(--text-secondary);">Valor sugerido/hora</div>
+            <div style="font-size:28px;font-weight:800;color:var(--success);">R$ ${sugerido.toFixed(2)}</div>
+            <div style="font-size:11px;color:var(--text-muted);">Com ${margemDesejada}% de lucro</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text-secondary);">Lucro por hora</div>
+            <div style="font-size:22px;font-weight:800;color:var(--success);">R$ ${lucroHora.toFixed(2)}</div>
+            <div style="font-size:11px;color:var(--text-muted);">Por mecanico</div>
+          </div>
         </div>
-        <div>
-          <div style="font-size:11px;color:var(--text-secondary);">Voce cobra</div>
-          <div style="font-size:20px;font-weight:800;color:var(--primary);">R$ ${cobrado.toFixed(2)}</div>
+
+        <div style="font-size:13px;color:var(--text-secondary);text-align:center;margin-bottom:12px;">
+          ${qtdMecanicos} mecanico${qtdMecanicos > 1 ? 's' : ''} · ${horasTotais}h/mes · Custo total: <strong>R$ ${custoTotal.toFixed(0)}/mes</strong>
         </div>
-        <div>
-          <div style="font-size:11px;color:var(--text-secondary);">${lucroHora >= 0 ? 'Lucro/hora' : 'Prejuizo/hora'}</div>
-          <div style="font-size:20px;font-weight:800;color:${lucroHora >= 0 ? 'var(--success)' : 'var(--danger)'};">R$ ${Math.abs(lucroHora).toFixed(2)}</div>
+
+        ${valorAtual > 0 && Math.abs(valorAtual - sugerido) > 5 ? `
+          <div style="text-align:center;padding:10px;background:var(--bg-card);border-radius:var(--radius);margin-bottom:12px;font-size:13px;">
+            Hoje voce cobra <strong style="color:var(--primary);">R$ ${valorAtual.toFixed(2)}/h</strong>
+            ${valorAtual < custoHora
+              ? '<span style="color:var(--danger);font-weight:700;"> — PREJUIZO! Voce perde R$ ' + (custoHora - valorAtual).toFixed(2) + ' por hora</span>'
+              : valorAtual < sugerido
+                ? ' — da lucro, mas abaixo do sugerido'
+                : ' — acima do sugerido, otimo!'
+            }
+          </div>
+        ` : ''}
+
+        <div style="text-align:center;">
+          <button class="btn btn-primary" onclick="CONFIG._aplicarValorHora(${sugerido.toFixed(2)})">
+            Usar R$ ${sugerido.toFixed(2)}/hora como valor padrao
+          </button>
         </div>
-      </div>
-      <div style="text-align:center;margin-top:12px;font-size:13px;color:var(--text-secondary);">
-        ${qtdMecanicos} mecanico${qtdMecanicos > 1 ? 's' : ''} · ${horasTotais} horas/mes · Salarios: R$ ${salarios.toFixed(0)} + Fixos: R$ ${fixos.toFixed(0)} = <strong>R$ ${custoTotal.toFixed(0)}/mes</strong>
-        <br>Margem: <strong style="color:${margem >= 0 ? 'var(--success)' : 'var(--danger)'};">${margem.toFixed(1)}%</strong>
-        ${lucroHora < 0 ? '<div style="color:var(--danger);font-weight:700;margin-top:8px;">Voce esta perdendo dinheiro! Aumente o valor da hora ou reduza custos.</div>' : ''}
-        ${lucroHora >= 0 && margem < 20 ? '<div style="color:var(--warning);font-weight:700;margin-top:8px;">Margem baixa. Considere ajustar o valor.</div>' : ''}
       </div>
     `;
+  },
+
+  async _aplicarValorHora(valor) {
+    const { error } = await db.from('oficinas').update({ valor_hora: valor }).eq('id', APP.oficinaId);
+    if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
+    APP.oficina.valor_hora = valor;
+    document.getElementById('cfg-valor-hora').value = valor;
+    APP.toast('Valor da hora atualizado pra R$ ' + valor.toFixed(2));
   },
 
   _maskCNPJ(el) {
