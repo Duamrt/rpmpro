@@ -2,6 +2,25 @@
 const DIAGNOSTICO = {
   // Setores e itens — só aparece o que o mecânico clicar
   _setores: {
+    'vistoria': {
+      nome: 'Vistoria do Veículo',
+      icone: '🚗',
+      itens: [
+        'Amassados e riscos na lataria',
+        'Vidros e retrovisores',
+        'Pintura (descascando, oxidação)',
+        'Pneus e rodas (desgaste, calibragem)',
+        'Faróis e lanternas',
+        'Nível de combustível',
+        'Pertences do cliente no veículo',
+        'Travas e vidros elétricos',
+        'Luzes acesas no painel',
+        'Ar condicionado',
+        'Sintoma relatado pelo cliente',
+        'Sintoma confirmado pelo mecânico',
+        'Quilometragem conferida',
+      ]
+    },
     'injecao': {
       nome: 'Injeção Eletrônica',
       icone: '⚡',
@@ -237,6 +256,7 @@ const DIAGNOSTICO = {
 
         <div style="display:flex;gap:8px;margin-top:12px;">
           <button class="btn btn-secondary" style="flex:1;" onclick="OS.abrirDetalhes('${escAttr(osId)}')">Voltar</button>
+          ${verificados.length > 0 ? `<button class="btn btn-secondary" style="flex:1;" onclick="DIAGNOSTICO._gerarPDF('${escAttr(osId)}')">Imprimir PDF</button>` : ''}
           <button class="btn btn-primary" style="flex:1;" onclick="DIAGNOSTICO._salvar('${escAttr(osId)}')">Salvar diagnóstico</button>
         </div>
       </div>
@@ -380,5 +400,158 @@ const DIAGNOSTICO = {
       .select('id', { count: 'exact', head: true })
       .eq('os_id', osId);
     return (count || 0) > 0;
+  },
+
+  // Gera PDF do diagnóstico
+  async _gerarPDF(osId) {
+    try {
+      await PDF_OS._carregarLogo();
+      const oficina = APP.oficina || {};
+      const fmt = v => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+      // Busca OS + diagnóstico
+      const [osRes, diagRes] = await Promise.all([
+        db.from('ordens_servico')
+          .select('numero, descricao, veiculos(placa, marca, modelo, km_atual), clientes(nome, whatsapp)')
+          .eq('id', osId).single(),
+        db.from('diagnosticos_tecnicos').select('*').eq('os_id', osId).maybeSingle()
+      ]);
+
+      const os = osRes.data;
+      const diag = diagRes.data;
+      if (!os || !diag) { APP.toast('Sem dados pra gerar PDF', 'error'); return; }
+
+      const dados = diag.dados || {};
+      const header = PDF_OS._montarHeader(oficina, 'DIAGNÓSTICO TÉCNICO');
+
+      // Info do veículo
+      const infoContent = [
+        { columns: [
+          { text: 'Veículo: ' + [os.veiculos?.marca, os.veiculos?.modelo].filter(Boolean).join(' '), fontSize: 10, bold: true },
+          { text: 'Placa: ' + (os.veiculos?.placa || ''), fontSize: 10, bold: true },
+          { text: 'OS #' + (os.numero || ''), fontSize: 10, alignment: 'right' }
+        ], margin: [0, 0, 0, 4] },
+        { columns: [
+          { text: 'Cliente: ' + (os.clientes?.nome || ''), fontSize: 9, color: '#666' },
+          { text: 'KM: ' + (os.veiculos?.km_atual || '-'), fontSize: 9, color: '#666' },
+          { text: 'Data: ' + new Date().toLocaleDateString('pt-BR'), fontSize: 9, color: '#666', alignment: 'right' }
+        ], margin: [0, 0, 0, 12] },
+      ];
+
+      // Monta setores verificados
+      const setoresContent = [];
+      for (const [setorKey, setorDados] of Object.entries(dados)) {
+        if (!this._setores[setorKey]) continue;
+        const setor = this._setores[setorKey];
+        const isOk = setorDados._ok;
+        const problemas = [];
+
+        if (!isOk) {
+          for (const [idx, item] of Object.entries(setorDados)) {
+            if (idx === '_ok') continue;
+            if (item.problema) {
+              problemas.push({
+                item: setor.itens[parseInt(idx)] || '',
+                peca: item.peca || '',
+                detalhe: item.detalhe || ''
+              });
+            }
+          }
+        }
+
+        setoresContent.push({
+          text: setor.nome + (isOk ? ' — OK' : problemas.length ? ' — ' + problemas.length + ' problema(s)' : ' — OK'),
+          fontSize: 11, bold: true, margin: [0, 8, 0, 4],
+          color: problemas.length ? '#DC2626' : '#16A34A'
+        });
+
+        if (problemas.length) {
+          const rows = problemas.map(p => [
+            { text: p.item, fontSize: 9 },
+            { text: p.peca || '-', fontSize: 9, bold: true },
+            { text: p.detalhe || '-', fontSize: 8, color: '#666' }
+          ]);
+          setoresContent.push({
+            table: {
+              headerRows: 1,
+              widths: ['*', 120, 120],
+              body: [
+                ['Item', 'Peça necessária', 'Detalhe'].map(t => ({ text: t, fontSize: 8, bold: true, color: '#666', fillColor: '#f5f5f5' })),
+                ...rows
+              ]
+            },
+            layout: { hLineWidth: () => 0.3, vLineWidth: () => 0.3, hLineColor: () => '#ddd', vLineColor: () => '#eee', paddingLeft: () => 4, paddingRight: () => 4, paddingTop: () => 3, paddingBottom: () => 3 }
+          });
+        }
+      }
+
+      // Lista consolidada de peças
+      const todasPecas = [];
+      for (const [setorKey, setorDados] of Object.entries(dados)) {
+        if (!this._setores[setorKey]) continue;
+        const setor = this._setores[setorKey];
+        for (const [idx, item] of Object.entries(setorDados)) {
+          if (idx === '_ok') continue;
+          if (item.problema && item.peca) {
+            todasPecas.push({ setor: setor.nome, item: setor.itens[parseInt(idx)] || '', peca: item.peca });
+          }
+        }
+      }
+
+      let pecasContent = [];
+      if (todasPecas.length) {
+        pecasContent = [
+          { text: 'PEÇAS NECESSÁRIAS', fontSize: 12, bold: true, margin: [0, 16, 0, 8] },
+          {
+            table: {
+              headerRows: 1,
+              widths: [20, '*', 140],
+              body: [
+                ['#', 'Peça', 'Setor'].map(t => ({ text: t, fontSize: 9, bold: true, fillColor: '#f5f5f5', color: '#666' })),
+                ...todasPecas.map((p, i) => [
+                  { text: String(i + 1), fontSize: 9, alignment: 'center' },
+                  { text: p.peca, fontSize: 10, bold: true },
+                  { text: p.setor, fontSize: 8, color: '#888' },
+                ])
+              ]
+            },
+            layout: { hLineWidth: () => 0.3, vLineWidth: () => 0.3, hLineColor: () => '#ddd', vLineColor: () => '#eee', paddingLeft: () => 6, paddingRight: () => 6, paddingTop: () => 4, paddingBottom: () => 4 }
+          }
+        ];
+      }
+
+      // Observações
+      const obsContent = diag.observacoes ? [
+        { text: 'OBSERVAÇÕES', fontSize: 10, bold: true, margin: [0, 16, 0, 4] },
+        { text: diag.observacoes, fontSize: 9, color: '#444', margin: [0, 0, 0, 12] }
+      ] : [];
+
+      // Assinaturas
+      const assinaturas = {
+        columns: [
+          { text: '________________________________\nMecânico responsável', fontSize: 9, color: '#888', alignment: 'center', margin: [0, 30, 0, 0] },
+          { text: '________________________________\nAprovado por', fontSize: 9, color: '#888', alignment: 'center', margin: [0, 30, 0, 0] },
+        ]
+      };
+
+      const doc = {
+        pageSize: 'A4', pageMargins: [40, 30, 40, 50],
+        content: [
+          ...header.filter(h => h && (h.text || h.columns || h.canvas)),
+          ...infoContent,
+          ...setoresContent,
+          ...pecasContent,
+          ...obsContent,
+          assinaturas
+        ],
+        footer: PDF_OS._footer(),
+        styles: PDF_OS._styles()
+      };
+
+      pdfMake.createPdf(doc).open();
+    } catch (e) {
+      APP.toast('Erro ao gerar PDF: ' + e.message, 'error');
+      console.error(e);
+    }
   }
 };

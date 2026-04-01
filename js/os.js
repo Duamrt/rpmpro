@@ -783,21 +783,8 @@ const OS = {
           </div>
         </div>
 
-        <!-- CHECKLIST DE ENTRADA -->
+        <!-- DIAGNOSTICO TECNICO (inclui vistoria de entrada) -->
         ${_mob ? '<div id="os-det-checklist" style="display:none;">' : ''}
-        <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:12px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <label style="font-size:13px;font-weight:700;color:var(--text-secondary);margin:0;">
-              ${chkEntrada ? '✅' : '📋'} CHECKLIST DE ENTRADA
-            </label>
-            <button class="btn ${chkEntrada ? 'btn-secondary' : 'btn-primary'} btn-sm" onclick="OS.abrirChecklistEntrada('${os.id}')">
-              ${chkEntrada ? 'Ver / Editar' : 'Preencher'}
-            </button>
-          </div>
-          ${chkEntrada ? this._resumoChecklist(chkEntrada, 'entrada') : '<div style="font-size:12px;color:var(--warning);">Pendente — preencha antes de mover para diagnostico</div>'}
-        </div>
-
-        <!-- DIAGNOSTICO TECNICO -->
         <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:12px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
             <label style="font-size:13px;font-weight:700;color:var(--text-secondary);margin:0;">
@@ -807,7 +794,7 @@ const OS = {
               Abrir diagnóstico
             </button>
           </div>
-          <div style="font-size:12px;color:var(--text-muted);">Inspeção por setor antes de montar o orçamento</div>
+          <div style="font-size:12px;color:var(--text-muted);">Vistoria + inspeção mecânica por setor</div>
         </div>
 
         <!-- CHECKLIST DE SAIDA -->
