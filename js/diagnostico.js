@@ -5,7 +5,20 @@ const DIAGNOSTICO = {
     'vistoria': {
       nome: 'Vistoria do Veículo',
       icone: '🚗',
-      especial: true
+      itens: [
+        'Amassados e riscos na lataria',
+        'Vidros e retrovisores',
+        'Pintura (descascando, oxidação)',
+        'Pneus e rodas (desgaste, calibragem)',
+        'Faróis e lanternas',
+        'Nível de combustível',
+        'Pertences do cliente no veículo',
+        'Travas e vidros elétricos',
+        'Luzes acesas no painel',
+        'Ar condicionado',
+        'Sintoma relatado pelo cliente',
+        'Quilometragem conferida',
+      ]
     },
     'injecao': {
       nome: 'Injeção Eletrônica',
@@ -214,9 +227,7 @@ const DIAGNOSTICO = {
           ${setoresKeys.map(key => {
             const s = this._setores[key];
             const temDados = dados[key] && Object.keys(dados[key]).length > 0;
-            const isVistoria = s.especial;
-            const vistoriaObs = isVistoria && dados[key]?._obs;
-            const qtdProblemas = temDados && !isVistoria ? Object.values(dados[key]).filter(v => v.problema).length : 0;
+            const qtdProblemas = temDados ? Object.values(dados[key]).filter(v => v && v.problema).length : 0;
             return `
               <button onclick="DIAGNOSTICO._abrirSetor('${key}','${escAttr(osId)}')"
                 style="padding:16px 12px;border-radius:var(--radius-lg);border:2px solid ${temDados ? 'var(--success)' : 'var(--border)'};
@@ -224,7 +235,7 @@ const DIAGNOSTICO = {
                 display:flex;flex-direction:column;align-items:center;gap:6px;min-height:80px;justify-content:center;color:#fff;">
                 <span style="font-size:24px;">${s.icone}</span>
                 <span style="font-size:13px;font-weight:700;">${esc(s.nome)}</span>
-                ${temDados ? `<span style="font-size:10px;color:${qtdProblemas > 0 ? 'var(--danger)' : vistoriaObs ? 'var(--warning)' : 'var(--success)'};">${isVistoria ? (vistoriaObs ? 'Com observação' : 'Conferido') : (qtdProblemas > 0 ? qtdProblemas + ' problema(s)' : 'OK')}</span>` : ''}
+                ${temDados ? `<span style="font-size:10px;color:${qtdProblemas > 0 ? 'var(--danger)' : 'var(--success)'};">${qtdProblemas > 0 ? qtdProblemas + ' problema(s)' : 'OK'}</span>` : ''}
               </button>`;
           }).join('')}
         </div>
@@ -265,12 +276,7 @@ const DIAGNOSTICO = {
     const setor = this._setores[setorKey];
     if (!setor) return;
     const dados = this._dados[setorKey] || {};
-
-    // Vistoria = tela especial (check rápido + observação)
-    if (setor.especial) {
-      this._abrirVistoria(setorKey, osId, dados);
-      return;
-    }
+    const todosOk = dados._allOk || false;
 
     openModal(`
       <div class="modal-header">
@@ -278,17 +284,26 @@ const DIAGNOSTICO = {
         <button class="modal-close" onclick="DIAGNOSTICO.abrir('${escAttr(osId)}')">&times;</button>
       </div>
       <div class="modal-body" style="padding:8px 12px;">
-        <div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;">Marque o que tem PROBLEMA. Deixe desmarcado o que ta OK.</div>
+        <!-- Botão TUDO OK -->
+        <button id="diag-tudo-ok" onclick="DIAGNOSTICO._marcarTudoOk()"
+          style="width:100%;padding:14px;border-radius:var(--radius-lg);border:2px solid ${todosOk ? 'var(--success)' : 'var(--border)'};
+          background:${todosOk ? 'rgba(34,197,94,0.1)' : 'var(--bg-input)'};cursor:pointer;
+          font-size:15px;font-weight:700;color:${todosOk ? 'var(--success)' : '#fff'};margin-bottom:12px;
+          display:flex;align-items:center;justify-content:center;gap:8px;">
+          ${todosOk ? '✅ Tudo OK' : '⬜ Marcar tudo OK'}
+        </button>
+        <div style="font-size:11px;color:var(--text-secondary);margin-bottom:10px;">Se algum item tem problema, desmarque e descreva abaixo.</div>
         <div style="display:flex;flex-direction:column;gap:2px;">
           ${setor.itens.map((item, i) => {
-            const key = setorKey + '_' + i;
             const d = dados[i] || {};
+            const okItem = todosOk && !d.problema;
             return `
-              <div style="padding:10px 8px;border-bottom:1px solid var(--border);${d.problema ? 'background:rgba(239,68,68,0.06);' : ''}">
+              <div class="diag-row" data-idx="${i}" style="padding:10px 8px;border-bottom:1px solid var(--border);
+                background:${d.problema ? 'rgba(239,68,68,0.06)' : okItem ? 'rgba(34,197,94,0.04)' : ''};">
                 <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
-                  <input type="checkbox" class="diag-item-chk" data-idx="${i}" ${d.problema ? 'checked' : ''}
-                    onchange="DIAGNOSTICO._toggleItem(this)" style="width:22px;height:22px;min-width:22px;">
-                  <span style="font-size:14px;font-weight:${d.problema ? '700' : '500'};">${esc(item)}</span>
+                  <input type="checkbox" class="diag-item-ok" data-idx="${i}" ${okItem || (!d.problema && todosOk) ? 'checked' : ''}
+                    onchange="DIAGNOSTICO._toggleItemOk(this)" style="width:22px;height:22px;min-width:22px;accent-color:var(--success);">
+                  <span style="font-size:14px;color:${d.problema ? 'var(--danger)' : '#fff'};">${esc(item)}</span>
                 </label>
                 <div class="diag-item-detalhe" data-idx="${i}" style="display:${d.problema ? 'block' : 'none'};margin-top:8px;margin-left:32px;">
                   <input type="text" class="form-control diag-peca" data-idx="${i}" value="${esc(d.peca || '')}"
@@ -307,78 +322,50 @@ const DIAGNOSTICO = {
     `);
   },
 
-  // Vistoria rápida: check + observação
-  _abrirVistoria(setorKey, osId, dados) {
-    const conferido = dados._conferido || false;
-    const obs = dados._obs || '';
-    this._vistoriaChecked = conferido;
+  // Marca tudo como OK de uma vez
+  _marcarTudoOk() {
+    const btn = document.getElementById('diag-tudo-ok');
+    const checks = document.querySelectorAll('.diag-item-ok');
+    const allChecked = Array.from(checks).every(c => c.checked);
 
-    openModal(`
-      <div class="modal-header">
-        <h3>🚗 Vistoria do Veículo</h3>
-        <button class="modal-close" onclick="DIAGNOSTICO.abrir('${escAttr(osId)}')">&times;</button>
-      </div>
-      <div class="modal-body" style="padding:16px;">
-        <div style="text-align:center;margin-bottom:20px;">
-          <div style="font-size:14px;color:var(--text-secondary);margin-bottom:16px;">
-            Confira o estado geral do veículo na entrada
-          </div>
-          <button id="vistoria-check-btn" onclick="DIAGNOSTICO._toggleVistoriaCheck()"
-            style="width:100%;padding:20px;border-radius:var(--radius-lg);border:2px solid ${conferido ? 'var(--success)' : 'var(--border)'};
-            background:${conferido ? 'rgba(34,197,94,0.1)' : 'var(--bg-input)'};cursor:pointer;
-            font-size:16px;font-weight:700;color:${conferido ? 'var(--success)' : '#fff'};
-            display:flex;align-items:center;justify-content:center;gap:10px;">
-            <span style="font-size:28px;">${conferido ? '✅' : '⬜'}</span>
-            ${conferido ? 'Veículo conferido' : 'Marcar como conferido'}
-          </button>
-        </div>
-
-        <div style="margin-bottom:16px;">
-          <label style="font-size:13px;font-weight:600;margin-bottom:6px;display:block;">
-            Notou algo? Descreva aqui
-          </label>
-          <textarea class="form-control" id="vistoria-obs" rows="4"
-            placeholder="Ex: Risco na porta traseira esquerda, pneu dianteiro careca, cliente deixou documentos no porta-luvas..."
-            style="font-size:14px;padding:12px;">${esc(obs)}</textarea>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
-            Só preencha se tiver algo pra registrar. Se tá tudo OK, só marque como conferido.
-          </div>
-        </div>
-
-        <div style="display:flex;gap:8px;">
-          <button class="btn btn-secondary" style="flex:1;" onclick="DIAGNOSTICO.abrir('${escAttr(osId)}')">Voltar</button>
-          <button class="btn btn-primary" style="flex:1;" onclick="DIAGNOSTICO._salvarVistoria('${escAttr(setorKey)}','${escAttr(osId)}')">Confirmar</button>
-        </div>
-      </div>
-    `);
-  },
-
-  _vistoriaChecked: false,
-
-  _toggleVistoriaCheck() {
-    this._vistoriaChecked = !this._vistoriaChecked;
-    const btn = document.getElementById('vistoria-check-btn');
-    if (btn) {
-      const c = this._vistoriaChecked;
-      btn.style.borderColor = c ? 'var(--success)' : 'var(--border)';
-      btn.style.background = c ? 'rgba(34,197,94,0.1)' : 'var(--bg-input)';
-      btn.style.color = c ? 'var(--success)' : '#fff';
-      btn.innerHTML = `<span style="font-size:28px;">${c ? '✅' : '⬜'}</span> ${c ? 'Veículo conferido' : 'Marcar como conferido'}`;
+    if (allChecked) {
+      // Desmarca tudo
+      checks.forEach(c => { c.checked = false; });
+      document.querySelectorAll('.diag-row').forEach(r => { r.style.background = ''; });
+      if (btn) { btn.style.borderColor = 'var(--border)'; btn.style.background = 'var(--bg-input)'; btn.style.color = '#fff'; btn.innerHTML = '⬜ Marcar tudo OK'; }
+    } else {
+      // Marca tudo OK e esconde detalhes
+      checks.forEach(c => { c.checked = true; });
+      document.querySelectorAll('.diag-row').forEach(r => { r.style.background = 'rgba(34,197,94,0.04)'; });
+      document.querySelectorAll('.diag-item-detalhe').forEach(d => { d.style.display = 'none'; });
+      if (btn) { btn.style.borderColor = 'var(--success)'; btn.style.background = 'rgba(34,197,94,0.1)'; btn.style.color = 'var(--success)'; btn.innerHTML = '✅ Tudo OK'; }
     }
   },
 
-  _salvarVistoria(setorKey, osId) {
-    const btn = document.getElementById('vistoria-check-btn');
-    const conferido = this._vistoriaChecked || (btn && btn.style.borderColor.includes('success'));
-    const obs = document.getElementById('vistoria-obs')?.value?.trim() || '';
+  // Toggle individual: desmarcou = tem problema, abre detalhe
+  _toggleItemOk(chk) {
+    const idx = chk.dataset.idx;
+    const detalhe = document.querySelector(`.diag-item-detalhe[data-idx="${idx}"]`);
+    const row = chk.closest('.diag-row');
 
-    if (!conferido && !obs) {
-      APP.toast('Marque como conferido ou descreva o que notou', 'error');
-      return;
+    if (!chk.checked) {
+      // Desmarcou = problema encontrado
+      if (detalhe) { detalhe.style.display = 'block'; const pecaInput = detalhe.querySelector('.diag-peca'); if (pecaInput) pecaInput.focus(); }
+      if (row) row.style.background = 'rgba(239,68,68,0.06)';
+      // Atualiza botão tudo ok
+      const btn = document.getElementById('diag-tudo-ok');
+      if (btn) { btn.style.borderColor = 'var(--border)'; btn.style.background = 'var(--bg-input)'; btn.style.color = '#fff'; btn.innerHTML = '⬜ Marcar tudo OK'; }
+    } else {
+      // Marcou OK = sem problema
+      if (detalhe) detalhe.style.display = 'none';
+      if (row) row.style.background = 'rgba(34,197,94,0.04)';
+      // Verifica se todos estão OK
+      const allOk = Array.from(document.querySelectorAll('.diag-item-ok')).every(c => c.checked);
+      if (allOk) {
+        const btn = document.getElementById('diag-tudo-ok');
+        if (btn) { btn.style.borderColor = 'var(--success)'; btn.style.background = 'rgba(34,197,94,0.1)'; btn.style.color = 'var(--success)'; btn.innerHTML = '✅ Tudo OK'; }
+      }
     }
-
-    this._dados[setorKey] = { _conferido: true, _obs: obs, _ok: !obs };
-    this.abrir(osId);
   },
 
   _toggleItem(chk) {
@@ -399,12 +386,15 @@ const DIAGNOSTICO = {
   _salvarSetor(setorKey, osId) {
     const setor = this._setores[setorKey];
     const dados = {};
-    document.querySelectorAll('.diag-item-chk').forEach(chk => {
+    const allOk = Array.from(document.querySelectorAll('.diag-item-ok')).every(c => c.checked);
+    dados._allOk = allOk;
+
+    // Itens desmarcados = problema
+    document.querySelectorAll('.diag-item-ok').forEach(chk => {
       const idx = parseInt(chk.dataset.idx);
-      const problema = chk.checked;
-      const pecaEl = document.querySelector(`.diag-peca[data-idx="${idx}"]`);
-      const detalheEl = document.querySelector(`.diag-detalhe[data-idx="${idx}"]`);
-      if (problema) {
+      if (!chk.checked) {
+        const pecaEl = document.querySelector(`.diag-peca[data-idx="${idx}"]`);
+        const detalheEl = document.querySelector(`.diag-detalhe[data-idx="${idx}"]`);
         dados[idx] = {
           problema: true,
           peca: pecaEl?.value?.trim() || '',
@@ -412,9 +402,10 @@ const DIAGNOSTICO = {
         };
       }
     });
-    // Se nenhum problema marcado, salva como verificado (objeto vazio = OK)
-    this._dados[setorKey] = Object.keys(dados).length > 0 ? dados : { _ok: true };
-    // Volta pro painel principal
+
+    // Se tudo OK, marca como verificado
+    if (allOk) dados._ok = true;
+    this._dados[setorKey] = dados;
     this.abrir(osId);
   },
 
