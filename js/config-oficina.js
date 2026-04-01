@@ -512,11 +512,12 @@ const CONFIG = {
               <span style="font-size:11px;color:var(--text-muted);margin-left:6px;">${esc(roleLabel[m.role] || m.role)}</span>
             </div>
             <div>
-              <input type="number" class="form-control calc-salario-membro" data-idx="${i}" value="${m.salario_base || 0}" min="0" step="50" style="padding:4px 8px;font-size:13px;" oninput="CONFIG._calcularCusto()" placeholder="Salario R$">
+              <input type="number" class="form-control calc-salario-membro" data-id="${escAttr(m.id)}" data-idx="${i}" value="${m.salario_base || 0}" min="0" step="50" style="padding:4px 8px;font-size:13px;" oninput="CONFIG._calcularCusto()" placeholder="Salario R$">
             </div>
           </div>
         `).join('')}
       </div>
+      <button class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="CONFIG._salvarSalariosEquipe()">Salvar salarios</button>
     `;
 
     this._calcularCusto();
@@ -614,6 +615,23 @@ const CONFIG = {
         </div>
       </div>
     `;
+  },
+
+  async _salvarSalariosEquipe() {
+    const inputs = document.querySelectorAll('.calc-salario-membro');
+    let count = 0;
+    for (const input of inputs) {
+      const id = input.dataset.id;
+      const salario = parseFloat(input.value) || 0;
+      const idx = parseInt(input.dataset.idx);
+      const m = this._calcEquipe[idx];
+      if (m && m.salario_base !== salario) {
+        await db.from('profiles').update({ salario_base: salario }).eq('id', id);
+        m.salario_base = salario;
+        count++;
+      }
+    }
+    APP.toast(count > 0 ? count + ' salario(s) atualizado(s)' : 'Nenhuma alteracao');
   },
 
   async _aplicarValorHora(valor) {
