@@ -579,7 +579,7 @@ const OS = {
 
   async abrirDetalhes(id) {
     // Busca OS + itens + peças + checklists em paralelo
-    const [osRes, itensRes, chkEntradaRes, chkSaidaRes, diagRes] = await Promise.all([
+    const [osRes, itensRes, chkEntradaRes, chkSaidaRes, diagRes, mecsRes] = await Promise.all([
       db.from('ordens_servico')
         .select('*, veiculos(placa, marca, modelo, km_atual), clientes(nome, whatsapp), profiles!ordens_servico_mecanico_id_fkey(nome)')
         .eq('id', id).single(),
@@ -599,7 +599,13 @@ const OS = {
       db.from('diagnosticos_tecnicos')
         .select('*')
         .eq('os_id', id)
-        .maybeSingle()
+        .maybeSingle(),
+      db.from('profiles')
+        .select('id, nome')
+        .eq('oficina_id', APP.oficinaId)
+        .in('role', ['mecanico', 'aux_mecanico', 'dono', 'gerente'])
+        .eq('ativo', true)
+        .order('nome')
     ]);
 
     const os = osRes.data;
@@ -611,6 +617,7 @@ const OS = {
     const chkEntrada = chkEntradaRes.data || null;
     const chkSaida = chkSaidaRes.data || null;
     const diag = diagRes.data || null;
+    const mecsList = mecsRes.data || [];
 
     this._osAtualId = id;
     this._osAtualOficinaId = os.oficina_id;
@@ -643,7 +650,14 @@ const OS = {
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
           <div>
             <div style="font-weight:700;font-size:16px;">${esc(os.veiculos?.placa)} · ${esc(os.veiculos?.marca || '')} ${esc(os.veiculos?.modelo || '')}</div>
-            <div style="font-size:13px;color:var(--text-secondary);">${esc(os.clientes?.nome)} · ${esc(os.profiles?.nome || 'Sem mecânico')}</div>
+            <div style="font-size:13px;color:var(--text-secondary);">
+              ${esc(os.clientes?.nome)} · 🔧
+              <select id="det-trocar-mec" onchange="OS._trocarMecanico('${os.id}',this.value)"
+                style="background:transparent;border:none;color:var(--primary);font-size:13px;font-weight:600;cursor:pointer;padding:0;font-family:inherit;">
+                <option value="" ${!os.mecanico_id ? 'selected' : ''}>Sem mecânico</option>
+                ${mecsList.map(m => `<option value="${m.id}" ${m.id === os.mecanico_id ? 'selected' : ''}>${esc(m.nome)}</option>`).join('')}
+              </select>
+            </div>
           </div>
           <div style="text-align:right;">
             <div style="font-size:20px;font-weight:800;color:var(--success);" id="det-total">R$ ${totalGeral.toFixed(2)}</div>
@@ -1252,6 +1266,14 @@ const OS = {
     await this._recalcularTotaisOS(osId);
     APP.toast('Item removido');
     this.abrirDetalhes(osId);
+  },
+
+  async _trocarMecanico(osId, mecId) {
+    const { error } = await db.from('ordens_servico')
+      .update({ mecanico_id: mecId || null })
+      .eq('id', osId);
+    if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
+    APP.toast('Mecânico atualizado');
   },
 
   async _recalcularTotaisOS(osId) {
