@@ -797,6 +797,19 @@ const OS = {
           ${chkEntrada ? this._resumoChecklist(chkEntrada, 'entrada') : '<div style="font-size:12px;color:var(--warning);">Pendente — preencha antes de mover para diagnostico</div>'}
         </div>
 
+        <!-- DIAGNOSTICO TECNICO -->
+        <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <label style="font-size:13px;font-weight:700;color:var(--text-secondary);margin:0;">
+              🔍 DIAGNOSTICO TECNICO
+            </label>
+            <button class="btn btn-primary btn-sm" onclick="DIAGNOSTICO.abrir('${os.id}')">
+              Abrir diagnostico
+            </button>
+          </div>
+          <div style="font-size:12px;color:var(--text-muted);">Inspecao por setor antes de montar o orcamento</div>
+        </div>
+
         <!-- CHECKLIST DE SAIDA -->
         <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:12px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
