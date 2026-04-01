@@ -119,48 +119,15 @@ const CONFIG = {
           </form>
         </div>
 
-        <!-- CALCULADORA CUSTO HORA -->
-        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;">
-          <h3 style="font-size:16px;margin-bottom:4px;">Quanto cobrar na mao de obra?</h3>
-          <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;">Preencha os salarios da equipe e os custos fixos. O sistema calcula o minimo que voce precisa cobrar por hora pra nao ter prejuizo.</p>
-
-          <!-- Equipe (carregada automaticamente) -->
-          <div id="calc-equipe" style="margin-bottom:16px;">
-            <div class="loading" style="font-size:13px;">Carregando equipe...</div>
-          </div>
-
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-            <div class="form-group">
-              <label>Custos fixos mensais (R$)</label>
-              <input type="number" class="form-control" id="calc-fixos" value="0" min="0" step="100" oninput="CONFIG._calcularCusto()">
-              <span style="font-size:11px;color:var(--text-secondary);">Aluguel, luz, agua, internet...</span>
-            </div>
-            <div class="form-group">
-              <label>Horas/dia por mecanico</label>
-              <input type="number" class="form-control" id="calc-horas" value="8" min="1" max="16" oninput="CONFIG._calcularCusto()">
-            </div>
-            <div class="form-group">
-              <label>Dias uteis/mes</label>
-              <input type="number" class="form-control" id="calc-dias" value="22" min="1" max="31" oninput="CONFIG._calcularCusto()">
-            </div>
-            <div class="form-group">
-              <label>Margem de lucro desejada (%)</label>
-              <input type="number" class="form-control" id="calc-margem" value="30" min="0" max="200" step="5" oninput="CONFIG._calcularCusto()">
-              <span style="font-size:11px;color:var(--text-secondary);">Quanto quer ganhar acima do custo</span>
-            </div>
-          </div>
-          <div id="calc-resultado" style="margin-top:16px;"></div>
-        </div>
-
         <!-- HORÁRIO DE FUNCIONAMENTO -->
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;">
           <h3 style="font-size:16px;margin-bottom:4px;">Horário de Funcionamento</h3>
-          <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;">Define os dias e horários que a oficina atende. Usado nos agendamentos.</p>
+          <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;">Define os dias e horários que a oficina atende.</p>
           <form id="form-config-horario" onsubmit="CONFIG.salvarHorario(event)">
             ${['Segunda','Terca','Quarta','Quinta','Sexta','Sabado','Domingo'].map((dia, i) => {
               const key = ['seg','ter','qua','qui','sex','sab','dom'][i];
               const h = oficina.horario || {};
-              const ativo = h[key]?.ativo !== false && i < 6; // seg-sex ativo por padrão
+              const ativo = h[key]?.ativo !== false && i < 6;
               const abertura = h[key]?.abertura || (i < 6 ? '08:00' : '');
               const fechamento = h[key]?.fechamento || (i < 6 ? '18:00' : i === 5 ? '12:00' : '');
               return `<div style="display:flex;align-items:center;gap:12px;padding:8px 0;${i < 6 ? '' : 'opacity:0.7;'}border-bottom:1px solid var(--border);">
@@ -175,6 +142,31 @@ const CONFIG = {
             }).join('')}
             <button type="submit" class="btn btn-primary" style="margin-top:12px;">Salvar horários</button>
           </form>
+        </div>
+
+        <!-- CALCULADORA CUSTO HORA -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;">
+          <h3 style="font-size:16px;margin-bottom:4px;">Quanto cobrar na mao de obra?</h3>
+          <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;">Baseado no horario acima, nos salarios da equipe e nos custos fixos, o sistema calcula quanto voce precisa cobrar por hora.</p>
+
+          <!-- Equipe (carregada automaticamente) -->
+          <div id="calc-equipe" style="margin-bottom:16px;">
+            <div class="loading" style="font-size:13px;">Carregando equipe...</div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="form-group">
+              <label>Custos fixos mensais (R$)</label>
+              <input type="number" class="form-control" id="calc-fixos" value="0" min="0" step="100" oninput="CONFIG._calcularCusto()">
+              <span style="font-size:11px;color:var(--text-secondary);">Aluguel, luz, agua, internet...</span>
+            </div>
+            <div class="form-group">
+              <label>Margem de lucro desejada (%)</label>
+              <input type="number" class="form-control" id="calc-margem" value="30" min="0" max="200" step="5" oninput="CONFIG._calcularCusto()">
+              <span style="font-size:11px;color:var(--text-secondary);">Quanto quer ganhar acima do custo</span>
+            </div>
+          </div>
+          <div id="calc-resultado" style="margin-top:16px;"></div>
         </div>
 
         <!-- PIX -->
@@ -470,9 +462,24 @@ const CONFIG = {
     });
     if (qtdMecanicos < 1) qtdMecanicos = 1;
 
+    // Puxa horas/dia e dias/mês do horário de funcionamento
+    const h = APP.oficina?.horario || {};
+    let diasSemana = 0;
+    let horasDiaTotais = 0;
+    ['seg','ter','qua','qui','sex','sab','dom'].forEach(dia => {
+      if (h[dia]?.ativo) {
+        diasSemana++;
+        const ab = h[dia].abertura || '08:00';
+        const fe = h[dia].fechamento || '18:00';
+        const [hA, mA] = ab.split(':').map(Number);
+        const [hF, mF] = fe.split(':').map(Number);
+        horasDiaTotais += (hF + mF/60) - (hA + mA/60);
+      }
+    });
+    const horasDia = diasSemana > 0 ? horasDiaTotais / diasSemana : 8;
+    const diasMes = Math.round(diasSemana * 4.33); // semanas por mês
+
     const fixos = parseFloat(document.getElementById('calc-fixos')?.value) || 0;
-    const horasDia = parseInt(document.getElementById('calc-horas')?.value) || 8;
-    const diasMes = parseInt(document.getElementById('calc-dias')?.value) || 22;
     const margemDesejada = parseFloat(document.getElementById('calc-margem')?.value) || 30;
 
     const custoTotal = salarios + fixos;
@@ -506,7 +513,8 @@ const CONFIG = {
         </div>
 
         <div style="font-size:13px;color:var(--text-secondary);text-align:center;margin-bottom:12px;">
-          ${qtdMecanicos} mecanico${qtdMecanicos > 1 ? 's' : ''} · ${horasTotais}h/mes · Custo total: <strong>R$ ${custoTotal.toFixed(0)}/mes</strong>
+          ${qtdMecanicos} mecanico${qtdMecanicos > 1 ? 's' : ''} · ${horasDia.toFixed(1)}h/dia · ${diasMes} dias/mes · ${horasTotais}h produtivas/mes
+          <br>Salarios: R$ ${salarios.toFixed(0)} + Fixos: R$ ${fixos.toFixed(0)} = <strong>R$ ${custoTotal.toFixed(0)}/mes</strong>
         </div>
 
         ${valorAtual > 0 && Math.abs(valorAtual - sugerido) > 5 ? `
