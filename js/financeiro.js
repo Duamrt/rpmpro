@@ -485,7 +485,16 @@ const FINANCEIRO = {
     `;
   },
 
-  _novaDespesa() {
+  async _novaDespesa() {
+    // Carrega membros pra vale/adiantamento
+    const { data: membros } = await db.from('profiles')
+      .select('id, nome, role')
+      .eq('oficina_id', APP.oficinaId)
+      .eq('ativo', true)
+      .in('role', ['mecanico','aux_mecanico','gerente','atendente','aux_admin'])
+      .order('nome');
+    const lista = membros || [];
+
     openModal(`
       <div class="modal-header">
         <h3>Nova Despesa</h3>
@@ -495,7 +504,7 @@ const FINANCEIRO = {
         <form onsubmit="FINANCEIRO._salvarDespesa(event)">
           <div class="form-group">
             <label>Categoria</label>
-            <select class="form-control" id="desp-categoria" required>
+            <select class="form-control" id="desp-categoria" required onchange="FINANCEIRO._toggleMembro()">
               <option value="aluguel">Aluguel</option>
               <option value="conta_luz">Conta de Luz</option>
               <option value="conta_agua">Conta de Água</option>
@@ -506,7 +515,15 @@ const FINANCEIRO = {
               <option value="combustivel">Combustível</option>
               <option value="manutencao">Manutenção</option>
               <option value="retirada">Retirada / Pró-labore</option>
+              <option value="vale">Vale / Adiantamento funcionario</option>
               <option value="outro">Outro</option>
+            </select>
+          </div>
+          <div class="form-group hidden" id="desp-membro-wrap">
+            <label>Funcionario</label>
+            <select class="form-control" id="desp-membro">
+              <option value="">Selecione...</option>
+              ${lista.map(m => `<option value="${m.id}">${esc(m.nome)}</option>`).join('')}
             </select>
           </div>
           <div class="form-group">
@@ -543,16 +560,37 @@ const FINANCEIRO = {
     `);
   },
 
+  _toggleMembro() {
+    const cat = document.getElementById('desp-categoria').value;
+    const wrap = document.getElementById('desp-membro-wrap');
+    if (cat === 'vale') {
+      wrap.classList.remove('hidden');
+      document.getElementById('desp-membro').required = true;
+    } else {
+      wrap.classList.add('hidden');
+      document.getElementById('desp-membro').required = false;
+    }
+  },
+
   async _salvarDespesa(e) {
     e.preventDefault();
+    const cat = document.getElementById('desp-categoria').value;
+    const membroId = document.getElementById('desp-membro')?.value || null;
     const data = document.getElementById('desp-data').value;
+
+    if (cat === 'vale' && !membroId) {
+      APP.toast('Selecione o funcionario', 'error');
+      return;
+    }
+
     const { error } = await db.from('caixa').insert({
       oficina_id: APP.oficinaId,
       tipo: 'saida',
-      categoria: document.getElementById('desp-categoria').value,
+      categoria: cat,
       descricao: document.getElementById('desp-descricao').value.trim(),
       valor: parseFloat(document.getElementById('desp-valor').value) || 0,
       forma_pagamento: document.getElementById('desp-forma').value,
+      membro_id: cat === 'vale' ? membroId : null,
       created_by: APP.profile.id,
       created_at: data ? new Date(data + 'T12:00:00').toISOString() : new Date().toISOString()
     });
@@ -568,7 +606,8 @@ const FINANCEIRO = {
       servico: 'Servico', peca: 'Peca', despesa: 'Despesa', retirada: 'Retirada',
       aporte: 'Aporte', outro: 'Outro', aluguel: 'Aluguel', conta_luz: 'Conta de Luz',
       conta_agua: 'Conta de Água', internet: 'Internet', fornecedor: 'Fornecedor',
-      boleto: 'Boleto', material: 'Material', combustivel: 'Combustível', manutencao: 'Manutenção'
+      boleto: 'Boleto', material: 'Material', combustivel: 'Combustível', manutencao: 'Manutenção',
+      vale: 'Vale funcionario'
     };
     return labels[cat] || cat;
   },

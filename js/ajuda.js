@@ -331,19 +331,20 @@ const AJUDA = {
       titulo: 'Folha de Pagamento',
       perfis: ['dono','gerente'],
       secoes: [
-        { titulo: 'Visao geral', info: 'Controle o pagamento de cada funcionario por quinzena. Salario + comissao + extras - descontos = liquido a pagar.' },
-        { titulo: 'Como usar', passos: [
-          'Selecione o mes, ano e quinzena (1a ou 2a)',
-          'Clique em Editar no funcionario',
-          'O sistema ja calcula a comissao com base nas OS do mecanico',
-          'Preencha salario, horas extra, vales e adiantamentos',
-          'O liquido e calculado automaticamente em tempo real'
+        { titulo: 'Visao geral', info: 'Calculo automatico: salario fixo (da Equipe) + comissao (das OS entregues) - vales (registrados no caixa) = liquido a pagar.' },
+        { titulo: 'Como funciona', passos: [
+          'Selecione o mes e veja o resumo de cada funcionario',
+          'Salario vem do cadastro na Equipe',
+          'Comissao e calculada automaticamente pelas OS que ele entregou',
+          'Vales sao puxados do Caixa (Despesas > Vale funcionario)'
         ]},
-        { titulo: 'Gerar PDF', passos: [
-          'Clique em Gerar PDF Folha',
-          'O PDF traz o resumo de todos os funcionarios da quinzena'
+        { titulo: 'Registrar vale', passos: [
+          'Va em Caixa > aba Despesas Fixas > + Nova Despesa',
+          'Categoria: Vale / Adiantamento funcionario',
+          'Selecione o funcionario e o valor',
+          'O desconto aparece automaticamente na folha'
         ]},
-        { dica: 'O salario base que voce definir na folha fica salvo no perfil do funcionario pra proxima vez.' }
+        { dica: 'Nao precisa preencher nada na folha — tudo e automatico. So confira e gere o PDF.' }
       ]
     },
 
