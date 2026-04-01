@@ -74,7 +74,7 @@ const FINANCEIRO = {
     let itensPecaDia = [];
     if (osIds.length) {
       const { data } = await db.from('itens_os')
-        .select('os_id, descricao, quantidade, valor_unitario, valor_total, peca_id, pecas(nome, preco_custo)')
+        .select('os_id, descricao, quantidade, valor_unitario, valor_total, peca_id, pecas(nome, custo)')
         .in('os_id', osIds)
         .eq('tipo', 'peca');
       itensPecaDia = data || [];
@@ -100,8 +100,8 @@ const FINANCEIRO = {
     let vendaPecas = 0;
     itensPecaDia.forEach(item => {
       vendaPecas += item.valor_total || 0;
-      if (item.peca_id && item.pecas?.preco_custo) {
-        custoPecas += item.pecas.preco_custo * (item.quantidade || 1);
+      if (item.peca_id && item.pecas?.custo) {
+        custoPecas += item.pecas.custo * (item.quantidade || 1);
       } else {
         // Peça avulsa: sem custo cadastrado, estima 0
         custoPecas += 0;
@@ -299,7 +299,7 @@ const FINANCEIRO = {
     let pecasMovimentadas = [];
     if (osIds.length) {
       const { data } = await db.from('itens_os')
-        .select('os_id, descricao, quantidade, valor_unitario, valor_total, peca_id, pecas(nome, preco_custo)')
+        .select('os_id, descricao, quantidade, valor_unitario, valor_total, peca_id, pecas(nome, custo)')
         .in('os_id', osIds)
         .eq('tipo', 'peca');
       pecasMovimentadas = data || [];
@@ -314,7 +314,7 @@ const FINANCEIRO = {
     let pecasVenda = 0, pecasCusto = 0;
     pecasMovimentadas.forEach(p => {
       pecasVenda += p.valor_total || 0;
-      if (p.peca_id && p.pecas?.preco_custo) pecasCusto += p.pecas.preco_custo * (p.quantidade || 1);
+      if (p.peca_id && p.pecas?.custo) pecasCusto += p.pecas.custo * (p.quantidade || 1);
     });
     const pecasLucro = pecasVenda - pecasCusto;
 
@@ -413,7 +413,7 @@ const FINANCEIRO = {
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;">
           ${pecasMovimentadas.map(p => {
-            const custo = p.peca_id && p.pecas?.preco_custo ? p.pecas.preco_custo * (p.quantidade || 1) : 0;
+            const custo = p.peca_id && p.pecas?.custo ? p.pecas.custo * (p.quantidade || 1) : 0;
             const lucro = (p.valor_total || 0) - custo;
             return `<div style="background:var(--bg-input);padding:6px 10px;border-radius:var(--radius);font-size:12px;display:flex;gap:8px;align-items:center;">
               <span>${p.quantidade || 1}x ${esc(p.pecas?.nome || p.descricao || '-')}</span>
@@ -776,7 +776,7 @@ const FINANCEIRO = {
     let itensPeca = [];
     if (osIds.length) {
       const { data } = await db.from('itens_os')
-        .select('os_id, descricao, quantidade, valor_unitario, valor_total, peca_id, pecas(nome, preco_custo)')
+        .select('os_id, descricao, quantidade, valor_unitario, valor_total, peca_id, pecas(nome, custo)')
         .in('os_id', osIds)
         .eq('tipo', 'peca');
       itensPeca = data || [];
@@ -792,7 +792,7 @@ const FINANCEIRO = {
     itensPeca.forEach(item => {
       const nome = item.pecas?.nome || item.descricao || 'Sem nome';
       const venda = item.valor_total || 0;
-      const custo = item.peca_id && item.pecas?.preco_custo ? item.pecas.preco_custo * (item.quantidade || 1) : 0;
+      const custo = item.peca_id && item.pecas?.custo ? item.pecas.custo * (item.quantidade || 1) : 0;
       totalVenda += venda;
       totalCusto += custo;
 
