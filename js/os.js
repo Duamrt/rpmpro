@@ -1521,6 +1521,45 @@ const OS = {
   },
 
   async atualizarPagamento(id, forma) {
+    // Faturado tem fluxo próprio: pago=false + cria conta a receber
+    if (forma === 'faturado') {
+      const { data: os } = await db.from('ordens_servico')
+        .select('valor_total, cliente_id, clientes(nome, prazo_pagamento)')
+        .eq('id', id).single();
+      if (!os) { APP.toast('Erro ao buscar OS', 'error'); return; }
+
+      const prazo = parseInt(os.clientes?.prazo_pagamento) || 7;
+      const vencimento = new Date();
+      vencimento.setDate(vencimento.getDate() + prazo);
+      const vencStr = vencimento.toISOString().split('T')[0];
+
+      await db.from('ordens_servico').update({
+        forma_pagamento: 'faturado',
+        pago: false,
+        taxa_cartao: 0,
+        updated_at: new Date().toISOString()
+      }).eq('id', id);
+
+      // Remove lançamento do caixa se existia (era pago antes)
+      await db.from('caixa').delete().eq('oficina_id', APP.oficinaId).eq('os_id', id);
+
+      // Remove conta a receber antiga se existia
+      await db.from('contas_receber').delete().eq('os_id', id).eq('pago', false);
+
+      // Cria nova conta a receber
+      await db.from('contas_receber').insert({
+        oficina_id: APP.oficinaId,
+        cliente_id: os.cliente_id,
+        os_id: id,
+        valor: os.valor_total,
+        vencimento: vencStr
+      });
+
+      APP.toast(`Faturado! Vencimento: ${vencimento.toLocaleDateString('pt-BR')}`);
+      this.abrirDetalhes(id);
+      return;
+    }
+
     const pago = forma !== 'pendente';
     const update = {
       forma_pagamento: forma,
@@ -1535,13 +1574,18 @@ const OS = {
 
     await db.from('ordens_servico').update(update).eq('id', id);
 
-    // Se pagou e OS já tá entregue, lança no caixa
-    if (pago) {
+    // Se voltou pra pendente, remove do caixa e limpa conta a receber
+    if (!pago) {
+      await db.from('caixa').delete().eq('oficina_id', APP.oficinaId).eq('os_id', id);
+      await db.from('contas_receber').delete().eq('os_id', id).eq('pago', false);
+    } else {
+      // Pagou de verdade — lança no caixa e remove conta a receber se tinha
+      await db.from('contas_receber').delete().eq('os_id', id).eq('pago', false);
       await this._lancarNoCaixa(id);
     }
 
     APP.toast('Pagamento atualizado');
-    this.abrirDetalhes(id); // Recarrega pra mostrar taxa
+    this.abrirDetalhes(id);
   },
 
   async atualizarTaxa(id, taxa) {

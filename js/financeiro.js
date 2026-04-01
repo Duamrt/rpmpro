@@ -8,6 +8,7 @@ const FINANCEIRO = {
   _caixaAno: new Date().getFullYear(),
   _pecasMes: new Date().getMonth(),
   _pecasAno: new Date().getFullYear(),
+  _pecasPeriodo: 'mes',
 
   async carregar() {
     const container = document.getElementById('financeiro-content');
@@ -894,11 +895,21 @@ const FINANCEIRO = {
   async _carregarLucroPecas() {
     const el = document.getElementById('fin-conteudo');
     const oficina_id = APP.oficinaId;
-    const inicio = new Date(this._pecasAno, this._pecasMes, 1).toISOString().split('T')[0];
-    const fim = new Date(this._pecasAno, this._pecasMes + 1, 0).toISOString().split('T')[0];
+    const agora = new Date();
+    const dataInicio = new Date(this._pecasAno, this._pecasMes, 1).toISOString().split('T')[0];
+    const dataFim = new Date(this._pecasAno, this._pecasMes + 1, 0).toISOString().split('T')[0];
     const nomeMes = new Date(this._pecasAno, this._pecasMes).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 
-    // OS entregues no mês
+    // Sub-filtro dentro do mês
+    const hoje = agora.toISOString().split('T')[0];
+    const inicioSemana = new Date(agora);
+    inicioSemana.setDate(agora.getDate() - agora.getDay());
+    let inicio = dataInicio;
+    let fim = dataFim;
+    if (this._pecasPeriodo === 'hoje') inicio = hoje;
+    else if (this._pecasPeriodo === 'semana') inicio = inicioSemana.toISOString().split('T')[0];
+
+    // OS entregues no período
     const { data: osMes } = await db.from('ordens_servico')
       .select('id, valor_total, valor_pecas, forma_pagamento, taxa_cartao')
       .eq('oficina_id', oficina_id)
@@ -951,13 +962,22 @@ const FINANCEIRO = {
 
     const _mob = window.innerWidth <= 768;
 
+    const pecasPeriodoLabel = { hoje: 'Hoje', semana: 'Semana', mes: 'Mês inteiro' };
+
     el.innerHTML = `
-      <!-- Nav mês -->
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
-        <button class="btn btn-secondary btn-sm" onclick="FINANCEIRO._pecasNavegar(-1)" style="padding:6px 12px;font-size:16px;">&lt;</button>
-        <div style="font-size:18px;font-weight:700;text-transform:capitalize;font-family:var(--heading);">${nomeMes}</div>
-        <button class="btn btn-secondary btn-sm" onclick="FINANCEIRO._pecasNavegar(1)" style="padding:6px 12px;font-size:16px;">&gt;</button>
-        <span style="font-size:13px;color:var(--text-muted);">${itensPeca.length} pecas vendidas</span>
+      <!-- Nav mês + filtros -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button class="btn btn-secondary btn-sm" onclick="FINANCEIRO._pecasNavegar(-1)" style="padding:6px 12px;font-size:16px;">&lt;</button>
+          <div style="font-size:18px;font-weight:700;text-transform:capitalize;font-family:var(--heading);">${nomeMes}</div>
+          <button class="btn btn-secondary btn-sm" onclick="FINANCEIRO._pecasNavegar(1)" style="padding:6px 12px;font-size:16px;">&gt;</button>
+          <span style="font-size:13px;color:var(--text-muted);">${itensPeca.length} pecas vendidas</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:4px;margin-bottom:24px;">
+        ${['mes','semana','hoje'].map(p => `
+          <button class="btn ${this._pecasPeriodo === p ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="FINANCEIRO._pecasPeriodo='${p}'; FINANCEIRO.carregar();">${pecasPeriodoLabel[p]}</button>
+        `).join('')}
       </div>
 
       <!-- LUCRO HERO -->
