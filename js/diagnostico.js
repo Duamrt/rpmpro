@@ -281,6 +281,7 @@ const DIAGNOSTICO = {
     if (!setor) return;
     const dados = this._dados[setorKey] || {};
     const todosOk = dados._allOk || false;
+    const temProblema = Object.keys(dados).some(k => k !== '_allOk' && k !== '_ok' && dados[k]?.problema);
 
     openModal(`
       <div class="modal-header">
@@ -289,24 +290,23 @@ const DIAGNOSTICO = {
       </div>
       <div class="modal-body" style="padding:8px 12px;">
         <!-- Botão TUDO OK -->
-        <button id="diag-tudo-ok" onclick="DIAGNOSTICO._marcarTudoOk()"
+        <button id="diag-tudo-ok" onclick="DIAGNOSTICO._marcarTudoOk('${escAttr(setorKey)}','${escAttr(osId)}')"
           style="width:100%;padding:14px;border-radius:var(--radius-lg);border:2px solid ${todosOk ? 'var(--success)' : 'var(--border)'};
           background:${todosOk ? 'rgba(34,197,94,0.1)' : 'var(--bg-input)'};cursor:pointer;
           font-size:15px;font-weight:700;color:${todosOk ? 'var(--success)' : '#fff'};margin-bottom:12px;
           display:flex;align-items:center;justify-content:center;gap:8px;">
-          ${todosOk ? '✅ Tudo OK' : '⬜ Marcar tudo OK'}
+          ${todosOk ? '✅ Tudo OK — Setor verificado' : '✅ Tudo OK neste setor'}
         </button>
-        <div style="font-size:11px;color:var(--text-secondary);margin-bottom:10px;">Se algum item tem problema, desmarque e descreva abaixo.</div>
+        <div style="font-size:11px;color:var(--text-secondary);margin-bottom:10px;">Marque abaixo apenas os itens com <strong style="color:var(--danger);">problema</strong>.</div>
         <div style="display:flex;flex-direction:column;gap:2px;">
           ${setor.itens.map((item, i) => {
             const d = dados[i] || {};
-            const okItem = todosOk && !d.problema;
             return `
               <div class="diag-row" data-idx="${i}" style="padding:10px 8px;border-bottom:1px solid var(--border);
-                background:${d.problema ? 'rgba(239,68,68,0.06)' : okItem ? 'rgba(34,197,94,0.04)' : ''};">
+                background:${d.problema ? 'rgba(239,68,68,0.06)' : ''};">
                 <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
-                  <input type="checkbox" class="diag-item-ok" data-idx="${i}" ${okItem || (!d.problema && todosOk) ? 'checked' : ''}
-                    onchange="DIAGNOSTICO._toggleItemOk(this)" style="width:22px;height:22px;min-width:22px;accent-color:var(--success);">
+                  <input type="checkbox" class="diag-item-prob" data-idx="${i}" ${d.problema ? 'checked' : ''}
+                    onchange="DIAGNOSTICO._toggleProblema(this)" style="width:22px;height:22px;min-width:22px;accent-color:#ef4444;">
                   <span style="font-size:14px;color:${d.problema ? 'var(--danger)' : '#fff'};">${esc(item)}</span>
                 </label>
                 <div class="diag-item-detalhe" data-idx="${i}" style="display:${d.problema ? 'block' : 'none'};margin-top:8px;margin-left:32px;">
@@ -326,77 +326,45 @@ const DIAGNOSTICO = {
     `);
   },
 
-  // Marca tudo como OK de uma vez
-  _marcarTudoOk() {
-    const btn = document.getElementById('diag-tudo-ok');
-    const checks = document.querySelectorAll('.diag-item-ok');
-    const allChecked = Array.from(checks).every(c => c.checked);
-
-    if (allChecked) {
-      // Desmarca tudo
-      checks.forEach(c => { c.checked = false; });
-      document.querySelectorAll('.diag-row').forEach(r => { r.style.background = ''; });
-      if (btn) { btn.style.borderColor = 'var(--border)'; btn.style.background = 'var(--bg-input)'; btn.style.color = '#fff'; btn.innerHTML = '⬜ Marcar tudo OK'; }
-    } else {
-      // Marca tudo OK e esconde detalhes
-      checks.forEach(c => { c.checked = true; });
-      document.querySelectorAll('.diag-row').forEach(r => { r.style.background = 'rgba(34,197,94,0.04)'; });
-      document.querySelectorAll('.diag-item-detalhe').forEach(d => { d.style.display = 'none'; });
-      if (btn) { btn.style.borderColor = 'var(--success)'; btn.style.background = 'rgba(34,197,94,0.1)'; btn.style.color = 'var(--success)'; btn.innerHTML = '✅ Tudo OK'; }
-    }
+  // Tudo OK = setor verificado sem problemas, salva direto e volta
+  _marcarTudoOk(setorKey, osId) {
+    this._dados[setorKey] = { _allOk: true, _ok: true };
+    this.abrir(osId);
   },
 
-  // Toggle individual: desmarcou = tem problema, abre detalhe
-  _toggleItemOk(chk) {
+  // Toggle individual: marcou = tem problema, abre detalhe
+  _toggleProblema(chk) {
     const idx = chk.dataset.idx;
     const detalhe = document.querySelector(`.diag-item-detalhe[data-idx="${idx}"]`);
     const row = chk.closest('.diag-row');
+    const label = row?.querySelector('span');
 
-    if (!chk.checked) {
-      // Desmarcou = problema encontrado
+    if (chk.checked) {
+      // Marcou = problema encontrado
       if (detalhe) { detalhe.style.display = 'block'; const pecaInput = detalhe.querySelector('.diag-peca'); if (pecaInput) pecaInput.focus(); }
       if (row) row.style.background = 'rgba(239,68,68,0.06)';
-      // Atualiza botão tudo ok
+      if (label) label.style.color = 'var(--danger)';
+      // Desativa tudo ok
       const btn = document.getElementById('diag-tudo-ok');
-      if (btn) { btn.style.borderColor = 'var(--border)'; btn.style.background = 'var(--bg-input)'; btn.style.color = '#fff'; btn.innerHTML = '⬜ Marcar tudo OK'; }
+      if (btn) { btn.style.borderColor = 'var(--border)'; btn.style.background = 'var(--bg-input)'; btn.style.color = '#fff'; btn.innerHTML = '✅ Tudo OK neste setor'; }
     } else {
-      // Marcou OK = sem problema
+      // Desmarcou = item ok
       if (detalhe) detalhe.style.display = 'none';
-      if (row) row.style.background = 'rgba(34,197,94,0.04)';
-      // Verifica se todos estão OK
-      const allOk = Array.from(document.querySelectorAll('.diag-item-ok')).every(c => c.checked);
-      if (allOk) {
-        const btn = document.getElementById('diag-tudo-ok');
-        if (btn) { btn.style.borderColor = 'var(--success)'; btn.style.background = 'rgba(34,197,94,0.1)'; btn.style.color = 'var(--success)'; btn.innerHTML = '✅ Tudo OK'; }
-      }
+      if (row) row.style.background = '';
+      if (label) label.style.color = '#fff';
     }
-  },
-
-  _toggleItem(chk) {
-    const idx = chk.dataset.idx;
-    const detalhe = document.querySelector(`.diag-item-detalhe[data-idx="${idx}"]`);
-    if (detalhe) {
-      detalhe.style.display = chk.checked ? 'block' : 'none';
-      if (chk.checked) {
-        const pecaInput = detalhe.querySelector('.diag-peca');
-        if (pecaInput) pecaInput.focus();
-      }
-    }
-    // Highlight
-    const row = chk.closest('div[style*="border-bottom"]');
-    if (row) row.style.background = chk.checked ? 'rgba(239,68,68,0.06)' : '';
   },
 
   _salvarSetor(setorKey, osId) {
     const setor = this._setores[setorKey];
     const dados = {};
-    const allOk = Array.from(document.querySelectorAll('.diag-item-ok')).every(c => c.checked);
-    dados._allOk = allOk;
+    const temProblema = Array.from(document.querySelectorAll('.diag-item-prob')).some(c => c.checked);
+    dados._allOk = !temProblema;
 
-    // Itens desmarcados = problema
-    document.querySelectorAll('.diag-item-ok').forEach(chk => {
+    // Itens marcados = problema
+    document.querySelectorAll('.diag-item-prob').forEach(chk => {
       const idx = parseInt(chk.dataset.idx);
-      if (!chk.checked) {
+      if (chk.checked) {
         const pecaEl = document.querySelector(`.diag-peca[data-idx="${idx}"]`);
         const detalheEl = document.querySelector(`.diag-detalhe[data-idx="${idx}"]`);
         dados[idx] = {
