@@ -424,7 +424,28 @@ const DIAGNOSTICO = {
       await db.from('diagnosticos_tecnicos').insert(payload);
     }
 
+    // Verifica se tem peças pra oferecer adicionar ao orçamento
+    const pecas = [];
+    for (const [key, setorDados] of Object.entries(this._dados)) {
+      if (!this._setores[key]) continue;
+      for (const [idx, item] of Object.entries(setorDados)) {
+        if (idx === '_ok' || idx === '_allOk') continue;
+        if (item && item.problema && item.peca) pecas.push(item.peca);
+      }
+    }
+
     APP.toast('Diagnóstico salvo');
+
+    if (pecas.length > 0) {
+      // Pergunta se quer adicionar peças ao orçamento
+      const add = confirm(`${pecas.length} peça(s) encontrada(s) no diagnóstico.\n\nDeseja adicionar ao orçamento da OS?`);
+      if (add) {
+        closeModal();
+        await OS.adicionarPecasDiagnostico(osId);
+        return;
+      }
+    }
+
     closeModal();
     OS.abrirDetalhes(osId);
   },

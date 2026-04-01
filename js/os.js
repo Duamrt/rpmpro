@@ -579,7 +579,7 @@ const OS = {
 
   async abrirDetalhes(id) {
     // Busca OS + itens + peças + checklists em paralelo
-    const [osRes, itensRes, chkEntradaRes, chkSaidaRes] = await Promise.all([
+    const [osRes, itensRes, chkEntradaRes, chkSaidaRes, diagRes] = await Promise.all([
       db.from('ordens_servico')
         .select('*, veiculos(placa, marca, modelo, km_atual), clientes(nome, whatsapp), profiles!ordens_servico_mecanico_id_fkey(nome)')
         .eq('id', id).single(),
@@ -595,6 +595,10 @@ const OS = {
       db.from('checklists_saida')
         .select('*')
         .eq('os_id', id)
+        .maybeSingle(),
+      db.from('diagnosticos_tecnicos')
+        .select('*')
+        .eq('os_id', id)
         .maybeSingle()
     ]);
 
@@ -606,6 +610,7 @@ const OS = {
     const pecasEstoque = [];
     const chkEntrada = chkEntradaRes.data || null;
     const chkSaida = chkSaidaRes.data || null;
+    const diag = diagRes.data || null;
 
     this._osAtualId = id;
     this._osAtualOficinaId = os.oficina_id;
@@ -788,13 +793,13 @@ const OS = {
         <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:12px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
             <label style="font-size:13px;font-weight:700;color:var(--text-secondary);margin:0;">
-              🔍 DIAGNÓSTICO TÉCNICO
+              ${diag ? '✅' : '🔍'} DIAGNÓSTICO TÉCNICO
             </label>
-            <button class="btn btn-primary btn-sm" onclick="DIAGNOSTICO.abrir('${os.id}')">
-              Abrir diagnóstico
+            <button class="btn ${diag ? 'btn-secondary' : 'btn-primary'} btn-sm" onclick="DIAGNOSTICO.abrir('${os.id}')">
+              ${diag ? 'Ver / Editar' : 'Iniciar diagnóstico'}
             </button>
           </div>
-          <div style="font-size:12px;color:var(--text-muted);">Vistoria + inspeção mecânica por setor</div>
+          ${diag ? this._resumoDiagnostico(diag, os.id) : '<div style="font-size:12px;color:var(--text-muted);">Vistoria + inspeção mecânica por setor</div>'}
         </div>
 
         <!-- CHECKLIST DE SAIDA -->
@@ -1614,6 +1619,118 @@ const OS = {
       html += `<div style="font-size:11px;color:var(--text-secondary);font-style:italic;margin-top:4px;">Obs: ${esc(chk.observacoes)}</div>`;
     }
     return html;
+  },
+
+  // Resumo do diagnóstico técnico dentro da OS
+  _resumoDiagnostico(diag, osId) {
+    const dados = diag.dados || {};
+    const setores = DIAGNOSTICO._setores;
+    const setoresKeys = Object.keys(setores);
+    const verificados = setoresKeys.filter(k => dados[k] && Object.keys(dados[k]).length > 0);
+    const totalSetores = setoresKeys.length;
+
+    // Conta problemas e peças
+    let totalProblemas = 0;
+    const pecas = [];
+    for (const [key, setorDados] of Object.entries(dados)) {
+      if (!setores[key]) continue;
+      for (const [idx, item] of Object.entries(setorDados)) {
+        if (idx === '_ok' || idx === '_allOk') continue;
+        if (item && item.problema) {
+          totalProblemas++;
+          if (item.peca) pecas.push({ peca: item.peca, setor: setores[key].nome, item: setores[key].itens[parseInt(idx)] || '' });
+        }
+      }
+    }
+
+    const corSetores = verificados.length === totalSetores ? 'var(--success)' : 'var(--warning)';
+    let html = `<div style="font-size:12px;color:${corSetores};font-weight:600;margin-bottom:4px;">${verificados.length}/${totalSetores} setores verificados</div>`;
+
+    if (totalProblemas > 0) {
+      html += `<div style="font-size:12px;color:var(--danger);margin-bottom:6px;">⚠️ ${totalProblemas} problema(s) encontrado(s)</div>`;
+    } else if (verificados.length > 0) {
+      html += `<div style="font-size:12px;color:var(--success);margin-bottom:6px;">✅ Nenhum problema encontrado</div>`;
+    }
+
+    // Lista peças encontradas
+    if (pecas.length) {
+      html += '<div style="font-size:11px;color:var(--text-secondary);line-height:1.8;margin-top:4px;">';
+      html += '<span style="font-weight:700;">Peças necessárias:</span>';
+      pecas.forEach(p => {
+        html += `<div style="margin-left:8px;">· <strong>${esc(p.peca)}</strong> <span style="color:var(--text-muted);">(${esc(p.item)})</span></div>`;
+      });
+      html += '</div>';
+
+      // Botão pra adicionar peças ao orçamento
+      html += `<button class="btn btn-primary btn-sm" style="margin-top:8px;width:100%;" onclick="OS.adicionarPecasDiagnostico('${escAttr(osId)}')">
+        📋 Adicionar ${pecas.length} peça(s) ao orçamento
+      </button>`;
+    }
+
+    if (diag.observacoes) {
+      html += `<div style="font-size:11px;color:var(--text-secondary);font-style:italic;margin-top:4px;">Obs: ${esc(diag.observacoes)}</div>`;
+    }
+    return html;
+  },
+
+  // Adiciona peças do diagnóstico como itens avulsos na OS
+  async adicionarPecasDiagnostico(osId) {
+    const { data: diag } = await db.from('diagnosticos_tecnicos').select('dados').eq('os_id', osId).maybeSingle();
+    if (!diag) { APP.toast('Diagnóstico não encontrado', 'error'); return; }
+
+    const dados = diag.dados || {};
+    const setores = DIAGNOSTICO._setores;
+    const pecas = [];
+
+    for (const [key, setorDados] of Object.entries(dados)) {
+      if (!setores[key]) continue;
+      for (const [idx, item] of Object.entries(setorDados)) {
+        if (idx === '_ok' || idx === '_allOk') continue;
+        if (item && item.problema && item.peca) {
+          pecas.push({ peca: item.peca, setor: setores[key].nome, detalhe: item.detalhe || '' });
+        }
+      }
+    }
+
+    if (!pecas.length) { APP.toast('Nenhuma peça no diagnóstico', 'error'); return; }
+
+    // Verifica quais já existem como itens da OS (evita duplicata)
+    const { data: itensExistentes } = await db.from('itens_os')
+      .select('descricao')
+      .eq('os_id', osId)
+      .eq('tipo', 'peca');
+    const jaExiste = new Set((itensExistentes || []).map(i => i.descricao?.toLowerCase()));
+
+    const oficina_id = APP.oficinaId;
+    let adicionadas = 0;
+
+    for (const p of pecas) {
+      const desc = p.peca + (p.detalhe ? ' — ' + p.detalhe : '') + ' (diagnóstico)';
+      if (jaExiste.has(desc.toLowerCase())) continue;
+
+      await db.from('itens_os').insert({
+        oficina_id,
+        os_id: osId,
+        tipo: 'peca',
+        descricao: desc,
+        quantidade: 1,
+        valor_unitario: 0,
+        valor_total: 0
+      });
+      adicionadas++;
+    }
+
+    if (adicionadas === 0) {
+      APP.toast('Todas as peças já estão no orçamento');
+    } else {
+      APP.toast(adicionadas + ' peça(s) adicionada(s) ao orçamento');
+      // Atualiza status pra orçamento se ainda estiver em entrada/diagnóstico
+      const { data: osAtual } = await db.from('ordens_servico').select('status').eq('id', osId).single();
+      if (osAtual && ['entrada', 'diagnostico'].includes(osAtual.status)) {
+        await db.from('ordens_servico').update({ status: 'orcamento' }).eq('id', osId);
+      }
+    }
+    this.abrirDetalhes(osId);
   },
 
   async abrirChecklistEntrada(osId) {
