@@ -659,19 +659,17 @@ const OS = {
         </div>
 
         <!-- MECÂNICO RESPONSÁVEL -->
-        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;margin-bottom:12px;border-radius:var(--radius);
-          background:${os.mecanico_id ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.1)'};
-          border:1px solid ${os.mecanico_id ? 'var(--success)' : 'var(--danger)'};">
-          <span style="font-size:18px;">${os.mecanico_id ? '🔧' : '⚠️'}</span>
-          <div style="flex:1;">
-            <div style="font-size:11px;font-weight:700;color:${os.mecanico_id ? 'var(--success)' : 'var(--danger)'};text-transform:uppercase;letter-spacing:0.5px;">
-              ${os.mecanico_id ? 'Mecânico responsável' : 'Sem mecânico definido'}
-            </div>
-            <select id="det-trocar-mec" onchange="OS._trocarMecanico('${os.id}',this.value)"
-              style="background:transparent;border:none;color:var(--text);font-size:15px;font-weight:700;cursor:pointer;padding:2px 0;font-family:inherit;width:100%;">
-              <option value="" ${!os.mecanico_id ? 'selected' : ''} style="color:#666;">Selecionar mecânico...</option>
-              ${mecsList.map(m => `<option value="${m.id}" ${m.id === os.mecanico_id ? 'selected' : ''}>${esc(m.nome)}</option>`).join('')}
-            </select>
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;margin-bottom:12px;border-radius:var(--radius);
+          background:${os.mecanico_id ? 'rgba(34,197,94,0.06)' : 'rgba(239,68,68,0.08)'};
+          border-left:3px solid ${os.mecanico_id ? 'var(--success)' : 'var(--danger)'};">
+          <span style="font-size:12px;font-weight:700;color:${os.mecanico_id ? 'var(--success)' : 'var(--danger)'};white-space:nowrap;">
+            ${os.mecanico_id ? '🔧 Mecânico:' : '⚠️ Mecânico:'}
+          </span>
+          <select id="det-trocar-mec" onchange="OS._trocarMecanico('${os.id}',this.value)"
+            style="background:transparent;border:none;color:var(--text);font-size:14px;font-weight:700;cursor:pointer;padding:0;font-family:inherit;flex:1;">
+            <option value="" ${!os.mecanico_id ? 'selected' : ''}>Selecionar...</option>
+            ${mecsList.map(m => `<option value="${m.id}" ${m.id === os.mecanico_id ? 'selected' : ''}>${esc(m.nome)}</option>`).join('')}
+          </select>
         </div>
 
         ${_mob ? `
