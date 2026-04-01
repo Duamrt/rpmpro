@@ -206,7 +206,11 @@ const DIAGNOSTICO = {
     const { data: existente } = await db.from('diagnosticos_tecnicos')
       .select('*').eq('os_id', osId).maybeSingle();
 
-    const dados = existente?.dados || {};
+    // Se é a mesma OS e tem dados locais não salvos, mantém eles
+    const dadosBanco = existente?.dados || {};
+    const dados = (this._osId === osId && Object.keys(this._dados).length > 0)
+      ? { ...dadosBanco, ...this._dados }
+      : dadosBanco;
     const obs = existente?.observacoes || '';
 
     // Conta setores verificados
