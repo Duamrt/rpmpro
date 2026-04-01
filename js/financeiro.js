@@ -251,10 +251,29 @@ const FINANCEIRO = {
     const movimentacoes = caixaRes.data || [];
     const osPagas = osRes.data || [];
 
+    // Busca peças movimentadas das OS pagas no período
+    const osIds = osPagas.map(o => o.id);
+    let pecasMovimentadas = [];
+    if (osIds.length) {
+      const { data } = await db.from('itens_os')
+        .select('os_id, descricao, quantidade, valor_unitario, valor_total, peca_id, pecas(nome, preco_custo)')
+        .in('os_id', osIds)
+        .eq('tipo', 'peca');
+      pecasMovimentadas = data || [];
+    }
+
     const totalEntradas = movimentacoes.filter(m => m.tipo === 'entrada').reduce((s, m) => s + (m.valor || 0), 0);
     const totalSaidas = movimentacoes.filter(m => m.tipo === 'saida').reduce((s, m) => s + (m.valor || 0), 0);
     const totalOS = osPagas.reduce((s, o) => s + (o.valor_total || 0), 0);
     const saldo = totalEntradas + totalOS - totalSaidas;
+
+    // Peças: custo vs venda
+    let pecasVenda = 0, pecasCusto = 0;
+    pecasMovimentadas.forEach(p => {
+      pecasVenda += p.valor_total || 0;
+      if (p.peca_id && p.pecas?.preco_custo) pecasCusto += p.pecas.preco_custo * (p.quantidade || 1);
+    });
+    const pecasLucro = pecasVenda - pecasCusto;
 
     const porForma = {};
     osPagas.forEach(o => {
@@ -337,6 +356,30 @@ const FINANCEIRO = {
           `).join('')}
         </div>
       </div>
+
+      <!-- Peças Movimentadas -->
+      ${pecasMovimentadas.length ? `
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <h3 style="font-size:14px;color:var(--text-secondary);">Pecas movimentadas (${pecasMovimentadas.length})</h3>
+          <div style="font-size:13px;">
+            Custo <strong style="color:var(--danger);">${APP.formatMoney(pecasCusto)}</strong>
+            · Vendeu <strong style="color:var(--success);">${APP.formatMoney(pecasVenda)}</strong>
+            · Lucro <strong style="color:${pecasLucro >= 0 ? 'var(--success)' : 'var(--danger)'};">${APP.formatMoney(pecasLucro)}</strong>
+          </div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          ${pecasMovimentadas.map(p => {
+            const custo = p.peca_id && p.pecas?.preco_custo ? p.pecas.preco_custo * (p.quantidade || 1) : 0;
+            const lucro = (p.valor_total || 0) - custo;
+            return `<div style="background:var(--bg-input);padding:6px 10px;border-radius:var(--radius);font-size:12px;display:flex;gap:8px;align-items:center;">
+              <span>${p.quantidade || 1}x ${esc(p.pecas?.nome || p.descricao || '-')}</span>
+              <span style="color:var(--success);font-weight:600;">${APP.formatMoney(p.valor_total)}</span>
+              ${custo > 0 ? `<span style="color:var(--text-muted);font-size:10px;">(+${APP.formatMoney(lucro)})</span>` : '<span style="color:var(--warning);font-size:10px;">(sem custo)</span>'}
+            </div>`;
+          }).join('')}
+        </div>
+      </div>` : ''}
 
       <!-- OS Pagas -->
       <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:20px;">
