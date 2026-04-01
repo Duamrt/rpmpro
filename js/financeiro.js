@@ -1,7 +1,11 @@
 // RPM Pro — Financeiro (Caixa da Oficina + Fechamento do Dia)
 const FINANCEIRO = {
   _periodo: 'hoje',
-  _aba: 'fechamento', // fechamento | caixa
+  _aba: 'fechamento', // fechamento | caixa | despesas
+  _despMes: new Date().getMonth(),
+  _despAno: new Date().getFullYear(),
+  _caixaMes: new Date().getMonth(),
+  _caixaAno: new Date().getFullYear(),
 
   async carregar() {
     const container = document.getElementById('financeiro-content');
@@ -194,34 +198,43 @@ const FINANCEIRO = {
     `;
   },
 
-  // ==================== CAIXA (fluxo original) ====================
+  _caixaNavegar(delta) {
+    this._caixaMes += delta;
+    if (this._caixaMes > 11) { this._caixaMes = 0; this._caixaAno++; }
+    if (this._caixaMes < 0) { this._caixaMes = 11; this._caixaAno--; }
+    this.carregar();
+  },
+
+  // ==================== CAIXA ====================
   async _carregarCaixa() {
     const el = document.getElementById('fin-conteudo');
     const oficina_id = APP.oficinaId;
     const agora = new Date();
 
+    const dataInicio = new Date(this._caixaAno, this._caixaMes, 1).toISOString().split('T')[0];
+    const dataFim = new Date(this._caixaAno, this._caixaMes + 1, 0, 23, 59, 59).toISOString();
+
+    // Sub-filtro dentro do mês
     const hoje = agora.toISOString().split('T')[0];
     const inicioSemana = new Date(agora);
     inicioSemana.setDate(agora.getDate() - agora.getDay());
-    const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1);
-
-    let dataInicio;
-    if (this._periodo === 'hoje') dataInicio = hoje;
-    else if (this._periodo === 'semana') dataInicio = inicioSemana.toISOString().split('T')[0];
-    else if (this._periodo === 'mes') dataInicio = inicioMes.toISOString().split('T')[0];
-    else dataInicio = inicioMes.toISOString().split('T')[0];
+    let filtroInicio = dataInicio;
+    if (this._periodo === 'hoje') filtroInicio = hoje;
+    else if (this._periodo === 'semana') filtroInicio = inicioSemana.toISOString().split('T')[0];
 
     const [caixaRes, osRes] = await Promise.all([
       db.from('caixa')
         .select('*')
         .eq('oficina_id', oficina_id)
-        .gte('created_at', dataInicio)
+        .gte('created_at', filtroInicio)
+        .lte('created_at', dataFim)
         .order('created_at', { ascending: false }),
       db.from('ordens_servico')
         .select('id, numero, valor_total, forma_pagamento, data_entrega, descricao, veiculos(placa), clientes(nome)')
         .eq('oficina_id', oficina_id)
         .eq('pago', true)
-        .gte('data_entrega', dataInicio)
+        .gte('data_entrega', filtroInicio)
+        .lte('data_entrega', dataFim)
         .order('data_entrega', { ascending: false })
     ]);
 
@@ -244,17 +257,26 @@ const FINANCEIRO = {
     });
 
     const formaLabel = { dinheiro: 'Dinheiro', pix: 'Pix', debito: 'Débito', credito: 'Crédito', boleto: 'Boleto', transferencia: 'Transferência', outros: 'Outros' };
-    const periodoLabel = { hoje: 'Hoje', semana: 'Esta semana', mes: 'Este mês' };
+    const periodoLabel = { hoje: 'Hoje', semana: 'Semana', mes: 'Mês inteiro' };
+    const nomeMesCaixa = new Date(this._caixaAno, this._caixaMes).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 
     el.innerHTML = `
-      <!-- Filtro de período -->
-      <div style="display:flex;gap:8px;margin-bottom:20px;">
-        ${['hoje','semana','mes'].map(p => `
+      <!-- Navegação mês + sub-filtro -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button class="btn btn-secondary btn-sm" onclick="FINANCEIRO._caixaNavegar(-1)" style="padding:6px 12px;font-size:16px;">&lt;</button>
+          <div style="font-size:18px;font-weight:700;text-transform:capitalize;">${nomeMesCaixa}</div>
+          <button class="btn btn-secondary btn-sm" onclick="FINANCEIRO._caixaNavegar(1)" style="padding:6px 12px;font-size:16px;">&gt;</button>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-primary btn-sm" onclick="FINANCEIRO.novaMovimentacao('entrada')">+ Entrada</button>
+          <button class="btn btn-danger btn-sm" onclick="FINANCEIRO.novaMovimentacao('saida')">+ Saida</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:20px;">
+        ${['mes','semana','hoje'].map(p => `
           <button class="btn ${this._periodo === p ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="FINANCEIRO._periodo='${p}'; FINANCEIRO.carregar();">${periodoLabel[p]}</button>
         `).join('')}
-        <div style="flex:1;"></div>
-        <button class="btn btn-primary btn-sm" onclick="FINANCEIRO.novaMovimentacao('entrada')">+ Entrada</button>
-        <button class="btn btn-danger btn-sm" onclick="FINANCEIRO.novaMovimentacao('saida')">+ Saida</button>
       </div>
 
       <!-- KPIs -->
@@ -380,13 +402,19 @@ const FINANCEIRO = {
     `;
   },
 
+  _despNavegar(delta) {
+    this._despMes += delta;
+    if (this._despMes > 11) { this._despMes = 0; this._despAno++; }
+    if (this._despMes < 0) { this._despMes = 11; this._despAno--; }
+    this.carregar();
+  },
+
   // ==================== DESPESAS FIXAS ====================
   async _carregarDespesas() {
     const el = document.getElementById('fin-conteudo');
     const oficina_id = APP.oficinaId;
-    const agora = new Date();
-    const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString().split('T')[0];
-    const fimMes = new Date(agora.getFullYear(), agora.getMonth() + 1, 0, 23, 59, 59).toISOString();
+    const inicioMes = new Date(this._despAno, this._despMes, 1).toISOString().split('T')[0];
+    const fimMes = new Date(this._despAno, this._despMes + 1, 0, 23, 59, 59).toISOString();
 
     const { data: despesas } = await db.from('caixa')
       .select('*')
@@ -415,11 +443,17 @@ const FINANCEIRO = {
 
     const _mob = window.innerWidth <= 768;
 
+    const nomeMes = new Date(this._despAno, this._despMes).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+
     el.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-        <div>
-          <div style="font-size:18px;font-weight:700;">Despesas de ${agora.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</div>
-          <div style="font-size:13px;color:var(--text-secondary);">${lista.length} lançamentos</div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button class="btn btn-secondary btn-sm" onclick="FINANCEIRO._despNavegar(-1)" style="padding:6px 12px;font-size:16px;">&lt;</button>
+          <div>
+            <div style="font-size:18px;font-weight:700;text-transform:capitalize;">${nomeMes}</div>
+            <div style="font-size:13px;color:var(--text-secondary);">${lista.length} lancamentos</div>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="FINANCEIRO._despNavegar(1)" style="padding:6px 12px;font-size:16px;">&gt;</button>
         </div>
         <button class="btn btn-danger" onclick="FINANCEIRO._novaDespesa()">+ Nova Despesa</button>
       </div>
