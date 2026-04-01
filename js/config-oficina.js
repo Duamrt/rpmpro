@@ -152,14 +152,14 @@ const CONFIG = {
               <span style="font-size:11px;color:var(--text-secondary);">Aluguel, luz, agua, internet...</span>
             </div>
             <div class="form-group">
-              <label>Ocupacao real (%)</label>
-              <input type="number" class="form-control" id="calc-ocupacao" value="65" min="10" max="100" step="5" oninput="CONFIG._calcularCusto()">
-              <span style="font-size:11px;color:var(--text-secondary);">Quanto do tempo o mecanico ta faturando (60-70% e normal)</span>
+              <label>Vagas de servico (elevadores)</label>
+              <input type="number" class="form-control" id="calc-vagas" value="3" min="1" max="20" step="1" oninput="CONFIG._calcularCusto()">
+              <span style="font-size:11px;color:var(--text-secondary);">Quantos carros atende ao mesmo tempo</span>
             </div>
             <div class="form-group">
-              <label>Margem de lucro (%)</label>
-              <input type="number" class="form-control" id="calc-margem" value="30" min="0" max="200" step="5" oninput="CONFIG._calcularCusto()">
-              <span style="font-size:11px;color:var(--text-secondary);">Quanto quer ganhar acima do custo</span>
+              <label>Valor que cobra hoje (R$/h)</label>
+              <input type="number" class="form-control" id="calc-cobrado" value="${oficina.valor_hora || 120}" min="0" max="500" step="5" oninput="CONFIG._calcularCusto()">
+              <span style="font-size:11px;color:var(--text-secondary);">Preco da hora de mao de obra</span>
             </div>
           </div>
           <div id="calc-resultado" style="margin-top:16px;"></div>
@@ -527,19 +527,16 @@ const CONFIG = {
     // Soma salários + VR dos inputs da equipe
     let salarios = 0;
     let valeRefeicao = 0;
-    let qtdMecanicos = 0;
     document.querySelectorAll('.calc-salario-membro').forEach((input, i) => {
       salarios += parseFloat(input.value) || 0;
       const m = this._calcEquipe[i];
       if (m) valeRefeicao += m.vale_refeicao || 0;
-      if (m && ['mecanico', 'aux_mecanico'].includes(m.role)) qtdMecanicos++;
     });
-    if (qtdMecanicos < 1) qtdMecanicos = 1;
 
     // Puxa horas/dia e dias/mês do horário de funcionamento
     const h = APP.oficina?.horario || {};
     let diasSemana = 0;
-    let horasDiaTotais = 0;
+    let horasDia = 8;
     ['seg','ter','qua','qui','sex','sab','dom'].forEach(dia => {
       if (h[dia]?.ativo) {
         diasSemana++;
@@ -547,70 +544,84 @@ const CONFIG = {
         const fe = h[dia].fechamento || '18:00';
         const [hA, mA] = ab.split(':').map(Number);
         const [hF, mF] = fe.split(':').map(Number);
-        horasDiaTotais += (hF + mF/60) - (hA + mA/60);
+        horasDia = (hF + mF/60) - (hA + mA/60);
       }
     });
-    const horasDia = diasSemana > 0 ? horasDiaTotais / diasSemana : 8;
     const diasMes = Math.round(diasSemana * 4.33);
 
     const fixos = parseFloat(document.getElementById('calc-fixos')?.value) || 0;
-    const margemDesejada = parseFloat(document.getElementById('calc-margem')?.value) || 30;
-    const ocupacao = parseFloat(document.getElementById('calc-ocupacao')?.value) || 65;
+    const vagas = parseInt(document.getElementById('calc-vagas')?.value) || 3;
+    const cobrado = parseFloat(document.getElementById('calc-cobrado')?.value) || 120;
 
-    // Custo total mensal = salários + VR + custos fixos
+    // Custo total mensal
     const custoTotal = salarios + valeRefeicao + fixos;
 
-    // Horas FATURÁVEIS = mecânicos × horas × dias × taxa de ocupação
-    const horasBrutas = qtdMecanicos * horasDia * diasMes;
-    const horasFaturaveis = horasBrutas * (ocupacao / 100);
+    // Horas faturáveis = vagas × horas/dia × dias/mês × 75% eficiência
+    const eficiencia = 0.75;
+    const horasFaturaveis = vagas * horasDia * diasMes * eficiencia;
 
+    // Custo por hora (piso mínimo)
     const custoHora = horasFaturaveis > 0 ? custoTotal / horasFaturaveis : 0;
-    const sugerido = custoHora * (1 + margemDesejada / 100);
-    const lucroHora = sugerido - custoHora;
-    const valorAtual = APP.oficina?.valor_hora || 0;
+
+    // Análise do valor cobrado
+    const lucroHora = cobrado - custoHora;
+    const margemReal = custoHora > 0 ? ((cobrado / custoHora - 1) * 100) : 0;
+    const multiplicador = custoHora > 0 ? (cobrado / custoHora) : 0;
+    const faturamentoPotencial = cobrado * horasFaturaveis;
+    const lucroPotencial = faturamentoPotencial - custoTotal;
+    const pontoEquilibrio = cobrado > 0 ? custoTotal / cobrado : 0;
+
+    const saudavel = cobrado >= custoHora * 2;
+    const prejuizo = cobrado < custoHora;
 
     const el = document.getElementById('calc-resultado');
     if (!el) return;
 
     el.innerHTML = `
       <div style="background:var(--bg-input);border-radius:var(--radius-lg);padding:20px;">
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;text-align:center;margin-bottom:16px;">
-          <div>
-            <div style="font-size:11px;color:var(--text-secondary);">Custo real/hora</div>
-            <div style="font-size:22px;font-weight:800;color:var(--danger);">R$ ${custoHora.toFixed(2)}</div>
-            <div style="font-size:11px;color:var(--text-muted);">Minimo pra nao perder</div>
+        <!-- Resultado principal -->
+        <div style="text-align:center;margin-bottom:20px;">
+          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">Cobrando R$ ${cobrado.toFixed(0)}/hora voce tem</div>
+          <div style="font-size:36px;font-weight:900;color:${prejuizo ? 'var(--danger)' : saudavel ? 'var(--success)' : 'var(--warning)'};">
+            ${prejuizo ? 'PREJUIZO' : 'R$ ' + lucroHora.toFixed(2) + '/hora de lucro'}
           </div>
-          <div style="border-left:2px solid var(--border);border-right:2px solid var(--border);padding:0 12px;">
-            <div style="font-size:11px;color:var(--text-secondary);">Valor sugerido/hora</div>
-            <div style="font-size:28px;font-weight:800;color:var(--success);">R$ ${sugerido.toFixed(2)}</div>
-            <div style="font-size:11px;color:var(--text-muted);">Com ${margemDesejada}% de lucro</div>
-          </div>
-          <div>
-            <div style="font-size:11px;color:var(--text-secondary);">Lucro por hora</div>
-            <div style="font-size:22px;font-weight:800;color:var(--success);">R$ ${lucroHora.toFixed(2)}</div>
-            <div style="font-size:11px;color:var(--text-muted);">Por mecanico</div>
+          <div style="font-size:13px;color:var(--text-secondary);margin-top:4px;">
+            Margem de ${margemReal.toFixed(0)}% · Multiplicador ${multiplicador.toFixed(1)}x sobre o custo
+            ${saudavel ? ' · Saudavel' : prejuizo ? '' : ' · Abaixo do ideal (2x+)'}
           </div>
         </div>
 
-        <div style="font-size:12px;color:var(--text-secondary);text-align:center;margin-bottom:12px;line-height:1.8;">
-          ${qtdMecanicos} mecanico${qtdMecanicos > 1 ? 's' : ''} · ${horasDia.toFixed(1)}h/dia · ${diasMes} dias/mes<br>
-          ${horasBrutas.toFixed(0)}h totais × ${ocupacao}% ocupacao = <strong>${horasFaturaveis.toFixed(0)}h faturaveis</strong><br>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;text-align:center;margin-bottom:16px;">
+          <div>
+            <div style="font-size:10px;color:var(--text-secondary);">Custo/hora</div>
+            <div style="font-size:18px;font-weight:800;color:var(--danger);">R$ ${custoHora.toFixed(2)}</div>
+            <div style="font-size:10px;color:var(--text-muted);">Piso minimo</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text-secondary);">Lucro potencial/mes</div>
+            <div style="font-size:18px;font-weight:800;color:var(--success);">R$ ${(lucroPotencial/1000).toFixed(1)}k</div>
+            <div style="font-size:10px;color:var(--text-muted);">Se faturar 75%</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text-secondary);">Ponto equilibrio</div>
+            <div style="font-size:18px;font-weight:800;color:var(--warning);">${pontoEquilibrio.toFixed(0)}h</div>
+            <div style="font-size:10px;color:var(--text-muted);">de ${horasFaturaveis.toFixed(0)}h disponiveis</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text-secondary);">Faturamento max</div>
+            <div style="font-size:18px;font-weight:800;">R$ ${(faturamentoPotencial/1000).toFixed(1)}k</div>
+            <div style="font-size:10px;color:var(--text-muted);">MO/mes (${vagas} vagas)</div>
+          </div>
+        </div>
+
+        <div style="font-size:12px;color:var(--text-secondary);text-align:center;margin-bottom:16px;line-height:1.8;">
+          ${vagas} vaga${vagas > 1 ? 's' : ''} · ${horasDia.toFixed(0)}h/dia · ${diasMes} dias/mes · 75% eficiencia = <strong>${horasFaturaveis.toFixed(0)}h faturaveis</strong><br>
           Salarios: R$ ${salarios.toFixed(0)} + VR: R$ ${valeRefeicao.toFixed(0)} + Fixos: R$ ${fixos.toFixed(0)} = <strong>R$ ${custoTotal.toFixed(0)}/mes</strong>
         </div>
 
-        ${valorAtual > 0 ? `
-          <div style="text-align:center;padding:10px;background:var(--bg-card);border-radius:var(--radius);margin-bottom:12px;font-size:13px;">
-            Hoje voce cobra <strong style="color:var(--primary);">R$ ${valorAtual.toFixed(2)}/h</strong>
-            ${valorAtual < custoHora
-              ? '<span style="color:var(--danger);font-weight:700;"> — PREJUIZO! Voce perde R$ ' + (custoHora - valorAtual).toFixed(2) + ' por hora</span>'
-              : `<span style="color:var(--success);font-weight:700;"> — Lucro de R$ ${(valorAtual - custoHora).toFixed(2)}/h (${((valorAtual / custoHora - 1) * 100).toFixed(0)}% margem)</span>`
-            }
-          </div>
-        ` : ''}
-
         <div style="text-align:center;">
-          <button class="btn btn-primary" onclick="CONFIG._aplicarValorHora(${sugerido.toFixed(2)})">
-            Usar R$ ${sugerido.toFixed(2)}/hora como valor padrao
+          <button class="btn btn-primary" onclick="CONFIG._aplicarValorHora(${cobrado.toFixed(2)})">
+            Salvar R$ ${cobrado.toFixed(0)}/hora como valor padrao
           </button>
         </div>
       </div>
