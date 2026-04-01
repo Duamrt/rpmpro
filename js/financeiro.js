@@ -131,6 +131,17 @@ const FINANCEIRO = {
 
     const _mob = window.innerWidth <= 768;
 
+    // Separa fiados puros vs faturados (contas_receber)
+    // fiados = OS entregues com pago=false (todos). Faturados têm forma_pagamento='faturado'
+    const fiadosPuros = fiados.filter(f => f.forma_pagamento !== 'faturado');
+    const faturados = fiados.filter(f => f.forma_pagamento === 'faturado');
+    const totalFiadoPuro = fiadosPuros.reduce((s, o) => s + (o.valor_total || 0), 0);
+    const totalFaturado = faturados.reduce((s, o) => s + (o.valor_total || 0), 0);
+
+    // Helper: toggle drill-down
+    const _toggle = (id) => `onclick="var el=document.getElementById('${id}');el.style.display=el.style.display==='none'?'block':'none';"`;
+    const _drill = (id) => `id="${id}" style="display:none;margin-top:8px;"`;
+
     el.innerHTML = `
       <div style="text-align:center;margin-bottom:24px;">
         <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">Fechamento de</div>
@@ -140,16 +151,16 @@ const FINANCEIRO = {
       <!-- LUCRO HERO -->
       <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
         <div style="display:flex;gap:${_mob ? '16px' : '28px'};flex-wrap:wrap;">
-          <div>
-            <div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">Faturamento</div>
+          <div style="cursor:pointer;" ${_toggle('drill-faturamento')}>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">Faturamento <span style="font-size:10px;">▼</span></div>
             <div style="font-size:18px;font-weight:700;">${APP.formatMoney(faturamentoBruto)}</div>
           </div>
           <div>
             <div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">Taxas</div>
             <div style="font-size:18px;font-weight:700;">-${APP.formatMoney(totalTaxas)}</div>
           </div>
-          <div>
-            <div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">Saidas</div>
+          <div style="cursor:pointer;" ${_toggle('drill-saidas')}>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">Saidas <span style="font-size:10px;">▼</span></div>
             <div style="font-size:18px;font-weight:700;">-${APP.formatMoney(saidasCaixa)}</div>
           </div>
           <div>
@@ -167,17 +178,52 @@ const FINANCEIRO = {
         </div>
       </div>
 
-      <!-- COMPOSIÇÃO: MO + Peças -->
+      <!-- DRILL: Faturamento (lista de OS) -->
+      <div ${_drill('drill-faturamento')}>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:24px;">
+          <div style="padding:12px 20px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600;color:var(--text-muted);">OS que compõem o faturamento</div>
+          ${osDia.length ? `<table class="data-table">
+            <thead><tr><th>OS</th><th>Veiculo</th><th>Cliente</th><th>MO</th><th>Pecas</th><th>Total</th></tr></thead>
+            <tbody>${osDia.map(o => `<tr style="cursor:pointer;" onclick="OS.abrirDetalhes('${o.id}')">
+              <td><strong>#${esc(o.numero || '-')}</strong></td>
+              <td>${esc(o.veiculos?.placa || '-')}</td>
+              <td>${esc(o.clientes?.nome || '-')}</td>
+              <td>${APP.formatMoney(o.valor_mao_obra)}</td>
+              <td>${APP.formatMoney(o.valor_pecas)}</td>
+              <td style="font-weight:700;">${APP.formatMoney(o.valor_total)}</td>
+            </tr>`).join('')}</tbody>
+          </table>` : '<div style="padding:20px;text-align:center;color:var(--text-muted);">Nenhuma OS hoje</div>'}
+        </div>
+      </div>
+
+      <!-- DRILL: Saídas do caixa -->
+      <div ${_drill('drill-saidas')}>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:24px;">
+          <div style="padding:12px 20px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600;color:var(--text-muted);">Saidas registradas hoje</div>
+          ${movDia.filter(m => m.tipo === 'saida').length ? `<table class="data-table">
+            <thead><tr><th>Descricao</th><th>Categoria</th><th>Valor</th></tr></thead>
+            <tbody>${movDia.filter(m => m.tipo === 'saida').map(m => `<tr>
+              <td>${esc(m.descricao)}</td>
+              <td style="color:var(--text-muted);">${esc(FINANCEIRO._catLabel(m.categoria))}</td>
+              <td style="font-weight:700;">-${APP.formatMoney(m.valor)}</td>
+            </tr>`).join('')}</tbody>
+          </table>` : '<div style="padding:20px;text-align:center;color:var(--text-muted);">Nenhuma saida hoje</div>'}
+        </div>
+      </div>
+
+      <!-- COMPOSIÇÃO: MO + Peças (clicável → detalhes acima) -->
       <div style="margin-bottom:24px;">
         <div style="font-size:13px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Composicao do faturamento</div>
         <div style="display:grid;grid-template-columns:repeat(${_mob ? 2 : 4}, 1fr);gap:10px;">
-          <div style="background:var(--bg-card);border:1px solid var(--border);padding:14px 16px;border-radius:var(--radius);">
-            <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px;">Mao de Obra</div>
+          <div style="background:var(--bg-card);border:1px solid var(--border);padding:14px 16px;border-radius:var(--radius);cursor:pointer;" ${_toggle('drill-faturamento')}>
+            <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px;">Mao de Obra <span style="font-size:10px;">▼</span></div>
             <div style="font-size:20px;font-weight:700;">${APP.formatMoney(totalMO)}</div>
+            <div style="font-size:11px;color:var(--text-muted);">${osDia.length} OS</div>
           </div>
-          <div style="background:var(--bg-card);border:1px solid var(--border);padding:14px 16px;border-radius:var(--radius);">
-            <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px;">Pecas</div>
+          <div style="background:var(--bg-card);border:1px solid var(--border);padding:14px 16px;border-radius:var(--radius);cursor:pointer;" ${_toggle('drill-faturamento')}>
+            <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px;">Pecas <span style="font-size:10px;">▼</span></div>
             <div style="font-size:20px;font-weight:700;">${APP.formatMoney(totalPecas)}</div>
+            <div style="font-size:11px;color:var(--text-muted);">${itensPecaDia.length} itens</div>
           </div>
           ${totalDescontos > 0 ? `<div style="background:var(--bg-card);border:1px solid var(--border);padding:14px 16px;border-radius:var(--radius);">
             <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px;">Descontos</div>
@@ -190,7 +236,7 @@ const FINANCEIRO = {
       <!-- LUCRO PEÇAS -->
       ${vendaPecas > 0 ? `
       <div style="margin-bottom:24px;">
-        <div style="font-size:13px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Lucro em pecas</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;cursor:pointer;" ${_toggle('drill-pecas')}>Lucro em pecas <span style="font-size:10px;">▼</span></div>
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;">
           <div style="display:grid;grid-template-columns:repeat(${_mob ? 2 : 5}, 1fr);gap:12px;text-align:center;">
             <div>
@@ -214,6 +260,31 @@ const FINANCEIRO = {
               <div style="font-size:22px;font-weight:800;color:${lucroLiqPecas >= 0 ? 'var(--success)' : 'var(--danger)'};">${APP.formatMoney(lucroLiqPecas)}</div>
             </div>
           </div>
+          <!-- Drill pecas -->
+          <div ${_drill('drill-pecas')}>
+            <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">
+              <table style="width:100%;border-collapse:collapse;">
+                <thead><tr style="border-bottom:1px solid var(--border);">
+                  <th style="text-align:left;padding:6px 12px;font-size:11px;color:var(--text-muted);text-transform:uppercase;">Peca</th>
+                  <th style="text-align:center;padding:6px 8px;font-size:11px;color:var(--text-muted);">Qtd</th>
+                  <th style="text-align:right;padding:6px 12px;font-size:11px;color:var(--text-muted);">Custo</th>
+                  <th style="text-align:right;padding:6px 12px;font-size:11px;color:var(--text-muted);">Venda</th>
+                  <th style="text-align:right;padding:6px 12px;font-size:11px;color:var(--text-muted);">Lucro</th>
+                </tr></thead>
+                <tbody>${itensPecaDia.map(p => {
+                  const c = p.peca_id && p.pecas?.custo ? p.pecas.custo * (p.quantidade || 1) : 0;
+                  const l = (p.valor_total || 0) - c;
+                  return `<tr style="border-bottom:1px solid rgba(46,46,54,0.3);">
+                    <td style="padding:6px 12px;font-size:13px;">${esc(p.pecas?.nome || p.descricao || '-')}</td>
+                    <td style="text-align:center;padding:6px 8px;font-size:13px;">${p.quantidade || 1}</td>
+                    <td style="text-align:right;padding:6px 12px;font-size:13px;color:var(--text-muted);">${APP.formatMoney(c)}</td>
+                    <td style="text-align:right;padding:6px 12px;font-size:13px;">${APP.formatMoney(p.valor_total)}</td>
+                    <td style="text-align:right;padding:6px 12px;font-size:13px;font-weight:600;color:${c > 0 ? (l >= 0 ? 'var(--success)' : 'var(--danger)') : 'var(--text-muted)'};">${c > 0 ? APP.formatMoney(l) : 'sem custo'}</td>
+                  </tr>`;
+                }).join('')}</tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>` : ''}
 
@@ -227,6 +298,7 @@ const FINANCEIRO = {
             const pctTaxa = f === 'debito' ? (APP.oficina?.taxa_debito || 0) : f === 'credito' ? (APP.oficina?.taxa_credito || 0) : 0;
             const vlrTaxa = bruto * pctTaxa / 100;
             const liquido = bruto - vlrTaxa;
+            const osForma = osDia.filter(o => (o.forma_pagamento || 'outros') === f);
             return `
             <div style="background:var(--bg-card);border:1px solid var(--border);padding:14px 16px;border-radius:var(--radius);${bruto === 0 ? 'opacity:0.35;' : ''}">
               <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px;">${esc(formaLabel[f])}</div>
@@ -235,21 +307,28 @@ const FINANCEIRO = {
                 <div style="font-size:12px;color:var(--text-muted);margin-top:6px;">taxa -${APP.formatMoney(vlrTaxa)} (${pctTaxa}%)</div>
                 <div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-top:4px;padding-top:4px;border-top:1px solid var(--border);">Liq. ${APP.formatMoney(liquido)}</div>
               ` : ''}
+              <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">${osForma.length} OS</div>
             </div>`;
           }).join('')}
         </div>
       </div>
 
-      <!-- ALERTAS -->
-      ${totalFiado > 0 || totalCanceladas > 0 ? `
+      <!-- ALERTAS: Fiado + Faturado + Canceladas -->
+      ${totalFiadoPuro > 0 || totalFaturado > 0 || totalCanceladas > 0 ? `
       <div style="margin-bottom:24px;">
         <div style="font-size:13px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Atencao</div>
-        <div style="display:grid;grid-template-columns:repeat(${_mob ? 1 : 2}, 1fr);gap:10px;">
-          ${totalFiado > 0 ? `
+        <div style="display:grid;grid-template-columns:repeat(${_mob ? 1 : 3}, 1fr);gap:10px;">
+          ${totalFiadoPuro > 0 ? `
           <div style="background:var(--bg-card);border:1px solid var(--border);padding:14px 16px;border-radius:var(--radius);border-left:3px solid var(--danger);">
-            <div style="font-size:13px;color:var(--text-secondary);">Fiado (nao pago)</div>
-            <div style="font-size:20px;font-weight:800;">${APP.formatMoney(totalFiado)}</div>
-            <div style="font-size:12px;color:var(--text-muted);">${fiados.length} OS · ${fiados.map(f => esc(f.clientes?.nome || '?')).join(', ')}</div>
+            <div style="font-size:13px;color:var(--text-secondary);">Fiado (sem pagamento)</div>
+            <div style="font-size:20px;font-weight:800;">${APP.formatMoney(totalFiadoPuro)}</div>
+            <div style="font-size:12px;color:var(--text-muted);">${fiadosPuros.length} OS · ${fiadosPuros.map(f => esc(f.clientes?.nome || '?')).join(', ')}</div>
+          </div>` : ''}
+          ${totalFaturado > 0 ? `
+          <div style="background:var(--bg-card);border:1px solid var(--border);padding:14px 16px;border-radius:var(--radius);border-left:3px solid var(--primary);cursor:pointer;" onclick="FINANCEIRO._aba='receber';FINANCEIRO.carregar();">
+            <div style="font-size:13px;color:var(--text-secondary);">Faturado (prazo combinado) <span style="font-size:10px;">→ ver</span></div>
+            <div style="font-size:20px;font-weight:800;">${APP.formatMoney(totalFaturado)}</div>
+            <div style="font-size:12px;color:var(--text-muted);">${faturados.length} OS · ${faturados.map(f => esc(f.clientes?.nome || '?')).join(', ')}</div>
           </div>` : ''}
           ${totalCanceladas > 0 ? `
           <div style="background:var(--bg-card);border:1px solid var(--border);padding:14px 16px;border-radius:var(--radius);border-left:3px solid var(--text-muted);">
