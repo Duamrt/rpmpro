@@ -204,7 +204,7 @@ const FOLHA = {
       const [membrosRes, osRes, valesRes] = await Promise.all([
         db.from('profiles').select('id, nome, role, salario_base, comissao_percent, vale_refeicao')
           .eq('oficina_id', APP.oficinaId).eq('ativo', true)
-          .in('role', ['mecanico','aux_mecanico','gerente','atendente','aux_admin']).order('nome'),
+          .in('role', ['dono','mecanico','aux_mecanico','gerente','atendente','aux_admin']).order('nome'),
         db.from('ordens_servico').select('valor_total, mecanico_id')
           .eq('oficina_id', APP.oficinaId).eq('status', 'entregue')
           .gte('data_entrega', inicio).lte('data_entrega', fim),
@@ -224,9 +224,10 @@ const FOLHA = {
       const valePor = {};
       vales.forEach(v => { if (v.membro_id) valePor[v.membro_id] = (valePor[v.membro_id] || 0) + (v.valor || 0); });
 
-      const roleLabel = { mecanico: 'Mec.', aux_mecanico: 'Aux.', gerente: 'Ger.', atendente: 'Atend.', aux_admin: 'Adm.' };
+      const roleLabel = { dono: 'Pró-labore', mecanico: 'Mec.', aux_mecanico: 'Aux.', gerente: 'Ger.', atendente: 'Atend.', aux_admin: 'Adm.' };
       let totalLiq = 0;
 
+      let totalSal = 0, totalVR = 0, totalCom = 0, totalVale = 0;
       const rows = membros.map(m => {
         const sal = m.salario_base || 0;
         const vr = m.vale_refeicao || 0;
@@ -234,45 +235,54 @@ const FOLHA = {
         const com = fat * (m.comissao_percent || 0) / 100;
         const vale = valePor[m.id] || 0;
         const liq = sal + vr + com - vale;
-        totalLiq += liq;
+        totalLiq += liq; totalSal += sal; totalVR += vr; totalCom += com; totalVale += vale;
         return [
-          { text: m.nome + ' (' + (roleLabel[m.role] || m.role) + ')', fontSize: 9 },
+          { text: m.nome.toUpperCase(), fontSize: 9, bold: true },
+          { text: roleLabel[m.role] || m.role, fontSize: 8, color: '#888', alignment: 'center' },
           { text: fmt(sal), fontSize: 9, alignment: 'right' },
           { text: vr > 0 ? fmt(vr) : '-', fontSize: 9, alignment: 'right' },
-          { text: fmt(com), fontSize: 9, alignment: 'right', color: '#3fb950' },
-          { text: vale > 0 ? '-' + fmt(vale) : '-', fontSize: 9, alignment: 'right', color: '#f85149' },
+          { text: com > 0 ? fmt(com) : '-', fontSize: 9, alignment: 'right', color: '#16a34a' },
+          { text: vale > 0 ? fmt(vale) : '-', fontSize: 9, alignment: 'right', color: '#dc2626' },
           { text: fmt(liq), fontSize: 10, bold: true, alignment: 'right' }
         ];
       });
 
       const header = PDF_OS._montarHeader(oficina, 'FOLHA DE PAGAMENTO');
       const doc = {
-        pageSize: 'A4', pageMargins: [40, 30, 40, 50],
+        pageSize: 'A4', pageOrientation: 'landscape', pageMargins: [40, 30, 40, 50],
         content: [
           ...header.filter(h => h && (h.text || h.columns || h.canvas)),
           { text: `${meses[this._mes - 1]} ${this._ano}`, fontSize: 12, alignment: 'center', color: '#666', margin: [0, 0, 0, 16] },
           {
             table: {
               headerRows: 1,
-              widths: ['*', 60, 50, 60, 60, 70],
+              widths: ['*', 40, 80, 60, 70, 60, 90],
               body: [
-                ['Funcionario', 'Salario', 'VR', 'Comissao', 'Vales', 'Liquido'].map(t => ({ text: t, fontSize: 9, bold: true, color: '#666', fillColor: '#f5f5f5' })),
+                ['Funcionário', 'Cargo', 'Salário', 'VR', 'Comissão', 'Vales', 'Líquido'].map(t => ({ text: t, fontSize: 9, bold: true, color: '#444', fillColor: '#f0f0f0', alignment: t === 'Funcionário' || t === 'Cargo' ? 'left' : 'right' })),
                 ...rows,
                 [
-                  { text: 'TOTAL A PAGAR', bold: true, fontSize: 10, fillColor: '#f5f5f5' },
-                  { text: '', fillColor: '#f5f5f5' },
-                  { text: '', fillColor: '#f5f5f5' },
-                  { text: '', fillColor: '#f5f5f5' },
-                  { text: '', fillColor: '#f5f5f5' },
-                  { text: fmt(totalLiq), bold: true, fontSize: 12, alignment: 'right', fillColor: '#f5f5f5', color: '#D97706' }
+                  { text: 'TOTAL', bold: true, fontSize: 10, colSpan: 2, fillColor: '#f0f0f0' }, {},
+                  { text: fmt(totalSal), fontSize: 9, bold: true, alignment: 'right', fillColor: '#f0f0f0' },
+                  { text: fmt(totalVR), fontSize: 9, bold: true, alignment: 'right', fillColor: '#f0f0f0' },
+                  { text: fmt(totalCom), fontSize: 9, bold: true, alignment: 'right', fillColor: '#f0f0f0', color: '#16a34a' },
+                  { text: fmt(totalVale), fontSize: 9, bold: true, alignment: 'right', fillColor: '#f0f0f0', color: '#dc2626' },
+                  { text: fmt(totalLiq), bold: true, fontSize: 11, alignment: 'right', fillColor: '#f0f0f0', color: '#D97706' }
                 ]
               ]
             },
             layout: {
-              hLineWidth: (i, node) => (i <= 1 || i === node.table.body.length) ? 0.5 : 0.3,
-              vLineWidth: () => 0.3, hLineColor: () => '#ccc', vLineColor: () => '#eee',
-              paddingLeft: () => 6, paddingRight: () => 6, paddingTop: () => 4, paddingBottom: () => 4
+              hLineWidth: (i, node) => (i <= 1 || i === node.table.body.length) ? 0.8 : 0.3,
+              vLineWidth: () => 0.3, hLineColor: () => '#bbb', vLineColor: () => '#ddd',
+              paddingLeft: () => 8, paddingRight: () => 8, paddingTop: () => 6, paddingBottom: () => 6
             }
+          },
+          // Assinaturas
+          { text: '', margin: [0, 40, 0, 0] },
+          {
+            columns: [
+              { text: '________________________________\nResponsável', fontSize: 9, color: '#888', alignment: 'center' },
+              { text: '________________________________\nContador', fontSize: 9, color: '#888', alignment: 'center' },
+            ]
           }
         ],
         footer: PDF_OS._footer(),
