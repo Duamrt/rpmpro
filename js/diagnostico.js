@@ -214,9 +214,9 @@ const DIAGNOSTICO = {
               <button onclick="DIAGNOSTICO._abrirSetor('${key}','${escAttr(osId)}')"
                 style="padding:16px 12px;border-radius:var(--radius-lg);border:2px solid ${temDados ? 'var(--success)' : 'var(--border)'};
                 background:${temDados ? 'rgba(34,197,94,0.08)' : 'var(--bg-input)'};cursor:pointer;text-align:center;
-                display:flex;flex-direction:column;align-items:center;gap:6px;min-height:80px;justify-content:center;">
+                display:flex;flex-direction:column;align-items:center;gap:6px;min-height:80px;justify-content:center;color:#fff;">
                 <span style="font-size:24px;">${s.icone}</span>
-                <span style="font-size:12px;font-weight:700;color:#fff;">${esc(s.nome)}</span>
+                <span style="font-size:13px;font-weight:700;">${esc(s.nome)}</span>
                 ${temDados ? `<span style="font-size:10px;color:${qtdProblemas > 0 ? 'var(--danger)' : 'var(--success)'};">${qtdProblemas > 0 ? qtdProblemas + ' problema(s)' : 'OK'}</span>` : ''}
               </button>`;
           }).join('')}
