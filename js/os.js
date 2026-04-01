@@ -667,8 +667,8 @@ const OS = {
           </span>
           <select id="det-trocar-mec" onchange="OS._trocarMecanico('${os.id}',this.value)"
             style="background:transparent;border:none;color:var(--text);font-size:14px;font-weight:700;cursor:pointer;padding:0;font-family:inherit;flex:1;">
-            <option value="" ${!os.mecanico_id ? 'selected' : ''}>Selecionar...</option>
-            ${mecsList.map(m => `<option value="${m.id}" ${m.id === os.mecanico_id ? 'selected' : ''}>${esc(m.nome)}</option>`).join('')}
+            <option value="" ${!os.mecanico_id ? 'selected' : ''} style="background:#fff;color:#000;">Selecionar...</option>
+            ${mecsList.map(m => `<option value="${m.id}" ${m.id === os.mecanico_id ? 'selected' : ''} style="background:#fff;color:#000;">${esc(m.nome)}</option>`).join('')}
           </select>
         </div>
 
