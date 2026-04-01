@@ -20,6 +20,7 @@ const FINANCEIRO = {
         <button class="kanban-tab ${this._aba === 'caixa' ? 'active' : ''}" onclick="FINANCEIRO._aba='caixa';FINANCEIRO.carregar();" style="padding:10px 20px;font-size:14px;font-weight:700;">Caixa</button>
         <button class="kanban-tab ${this._aba === 'despesas' ? 'active' : ''}" onclick="FINANCEIRO._aba='despesas';FINANCEIRO.carregar();" style="padding:10px 20px;font-size:14px;font-weight:700;">Despesas Fixas</button>
         <button class="kanban-tab ${this._aba === 'pecas' ? 'active' : ''}" onclick="FINANCEIRO._aba='pecas';FINANCEIRO.carregar();" style="padding:10px 20px;font-size:14px;font-weight:700;">Lucro Pecas</button>
+        <button class="kanban-tab ${this._aba === 'receber' ? 'active' : ''}" onclick="FINANCEIRO._aba='receber';FINANCEIRO.carregar();" style="padding:10px 20px;font-size:14px;font-weight:700;">A Receber</button>
       </div>
       <div id="fin-conteudo"></div>
     `;
@@ -27,6 +28,7 @@ const FINANCEIRO = {
     if (this._aba === 'fechamento') await this._carregarFechamento();
     else if (this._aba === 'despesas') await this._carregarDespesas();
     else if (this._aba === 'pecas') await this._carregarLucroPecas();
+    else if (this._aba === 'receber') await this._carregarContasReceber();
     else await this._carregarCaixa();
   },
 
@@ -1197,6 +1199,195 @@ const FINANCEIRO = {
       } else { window.open(url, '_blank'); }
     });
     } catch(e) { APP.toast('Erro ao gerar PDF: ' + e.message, 'error'); console.error(e); }
+  },
+
+  // ==================== CONTAS A RECEBER ====================
+  async _carregarContasReceber() {
+    const el = document.getElementById('fin-conteudo');
+    const fmt = v => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    const { data: contas } = await db.from('contas_receber')
+      .select('*, clientes(nome, whatsapp), ordens_servico(numero, veiculos(placa, marca, modelo))')
+      .eq('oficina_id', APP.oficinaId)
+      .eq('pago', false)
+      .order('vencimento', { ascending: true });
+
+    const lista = contas || [];
+    const totalPendente = lista.reduce((s, c) => s + (c.valor || 0), 0);
+    const hoje = new Date().toISOString().split('T')[0];
+
+    // Agrupa por cliente
+    const porCliente = {};
+    lista.forEach(c => {
+      const cid = c.cliente_id;
+      if (!porCliente[cid]) porCliente[cid] = { nome: c.clientes?.nome || '-', whatsapp: c.clientes?.whatsapp || '', contas: [], total: 0 };
+      porCliente[cid].contas.push(c);
+      porCliente[cid].total += c.valor || 0;
+    });
+
+    const vencidas = lista.filter(c => c.vencimento < hoje).length;
+
+    el.innerHTML = `
+      <!-- KPIs -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px;">
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;text-align:center;">
+          <div style="font-size:12px;color:var(--text-secondary);">Total a Receber</div>
+          <div style="font-size:24px;font-weight:800;color:var(--warning);">${fmt(totalPendente)}</div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;text-align:center;">
+          <div style="font-size:12px;color:var(--text-secondary);">OS Faturadas</div>
+          <div style="font-size:24px;font-weight:800;">${lista.length}</div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;text-align:center;">
+          <div style="font-size:12px;color:var(--text-secondary);">Vencidas</div>
+          <div style="font-size:24px;font-weight:800;color:${vencidas ? 'var(--danger)' : 'var(--success)'};">${vencidas}</div>
+        </div>
+      </div>
+
+      ${Object.keys(porCliente).length === 0 ? '<div class="empty-state"><h3>Nenhuma conta a receber</h3><p>Quando entregar uma OS como "Faturado", ela aparece aqui.</p></div>' : ''}
+
+      ${Object.entries(porCliente).map(([cid, cli]) => `
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div>
+              <div style="font-weight:700;font-size:16px;">${esc(cli.nome)}</div>
+              <div style="font-size:12px;color:var(--text-secondary);">${cli.contas.length} OS faturada(s)</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:20px;font-weight:800;color:var(--warning);">${fmt(cli.total)}</div>
+              <button class="btn btn-success btn-sm" onclick="FINANCEIRO._receberPagamento('${cid}')">Receber pagamento</button>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            ${cli.contas.map(c => {
+              const vencida = c.vencimento < hoje;
+              const vencDt = new Date(c.vencimento + 'T12:00:00').toLocaleDateString('pt-BR');
+              const osNum = c.ordens_servico?.numero || '-';
+              const placa = c.ordens_servico?.veiculos?.placa || '';
+              const veiculo = [c.ordens_servico?.veiculos?.marca, c.ordens_servico?.veiculos?.modelo].filter(Boolean).join(' ');
+              return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:var(--radius);
+                background:${vencida ? 'rgba(239,68,68,0.06)' : 'var(--bg-input)'};border-left:3px solid ${vencida ? 'var(--danger)' : 'var(--border)'};">
+                <div>
+                  <span style="font-weight:600;">OS #${esc(osNum)}</span>
+                  <span style="color:var(--text-muted);margin-left:6px;">${esc(placa)} ${esc(veiculo)}</span>
+                </div>
+                <div style="text-align:right;">
+                  <span style="font-weight:700;">${fmt(c.valor)}</span>
+                  <span style="font-size:11px;margin-left:8px;color:${vencida ? 'var(--danger)' : 'var(--text-secondary)'};">${vencida ? 'Vencida ' : 'Vence '}${vencDt}</span>
+                </div>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>
+      `).join('')}
+    `;
+  },
+
+  async _receberPagamento(clienteId) {
+    // Busca contas pendentes do cliente
+    const { data: contas } = await db.from('contas_receber')
+      .select('*, ordens_servico(numero, valor_total)')
+      .eq('oficina_id', APP.oficinaId)
+      .eq('cliente_id', clienteId)
+      .eq('pago', false)
+      .order('vencimento');
+
+    if (!contas || !contas.length) { APP.toast('Nenhuma conta pendente', 'error'); return; }
+    const fmt = v => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const total = contas.reduce((s, c) => s + (c.valor || 0), 0);
+
+    openModal(`
+      <div class="modal-header">
+        <h3>Receber Pagamento</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size:14px;margin-bottom:16px;">Total pendente: <strong style="font-size:18px;color:var(--warning);">${fmt(total)}</strong></div>
+
+        <div style="margin-bottom:16px;">
+          <label style="font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:8px;display:block;">Selecione as OS para quitar:</label>
+          ${contas.map(c => `
+            <label style="display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid var(--border);cursor:pointer;">
+              <input type="checkbox" class="cr-check" data-id="${c.id}" data-valor="${c.valor}" checked
+                onchange="FINANCEIRO._atualizarTotalReceber()" style="width:20px;height:20px;accent-color:var(--success);">
+              <span style="flex:1;">OS #${c.ordens_servico?.numero || '-'}</span>
+              <span style="font-weight:700;">${fmt(c.valor)}</span>
+            </label>
+          `).join('')}
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--bg-input);border-radius:var(--radius);margin-bottom:16px;">
+          <span style="font-weight:700;">Total selecionado:</span>
+          <span id="cr-total-selecionado" style="font-size:18px;font-weight:800;color:var(--success);">${fmt(total)}</span>
+        </div>
+
+        <div class="form-group">
+          <label>Forma de pagamento</label>
+          <select class="form-control" id="cr-forma">
+            <option value="dinheiro">Dinheiro</option>
+            <option value="pix">Pix</option>
+            <option value="debito">Débito</option>
+            <option value="credito">Crédito</option>
+          </select>
+        </div>
+
+        <button class="btn btn-success" style="width:100%;padding:14px;font-size:15px;" onclick="FINANCEIRO._confirmarRecebimento('${clienteId}')">
+          Confirmar recebimento
+        </button>
+      </div>
+    `);
+  },
+
+  _atualizarTotalReceber() {
+    const checks = document.querySelectorAll('.cr-check:checked');
+    const total = Array.from(checks).reduce((s, c) => s + parseFloat(c.dataset.valor), 0);
+    const el = document.getElementById('cr-total-selecionado');
+    if (el) el.textContent = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  },
+
+  async _confirmarRecebimento(clienteId) {
+    const checks = document.querySelectorAll('.cr-check:checked');
+    if (!checks.length) { APP.toast('Selecione pelo menos uma OS', 'error'); return; }
+
+    const forma = document.getElementById('cr-forma').value;
+    const agora = new Date().toISOString();
+
+    for (const chk of checks) {
+      const contaId = chk.dataset.id;
+
+      // Marca como pago
+      await db.from('contas_receber').update({
+        pago: true,
+        data_pagamento: agora,
+        forma_pagamento: forma
+      }).eq('id', contaId);
+
+      // Busca a conta pra pegar os_id e valor
+      const { data: conta } = await db.from('contas_receber').select('os_id, valor').eq('id', contaId).single();
+      if (!conta) continue;
+
+      // Atualiza OS como paga
+      await db.from('ordens_servico').update({
+        pago: true,
+        forma_pagamento: forma
+      }).eq('id', conta.os_id);
+
+      // Lança no caixa
+      await db.from('caixa').insert({
+        oficina_id: APP.oficinaId,
+        os_id: conta.os_id,
+        tipo: 'entrada',
+        categoria: 'servico',
+        descricao: 'Recebimento faturado — OS',
+        valor: conta.valor,
+        forma_pagamento: forma,
+        created_by: APP.profile.id
+      });
+    }
+
+    closeModal();
+    APP.toast('Pagamento recebido!');
+    this.carregar();
   }
 };
 

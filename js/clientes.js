@@ -150,9 +150,20 @@ const CLIENTES = {
             <label>Email</label>
             <input type="email" class="form-control" id="cli-email" value="${esc(dados.email || '')}">
           </div>
-          <div class="form-group">
-            <label>Endereco</label>
-            <input type="text" class="form-control" id="cli-endereco" value="${esc(dados.endereco || '')}">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="form-group">
+              <label>Endereco</label>
+              <input type="text" class="form-control" id="cli-endereco" value="${esc(dados.endereco || '')}">
+            </div>
+            <div class="form-group">
+              <label>Prazo de pagamento</label>
+              <select class="form-control" id="cli-prazo">
+                <option value="avista" ${(dados.prazo_pagamento || 'avista') === 'avista' ? 'selected' : ''}>À vista</option>
+                <option value="7" ${dados.prazo_pagamento === '7' ? 'selected' : ''}>7 dias</option>
+                <option value="15" ${dados.prazo_pagamento === '15' ? 'selected' : ''}>15 dias</option>
+                <option value="30" ${dados.prazo_pagamento === '30' ? 'selected' : ''}>30 dias</option>
+              </select>
+            </div>
           </div>
 
           <!-- VEICULOS -->
@@ -294,6 +305,7 @@ const CLIENTES = {
       cpf_cnpj: document.getElementById('cli-cpf').value.trim(),
       email: document.getElementById('cli-email').value.trim(),
       endereco: document.getElementById('cli-endereco').value.trim(),
+      prazo_pagamento: document.getElementById('cli-prazo').value,
       observacoes: document.getElementById('cli-obs').value.trim()
     };
 

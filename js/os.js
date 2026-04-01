@@ -2081,8 +2081,9 @@ const OS = {
           <button class="btn btn-success" style="padding:16px;font-size:15px;" onclick="OS._escolherMaquininha('${osId}','debito')">Debito</button>
           <button class="btn btn-success" style="padding:16px;font-size:15px;" onclick="OS._escolherMaquininha('${osId}','credito')">Credito</button>
         </div>
-        <div style="margin-top:12px;">
-          <button class="btn btn-danger" style="width:100%;padding:14px;font-size:14px;" onclick="OS._entregarComPagamento('${osId}','fiado')">Fiado (nao pagou)</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+          <button class="btn btn-secondary" style="padding:14px;font-size:14px;" onclick="OS._entregarFaturado('${osId}')">📋 Faturado</button>
+          <button class="btn btn-danger" style="padding:14px;font-size:14px;" onclick="OS._entregarComPagamento('${osId}','fiado')">Fiado (nao pagou)</button>
         </div>
       </div>
     `);
@@ -2161,6 +2162,48 @@ const OS = {
 
     APP.toast('Veículo entregue');
     closeModal();
+    if (typeof KANBAN !== 'undefined') KANBAN.carregar();
+  },
+
+  async _entregarFaturado(osId) {
+    // Busca dados da OS e prazo do cliente
+    const { data: os } = await db.from('ordens_servico')
+      .select('valor_total, cliente_id, clientes(nome, prazo_pagamento)')
+      .eq('id', osId).single();
+    if (!os) return;
+
+    const prazo = parseInt(os.clientes?.prazo_pagamento) || 7;
+    const vencimento = new Date();
+    vencimento.setDate(vencimento.getDate() + prazo);
+    const vencStr = vencimento.toISOString().split('T')[0];
+
+    // Atualiza OS como faturado
+    await db.from('ordens_servico').update({
+      forma_pagamento: 'faturado',
+      pago: false,
+      status: 'entregue',
+      data_entrega: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }).eq('id', osId);
+
+    // Cria conta a receber
+    await db.from('contas_receber').insert({
+      oficina_id: APP.oficinaId,
+      cliente_id: os.cliente_id,
+      os_id: osId,
+      valor: os.valor_total,
+      vencimento: vencStr
+    });
+
+    closeModal();
+
+    // WhatsApp
+    const { data: osWpp } = await db.from('ordens_servico')
+      .select('id, status, clientes(nome, whatsapp), veiculos(placa)')
+      .eq('id', osId).single();
+    if (osWpp) KANBAN._enviarWhatsAuto(osWpp, 'entregue');
+
+    APP.toast(`Faturado! Vencimento: ${vencimento.toLocaleDateString('pt-BR')}`);
     if (typeof KANBAN !== 'undefined') KANBAN.carregar();
   },
 
