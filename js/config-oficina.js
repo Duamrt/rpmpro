@@ -145,14 +145,19 @@ const CONFIG = {
             <div class="loading" style="font-size:13px;">Carregando equipe...</div>
           </div>
 
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
             <div class="form-group">
               <label>Custos fixos mensais (R$)</label>
               <input type="number" class="form-control" id="calc-fixos" value="0" min="0" step="100" oninput="CONFIG._calcularCusto()">
               <span style="font-size:11px;color:var(--text-secondary);">Aluguel, luz, agua, internet...</span>
             </div>
             <div class="form-group">
-              <label>Margem de lucro desejada (%)</label>
+              <label>Ocupacao real (%)</label>
+              <input type="number" class="form-control" id="calc-ocupacao" value="65" min="10" max="100" step="5" oninput="CONFIG._calcularCusto()">
+              <span style="font-size:11px;color:var(--text-secondary);">Quanto do tempo o mecanico ta faturando (60-70% e normal)</span>
+            </div>
+            <div class="form-group">
+              <label>Margem de lucro (%)</label>
               <input type="number" class="form-control" id="calc-margem" value="30" min="0" max="200" step="5" oninput="CONFIG._calcularCusto()">
               <span style="font-size:11px;color:var(--text-secondary);">Quanto quer ganhar acima do custo</span>
             </div>
@@ -484,7 +489,7 @@ const CONFIG = {
     if (!el) return;
 
     const { data: membros } = await db.from('profiles')
-      .select('id, nome, role, salario_base, comissao_percent')
+      .select('id, nome, role, salario_base, comissao_percent, vale_refeicao')
       .eq('oficina_id', APP.oficinaId)
       .eq('ativo', true)
       .in('role', ['mecanico', 'aux_mecanico', 'gerente', 'atendente', 'aux_admin'])
@@ -519,12 +524,14 @@ const CONFIG = {
   },
 
   _calcularCusto() {
-    // Soma salários dos inputs da equipe
+    // Soma salários + VR dos inputs da equipe
     let salarios = 0;
+    let valeRefeicao = 0;
     let qtdMecanicos = 0;
     document.querySelectorAll('.calc-salario-membro').forEach((input, i) => {
       salarios += parseFloat(input.value) || 0;
       const m = this._calcEquipe[i];
+      if (m) valeRefeicao += m.vale_refeicao || 0;
       if (m && ['mecanico', 'aux_mecanico'].includes(m.role)) qtdMecanicos++;
     });
     if (qtdMecanicos < 1) qtdMecanicos = 1;
@@ -544,14 +551,20 @@ const CONFIG = {
       }
     });
     const horasDia = diasSemana > 0 ? horasDiaTotais / diasSemana : 8;
-    const diasMes = Math.round(diasSemana * 4.33); // semanas por mês
+    const diasMes = Math.round(diasSemana * 4.33);
 
     const fixos = parseFloat(document.getElementById('calc-fixos')?.value) || 0;
     const margemDesejada = parseFloat(document.getElementById('calc-margem')?.value) || 30;
+    const ocupacao = parseFloat(document.getElementById('calc-ocupacao')?.value) || 65;
 
-    const custoTotal = salarios + fixos;
-    const horasTotais = qtdMecanicos * horasDia * diasMes;
-    const custoHora = horasTotais > 0 ? custoTotal / horasTotais : 0;
+    // Custo total mensal = salários + VR + custos fixos
+    const custoTotal = salarios + valeRefeicao + fixos;
+
+    // Horas FATURÁVEIS = mecânicos × horas × dias × taxa de ocupação
+    const horasBrutas = qtdMecanicos * horasDia * diasMes;
+    const horasFaturaveis = horasBrutas * (ocupacao / 100);
+
+    const custoHora = horasFaturaveis > 0 ? custoTotal / horasFaturaveis : 0;
     const sugerido = custoHora * (1 + margemDesejada / 100);
     const lucroHora = sugerido - custoHora;
     const valorAtual = APP.oficina?.valor_hora || 0;
@@ -579,19 +592,18 @@ const CONFIG = {
           </div>
         </div>
 
-        <div style="font-size:13px;color:var(--text-secondary);text-align:center;margin-bottom:12px;">
-          ${qtdMecanicos} mecanico${qtdMecanicos > 1 ? 's' : ''} · ${horasDia.toFixed(1)}h/dia · ${diasMes} dias/mes · ${horasTotais}h produtivas/mes
-          <br>Salarios: R$ ${salarios.toFixed(0)} + Fixos: R$ ${fixos.toFixed(0)} = <strong>R$ ${custoTotal.toFixed(0)}/mes</strong>
+        <div style="font-size:12px;color:var(--text-secondary);text-align:center;margin-bottom:12px;line-height:1.8;">
+          ${qtdMecanicos} mecanico${qtdMecanicos > 1 ? 's' : ''} · ${horasDia.toFixed(1)}h/dia · ${diasMes} dias/mes<br>
+          ${horasBrutas.toFixed(0)}h totais × ${ocupacao}% ocupacao = <strong>${horasFaturaveis.toFixed(0)}h faturaveis</strong><br>
+          Salarios: R$ ${salarios.toFixed(0)} + VR: R$ ${valeRefeicao.toFixed(0)} + Fixos: R$ ${fixos.toFixed(0)} = <strong>R$ ${custoTotal.toFixed(0)}/mes</strong>
         </div>
 
-        ${valorAtual > 0 && Math.abs(valorAtual - sugerido) > 5 ? `
+        ${valorAtual > 0 ? `
           <div style="text-align:center;padding:10px;background:var(--bg-card);border-radius:var(--radius);margin-bottom:12px;font-size:13px;">
             Hoje voce cobra <strong style="color:var(--primary);">R$ ${valorAtual.toFixed(2)}/h</strong>
             ${valorAtual < custoHora
               ? '<span style="color:var(--danger);font-weight:700;"> — PREJUIZO! Voce perde R$ ' + (custoHora - valorAtual).toFixed(2) + ' por hora</span>'
-              : valorAtual < sugerido
-                ? ' — da lucro, mas abaixo do sugerido'
-                : ' — acima do sugerido, otimo!'
+              : `<span style="color:var(--success);font-weight:700;"> — Lucro de R$ ${(valorAtual - custoHora).toFixed(2)}/h (${((valorAtual / custoHora - 1) * 100).toFixed(0)}% margem)</span>`
             }
           </div>
         ` : ''}
