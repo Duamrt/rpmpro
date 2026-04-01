@@ -1670,6 +1670,12 @@ const OS = {
     if (diag.observacoes) {
       html += `<div style="font-size:11px;color:var(--text-secondary);font-style:italic;margin-top:4px;">Obs: ${esc(diag.observacoes)}</div>`;
     }
+
+    // Botão PDF direto no resumo
+    html += `<button class="btn btn-secondary btn-sm" style="margin-top:8px;width:100%;" onclick="DIAGNOSTICO._gerarPDF('${escAttr(osId)}')">
+      🖨️ Imprimir diagnóstico
+    </button>`;
+
     return html;
   },
 
