@@ -795,9 +795,12 @@ const OS = {
             <label style="font-size:13px;font-weight:700;color:var(--text-secondary);margin:0;">
               ${diag ? '✅' : '🔍'} DIAGNÓSTICO TÉCNICO
             </label>
-            <button class="btn ${diag ? 'btn-secondary' : 'btn-primary'} btn-sm" onclick="DIAGNOSTICO.abrir('${os.id}')">
-              ${diag ? 'Ver / Editar' : 'Iniciar diagnóstico'}
-            </button>
+            <div style="display:flex;gap:6px;">
+              ${diag ? `<button class="btn btn-secondary btn-sm" onclick="DIAGNOSTICO._gerarPDF('${os.id}')">🖨️ PDF</button>` : ''}
+              <button class="btn ${diag ? 'btn-secondary' : 'btn-primary'} btn-sm" onclick="DIAGNOSTICO.abrir('${os.id}')">
+                ${diag ? 'Ver / Editar' : 'Iniciar diagnóstico'}
+              </button>
+            </div>
           </div>
           ${diag ? this._resumoDiagnostico(diag, os.id) : '<div style="font-size:12px;color:var(--text-muted);">Vistoria + inspeção mecânica por setor</div>'}
         </div>
@@ -1670,11 +1673,6 @@ const OS = {
     if (diag.observacoes) {
       html += `<div style="font-size:11px;color:var(--text-secondary);font-style:italic;margin-top:4px;">Obs: ${esc(diag.observacoes)}</div>`;
     }
-
-    // Botão PDF direto no resumo
-    html += `<button class="btn btn-secondary btn-sm" style="margin-top:8px;width:100%;" onclick="DIAGNOSTICO._gerarPDF('${escAttr(osId)}')">
-      🖨️ Imprimir diagnóstico
-    </button>`;
 
     return html;
   },
