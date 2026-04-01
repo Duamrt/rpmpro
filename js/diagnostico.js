@@ -5,21 +5,7 @@ const DIAGNOSTICO = {
     'vistoria': {
       nome: 'Vistoria do Veículo',
       icone: '🚗',
-      itens: [
-        'Amassados e riscos na lataria',
-        'Vidros e retrovisores',
-        'Pintura (descascando, oxidação)',
-        'Pneus e rodas (desgaste, calibragem)',
-        'Faróis e lanternas',
-        'Nível de combustível',
-        'Pertences do cliente no veículo',
-        'Travas e vidros elétricos',
-        'Luzes acesas no painel',
-        'Ar condicionado',
-        'Sintoma relatado pelo cliente',
-        'Sintoma confirmado pelo mecânico',
-        'Quilometragem conferida',
-      ]
+      especial: true
     },
     'injecao': {
       nome: 'Injeção Eletrônica',
@@ -228,7 +214,9 @@ const DIAGNOSTICO = {
           ${setoresKeys.map(key => {
             const s = this._setores[key];
             const temDados = dados[key] && Object.keys(dados[key]).length > 0;
-            const qtdProblemas = temDados ? Object.values(dados[key]).filter(v => v.problema).length : 0;
+            const isVistoria = s.especial;
+            const vistoriaObs = isVistoria && dados[key]?._obs;
+            const qtdProblemas = temDados && !isVistoria ? Object.values(dados[key]).filter(v => v.problema).length : 0;
             return `
               <button onclick="DIAGNOSTICO._abrirSetor('${key}','${escAttr(osId)}')"
                 style="padding:16px 12px;border-radius:var(--radius-lg);border:2px solid ${temDados ? 'var(--success)' : 'var(--border)'};
@@ -236,7 +224,7 @@ const DIAGNOSTICO = {
                 display:flex;flex-direction:column;align-items:center;gap:6px;min-height:80px;justify-content:center;color:#fff;">
                 <span style="font-size:24px;">${s.icone}</span>
                 <span style="font-size:13px;font-weight:700;">${esc(s.nome)}</span>
-                ${temDados ? `<span style="font-size:10px;color:${qtdProblemas > 0 ? 'var(--danger)' : 'var(--success)'};">${qtdProblemas > 0 ? qtdProblemas + ' problema(s)' : 'OK'}</span>` : ''}
+                ${temDados ? `<span style="font-size:10px;color:${qtdProblemas > 0 ? 'var(--danger)' : vistoriaObs ? 'var(--warning)' : 'var(--success)'};">${isVistoria ? (vistoriaObs ? 'Com observação' : 'Conferido') : (qtdProblemas > 0 ? qtdProblemas + ' problema(s)' : 'OK')}</span>` : ''}
               </button>`;
           }).join('')}
         </div>
@@ -278,6 +266,12 @@ const DIAGNOSTICO = {
     if (!setor) return;
     const dados = this._dados[setorKey] || {};
 
+    // Vistoria = tela especial (check rápido + observação)
+    if (setor.especial) {
+      this._abrirVistoria(setorKey, osId, dados);
+      return;
+    }
+
     openModal(`
       <div class="modal-header">
         <h3>${setor.icone} ${esc(setor.nome)}</h3>
@@ -311,6 +305,80 @@ const DIAGNOSTICO = {
         </div>
       </div>
     `);
+  },
+
+  // Vistoria rápida: check + observação
+  _abrirVistoria(setorKey, osId, dados) {
+    const conferido = dados._conferido || false;
+    const obs = dados._obs || '';
+    this._vistoriaChecked = conferido;
+
+    openModal(`
+      <div class="modal-header">
+        <h3>🚗 Vistoria do Veículo</h3>
+        <button class="modal-close" onclick="DIAGNOSTICO.abrir('${escAttr(osId)}')">&times;</button>
+      </div>
+      <div class="modal-body" style="padding:16px;">
+        <div style="text-align:center;margin-bottom:20px;">
+          <div style="font-size:14px;color:var(--text-secondary);margin-bottom:16px;">
+            Confira o estado geral do veículo na entrada
+          </div>
+          <button id="vistoria-check-btn" onclick="DIAGNOSTICO._toggleVistoriaCheck()"
+            style="width:100%;padding:20px;border-radius:var(--radius-lg);border:2px solid ${conferido ? 'var(--success)' : 'var(--border)'};
+            background:${conferido ? 'rgba(34,197,94,0.1)' : 'var(--bg-input)'};cursor:pointer;
+            font-size:16px;font-weight:700;color:${conferido ? 'var(--success)' : '#fff'};
+            display:flex;align-items:center;justify-content:center;gap:10px;">
+            <span style="font-size:28px;">${conferido ? '✅' : '⬜'}</span>
+            ${conferido ? 'Veículo conferido' : 'Marcar como conferido'}
+          </button>
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <label style="font-size:13px;font-weight:600;margin-bottom:6px;display:block;">
+            Notou algo? Descreva aqui
+          </label>
+          <textarea class="form-control" id="vistoria-obs" rows="4"
+            placeholder="Ex: Risco na porta traseira esquerda, pneu dianteiro careca, cliente deixou documentos no porta-luvas..."
+            style="font-size:14px;padding:12px;">${esc(obs)}</textarea>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
+            Só preencha se tiver algo pra registrar. Se tá tudo OK, só marque como conferido.
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-secondary" style="flex:1;" onclick="DIAGNOSTICO.abrir('${escAttr(osId)}')">Voltar</button>
+          <button class="btn btn-primary" style="flex:1;" onclick="DIAGNOSTICO._salvarVistoria('${escAttr(setorKey)}','${escAttr(osId)}')">Confirmar</button>
+        </div>
+      </div>
+    `);
+  },
+
+  _vistoriaChecked: false,
+
+  _toggleVistoriaCheck() {
+    this._vistoriaChecked = !this._vistoriaChecked;
+    const btn = document.getElementById('vistoria-check-btn');
+    if (btn) {
+      const c = this._vistoriaChecked;
+      btn.style.borderColor = c ? 'var(--success)' : 'var(--border)';
+      btn.style.background = c ? 'rgba(34,197,94,0.1)' : 'var(--bg-input)';
+      btn.style.color = c ? 'var(--success)' : '#fff';
+      btn.innerHTML = `<span style="font-size:28px;">${c ? '✅' : '⬜'}</span> ${c ? 'Veículo conferido' : 'Marcar como conferido'}`;
+    }
+  },
+
+  _salvarVistoria(setorKey, osId) {
+    const btn = document.getElementById('vistoria-check-btn');
+    const conferido = this._vistoriaChecked || (btn && btn.style.borderColor.includes('success'));
+    const obs = document.getElementById('vistoria-obs')?.value?.trim() || '';
+
+    if (!conferido && !obs) {
+      APP.toast('Marque como conferido ou descreva o que notou', 'error');
+      return;
+    }
+
+    this._dados[setorKey] = { _conferido: true, _obs: obs, _ok: !obs };
+    this.abrir(osId);
   },
 
   _toggleItem(chk) {
