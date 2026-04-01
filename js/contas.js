@@ -179,14 +179,15 @@ const CONTAS = {
 
   _renderLista(lista, hoje, catLabel) {
     const isMobile = window.innerWidth <= 768;
-    if (!lista.length) return `<div class="empty-state"><div class="icon">💳</div><h3>Nenhuma conta encontrada</h3><p>Use os botoes acima para registrar contas a pagar ou receber</p></div>`;
 
-    // Filtros da lista
+    // Filtros SEMPRE visíveis
     const filtros = `<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
       ${[['pagar','A pagar'],['receber','A receber'],['vencidas','Vencidas'],['pagas','Pagas'],['todas','Todas']].map(([f, label]) =>
         `<button class="btn ${this._filtro === f ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="CONTAS._filtro='${f}';CONTAS.carregar();">${label}</button>`
       ).join('')}
     </div>`;
+
+    if (!lista.length) return filtros + `<div class="empty-state"><div class="icon">💳</div><h3>Nenhuma conta encontrada</h3><p>Use os botoes acima para registrar ou troque o filtro</p></div>`;
 
     if (isMobile) {
       return filtros + `<div class="mobile-card-list">${lista.map(c => {
