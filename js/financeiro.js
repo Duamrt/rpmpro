@@ -6,6 +6,8 @@ const FINANCEIRO = {
   _despAno: new Date().getFullYear(),
   _caixaMes: new Date().getMonth(),
   _caixaAno: new Date().getFullYear(),
+  _pecasMes: new Date().getMonth(),
+  _pecasAno: new Date().getFullYear(),
 
   async carregar() {
     const container = document.getElementById('financeiro-content');
@@ -17,12 +19,14 @@ const FINANCEIRO = {
         <button class="kanban-tab ${this._aba === 'fechamento' ? 'active' : ''}" onclick="FINANCEIRO._aba='fechamento';FINANCEIRO.carregar();" style="padding:10px 20px;font-size:14px;font-weight:700;">Fechamento do Dia</button>
         <button class="kanban-tab ${this._aba === 'caixa' ? 'active' : ''}" onclick="FINANCEIRO._aba='caixa';FINANCEIRO.carregar();" style="padding:10px 20px;font-size:14px;font-weight:700;">Caixa</button>
         <button class="kanban-tab ${this._aba === 'despesas' ? 'active' : ''}" onclick="FINANCEIRO._aba='despesas';FINANCEIRO.carregar();" style="padding:10px 20px;font-size:14px;font-weight:700;">Despesas Fixas</button>
+        <button class="kanban-tab ${this._aba === 'pecas' ? 'active' : ''}" onclick="FINANCEIRO._aba='pecas';FINANCEIRO.carregar();" style="padding:10px 20px;font-size:14px;font-weight:700;">Lucro Pecas</button>
       </div>
       <div id="fin-conteudo"></div>
     `;
 
     if (this._aba === 'fechamento') await this._carregarFechamento();
     else if (this._aba === 'despesas') await this._carregarDespesas();
+    else if (this._aba === 'pecas') await this._carregarLucroPecas();
     else await this._carregarCaixa();
   },
 
@@ -32,7 +36,7 @@ const FINANCEIRO = {
     const oficina_id = APP.oficinaId;
     const hoje = new Date().toISOString().split('T')[0];
 
-    // Busca OS entregues hoje + caixa saidas hoje
+    // Busca OS entregues hoje + caixa saidas hoje + itens peças
     const [osRes, caixaRes] = await Promise.all([
       db.from('ordens_servico')
         .select('id, numero, valor_total, valor_mao_obra, valor_pecas, forma_pagamento, taxa_cartao, data_entrega, veiculos(placa), clientes(nome)')
@@ -51,6 +55,17 @@ const FINANCEIRO = {
     const osDia = osRes.data || [];
     const movDia = caixaRes.data || [];
 
+    // Busca itens de peça das OS do dia (pra calcular custo)
+    const osIds = osDia.map(o => o.id);
+    let itensPecaDia = [];
+    if (osIds.length) {
+      const { data } = await db.from('itens_os')
+        .select('os_id, descricao, quantidade, valor_unitario, valor_total, peca_id, pecas(nome, preco_custo)')
+        .in('os_id', osIds)
+        .eq('tipo', 'peca');
+      itensPecaDia = data || [];
+    }
+
     // Calculos
     const faturamentoBruto = osDia.reduce((s, o) => s + (o.valor_total || 0), 0);
     const totalMO = osDia.reduce((s, o) => s + (o.valor_mao_obra || 0), 0);
@@ -62,6 +77,23 @@ const FINANCEIRO = {
     const saidasCaixa = movDia.filter(m => m.tipo === 'saida').reduce((s, m) => s + (m.valor || 0), 0);
     const entradasCaixa = movDia.filter(m => m.tipo === 'entrada' && !m.os_id).reduce((s, m) => s + (m.valor || 0), 0);
     const lucroLiquido = faturamentoBruto + entradasCaixa - totalTaxas - saidasCaixa;
+
+    // Lucro peças: vendeu - custou
+    let custoPecas = 0;
+    let vendaPecas = 0;
+    itensPecaDia.forEach(item => {
+      vendaPecas += item.valor_total || 0;
+      if (item.peca_id && item.pecas?.preco_custo) {
+        custoPecas += item.pecas.preco_custo * (item.quantidade || 1);
+      } else {
+        // Peça avulsa: sem custo cadastrado, estima 0
+        custoPecas += 0;
+      }
+    });
+    const lucroBrutoPecas = vendaPecas - custoPecas;
+    // Taxa maquineta proporcional sobre peças
+    const taxaPropPecas = faturamentoBruto > 0 ? totalTaxas * (vendaPecas / faturamentoBruto) : 0;
+    const lucroLiqPecas = lucroBrutoPecas - taxaPropPecas;
 
     // Por forma de pagamento
     const porForma = {};
@@ -120,6 +152,34 @@ const FINANCEIRO = {
           </div>
         </div>
       </div>
+
+      <!-- Lucro Peças -->
+      ${vendaPecas > 0 ? `
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:20px;">
+        <h3 style="font-size:14px;margin-bottom:12px;color:var(--text-secondary);">Lucro em Pecas</h3>
+        <div style="display:grid;grid-template-columns:repeat(${_mob ? 2 : 5}, 1fr);gap:12px;text-align:center;">
+          <div>
+            <div style="font-size:11px;color:var(--text-secondary);">Vendeu por</div>
+            <div style="font-size:16px;font-weight:700;color:var(--success);">${APP.formatMoney(vendaPecas)}</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text-secondary);">Custou</div>
+            <div style="font-size:16px;font-weight:700;color:var(--danger);">${APP.formatMoney(custoPecas)}</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text-secondary);">Lucro bruto</div>
+            <div style="font-size:16px;font-weight:700;color:${lucroBrutoPecas >= 0 ? 'var(--success)' : 'var(--danger)'};">${APP.formatMoney(lucroBrutoPecas)}</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text-secondary);">Taxa cartao</div>
+            <div style="font-size:16px;font-weight:700;color:var(--danger);">-${APP.formatMoney(taxaPropPecas)}</div>
+          </div>
+          <div style="${_mob ? 'grid-column:span 2;' : ''}border-left:${_mob ? 'none' : '2px solid var(--border)'};padding-left:${_mob ? '0' : '12px'};">
+            <div style="font-size:11px;color:var(--text-secondary);">Lucro liquido pecas</div>
+            <div style="font-size:20px;font-weight:800;color:${lucroLiqPecas >= 0 ? 'var(--success)' : 'var(--danger)'};">${APP.formatMoney(lucroLiqPecas)}</div>
+          </div>
+        </div>
+      </div>` : ''}
 
       <!-- Por forma de pagamento -->
       <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:20px;">
@@ -657,6 +717,145 @@ const FINANCEIRO = {
     closeModal();
     APP.toast('Despesa registrada');
     this.carregar();
+  },
+
+  _pecasNavegar(delta) {
+    this._pecasMes += delta;
+    if (this._pecasMes > 11) { this._pecasMes = 0; this._pecasAno++; }
+    if (this._pecasMes < 0) { this._pecasMes = 11; this._pecasAno--; }
+    this.carregar();
+  },
+
+  // ==================== LUCRO PECAS ====================
+  async _carregarLucroPecas() {
+    const el = document.getElementById('fin-conteudo');
+    const oficina_id = APP.oficinaId;
+    const inicio = new Date(this._pecasAno, this._pecasMes, 1).toISOString().split('T')[0];
+    const fim = new Date(this._pecasAno, this._pecasMes + 1, 0).toISOString().split('T')[0];
+    const nomeMes = new Date(this._pecasAno, this._pecasMes).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+
+    // OS entregues no mês
+    const { data: osMes } = await db.from('ordens_servico')
+      .select('id, valor_total, valor_pecas, forma_pagamento, taxa_cartao')
+      .eq('oficina_id', oficina_id)
+      .eq('status', 'entregue')
+      .gte('data_entrega', inicio)
+      .lte('data_entrega', fim);
+
+    const ordens = osMes || [];
+    const osIds = ordens.map(o => o.id);
+
+    // Itens de peça
+    let itensPeca = [];
+    if (osIds.length) {
+      const { data } = await db.from('itens_os')
+        .select('os_id, descricao, quantidade, valor_unitario, valor_total, peca_id, pecas(nome, preco_custo)')
+        .in('os_id', osIds)
+        .eq('tipo', 'peca');
+      itensPeca = data || [];
+    }
+
+    // Totais
+    let totalVenda = 0, totalCusto = 0;
+    const faturamentoTotal = ordens.reduce((s, o) => s + (o.valor_total || 0), 0);
+    const totalTaxasMes = ordens.reduce((s, o) => s + ((o.valor_total || 0) * (o.taxa_cartao || 0) / 100), 0);
+
+    // Ranking por peça
+    const ranking = {};
+    itensPeca.forEach(item => {
+      const nome = item.pecas?.nome || item.descricao || 'Sem nome';
+      const venda = item.valor_total || 0;
+      const custo = item.peca_id && item.pecas?.preco_custo ? item.pecas.preco_custo * (item.quantidade || 1) : 0;
+      totalVenda += venda;
+      totalCusto += custo;
+
+      if (!ranking[nome]) ranking[nome] = { qtd: 0, venda: 0, custo: 0 };
+      ranking[nome].qtd += item.quantidade || 1;
+      ranking[nome].venda += venda;
+      ranking[nome].custo += custo;
+    });
+
+    const lucroBruto = totalVenda - totalCusto;
+    const taxaProp = faturamentoTotal > 0 ? totalTaxasMes * (totalVenda / faturamentoTotal) : 0;
+    const lucroLiq = lucroBruto - taxaProp;
+    const margem = totalVenda > 0 ? (lucroBruto / totalVenda * 100) : 0;
+
+    // Ranking ordenado por lucro
+    const rankList = Object.entries(ranking)
+      .map(([nome, d]) => ({ nome, ...d, lucro: d.venda - d.custo }))
+      .sort((a, b) => b.lucro - a.lucro);
+
+    const _mob = window.innerWidth <= 768;
+
+    el.innerHTML = `
+      <!-- Navegação mês -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+        <button class="btn btn-secondary btn-sm" onclick="FINANCEIRO._pecasNavegar(-1)" style="padding:6px 12px;font-size:16px;">&lt;</button>
+        <div style="font-size:18px;font-weight:700;text-transform:capitalize;">${nomeMes}</div>
+        <button class="btn btn-secondary btn-sm" onclick="FINANCEIRO._pecasNavegar(1)" style="padding:6px 12px;font-size:16px;">&gt;</button>
+        <span style="font-size:13px;color:var(--text-secondary);margin-left:8px;">${itensPeca.length} pecas vendidas</span>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-grid" style="margin-bottom:20px;">
+        <div class="kpi-card">
+          <div class="label">Vendeu por</div>
+          <div class="value success">${APP.formatMoney(totalVenda)}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="label">Custou</div>
+          <div class="value" style="color:var(--danger);">${APP.formatMoney(totalCusto)}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="label">Lucro bruto</div>
+          <div class="value" style="color:${lucroBruto >= 0 ? 'var(--success)' : 'var(--danger)'};">${APP.formatMoney(lucroBruto)}</div>
+          <div style="font-size:11px;color:var(--text-muted);">Margem ${margem.toFixed(1)}%</div>
+        </div>
+        <div class="kpi-card">
+          <div class="label">Lucro liquido</div>
+          <div class="value" style="color:var(--warning);font-size:22px;">${APP.formatMoney(lucroLiq)}</div>
+          <div style="font-size:11px;color:var(--text-muted);">-${APP.formatMoney(taxaProp)} taxas</div>
+        </div>
+      </div>
+
+      <!-- Ranking -->
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;">
+        <div style="padding:14px 20px;border-bottom:1px solid var(--border);">
+          <h3 style="font-size:14px;">Pecas mais vendidas</h3>
+        </div>
+        ${rankList.length ? (_mob ? `
+        <div class="mobile-card-list" style="padding:10px;">
+          ${rankList.slice(0, 20).map((p, i) => `
+            <div class="mobile-card">
+              <div class="mobile-card-header">
+                <div>
+                  <div class="mobile-card-title">${i + 1}. ${esc(p.nome)}</div>
+                  <div class="mobile-card-subtitle">${p.qtd}x · Custo ${APP.formatMoney(p.custo)} · Vendeu ${APP.formatMoney(p.venda)}</div>
+                </div>
+                <span style="font-weight:700;color:${p.lucro >= 0 ? 'var(--success)' : 'var(--danger)'};">+${APP.formatMoney(p.lucro)}</span>
+              </div>
+            </div>
+          `).join('')}
+        </div>` : `
+        <table class="data-table">
+          <thead>
+            <tr><th>#</th><th>Peca</th><th style="text-align:center;">Qtd</th><th style="text-align:right;">Custo</th><th style="text-align:right;">Vendeu</th><th style="text-align:right;">Lucro</th></tr>
+          </thead>
+          <tbody>
+            ${rankList.slice(0, 20).map((p, i) => `
+              <tr>
+                <td style="font-weight:700;color:var(--text-muted);">${i + 1}</td>
+                <td><strong>${esc(p.nome)}</strong></td>
+                <td style="text-align:center;">${p.qtd}</td>
+                <td style="text-align:right;color:var(--danger);">${APP.formatMoney(p.custo)}</td>
+                <td style="text-align:right;">${APP.formatMoney(p.venda)}</td>
+                <td style="text-align:right;font-weight:700;color:${p.lucro >= 0 ? 'var(--success)' : 'var(--danger)'};">${APP.formatMoney(p.lucro)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>`) : '<div style="padding:30px;text-align:center;color:var(--text-muted);">Nenhuma peca vendida nesse mes</div>'}
+      </div>
+    `;
   },
 
   _catLabel(cat) {
