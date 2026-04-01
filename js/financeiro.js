@@ -15,12 +15,19 @@ const FINANCEIRO = {
 
     container.innerHTML = `
       <!-- Abas -->
-      <div style="display:flex;gap:6px;margin-bottom:20px;border-bottom:2px solid var(--border);padding-bottom:0;">
-        <button class="kanban-tab ${this._aba === 'fechamento' ? 'active' : ''}" onclick="FINANCEIRO._aba='fechamento';FINANCEIRO.carregar();" style="padding:10px 20px;font-size:14px;font-weight:700;">Fechamento do Dia</button>
-        <button class="kanban-tab ${this._aba === 'caixa' ? 'active' : ''}" onclick="FINANCEIRO._aba='caixa';FINANCEIRO.carregar();" style="padding:10px 20px;font-size:14px;font-weight:700;">Caixa</button>
-        <button class="kanban-tab ${this._aba === 'despesas' ? 'active' : ''}" onclick="FINANCEIRO._aba='despesas';FINANCEIRO.carregar();" style="padding:10px 20px;font-size:14px;font-weight:700;">Despesas Fixas</button>
-        <button class="kanban-tab ${this._aba === 'pecas' ? 'active' : ''}" onclick="FINANCEIRO._aba='pecas';FINANCEIRO.carregar();" style="padding:10px 20px;font-size:14px;font-weight:700;">Lucro Pecas</button>
-        <button class="kanban-tab ${this._aba === 'receber' ? 'active' : ''}" onclick="FINANCEIRO._aba='receber';FINANCEIRO.carregar();" style="padding:10px 20px;font-size:14px;font-weight:700;">A Receber</button>
+      <div style="display:flex;gap:4px;margin-bottom:24px;border-bottom:2px solid var(--border);padding-bottom:0;overflow-x:auto;">
+        ${[
+          ['fechamento', 'Fechamento'],
+          ['caixa', 'Caixa'],
+          ['despesas', 'Despesas'],
+          ['pecas', 'Lucro Pecas'],
+          ['receber', 'A Receber']
+        ].map(([key, label]) => `
+          <button onclick="FINANCEIRO._aba='${key}';FINANCEIRO.carregar();"
+            style="background:${this._aba === key ? 'var(--primary-glow)' : 'transparent'};border:none;color:${this._aba === key ? 'var(--primary-light)' : 'var(--text-muted)'};
+            padding:12px 20px;font-size:13px;font-weight:700;font-family:var(--heading);text-transform:uppercase;letter-spacing:0.5px;cursor:pointer;
+            border-bottom:3px solid ${this._aba === key ? 'var(--primary)' : 'transparent'};margin-bottom:-2px;white-space:nowrap;">${label}</button>
+        `).join('')}
       </div>
       <div id="fin-conteudo"></div>
     `;
@@ -125,85 +132,95 @@ const FINANCEIRO = {
     const _mob = window.innerWidth <= 768;
 
     el.innerHTML = `
-      <div style="text-align:center;margin-bottom:20px;">
-        <div style="font-size:13px;color:var(--text-secondary);">Fechamento de</div>
-        <div style="font-size:18px;font-weight:700;">${new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+      <div style="text-align:center;margin-bottom:24px;">
+        <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">Fechamento de</div>
+        <div style="font-size:20px;font-weight:700;font-family:var(--heading);">${new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
       </div>
 
-      <!-- KPIs Principais -->
-      <div class="kpi-grid" style="margin-bottom:20px;">
-        <div class="kpi-card">
-          <div class="label">Faturamento Bruto</div>
-          <div class="value success">${APP.formatMoney(faturamentoBruto)}</div>
-        </div>
-        <div class="kpi-card">
-          <div class="label">Mao de Obra</div>
-          <div class="value primary">${APP.formatMoney(totalMO)}</div>
-        </div>
-        <div class="kpi-card">
-          <div class="label">Pecas</div>
-          <div class="value" style="color:var(--warning);">${APP.formatMoney(totalPecas)}</div>
-        </div>
-        <div class="kpi-card">
-          <div class="label">OS Entregues</div>
-          <div class="value primary">${osDia.length}</div>
-        </div>
-      </div>
-
-      <!-- Descontos e Líquido -->
-      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px;">
-        <div style="display:grid;grid-template-columns:${_mob ? '1fr' : '1fr 1fr 1fr 1fr'};gap:16px;">
+      <!-- LUCRO HERO -->
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+        <div style="display:flex;gap:${_mob ? '16px' : '28px'};flex-wrap:wrap;">
           <div>
-            <div style="font-size:11px;color:var(--text-secondary);">Taxas Maquineta</div>
-            <div style="font-size:18px;font-weight:700;color:var(--danger);">-${APP.formatMoney(totalTaxas)}</div>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">Faturamento</div>
+            <div style="font-size:18px;font-weight:700;">${APP.formatMoney(faturamentoBruto)}</div>
           </div>
           <div>
-            <div style="font-size:11px;color:var(--text-secondary);">Saidas do Caixa</div>
-            <div style="font-size:18px;font-weight:700;color:var(--danger);">-${APP.formatMoney(saidasCaixa)}</div>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">Taxas</div>
+            <div style="font-size:18px;font-weight:700;">-${APP.formatMoney(totalTaxas)}</div>
           </div>
           <div>
-            <div style="font-size:11px;color:var(--text-secondary);">Entradas Avulsas</div>
-            <div style="font-size:18px;font-weight:700;color:var(--success);">+${APP.formatMoney(entradasCaixa)}</div>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">Saidas</div>
+            <div style="font-size:18px;font-weight:700;">-${APP.formatMoney(saidasCaixa)}</div>
           </div>
-          <div style="border-left:${_mob ? 'none' : '2px solid var(--border)'};padding-left:${_mob ? '0' : '16px'};">
-            <div style="font-size:11px;color:var(--text-secondary);">LUCRO LIQUIDO</div>
-            <div style="font-size:24px;font-weight:800;color:${lucroLiquido >= 0 ? 'var(--success)' : 'var(--danger)'};">${APP.formatMoney(lucroLiquido)}</div>
+          <div>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">Entradas avulsas</div>
+            <div style="font-size:18px;font-weight:700;">+${APP.formatMoney(entradasCaixa)}</div>
           </div>
+          <div>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">OS Entregues</div>
+            <div style="font-size:18px;font-weight:700;">${osDia.length}</div>
+          </div>
+        </div>
+        <div style="text-align:right;${_mob ? 'width:100%;text-align:center;border-top:1px solid var(--border);padding-top:12px;' : ''}">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">Lucro Liquido</div>
+          <div style="font-size:30px;font-weight:800;font-family:var(--heading);color:${lucroLiquido >= 0 ? 'var(--success)' : 'var(--danger)'};">${APP.formatMoney(lucroLiquido)}</div>
         </div>
       </div>
 
-      <!-- Lucro Peças -->
+      <!-- COMPOSIÇÃO: MO + Peças -->
+      <div style="margin-bottom:24px;">
+        <div style="font-size:13px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Composicao do faturamento</div>
+        <div style="display:grid;grid-template-columns:repeat(${_mob ? 2 : 4}, 1fr);gap:10px;">
+          <div style="background:var(--bg-card);border:1px solid var(--border);padding:14px 16px;border-radius:var(--radius);">
+            <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px;">Mao de Obra</div>
+            <div style="font-size:20px;font-weight:700;">${APP.formatMoney(totalMO)}</div>
+          </div>
+          <div style="background:var(--bg-card);border:1px solid var(--border);padding:14px 16px;border-radius:var(--radius);">
+            <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px;">Pecas</div>
+            <div style="font-size:20px;font-weight:700;">${APP.formatMoney(totalPecas)}</div>
+          </div>
+          ${totalDescontos > 0 ? `<div style="background:var(--bg-card);border:1px solid var(--border);padding:14px 16px;border-radius:var(--radius);">
+            <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px;">Descontos</div>
+            <div style="font-size:20px;font-weight:700;">-${APP.formatMoney(totalDescontos)}</div>
+            <div style="font-size:11px;color:var(--text-muted);">${osDia.filter(o => o.desconto > 0).length} OS</div>
+          </div>` : ''}
+        </div>
+      </div>
+
+      <!-- LUCRO PEÇAS -->
       ${vendaPecas > 0 ? `
-      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:20px;">
-        <h3 style="font-size:14px;margin-bottom:12px;color:var(--text-secondary);">Lucro em Pecas</h3>
-        <div style="display:grid;grid-template-columns:repeat(${_mob ? 2 : 5}, 1fr);gap:12px;text-align:center;">
-          <div>
-            <div style="font-size:11px;color:var(--text-secondary);">Vendeu por</div>
-            <div style="font-size:16px;font-weight:700;color:var(--success);">${APP.formatMoney(vendaPecas)}</div>
-          </div>
-          <div>
-            <div style="font-size:11px;color:var(--text-secondary);">Custou</div>
-            <div style="font-size:16px;font-weight:700;color:var(--danger);">${APP.formatMoney(custoPecas)}</div>
-          </div>
-          <div>
-            <div style="font-size:11px;color:var(--text-secondary);">Lucro bruto</div>
-            <div style="font-size:16px;font-weight:700;color:${lucroBrutoPecas >= 0 ? 'var(--success)' : 'var(--danger)'};">${APP.formatMoney(lucroBrutoPecas)}</div>
-          </div>
-          <div>
-            <div style="font-size:11px;color:var(--text-secondary);">Taxa cartao</div>
-            <div style="font-size:16px;font-weight:700;color:var(--danger);">-${APP.formatMoney(taxaPropPecas)}</div>
-          </div>
-          <div style="${_mob ? 'grid-column:span 2;' : ''}border-left:${_mob ? 'none' : '2px solid var(--border)'};padding-left:${_mob ? '0' : '12px'};">
-            <div style="font-size:11px;color:var(--text-secondary);">Lucro liquido pecas</div>
-            <div style="font-size:20px;font-weight:800;color:${lucroLiqPecas >= 0 ? 'var(--success)' : 'var(--danger)'};">${APP.formatMoney(lucroLiqPecas)}</div>
+      <div style="margin-bottom:24px;">
+        <div style="font-size:13px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Lucro em pecas</div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;">
+          <div style="display:grid;grid-template-columns:repeat(${_mob ? 2 : 5}, 1fr);gap:12px;text-align:center;">
+            <div>
+              <div style="font-size:13px;color:var(--text-muted);">Vendeu</div>
+              <div style="font-size:18px;font-weight:700;">${APP.formatMoney(vendaPecas)}</div>
+            </div>
+            <div>
+              <div style="font-size:13px;color:var(--text-muted);">Custou</div>
+              <div style="font-size:18px;font-weight:700;">${APP.formatMoney(custoPecas)}</div>
+            </div>
+            <div>
+              <div style="font-size:13px;color:var(--text-muted);">Lucro bruto</div>
+              <div style="font-size:18px;font-weight:700;">${APP.formatMoney(lucroBrutoPecas)}</div>
+            </div>
+            <div>
+              <div style="font-size:13px;color:var(--text-muted);">Taxas</div>
+              <div style="font-size:18px;font-weight:700;">-${APP.formatMoney(taxaPropPecas)}</div>
+            </div>
+            <div style="${_mob ? 'grid-column:span 2;' : ''}border-left:${_mob ? 'none' : '2px solid var(--border)'};padding-left:${_mob ? '0' : '12px'};">
+              <div style="font-size:13px;color:var(--text-muted);">Liquido pecas</div>
+              <div style="font-size:22px;font-weight:800;color:${lucroLiqPecas >= 0 ? 'var(--success)' : 'var(--danger)'};">${APP.formatMoney(lucroLiqPecas)}</div>
+            </div>
           </div>
         </div>
       </div>` : ''}
 
-      <!-- Por forma de pagamento -->
-      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:20px;">
-        <h3 style="font-size:14px;margin-bottom:12px;color:var(--text-secondary);">Recebimentos por forma de pagamento</h3>
-        <div style="display:grid;grid-template-columns:repeat(${_mob ? 2 : 4}, 1fr);gap:12px;">
+      <!-- FORMAS DE PAGAMENTO -->
+      <div style="margin-bottom:24px;">
+        <div style="font-size:13px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Por forma de pagamento</div>
+        <div style="display:grid;grid-template-columns:repeat(${_mob ? 2 : 4}, 1fr);gap:10px;">
           ${['dinheiro','pix','debito','credito'].map(f => {
             const bruto = porForma[f] || 0;
             const temTaxa = (f === 'debito' || f === 'credito') && bruto > 0;
@@ -211,40 +228,34 @@ const FINANCEIRO = {
             const vlrTaxa = bruto * pctTaxa / 100;
             const liquido = bruto - vlrTaxa;
             return `
-            <div style="background:var(--bg-input);padding:12px 16px;border-radius:var(--radius);${bruto > 0 ? '' : 'opacity:0.5;'}">
-              <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">${esc(formaLabel[f])}</div>
-              <div style="font-size:18px;font-weight:700;color:var(--success);">${APP.formatMoney(bruto)}</div>
+            <div style="background:var(--bg-card);border:1px solid var(--border);padding:14px 16px;border-radius:var(--radius);${bruto === 0 ? 'opacity:0.35;' : ''}">
+              <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px;">${esc(formaLabel[f])}</div>
+              <div style="font-size:20px;font-weight:700;">${APP.formatMoney(bruto)}</div>
               ${temTaxa ? `
-                <div style="font-size:12px;color:var(--danger);margin-top:4px;">-${APP.formatMoney(vlrTaxa)} <span style="font-size:10px;color:var(--text-muted);">(${pctTaxa}%)</span></div>
-                <div style="font-size:14px;font-weight:700;color:var(--text-primary);margin-top:2px;border-top:1px solid var(--border);padding-top:4px;">Liquido ${APP.formatMoney(liquido)}</div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:6px;">taxa -${APP.formatMoney(vlrTaxa)} (${pctTaxa}%)</div>
+                <div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-top:4px;padding-top:4px;border-top:1px solid var(--border);">Liq. ${APP.formatMoney(liquido)}</div>
               ` : ''}
             </div>`;
           }).join('')}
         </div>
       </div>
 
-      <!-- Alertas: Fiado + Descontos + Canceladas -->
-      ${totalFiado > 0 || totalDescontos > 0 || totalCanceladas > 0 ? `
-      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:20px;">
-        <h3 style="font-size:14px;margin-bottom:12px;color:var(--text-secondary);">Atencao</h3>
-        <div style="display:grid;grid-template-columns:repeat(${_mob ? 1 : 3}, 1fr);gap:12px;">
+      <!-- ALERTAS -->
+      ${totalFiado > 0 || totalCanceladas > 0 ? `
+      <div style="margin-bottom:24px;">
+        <div style="font-size:13px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Atencao</div>
+        <div style="display:grid;grid-template-columns:repeat(${_mob ? 1 : 2}, 1fr);gap:10px;">
           ${totalFiado > 0 ? `
-          <div style="background:var(--bg-input);padding:12px 16px;border-radius:var(--radius);border-left:3px solid var(--danger);">
-            <div style="font-size:12px;color:var(--text-secondary);">Fiado (nao pago)</div>
-            <div style="font-size:20px;font-weight:800;color:var(--danger);">${APP.formatMoney(totalFiado)}</div>
-            <div style="font-size:11px;color:var(--text-muted);">${fiados.length} OS · ${fiados.map(f => esc(f.clientes?.nome || '?')).join(', ')}</div>
-          </div>` : ''}
-          ${totalDescontos > 0 ? `
-          <div style="background:var(--bg-input);padding:12px 16px;border-radius:var(--radius);border-left:3px solid var(--warning);">
-            <div style="font-size:12px;color:var(--text-secondary);">Descontos concedidos hoje</div>
-            <div style="font-size:20px;font-weight:800;color:var(--warning);">${APP.formatMoney(totalDescontos)}</div>
-            <div style="font-size:11px;color:var(--text-muted);">${osDia.filter(o => o.desconto > 0).length} OS com desconto</div>
+          <div style="background:var(--bg-card);border:1px solid var(--border);padding:14px 16px;border-radius:var(--radius);border-left:3px solid var(--danger);">
+            <div style="font-size:13px;color:var(--text-secondary);">Fiado (nao pago)</div>
+            <div style="font-size:20px;font-weight:800;">${APP.formatMoney(totalFiado)}</div>
+            <div style="font-size:12px;color:var(--text-muted);">${fiados.length} OS · ${fiados.map(f => esc(f.clientes?.nome || '?')).join(', ')}</div>
           </div>` : ''}
           ${totalCanceladas > 0 ? `
-          <div style="background:var(--bg-input);padding:12px 16px;border-radius:var(--radius);border-left:3px solid var(--text-muted);">
-            <div style="font-size:12px;color:var(--text-secondary);">OS canceladas hoje</div>
-            <div style="font-size:20px;font-weight:800;color:var(--text-muted);">${APP.formatMoney(totalCanceladas)}</div>
-            <div style="font-size:11px;color:var(--text-muted);">${canceladas.length} OS perdidas</div>
+          <div style="background:var(--bg-card);border:1px solid var(--border);padding:14px 16px;border-radius:var(--radius);border-left:3px solid var(--text-muted);">
+            <div style="font-size:13px;color:var(--text-secondary);">Canceladas hoje</div>
+            <div style="font-size:20px;font-weight:800;">${APP.formatMoney(totalCanceladas)}</div>
+            <div style="font-size:12px;color:var(--text-muted);">${canceladas.length} OS</div>
           </div>` : ''}
         </div>
       </div>` : ''}
@@ -590,40 +601,52 @@ const FINANCEIRO = {
     const nomeMes = new Date(this._despAno, this._despMes).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 
     el.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <!-- Nav + botão -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
         <div style="display:flex;align-items:center;gap:12px;">
           <button class="btn btn-secondary btn-sm" onclick="FINANCEIRO._despNavegar(-1)" style="padding:6px 12px;font-size:16px;">&lt;</button>
-          <div>
-            <div style="font-size:18px;font-weight:700;text-transform:capitalize;">${nomeMes}</div>
-            <div style="font-size:13px;color:var(--text-secondary);">${lista.length} lancamentos</div>
-          </div>
+          <div style="font-size:18px;font-weight:700;text-transform:capitalize;font-family:var(--heading);">${nomeMes}</div>
           <button class="btn btn-secondary btn-sm" onclick="FINANCEIRO._despNavegar(1)" style="padding:6px 12px;font-size:16px;">&gt;</button>
+          <span style="font-size:13px;color:var(--text-muted);">${lista.length} lanc.</span>
         </div>
         <button class="btn btn-danger" onclick="FINANCEIRO._novaDespesa()">+ Nova Despesa</button>
       </div>
 
-      <!-- Total do mês -->
-      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px;text-align:center;">
-        <div style="font-size:12px;color:var(--text-secondary);">Total de despesas no mês</div>
-        <div style="font-size:28px;font-weight:800;color:var(--danger);">${APP.formatMoney(totalMes)}</div>
+      <!-- TOTAL HERO -->
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+        <div style="display:flex;gap:${_mob ? '12px' : '20px'};flex-wrap:wrap;">
+          ${Object.entries(porCat).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([c, v]) => `
+            <div>
+              <div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">${esc(catLabel[c] || c)}</div>
+              <div style="font-size:18px;font-weight:700;">${APP.formatMoney(v)}</div>
+            </div>
+          `).join('')}
+        </div>
+        <div style="text-align:right;${_mob ? 'width:100%;text-align:center;border-top:1px solid var(--border);padding-top:12px;' : ''}">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">Total no Mes</div>
+          <div style="font-size:30px;font-weight:800;font-family:var(--heading);color:var(--danger);">${APP.formatMoney(totalMes)}</div>
+        </div>
       </div>
 
-      <!-- Por categoria -->
-      ${Object.keys(porCat).length ? `
-      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:20px;">
-        <h3 style="font-size:14px;margin-bottom:12px;color:var(--text-secondary);">Por categoria</h3>
-        <div style="display:flex;flex-wrap:wrap;gap:12px;">
+      <!-- Categorias restantes -->
+      ${Object.entries(porCat).length > 4 ? `
+      <div style="margin-bottom:24px;">
+        <div style="font-size:13px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Todas as categorias</div>
+        <div style="display:grid;grid-template-columns:repeat(${_mob ? 2 : 4}, 1fr);gap:10px;">
           ${Object.entries(porCat).sort((a, b) => b[1] - a[1]).map(([c, v]) => `
-            <div style="background:var(--bg-input);padding:10px 16px;border-radius:var(--radius);min-width:120px;">
-              <div style="font-size:12px;color:var(--text-secondary);">${esc(catLabel[c] || c)}</div>
-              <div style="font-size:16px;font-weight:700;color:var(--danger);">${APP.formatMoney(v)}</div>
+            <div style="background:var(--bg-card);border:1px solid var(--border);padding:14px 16px;border-radius:var(--radius);">
+              <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px;">${esc(catLabel[c] || c)}</div>
+              <div style="font-size:20px;font-weight:700;">${APP.formatMoney(v)}</div>
             </div>
           `).join('')}
         </div>
       </div>` : ''}
 
       <!-- Lista -->
-      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;">
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-left:3px solid var(--danger);border-radius:var(--radius-lg);overflow:hidden;">
+        <div style="padding:14px 20px;border-bottom:1px solid var(--border);">
+          <h3 style="font-size:15px;font-family:var(--heading);font-weight:700;">Lancamentos</h3>
+        </div>
         ${lista.length ? (_mob ? `
         <div class="mobile-card-list" style="padding:10px;">
           ${lista.map(d => `
@@ -633,10 +656,10 @@ const FINANCEIRO = {
                   <div class="mobile-card-title">${esc(d.descricao)}</div>
                   <div class="mobile-card-subtitle">${esc(catLabel[d.categoria] || d.categoria)} · ${APP.formatDate(d.created_at)}</div>
                 </div>
-                <span style="font-weight:700;color:var(--danger);">-${APP.formatMoney(d.valor)}</span>
+                <span style="font-weight:700;">-${APP.formatMoney(d.valor)}</span>
               </div>
               <div class="mobile-card-row">
-                <span class="badge badge-cancelada">${esc(d.forma_pagamento || '-')}</span>
+                <span style="font-size:12px;color:var(--text-muted);">${esc(d.forma_pagamento || '-')}</span>
                 <button class="btn btn-danger btn-sm" onclick="FINANCEIRO.excluir('${d.id}')">X</button>
               </div>
             </div>
@@ -644,21 +667,23 @@ const FINANCEIRO = {
         </div>` : `
         <table class="data-table">
           <thead>
-            <tr><th>Data</th><th>Categoria</th><th>Descricao</th><th>Pagamento</th><th>Valor</th><th></th></tr>
+            <tr><th>Descricao</th><th>Categoria</th><th>Pagamento</th><th>Valor</th><th></th></tr>
           </thead>
           <tbody>
             ${lista.map(d => `
               <tr>
-                <td style="font-size:12px;">${APP.formatDate(d.created_at)}</td>
+                <td>
+                  <div style="font-weight:600;font-size:13px;">${esc(d.descricao)}</div>
+                  <div style="font-size:11px;color:var(--text-muted);">${APP.formatDate(d.created_at)}</div>
+                </td>
                 <td style="font-size:13px;">${esc(catLabel[d.categoria] || d.categoria)}</td>
-                <td style="font-size:13px;">${esc(d.descricao)}</td>
-                <td style="font-size:13px;">${esc(d.forma_pagamento || '-')}</td>
-                <td style="font-weight:700;color:var(--danger);">-${APP.formatMoney(d.valor)}</td>
+                <td style="font-size:13px;color:var(--text-muted);">${esc(d.forma_pagamento || '-')}</td>
+                <td style="font-weight:700;">-${APP.formatMoney(d.valor)}</td>
                 <td><button class="btn btn-danger btn-sm" onclick="FINANCEIRO.excluir('${d.id}')">X</button></td>
               </tr>
             `).join('')}
           </tbody>
-        </table>`) : '<div style="padding:30px;text-align:center;color:var(--text-muted);font-size:13px;">Nenhuma despesa registrada este mês</div>'}
+        </table>`) : '<div style="padding:30px;text-align:center;color:var(--text-muted);font-size:13px;">Nenhuma despesa registrada este mes</div>'}
       </div>
     `;
   },
@@ -848,41 +873,44 @@ const FINANCEIRO = {
     const _mob = window.innerWidth <= 768;
 
     el.innerHTML = `
-      <!-- Navegação mês -->
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+      <!-- Nav mês -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
         <button class="btn btn-secondary btn-sm" onclick="FINANCEIRO._pecasNavegar(-1)" style="padding:6px 12px;font-size:16px;">&lt;</button>
-        <div style="font-size:18px;font-weight:700;text-transform:capitalize;">${nomeMes}</div>
+        <div style="font-size:18px;font-weight:700;text-transform:capitalize;font-family:var(--heading);">${nomeMes}</div>
         <button class="btn btn-secondary btn-sm" onclick="FINANCEIRO._pecasNavegar(1)" style="padding:6px 12px;font-size:16px;">&gt;</button>
-        <span style="font-size:13px;color:var(--text-secondary);margin-left:8px;">${itensPeca.length} pecas vendidas</span>
+        <span style="font-size:13px;color:var(--text-muted);">${itensPeca.length} pecas vendidas</span>
       </div>
 
-      <!-- KPIs -->
-      <div class="kpi-grid" style="margin-bottom:20px;">
-        <div class="kpi-card">
-          <div class="label">Vendeu por</div>
-          <div class="value success">${APP.formatMoney(totalVenda)}</div>
+      <!-- LUCRO HERO -->
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+        <div style="display:flex;gap:${_mob ? '16px' : '28px'};flex-wrap:wrap;">
+          <div>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">Vendeu</div>
+            <div style="font-size:18px;font-weight:700;">${APP.formatMoney(totalVenda)}</div>
+          </div>
+          <div>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">Custou</div>
+            <div style="font-size:18px;font-weight:700;">${APP.formatMoney(totalCusto)}</div>
+          </div>
+          <div>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">Lucro bruto</div>
+            <div style="font-size:18px;font-weight:700;">${APP.formatMoney(lucroBruto)}</div>
+            <div style="font-size:11px;color:var(--text-muted);">Margem ${margem.toFixed(1)}%</div>
+          </div>
+          <div>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">Taxas</div>
+            <div style="font-size:18px;font-weight:700;">-${APP.formatMoney(taxaProp)}</div>
+          </div>
         </div>
-        <div class="kpi-card">
-          <div class="label">Custou</div>
-          <div class="value" style="color:var(--danger);">${APP.formatMoney(totalCusto)}</div>
-        </div>
-        <div class="kpi-card">
-          <div class="label">Lucro bruto</div>
-          <div class="value" style="color:${lucroBruto >= 0 ? 'var(--success)' : 'var(--danger)'};">${APP.formatMoney(lucroBruto)}</div>
-          <div style="font-size:11px;color:var(--text-muted);">Margem ${margem.toFixed(1)}%</div>
-        </div>
-        <div class="kpi-card">
-          <div class="label">Lucro liquido</div>
-          <div class="value" style="color:var(--warning);font-size:22px;">${APP.formatMoney(lucroLiq)}</div>
-          <div style="font-size:11px;color:var(--text-muted);">-${APP.formatMoney(taxaProp)} taxas</div>
+        <div style="text-align:right;${_mob ? 'width:100%;text-align:center;border-top:1px solid var(--border);padding-top:12px;' : ''}">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">Lucro Liquido</div>
+          <div style="font-size:30px;font-weight:800;font-family:var(--heading);color:${lucroLiq >= 0 ? 'var(--success)' : 'var(--danger)'};">${APP.formatMoney(lucroLiq)}</div>
         </div>
       </div>
 
       <!-- Ranking -->
-      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;">
-        <div style="padding:14px 20px;border-bottom:1px solid var(--border);">
-          <h3 style="font-size:14px;">Pecas mais vendidas</h3>
-        </div>
+      <div style="font-size:13px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Ranking de pecas</div>
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-left:3px solid var(--primary);border-radius:var(--radius-lg);overflow:hidden;">
         ${rankList.length ? (_mob ? `
         <div class="mobile-card-list" style="padding:10px;">
           ${rankList.slice(0, 20).map((p, i) => `
@@ -892,7 +920,7 @@ const FINANCEIRO = {
                   <div class="mobile-card-title">${i + 1}. ${esc(p.nome)}</div>
                   <div class="mobile-card-subtitle">${p.qtd}x · Custo ${APP.formatMoney(p.custo)} · Vendeu ${APP.formatMoney(p.venda)}</div>
                 </div>
-                <span style="font-weight:700;color:${p.lucro >= 0 ? 'var(--success)' : 'var(--danger)'};">+${APP.formatMoney(p.lucro)}</span>
+                <span style="font-weight:700;">+${APP.formatMoney(p.lucro)}</span>
               </div>
             </div>
           `).join('')}
@@ -907,7 +935,7 @@ const FINANCEIRO = {
                 <td style="font-weight:700;color:var(--text-muted);">${i + 1}</td>
                 <td><strong>${esc(p.nome)}</strong></td>
                 <td style="text-align:center;">${p.qtd}</td>
-                <td style="text-align:right;color:var(--danger);">${APP.formatMoney(p.custo)}</td>
+                <td style="text-align:right;color:var(--text-secondary);">${APP.formatMoney(p.custo)}</td>
                 <td style="text-align:right;">${APP.formatMoney(p.venda)}</td>
                 <td style="text-align:right;font-weight:700;color:${p.lucro >= 0 ? 'var(--success)' : 'var(--danger)'};">${APP.formatMoney(p.lucro)}</td>
               </tr>
@@ -1259,34 +1287,40 @@ const FINANCEIRO = {
     const vencidas = lista.filter(c => c.vencimento < hoje).length;
 
     el.innerHTML = `
-      <!-- KPIs -->
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px;">
-        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;text-align:center;">
-          <div style="font-size:12px;color:var(--text-secondary);">Total a Receber</div>
-          <div style="font-size:24px;font-weight:800;color:var(--warning);">${fmt(totalPendente)}</div>
+      <!-- HERO -->
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+        <div style="display:flex;gap:28px;flex-wrap:wrap;">
+          <div>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">OS Faturadas</div>
+            <div style="font-size:18px;font-weight:700;">${lista.length}</div>
+          </div>
+          <div>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">Clientes</div>
+            <div style="font-size:18px;font-weight:700;">${Object.keys(porCliente).length}</div>
+          </div>
+          <div>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">Vencidas</div>
+            <div style="font-size:18px;font-weight:700;${vencidas ? 'color:var(--danger);' : ''}">${vencidas}</div>
+          </div>
         </div>
-        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;text-align:center;">
-          <div style="font-size:12px;color:var(--text-secondary);">OS Faturadas</div>
-          <div style="font-size:24px;font-weight:800;">${lista.length}</div>
-        </div>
-        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;text-align:center;">
-          <div style="font-size:12px;color:var(--text-secondary);">Vencidas</div>
-          <div style="font-size:24px;font-weight:800;color:${vencidas ? 'var(--danger)' : 'var(--success)'};">${vencidas}</div>
+        <div style="text-align:right;">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">Total a Receber</div>
+          <div style="font-size:30px;font-weight:800;font-family:var(--heading);color:${totalPendente > 0 ? 'var(--primary-light)' : 'var(--text)'};">${fmt(totalPendente)}</div>
         </div>
       </div>
 
-      ${Object.keys(porCliente).length === 0 ? '<div class="empty-state"><h3>Nenhuma conta a receber</h3><p>Quando entregar uma OS como "Faturado", ela aparece aqui.</p></div>' : ''}
+      ${Object.keys(porCliente).length === 0 ? '<div style="padding:40px;text-align:center;color:var(--text-muted);"><div style="font-size:16px;font-weight:700;margin-bottom:6px;">Nenhuma conta a receber</div><div style="font-size:13px;">Quando entregar uma OS como "Faturado", ela aparece aqui.</div></div>' : ''}
 
       ${Object.entries(porCliente).map(([cid, cli]) => `
-        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;">
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-left:3px solid var(--primary);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
             <div>
-              <div style="font-weight:700;font-size:16px;">${esc(cli.nome)}</div>
-              <div style="font-size:12px;color:var(--text-secondary);">${cli.contas.length} OS faturada(s)</div>
+              <div style="font-weight:700;font-size:16px;font-family:var(--heading);">${esc(cli.nome)}</div>
+              <div style="font-size:12px;color:var(--text-muted);">${cli.contas.length} OS faturada(s)</div>
             </div>
             <div style="text-align:right;">
-              <div style="font-size:20px;font-weight:800;color:var(--warning);">${fmt(cli.total)}</div>
-              <button class="btn btn-success btn-sm" onclick="FINANCEIRO._receberPagamento('${cid}')">Receber pagamento</button>
+              <div style="font-size:20px;font-weight:800;">${fmt(cli.total)}</div>
+              <button class="btn btn-success btn-sm" style="margin-top:4px;" onclick="FINANCEIRO._receberPagamento('${cid}')">Receber pagamento</button>
             </div>
           </div>
           <div style="display:flex;flex-direction:column;gap:6px;">
@@ -1296,7 +1330,7 @@ const FINANCEIRO = {
               const osNum = c.ordens_servico?.numero || '-';
               const placa = c.ordens_servico?.veiculos?.placa || '';
               const veiculo = [c.ordens_servico?.veiculos?.marca, c.ordens_servico?.veiculos?.modelo].filter(Boolean).join(' ');
-              return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:var(--radius);
+              return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:var(--radius);
                 background:${vencida ? 'rgba(239,68,68,0.06)' : 'var(--bg-input)'};border-left:3px solid ${vencida ? 'var(--danger)' : 'var(--border)'};">
                 <div>
                   <span style="font-weight:600;">OS #${esc(osNum)}</span>
@@ -1304,7 +1338,7 @@ const FINANCEIRO = {
                 </div>
                 <div style="text-align:right;">
                   <span style="font-weight:700;">${fmt(c.valor)}</span>
-                  <span style="font-size:11px;margin-left:8px;color:${vencida ? 'var(--danger)' : 'var(--text-secondary)'};">${vencida ? 'Vencida ' : 'Vence '}${vencDt}</span>
+                  <span style="font-size:11px;margin-left:8px;color:${vencida ? 'var(--danger)' : 'var(--text-muted)'};">${vencida ? 'Vencida ' : 'Vence '}${vencDt}</span>
                 </div>
               </div>`;
             }).join('')}
