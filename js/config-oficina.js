@@ -100,6 +100,22 @@ const CONFIG = {
           </form>
         </div>
 
+        <!-- PAINEL TV -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <h3 style="font-size:16px;">📺 Painel TV da Oficina</h3>
+          </div>
+          <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;">Link para exibir o pátio num monitor/TV. Mostra o fluxo dos veículos em tempo real, sem valores financeiros.</p>
+          ${oficina.tv_token
+            ? `<div style="display:flex;gap:8px;align-items:center;">
+                <input type="text" class="form-control" readonly value="${location.origin}/tv.html?t=${oficina.tv_token}" id="cfg-tv-link" style="font-size:12px;flex:1;" onclick="this.select()">
+                <button class="btn btn-primary btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('cfg-tv-link').value);APP.toast('Link copiado!');">Copiar</button>
+                <button class="btn btn-secondary btn-sm" onclick="window.open(document.getElementById('cfg-tv-link').value,'_blank')">Abrir</button>
+              </div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:8px;">Abra em tela cheia (F11) numa TV ou monitor da oficina.</div>`
+            : `<button class="btn btn-primary" onclick="CONFIG._gerarTokenTV()">Gerar link do painel</button>`}
+        </div>
+
         <!-- MAQUININHAS -->
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
@@ -720,6 +736,19 @@ const CONFIG = {
     else if (v.length > 6) v = v.replace(/^(\d{2})(\d{4,5})(\d{0,4})/, '($1) $2-$3');
     else if (v.length > 2) v = v.replace(/^(\d{2})(\d{0,5})/, '($1) $2');
     el.value = v;
+  },
+
+  async _gerarTokenTV() {
+    // Gera token aleatório hex 32 chars
+    const arr = new Uint8Array(16);
+    crypto.getRandomValues(arr);
+    const token = Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
+
+    const { error } = await db.from('oficinas').update({ tv_token: token }).eq('id', APP.oficinaId);
+    if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
+
+    APP.toast('Link do painel gerado!');
+    this.carregar();
   }
 };
 
