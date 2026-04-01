@@ -92,7 +92,7 @@ const OS = {
             </div>
             <div class="mobile-card-body">
               <div class="mobile-card-row"><span>${esc(os.profiles?.nome || 'Sem mecânico')}</span> <span class="badge badge-${os.status}">${statusLabel[os.status] || esc(os.status)}</span></div>
-              <div class="mobile-card-row"><span style="font-size:11px;">${APP.formatDate(os.data_entrada)}</span></div>
+              <div class="mobile-card-row"><span style="font-size:11px;">${APP.formatDate(os.data_entrada)}</span>${os.status === 'entregue' && !os.forma_pagamento ? '<span style="background:var(--danger-bg);color:var(--danger);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;">SEM PAGAMENTO</span>' : ''}</div>
             </div>
           </div>
         `).join('')}
@@ -120,7 +120,7 @@ const OS = {
               <td>${esc(os.clientes?.nome || '-')}</td>
               <td>${esc(os.profiles?.nome || '-')}</td>
               <td>${APP.formatMoney(os.valor_total)}</td>
-              <td><span class="badge badge-${os.status}">${statusLabel[os.status] || esc(os.status)}</span></td>
+              <td><span class="badge badge-${os.status}">${statusLabel[os.status] || esc(os.status)}</span>${os.status === 'entregue' && !os.forma_pagamento ? '<br><span style="background:var(--danger-bg);color:var(--danger);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;margin-top:4px;display:inline-block;">SEM PAGAMENTO</span>' : ''}</td>
               <td style="font-size:12px;color:var(--text-secondary)">${APP.formatDate(os.data_entrada)}</td>
             </tr>
           `).join('')}
