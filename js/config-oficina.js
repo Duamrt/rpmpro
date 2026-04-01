@@ -121,21 +121,19 @@ const CONFIG = {
 
         <!-- CALCULADORA CUSTO HORA -->
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;">
-          <h3 style="font-size:16px;margin-bottom:4px;">Calculadora: Custo Real da Hora</h3>
-          <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;">Descubra se o valor que voce cobra por hora da lucro ou prejuizo.</p>
+          <h3 style="font-size:16px;margin-bottom:4px;">Custo Real da Hora</h3>
+          <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;">Quanto custa cada hora de trabalho da oficina de verdade? Preencha os salarios e custos — o sistema calcula.</p>
+
+          <!-- Equipe (carregada automaticamente) -->
+          <div id="calc-equipe" style="margin-bottom:16px;">
+            <div class="loading" style="font-size:13px;">Carregando equipe...</div>
+          </div>
+
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-            <div class="form-group">
-              <label>Total de salarios (R$/mes)</label>
-              <input type="number" class="form-control" id="calc-salarios" value="0" min="0" step="100" oninput="CONFIG._calcularCusto()">
-            </div>
             <div class="form-group">
               <label>Custos fixos mensais (R$)</label>
               <input type="number" class="form-control" id="calc-fixos" value="0" min="0" step="100" oninput="CONFIG._calcularCusto()">
               <span style="font-size:11px;color:var(--text-secondary);">Aluguel, luz, agua, internet...</span>
-            </div>
-            <div class="form-group">
-              <label>Mecanicos trabalhando</label>
-              <input type="number" class="form-control" id="calc-mecanicos" value="1" min="1" max="20" oninput="CONFIG._calcularCusto()">
             </div>
             <div class="form-group">
               <label>Horas/dia por mecanico</label>
@@ -146,8 +144,9 @@ const CONFIG = {
               <input type="number" class="form-control" id="calc-dias" value="22" min="1" max="31" oninput="CONFIG._calcularCusto()">
             </div>
             <div class="form-group">
-              <label>Valor cobrado por hora (R$)</label>
-              <input type="number" class="form-control" id="calc-cobrado" value="${oficina.valor_hora || 120}" min="0" step="5" oninput="CONFIG._calcularCusto()">
+              <label>Valor que voce cobra por hora (R$)</label>
+              <input type="number" class="form-control" id="calc-cobrado" value="${oficina.valor_hora || 0}" min="0" step="5" oninput="CONFIG._calcularCusto()">
+              <span style="font-size:11px;color:var(--text-secondary);">O que voce cobra do cliente na mao de obra</span>
             </div>
           </div>
           <div id="calc-resultado" style="margin-top:16px;padding:16px;background:var(--bg-input);border-radius:var(--radius);"></div>
@@ -206,48 +205,15 @@ const CONFIG = {
           </form>
         </div>
 
-        <!-- MENSAGENS WHATSAPP -->
+        <!-- MENSAGENS WHATSAPP (só pronto — único disparo automático) -->
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;">
-          <h3 style="font-size:16px;margin-bottom:4px;">Mensagens WhatsApp</h3>
-          <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;">Personalize a saudação e o fechamento de cada mensagem. Os dados do veículo e da oficina são inseridos automaticamente — você não precisa se preocupar com isso.</p>
+          <h3 style="font-size:16px;margin-bottom:4px;">Mensagem WhatsApp</h3>
+          <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;">O WhatsApp so dispara quando o veiculo fica pronto. Personalize a saudacao e o fechamento — o resto e automatico.</p>
           <form id="form-config-msgs" onsubmit="CONFIG.salvarMensagens(event)">
-
-            <div style="margin-bottom:20px;padding:16px;background:var(--bg-input);border-radius:var(--radius);border-left:3px solid var(--primary);">
-              <label style="font-size:13px;font-weight:700;margin-bottom:8px;display:block;">📋 Histórico do veículo</label>
+            <div style="padding:16px;background:var(--bg-input);border-radius:var(--radius);border-left:3px solid var(--success);">
+              <label style="font-size:13px;font-weight:700;margin-bottom:8px;display:block;">Veiculo pronto pra retirada</label>
               <div class="form-group" style="margin-bottom:8px;">
-                <label style="font-size:11px;">Saudação</label>
-                <input type="text" class="form-control" id="cfg-msg-historico-abertura" value="${esc(oficina.msg_historico_abertura || 'Olá! Tudo bem?')}" placeholder="Ex: Olá! Tudo bem?">
-              </div>
-              <div style="font-size:12px;color:var(--text-secondary);padding:8px 12px;background:var(--bg-card);border-radius:6px;margin-bottom:8px;line-height:1.6;">
-                <em>Aqui é da <strong>${esc(oficina.nome)}</strong>. Segue o histórico completo do seu veículo:<br>
-                <strong>Placa · Marca Modelo</strong><br>
-                🔗 Link do histórico</em>
-              </div>
-              <div class="form-group" style="margin:0;">
-                <label style="font-size:11px;">Fechamento</label>
-                <input type="text" class="form-control" id="cfg-msg-historico-fechamento" value="${esc(oficina.msg_historico_fechamento || 'Qualquer dúvida é só chamar! Abraço.')}" placeholder="Ex: Qualquer dúvida é só chamar!">
-              </div>
-            </div>
-
-            <div style="margin-bottom:20px;padding:16px;background:var(--bg-input);border-radius:var(--radius);border-left:3px solid var(--warning);">
-              <label style="font-size:13px;font-weight:700;margin-bottom:8px;display:block;">💰 Orçamento pronto</label>
-              <div class="form-group" style="margin-bottom:8px;">
-                <label style="font-size:11px;">Saudação</label>
-                <input type="text" class="form-control" id="cfg-msg-orcamento-abertura" value="${esc(oficina.msg_orcamento_abertura || 'Olá! Tudo certo?')}" placeholder="Ex: Olá! Tudo certo?">
-              </div>
-              <div style="font-size:12px;color:var(--text-secondary);padding:8px 12px;background:var(--bg-card);border-radius:6px;margin-bottom:8px;line-height:1.6;">
-                <em>O orçamento do seu <strong>Marca Modelo — Placa</strong> ficou pronto.</em>
-              </div>
-              <div class="form-group" style="margin:0;">
-                <label style="font-size:11px;">Fechamento</label>
-                <input type="text" class="form-control" id="cfg-msg-orcamento-fechamento" value="${esc(oficina.msg_orcamento_fechamento || 'Posso te enviar os detalhes? Abraço!')}" placeholder="Ex: Posso te enviar os detalhes?">
-              </div>
-            </div>
-
-            <div style="margin-bottom:20px;padding:16px;background:var(--bg-input);border-radius:var(--radius);border-left:3px solid var(--success);">
-              <label style="font-size:13px;font-weight:700;margin-bottom:8px;display:block;">✅ Veículo pronto</label>
-              <div class="form-group" style="margin-bottom:8px;">
-                <label style="font-size:11px;">Saudação</label>
+                <label style="font-size:11px;">Saudacao</label>
                 <input type="text" class="form-control" id="cfg-msg-pronto-abertura" value="${esc(oficina.msg_pronto_abertura || 'Olá! Boas notícias!')}" placeholder="Ex: Olá! Boas notícias!">
               </div>
               <div style="font-size:12px;color:var(--text-secondary);padding:8px 12px;background:var(--bg-card);border-radius:6px;margin-bottom:8px;line-height:1.6;">
@@ -258,23 +224,7 @@ const CONFIG = {
                 <input type="text" class="form-control" id="cfg-msg-pronto-fechamento" value="${esc(oficina.msg_pronto_fechamento || 'Quando pode vir buscar? Abraço!')}" placeholder="Ex: Quando pode vir buscar?">
               </div>
             </div>
-
-            <div style="margin-bottom:20px;padding:16px;background:var(--bg-input);border-radius:var(--radius);border-left:3px solid var(--info);">
-              <label style="font-size:13px;font-weight:700;margin-bottom:8px;display:block;">🔧 Em execução</label>
-              <div class="form-group" style="margin-bottom:8px;">
-                <label style="font-size:11px;">Saudação</label>
-                <input type="text" class="form-control" id="cfg-msg-execucao-abertura" value="${esc(oficina.msg_execucao_abertura || 'Olá! Passando pra te atualizar.')}" placeholder="Ex: Olá! Passando pra te atualizar.">
-              </div>
-              <div style="font-size:12px;color:var(--text-secondary);padding:8px 12px;background:var(--bg-card);border-radius:6px;margin-bottom:8px;line-height:1.6;">
-                <em>Seu <strong>Marca Modelo — Placa</strong> já está em execução na oficina. Estamos cuidando com atenção.</em>
-              </div>
-              <div class="form-group" style="margin:0;">
-                <label style="font-size:11px;">Fechamento</label>
-                <input type="text" class="form-control" id="cfg-msg-execucao-fechamento" value="${esc(oficina.msg_execucao_fechamento || 'Te aviso assim que ficar pronto! Abraço.')}" placeholder="Ex: Te aviso assim que ficar pronto!">
-              </div>
-            </div>
-
-            <button type="submit" class="btn btn-primary" style="margin-top:8px;">Salvar mensagens</button>
+            <button type="submit" class="btn btn-primary" style="margin-top:12px;">Salvar mensagem</button>
           </form>
         </div>
 
@@ -304,6 +254,9 @@ const CONFIG = {
         </div>
       </div>
     `;
+
+    // Carrega equipe na calculadora de custo
+    this._carregarEquipeCalc();
   },
 
   async salvarDados(e) {
@@ -347,15 +300,14 @@ const CONFIG = {
 
   async salvarMensagens(e) {
     e.preventDefault();
-    const campos = {};
-    ['historico','orcamento','pronto','execucao'].forEach(tipo => {
-      campos['msg_' + tipo + '_abertura'] = document.getElementById('cfg-msg-' + tipo + '-abertura').value.trim();
-      campos['msg_' + tipo + '_fechamento'] = document.getElementById('cfg-msg-' + tipo + '-fechamento').value.trim();
-    });
+    const campos = {
+      msg_pronto_abertura: document.getElementById('cfg-msg-pronto-abertura').value.trim(),
+      msg_pronto_fechamento: document.getElementById('cfg-msg-pronto-fechamento').value.trim()
+    };
     const { error } = await db.from('oficinas').update(campos).eq('id', APP.oficinaId);
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
     if (APP.oficina) Object.assign(APP.oficina, campos);
-    APP.toast('Mensagens salvas');
+    APP.toast('Mensagem salva');
   },
 
   async salvarValores(e) {
@@ -466,21 +418,72 @@ const CONFIG = {
     APP.toast('Taxas salvas');
   },
 
+  _calcEquipe: [], // cache da equipe carregada
+
+  async _carregarEquipeCalc() {
+    const el = document.getElementById('calc-equipe');
+    if (!el) return;
+
+    const { data: membros } = await db.from('profiles')
+      .select('id, nome, role, salario_base, comissao_percent')
+      .eq('oficina_id', APP.oficinaId)
+      .eq('ativo', true)
+      .in('role', ['mecanico', 'aux_mecanico', 'gerente', 'atendente', 'aux_admin'])
+      .order('nome');
+
+    this._calcEquipe = membros || [];
+    const roleLabel = { mecanico: 'Mecânico', aux_mecanico: 'Aux.Mec', gerente: 'Gerente', atendente: 'Atendente', aux_admin: 'Aux.Admin' };
+
+    if (!this._calcEquipe.length) {
+      el.innerHTML = '<div style="font-size:13px;color:var(--warning);padding:8px 0;">Nenhum funcionario ativo. Cadastre na aba Equipe.</div>';
+      return;
+    }
+
+    el.innerHTML = `
+      <label style="font-size:13px;font-weight:700;color:var(--text-secondary);margin-bottom:8px;display:block;">Equipe (${this._calcEquipe.length} ativos)</label>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        ${this._calcEquipe.map((m, i) => `
+          <div style="display:grid;grid-template-columns:1fr 120px;gap:8px;align-items:center;padding:8px 12px;background:var(--bg-input);border-radius:var(--radius);">
+            <div>
+              <span style="font-weight:600;font-size:13px;">${esc(m.nome)}</span>
+              <span style="font-size:11px;color:var(--text-muted);margin-left:6px;">${esc(roleLabel[m.role] || m.role)}</span>
+            </div>
+            <div>
+              <input type="number" class="form-control calc-salario-membro" data-idx="${i}" value="${m.salario_base || 0}" min="0" step="50" style="padding:4px 8px;font-size:13px;" oninput="CONFIG._calcularCusto()" placeholder="Salario R$">
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    this._calcularCusto();
+  },
+
   _calcularCusto() {
-    const salarios = parseFloat(document.getElementById('calc-salarios').value) || 0;
-    const fixos = parseFloat(document.getElementById('calc-fixos').value) || 0;
-    const mecanicos = parseInt(document.getElementById('calc-mecanicos').value) || 1;
-    const horasDia = parseInt(document.getElementById('calc-horas').value) || 8;
-    const diasMes = parseInt(document.getElementById('calc-dias').value) || 22;
-    const cobrado = parseFloat(document.getElementById('calc-cobrado').value) || 0;
+    // Soma salários dos inputs da equipe
+    let salarios = 0;
+    let qtdMecanicos = 0;
+    document.querySelectorAll('.calc-salario-membro').forEach((input, i) => {
+      salarios += parseFloat(input.value) || 0;
+      const m = this._calcEquipe[i];
+      if (m && ['mecanico', 'aux_mecanico'].includes(m.role)) qtdMecanicos++;
+    });
+    if (qtdMecanicos < 1) qtdMecanicos = 1;
+
+    const fixos = parseFloat(document.getElementById('calc-fixos')?.value) || 0;
+    const horasDia = parseInt(document.getElementById('calc-horas')?.value) || 8;
+    const diasMes = parseInt(document.getElementById('calc-dias')?.value) || 22;
+    const cobrado = parseFloat(document.getElementById('calc-cobrado')?.value) || 0;
 
     const custoTotal = salarios + fixos;
-    const horasTotais = mecanicos * horasDia * diasMes;
+    const horasTotais = qtdMecanicos * horasDia * diasMes;
     const custoHora = horasTotais > 0 ? custoTotal / horasTotais : 0;
     const lucroHora = cobrado - custoHora;
     const margem = cobrado > 0 ? (lucroHora / cobrado * 100) : 0;
 
     const el = document.getElementById('calc-resultado');
+    if (!el) return;
+
     el.innerHTML = `
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;text-align:center;">
         <div>
@@ -497,9 +500,10 @@ const CONFIG = {
         </div>
       </div>
       <div style="text-align:center;margin-top:12px;font-size:13px;color:var(--text-secondary);">
-        ${horasTotais} horas/mes · Margem: <strong style="color:${margem >= 0 ? 'var(--success)' : 'var(--danger)'};">${margem.toFixed(1)}%</strong>
-        ${lucroHora < 0 ? '<div style="color:var(--danger);font-weight:700;margin-top:8px;">⚠️ Voce esta perdendo dinheiro! Aumente o valor da hora ou reduza custos.</div>' : ''}
-        ${lucroHora >= 0 && margem < 20 ? '<div style="color:var(--warning);font-weight:700;margin-top:8px;">⚡ Margem baixa. Considere ajustar o valor.</div>' : ''}
+        ${qtdMecanicos} mecanico${qtdMecanicos > 1 ? 's' : ''} · ${horasTotais} horas/mes · Salarios: R$ ${salarios.toFixed(0)} + Fixos: R$ ${fixos.toFixed(0)} = <strong>R$ ${custoTotal.toFixed(0)}/mes</strong>
+        <br>Margem: <strong style="color:${margem >= 0 ? 'var(--success)' : 'var(--danger)'};">${margem.toFixed(1)}%</strong>
+        ${lucroHora < 0 ? '<div style="color:var(--danger);font-weight:700;margin-top:8px;">Voce esta perdendo dinheiro! Aumente o valor da hora ou reduza custos.</div>' : ''}
+        ${lucroHora >= 0 && margem < 20 ? '<div style="color:var(--warning);font-weight:700;margin-top:8px;">Margem baixa. Considere ajustar o valor.</div>' : ''}
       </div>
     `;
   },
