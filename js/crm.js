@@ -97,6 +97,8 @@ const CRM = {
 
   _renderGrupo(titulo, lista, cor, dica) {
     if (!lista.length) return '';
+    const _mob = window.innerWidth <= 768;
+    const badgeCls = cor === 'danger' ? 'cancelada' : cor === 'warning' ? 'orcamento' : 'entregue';
     return `
       <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:16px;">
         <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
@@ -104,8 +106,31 @@ const CRM = {
             <h3 style="font-size:14px;">${esc(titulo)}</h3>
             <span style="font-size:12px;color:var(--text-muted);">${esc(dica)}</span>
           </div>
-          <span class="badge badge-${cor === 'danger' ? 'cancelada' : cor === 'warning' ? 'orcamento' : 'entregue'}">${lista.length}</span>
+          <span class="badge badge-${badgeCls}">${lista.length}</span>
         </div>
+        ${_mob ? `
+        <div class="mobile-card-list" style="padding:10px;">
+          ${lista.map(c => `
+            <div class="mobile-card">
+              <div class="mobile-card-header">
+                <div>
+                  <div class="mobile-card-title">${esc(c.nome)}</div>
+                  <div class="mobile-card-subtitle">${c.whatsapp ? esc(c.whatsapp) : 'Sem WhatsApp'} · ${c.total} OS · ${c.dias !== null ? c.dias + 'd atras' : 'Nunca'}</div>
+                </div>
+                ${c.dias !== null ? `<span style="font-size:12px;font-weight:700;color:var(--text-muted);">${c.dias}d</span>` : ''}
+              </div>
+              <div class="mobile-card-row">
+                ${!c.whatsapp ? `<div style="display:flex;gap:4px;flex:1;">
+                  <input type="text" class="form-control" id="crm-whats-${c.id}" placeholder="(00) 00000-0000" maxlength="15" style="padding:6px 8px;font-size:13px;flex:1;" oninput="CRM._maskFone(this)">
+                  <button class="btn btn-primary btn-sm" onclick="CRM.salvarWhatsApp('${c.id}')">Salvar</button>
+                </div>` : `<div style="display:flex;gap:6px;flex-wrap:wrap;">
+                  <button class="btn btn-success btn-sm" onclick="CRM.enviarWhatsApp('${escAttr(c.whatsapp)}','${escAttr(c.nome)}',${c.dias || 0})">WhatsApp</button>
+                  <button class="btn btn-secondary btn-sm" onclick="CRM.agendarRetorno('${c.id}')">Agendar</button>
+                </div>`}
+              </div>
+            </div>
+          `).join('')}
+        </div>` : `
         <table class="data-table">
           <thead>
             <tr><th>Cliente</th><th>WhatsApp</th><th>OS feitas</th><th>Ultima OS</th><th></th></tr>
@@ -127,7 +152,7 @@ const CRM = {
               </tr>
             `).join('')}
           </tbody>
-        </table>
+        </table>`}
       </div>`;
   },
 

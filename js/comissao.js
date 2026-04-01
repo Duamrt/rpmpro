@@ -67,7 +67,40 @@ const COMISSAO = {
           <h3>Nenhuma OS entregue nesse periodo</h3>
           <p>Selecione outro mes ou aguarde as entregas</p>
         </div>
+      ` : (window.innerWidth <= 768 ? `
+      <!-- Mobile: cards -->
+      ${(() => { mecanicos.forEach(m => { const vt = m.ordens.reduce((s,o) => s + (o.valor_total||0), 0); const vc = vt * (m.comissao_percent/100); totalGeralOS += vt; totalGeralComissao += vc; m._vt = vt; m._vc = vc; }); return ''; })()}
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-size:12px;color:var(--text-muted);">Total OS</div>
+          <div style="font-size:18px;font-weight:700;">${APP.formatMoney(totalGeralOS)}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Total Comissao</div>
+          <div style="font-size:22px;font-weight:800;font-family:var(--heading);color:var(--success);">${APP.formatMoney(totalGeralComissao)}</div>
+        </div>
+      </div>
+      <div class="mobile-card-list">
+        ${mecanicos.map(m => `
+          <div class="mobile-card">
+            <div class="mobile-card-header">
+              <div>
+                <div class="mobile-card-title">${esc(m.nome)}</div>
+                <div class="mobile-card-subtitle">${m.ordens.length} OS · ${m.comissao_percent}% comissao</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:11px;color:var(--text-muted);">Comissao</div>
+                <div style="font-size:16px;font-weight:700;color:var(--success);">${APP.formatMoney(m._vc)}</div>
+              </div>
+            </div>
+            <div class="mobile-card-row">
+              <span style="font-size:12px;color:var(--text-muted);">Total OS: ${APP.formatMoney(m._vt)}</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
       ` : `
+      <!-- Desktop: tabela -->
       <table class="data-table">
         <thead>
           <tr>
@@ -104,7 +137,7 @@ const COMISSAO = {
           </tr>
         </tfoot>
       </table>
-      `}
+      `)}
     `;
 
     // Guarda pra PDF

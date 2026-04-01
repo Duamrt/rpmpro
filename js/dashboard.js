@@ -90,7 +90,7 @@ const DASHBOARD = {
     // Ranking mecânicos
     if (rankingMec.length && ['dono', 'gerente'].includes(APP.profile.role)) {
       htmlAvanc += `
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+      <div style="display:grid;grid-template-columns: 1fr 1fr;gap:16px;margin-bottom:20px;">
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;">
           <div style="padding:16px 20px;border-bottom:1px solid var(--border);">
             <h3 style="font-size:15px;">Ranking Mecanicos (mes)</h3>

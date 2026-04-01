@@ -104,7 +104,7 @@ const FILA = {
       </div>
       <div class="modal-body">
         <form onsubmit="FILA.salvar(event)">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div style="display:grid;grid-template-columns: 1fr 1fr;gap:12px;">
             <div class="form-group" style="position:relative;">
               <label>Nome do cliente *</label>
               <input type="text" class="form-control" id="fila-nome" required placeholder="Digite pra buscar ou cadastrar novo" autocomplete="off" oninput="FILA._buscarCli(this.value)" onfocus="FILA._buscarCli(this.value)">
@@ -116,7 +116,7 @@ const FILA = {
               <input type="text" class="form-control" id="fila-whatsapp" placeholder="(00) 00000-0000" maxlength="15" oninput="FILA._maskFone(this)">
             </div>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div style="display:grid;grid-template-columns: 1fr 1fr;gap:12px;">
             <div class="form-group" style="position:relative;">
               <label>Veiculo</label>
               <input type="text" class="form-control" id="fila-veiculo" placeholder="Digite marca ou modelo..." autocomplete="off" oninput="FILA._buscarVeiculo(document.getElementById('fila-veiculo').value)" onfocus="FILA._buscarVeiculo(document.getElementById('fila-veiculo').value)">
@@ -131,7 +131,7 @@ const FILA = {
             <label>O que o cliente disse? *</label>
             <textarea class="form-control" id="fila-sintoma" required rows="3" placeholder="Resuma o que ele falou. Ex: barulho na roda dianteira quando freia, ar nao gela, luz do painel acesa..."></textarea>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div style="display:grid;grid-template-columns: 1fr 1fr;gap:12px;">
             <div class="form-group">
               <label>Urgencia</label>
               <select class="form-control" id="fila-urgencia">
@@ -165,7 +165,7 @@ const FILA = {
       </div>
       <div class="modal-body">
         <form onsubmit="FILA.salvarEdicao(event, '${id}')">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div style="display:grid;grid-template-columns: 1fr 1fr;gap:12px;">
             <div class="form-group">
               <label>Nome *</label>
               <input type="text" class="form-control" id="fila-ed-nome" required value="${esc(data.nome)}">
@@ -175,7 +175,7 @@ const FILA = {
               <input type="text" class="form-control" id="fila-ed-whatsapp" value="${esc(data.whatsapp || '')}">
             </div>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div style="display:grid;grid-template-columns: 1fr 1fr;gap:12px;">
             <div class="form-group">
               <label>Placa</label>
               <input type="text" class="form-control" id="fila-ed-placa" value="${esc(data.placa || '')}" style="text-transform:uppercase" maxlength="8">
