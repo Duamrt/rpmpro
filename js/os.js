@@ -650,19 +650,28 @@ const OS = {
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
           <div>
             <div style="font-weight:700;font-size:16px;">${esc(os.veiculos?.placa)} · ${esc(os.veiculos?.marca || '')} ${esc(os.veiculos?.modelo || '')}</div>
-            <div style="font-size:13px;color:var(--text-secondary);">
-              ${esc(os.clientes?.nome)} · 🔧
-              <select id="det-trocar-mec" onchange="OS._trocarMecanico('${os.id}',this.value)"
-                style="background:transparent;border:none;color:var(--primary);font-size:13px;font-weight:600;cursor:pointer;padding:0;font-family:inherit;">
-                <option value="" ${!os.mecanico_id ? 'selected' : ''}>Sem mecânico</option>
-                ${mecsList.map(m => `<option value="${m.id}" ${m.id === os.mecanico_id ? 'selected' : ''}>${esc(m.nome)}</option>`).join('')}
-              </select>
-            </div>
+            <div style="font-size:13px;color:var(--text-secondary);">${esc(os.clientes?.nome)}</div>
           </div>
           <div style="text-align:right;">
             <div style="font-size:20px;font-weight:800;color:var(--success);" id="det-total">R$ ${totalGeral.toFixed(2)}</div>
             <span class="badge badge-${os.status}">${statusLabel[os.status]}</span>
           </div>
+        </div>
+
+        <!-- MECÂNICO RESPONSÁVEL -->
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;margin-bottom:12px;border-radius:var(--radius);
+          background:${os.mecanico_id ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.1)'};
+          border:1px solid ${os.mecanico_id ? 'var(--success)' : 'var(--danger)'};">
+          <span style="font-size:18px;">${os.mecanico_id ? '🔧' : '⚠️'}</span>
+          <div style="flex:1;">
+            <div style="font-size:11px;font-weight:700;color:${os.mecanico_id ? 'var(--success)' : 'var(--danger)'};text-transform:uppercase;letter-spacing:0.5px;">
+              ${os.mecanico_id ? 'Mecânico responsável' : 'Sem mecânico definido'}
+            </div>
+            <select id="det-trocar-mec" onchange="OS._trocarMecanico('${os.id}',this.value)"
+              style="background:transparent;border:none;color:var(--text);font-size:15px;font-weight:700;cursor:pointer;padding:2px 0;font-family:inherit;width:100%;">
+              <option value="" ${!os.mecanico_id ? 'selected' : ''} style="color:#666;">Selecionar mecânico...</option>
+              ${mecsList.map(m => `<option value="${m.id}" ${m.id === os.mecanico_id ? 'selected' : ''}>${esc(m.nome)}</option>`).join('')}
+            </select>
         </div>
 
         ${_mob ? `
