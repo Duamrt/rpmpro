@@ -1705,30 +1705,20 @@ const OS = {
       vencimento.setDate(vencimento.getDate() + prazo);
       const vencStr = vencimento.toISOString().split('T')[0];
 
-      await db.from('ordens_servico').update({
-        forma_pagamento: 'faturado',
-        pago: false,
-        taxa_cartao: 0,
-        updated_at: new Date().toISOString()
-      }).eq('id', id);
-
-      // Remove lançamento do caixa se existia (era pago antes)
-      await db.from('caixa').delete().eq('oficina_id', APP.oficinaId).eq('os_id', id);
-
-      // Remove conta a receber antiga se existia
-      await db.from('contas_receber').delete().eq('os_id', id).eq('pago', false);
-
-      // Cria nova conta a receber
-      await db.from('contas_receber').insert({
-        oficina_id: APP.oficinaId,
-        cliente_id: os.cliente_id,
-        os_id: id,
-        valor: os.valor_total,
-        vencimento: vencStr
+      const { error: errFat } = await db.rpc('marcar_faturado', {
+        p_os_id: id,
+        p_vencimento: vencStr
       });
+
+      if (errFat) {
+        APP.toast('Erro ao faturar: ' + (errFat.message || errFat.code), 'error');
+        this.abrirDetalhes(id);
+        return;
+      }
 
       APP.toast(`Faturado! Vencimento: ${vencimento.toLocaleDateString('pt-BR')}`);
       this.abrirDetalhes(id);
+      if (typeof KANBAN !== 'undefined') KANBAN.carregar();
       return;
     }
 
