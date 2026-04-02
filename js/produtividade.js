@@ -105,6 +105,15 @@ const PRODUTIVIDADE = {
       return { ...m, osAtribuidas: osAtribuidas.length, osEntregues: osEntregues.length, osMovHoje: osMovHoje.length, valorTotal };
     });
 
+    // Resumo geral da oficina (independente de created_by)
+    const totalOSPeriodo = osList.length;
+    const totalOSCriadas = osList.filter(o => o.created_at >= dataInicio).length;
+    const totalOSMovidas = osList.filter(o => o.updated_at && o.updated_at >= dataInicio && o.updated_at !== o.created_at).length;
+    const totalOSEntregues = osList.filter(o => o.status === 'entregue').length;
+    const totalOSAbertas = osList.filter(o => !['entregue','cancelada'].includes(o.status)).length;
+    const totalFaturado = osList.filter(o => o.status === 'entregue').reduce((s, o) => s + (o.valor_total || 0), 0);
+    const osSemDono = osList.filter(o => !o.created_by);
+
     // Gaps
     const gaps = [];
     dadosUser.forEach(u => {
@@ -132,6 +141,38 @@ const PRODUTIVIDADE = {
           <option value="">Todos</option>
           ${usuarios.map(u => `<option value="${u.id}" ${u.id === this._filtroUser ? 'selected' : ''}>${esc(u.nome)}</option>`).join('')}
         </select>
+      </div>
+
+      <!-- Resumo geral -->
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px;">
+        <div style="font-size:13px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Resumo da oficina — ${periodoLabel[this._periodo]}</div>
+        <div style="display:grid;grid-template-columns:repeat(${_mob ? 3 : 6}, 1fr);gap:12px;">
+          <div style="text-align:center;">
+            <div style="font-family:var(--heading);font-size:28px;font-weight:800;color:var(--primary-light);">${totalOSPeriodo}</div>
+            <div style="font-size:11px;color:var(--text-muted);">OS no periodo</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-family:var(--heading);font-size:28px;font-weight:800;">${totalOSCriadas}</div>
+            <div style="font-size:11px;color:var(--text-muted);">Novas</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-family:var(--heading);font-size:28px;font-weight:800;color:var(--info);">${totalOSMovidas}</div>
+            <div style="font-size:11px;color:var(--text-muted);">Movimentadas</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-family:var(--heading);font-size:28px;font-weight:800;color:var(--warning);">${totalOSAbertas}</div>
+            <div style="font-size:11px;color:var(--text-muted);">Em andamento</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-family:var(--heading);font-size:28px;font-weight:800;color:var(--success);">${totalOSEntregues}</div>
+            <div style="font-size:11px;color:var(--text-muted);">Entregues</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-family:var(--heading);font-size:28px;font-weight:800;color:var(--success);">${APP.formatMoney(totalFaturado)}</div>
+            <div style="font-size:11px;color:var(--text-muted);">Faturado</div>
+          </div>
+        </div>
+        ${osSemDono.length ? '<div style="margin-top:10px;padding:8px 12px;background:var(--warning-bg);border-radius:var(--radius);font-size:12px;color:var(--warning);">' + osSemDono.length + ' OS sem responsavel atribuido (dados importados)</div>' : ''}
       </div>
 
       <!-- Cards por usuario -->
