@@ -2441,6 +2441,22 @@ const OS = {
     if (typeof KANBAN !== 'undefined') KANBAN.carregar();
   },
 
+  async _confirmarEntrega(osId) {
+    await db.from('ordens_servico').update({
+      status: 'entregue',
+      data_entrega: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }).eq('id', osId);
+    await this._lancarNoCaixa(osId);
+    closeModal();
+    const { data: osWpp } = await db.from('ordens_servico')
+      .select('id, status, clientes(nome, whatsapp), veiculos(placa)')
+      .eq('id', osId).single();
+    if (osWpp) KANBAN._enviarWhatsAuto(osWpp, 'entregue');
+    APP.toast('Veículo entregue');
+    if (typeof KANBAN !== 'undefined') KANBAN.carregar();
+  },
+
   async _entregarFaturado(osId) {
     // Busca dados da OS e prazo do cliente
     const { data: os } = await db.from('ordens_servico')
