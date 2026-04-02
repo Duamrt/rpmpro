@@ -1408,10 +1408,13 @@ const FINANCEIRO = {
         </div>
       </div>
 
-      ${Object.keys(porCliente).length === 0 ? '<div style="padding:40px;text-align:center;color:var(--text-muted);"><div style="font-size:16px;font-weight:700;margin-bottom:6px;">Nenhuma conta a receber</div><div style="font-size:13px;">Quando entregar uma OS como "Faturado", ela aparece aqui.</div></div>' : ''}
+      ${Object.keys(porCliente).length === 0 ? '<div style="padding:40px;text-align:center;color:var(--text-muted);"><div style="font-size:16px;font-weight:700;margin-bottom:6px;">Nenhuma conta a receber</div><div style="font-size:13px;">Quando entregar uma OS como "Faturado", ela aparece aqui.</div></div>' : `
+      <input id="fin-receber-busca" type="text" class="form-control" placeholder="Buscar cliente..." oninput="FINANCEIRO._filtrarReceber(this.value)" style="margin-bottom:16px;max-width:320px;">
+      `}
 
+      <div id="fin-receber-lista">
       ${Object.entries(porCliente).map(([cid, cli]) => `
-        <div style="background:var(--bg-card);border:1px solid var(--border);border-left:3px solid var(--primary);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;">
+        <div data-cliente="${esc(cli.nome)}" style="background:var(--bg-card);border:1px solid var(--border);border-left:3px solid var(--primary);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
             <div>
               <div style="font-weight:700;font-size:16px;font-family:var(--heading);">${esc(cli.nome)}</div>
@@ -1444,7 +1447,15 @@ const FINANCEIRO = {
           </div>
         </div>
       `).join('')}
+      </div>
     `;
+  },
+
+  _filtrarReceber(busca) {
+    const termo = (busca || '').toLowerCase();
+    document.querySelectorAll('#fin-receber-lista [data-cliente]').forEach(el => {
+      el.style.display = !termo || el.dataset.cliente.toLowerCase().includes(termo) ? '' : 'none';
+    });
   },
 
   async _receberPagamento(clienteId) {
