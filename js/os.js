@@ -1567,7 +1567,7 @@ const OS = {
     await db.from('itens_os').delete().eq('os_id', id).eq('oficina_id', oficina_id);
     await db.from('checklists_entrada').delete().eq('os_id', id).eq('oficina_id', oficina_id);
     await db.from('checklists_saida').delete().eq('os_id', id).eq('oficina_id', oficina_id);
-    await db.from('estoque_movimentos').delete().eq('os_id', id);
+    await db.from('estoque_movimentos').delete().eq('os_id', id).eq('oficina_id', oficina_id);
     const { error } = await db.from('ordens_servico').delete().eq('id', id).eq('oficina_id', oficina_id);
 
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
