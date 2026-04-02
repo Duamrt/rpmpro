@@ -2197,10 +2197,11 @@ const OS = {
           <button class="btn btn-success" style="padding:16px;font-size:15px;" onclick="OS._escolherMaquininha('${osId}','debito')">Debito</button>
           <button class="btn btn-success" style="padding:16px;font-size:15px;" onclick="OS._escolherMaquininha('${osId}','credito')">Credito</button>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+        <div style="display:grid;grid-template-columns:1fr${['dono', 'gerente'].includes(APP.profile.role) || SUPER_ADMIN.isSuperAdmin ? ' 1fr' : ''};gap:10px;margin-top:10px;">
           <button class="btn btn-secondary" style="padding:14px;font-size:14px;" onclick="OS._entregarFaturado('${osId}')">📋 Faturado</button>
-          <button class="btn btn-danger" style="padding:14px;font-size:14px;" onclick="OS._entregarComPagamento('${osId}','fiado')">Fiado (nao pagou)</button>
+          ${['dono', 'gerente'].includes(APP.profile.role) || SUPER_ADMIN.isSuperAdmin ? `<button class="btn btn-danger" style="padding:14px;font-size:14px;" onclick="OS._entregarComPagamento('${osId}','fiado')">Fiado (nao pagou)</button>` : ''}
         </div>
+        ${!['dono', 'gerente'].includes(APP.profile.role) && !SUPER_ADMIN.isSuperAdmin ? '<div style="margin-top:10px;padding:8px 12px;background:var(--warning-bg);border-radius:var(--radius);font-size:12px;color:var(--warning);text-align:center;">Selecione a forma de pagamento. Somente o proprietario pode entregar sem cobrar.</div>' : ''}
       </div>
     `);
     return; // Espera seleção
