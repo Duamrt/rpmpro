@@ -23,7 +23,7 @@ const PRODUTIVIDADE = {
     // Busca tudo em paralelo
     const [profilesRes, osRes, clientesRes, veiculosRes, pecasRes, caixaRes, itensRes] = await Promise.all([
       db.from('profiles').select('id, nome, role').eq('oficina_id', oficina_id).eq('ativo', true).order('nome'),
-      db.from('ordens_servico').select('id, numero, status, pago, forma_pagamento, valor_total, created_by, mecanico_id, created_at, data_entrega, veiculos(placa), clientes(nome)').eq('oficina_id', oficina_id).gte('created_at', dataInicio),
+      db.from('ordens_servico').select('id, numero, status, pago, forma_pagamento, valor_total, created_by, mecanico_id, created_at, updated_at, data_entrega, veiculos(placa), clientes(nome)').eq('oficina_id', oficina_id).or(`created_at.gte.${dataInicio},updated_at.gte.${dataInicio}`),
       db.from('clientes').select('id, nome, created_by, created_at').eq('oficina_id', oficina_id).gte('created_at', dataInicio),
       db.from('veiculos').select('id, placa, created_at').eq('oficina_id', oficina_id).gte('created_at', dataInicio),
       db.from('pecas').select('id, nome, created_at').eq('oficina_id', oficina_id).gte('created_at', dataInicio),
@@ -49,8 +49,9 @@ const PRODUTIVIDADE = {
 
     // Calcula acoes por usuario (admin) e por mecanico (OS atribuidas)
     const dadosUser = usuarios.map(u => {
-      const osAbertas = osList.filter(o => o.created_by === u.id);
+      const osAbertas = osList.filter(o => o.created_by === u.id && o.created_at >= dataInicio);
       const osFechadasBy = osList.filter(o => o.created_by === u.id && o.status === 'entregue');
+      const osMovimentadas = osList.filter(o => o.updated_at >= dataInicio && (o.created_by === u.id || o.mecanico_id === u.id));
       const clientesCad = clientes.filter(c => c.created_by === u.id);
       const veiculosCad = veiculos.filter(v => v.created_by === u.id);
       const pecasCad = pecas.filter(p => p.created_by === u.id);
@@ -61,6 +62,7 @@ const PRODUTIVIDADE = {
       const timeline = [];
       osAbertas.forEach(o => timeline.push({ hora: o.created_at, desc: `Abriu OS #${o.numero || '-'} — ${o.veiculos?.placa || '-'} (${o.clientes?.nome || '-'})`, tipo: 'OS', cor: 'primary' }));
       osFechadasBy.forEach(o => timeline.push({ hora: o.data_entrega || o.created_at, desc: `Entregou OS #${o.numero || '-'}`, tipo: 'Entrega', cor: 'success' }));
+      osMovimentadas.filter(o => o.updated_at !== o.created_at).forEach(o => timeline.push({ hora: o.updated_at, desc: `Movimentou OS #${o.numero || '-'} — ${o.veiculos?.placa || '-'} (${o.status})`, tipo: 'Movim.', cor: 'primary' }));
       clientesCad.forEach(c => timeline.push({ hora: c.created_at, desc: `Cadastrou cliente: ${c.nome}`, tipo: 'Cliente', cor: 'success' }));
       veiculosCad.forEach(v => timeline.push({ hora: v.created_at, desc: `Cadastrou veiculo: ${v.placa}`, tipo: 'Veiculo', cor: 'success' }));
       pecasCad.forEach(p => timeline.push({ hora: p.created_at, desc: `Cadastrou peca: ${p.nome}`, tipo: 'Peca', cor: 'warning' }));
@@ -69,7 +71,8 @@ const PRODUTIVIDADE = {
 
       timeline.sort((a, b) => new Date(b.hora) - new Date(a.hora));
 
-      const totalAcoes = osAbertas.length + osFechadasBy.length + clientesCad.length + veiculosCad.length + pecasCad.length + despesas.length + pagtos.length;
+      const movims = osMovimentadas.filter(o => o.updated_at !== o.created_at).length;
+      const totalAcoes = osAbertas.length + osFechadasBy.length + movims + clientesCad.length + veiculosCad.length + pecasCad.length + despesas.length + pagtos.length;
 
       // Tempo desde ultima acao
       const ultimaAcao = timeline.length ? new Date(timeline[0].hora) : null;
@@ -79,6 +82,7 @@ const PRODUTIVIDADE = {
         ...u,
         osAbertas: osAbertas.length,
         osFechadas: osFechadasBy.length,
+        movims,
         clientesCad: clientesCad.length,
         veiculosCad: veiculosCad.length,
         pecasCad: pecasCad.length,
@@ -94,8 +98,9 @@ const PRODUTIVIDADE = {
     const dadosMec = mecanicos.map(m => {
       const osAtribuidas = osList.filter(o => o.mecanico_id === m.id);
       const osEntregues = osAtribuidas.filter(o => o.status === 'entregue');
+      const osMovHoje = osAtribuidas.filter(o => o.updated_at >= dataInicio);
       const valorTotal = osEntregues.reduce((s, o) => s + (o.valor_total || 0), 0);
-      return { ...m, osAtribuidas: osAtribuidas.length, osEntregues: osEntregues.length, valorTotal };
+      return { ...m, osAtribuidas: osAtribuidas.length, osEntregues: osEntregues.length, osMovHoje: osMovHoje.length, valorTotal };
     });
 
     // Gaps
@@ -147,12 +152,13 @@ const PRODUTIVIDADE = {
             </div>
 
             <!-- Grid atividades -->
-            <div style="display:grid;grid-template-columns:repeat(${_mob ? 4 : 7}, 1fr);border-bottom:1px solid var(--border);">
+            <div style="display:grid;grid-template-columns:repeat(${_mob ? 4 : 8}, 1fr);border-bottom:1px solid var(--border);">
               ${[
+                ['OS abertas', u.osAbertas],
+                ['Moviment.', u.movims],
+                ['OS fechadas', u.osFechadas],
                 ['Clientes', u.clientesCad],
                 ['Veiculos', u.veiculosCad],
-                ['OS abertas', u.osAbertas],
-                ['OS fechadas', u.osFechadas],
                 ['Pecas', u.pecasCad],
                 ['Despesas', u.despesas],
                 ['Pagtos rec.', u.pagtos]
@@ -199,7 +205,8 @@ const PRODUTIVIDADE = {
               <div style="font-weight:700;font-size:14px;margin-bottom:4px;">${esc(m.nome)}</div>
               <div style="font-family:var(--heading);font-size:22px;font-weight:800;">${m.osAtribuidas}</div>
               <div style="font-size:10px;color:var(--text-muted);">OS atribuidas</div>
-              <div style="font-size:13px;font-weight:600;color:var(--success);margin-top:4px;">${m.osEntregues} entregues</div>
+              <div style="font-size:13px;font-weight:600;color:var(--primary-light);margin-top:4px;">${m.osMovHoje} movimentadas</div>
+              <div style="font-size:13px;font-weight:600;color:var(--success);margin-top:2px;">${m.osEntregues} entregues</div>
               ${m.valorTotal ? `<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${APP.formatMoney(m.valorTotal)}</div>` : ''}
             </div>
           `).join('')}
