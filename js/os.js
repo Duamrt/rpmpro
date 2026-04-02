@@ -163,16 +163,47 @@ const OS = {
           <!-- Campos de novo cliente/veiculo (aparecem se placa nao encontrada) -->
           <div id="os-novo-registro" class="hidden">
             <div style="background:var(--warning-bg);padding:10px 14px;border-radius:var(--radius);margin-bottom:16px;font-size:13px;color:var(--warning);">
-              Veiculo nao encontrado. Preencha os dados abaixo:
+              Veiculo nao encontrado. Vincule a um cliente ou cadastre um novo.
             </div>
-            <div class="form-group">
-              <label>Nome do cliente *</label>
-              <input type="text" class="form-control" id="os-novo-cliente">
+
+            <!-- Bifurcação: cliente existente x novo -->
+            <div style="display:flex;gap:8px;margin-bottom:16px;">
+              <button type="button" id="os-btn-cli-existente"
+                onclick="OS._modoCliente('existente')"
+                style="flex:1;padding:10px;border-radius:var(--radius);border:2px solid var(--primary);background:var(--primary);color:#fff;font-weight:600;cursor:pointer;font-size:13px;">
+                Cliente existente
+              </button>
+              <button type="button" id="os-btn-cli-novo"
+                onclick="OS._modoCliente('novo')"
+                style="flex:1;padding:10px;border-radius:var(--radius);border:2px solid var(--border);background:transparent;color:var(--text-secondary);font-weight:600;cursor:pointer;font-size:13px;">
+                Novo cliente
+              </button>
             </div>
-            <div class="form-group">
-              <label>WhatsApp do cliente</label>
-              <input type="text" class="form-control" id="os-novo-whatsapp" placeholder="(00) 00000-0000">
+
+            <!-- Cliente existente: autocomplete -->
+            <div id="os-bloco-cli-existente" class="form-group" style="position:relative;">
+              <label>Buscar cliente *</label>
+              <input type="text" class="form-control" id="os-busca-cliente-existente"
+                placeholder="Digite o nome do cliente..."
+                autocomplete="off"
+                oninput="OS._buscarClienteExistente(this.value)">
+              <div id="os-sugestoes-cliente" style="display:none;position:absolute;left:0;right:0;top:100%;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);max-height:180px;overflow-y:auto;z-index:20;"></div>
+              <div id="os-cliente-existente-info" style="font-size:12px;color:var(--success);margin-top:4px;"></div>
             </div>
+
+            <!-- Novo cliente: nome + whatsapp -->
+            <div id="os-bloco-cli-novo" class="hidden">
+              <div class="form-group">
+                <label>Nome do cliente *</label>
+                <input type="text" class="form-control" id="os-novo-cliente">
+              </div>
+              <div class="form-group">
+                <label>WhatsApp do cliente</label>
+                <input type="text" class="form-control" id="os-novo-whatsapp" placeholder="(00) 00000-0000">
+              </div>
+            </div>
+
+            <!-- Dados do veículo (sempre visível) -->
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
               <div class="form-group">
                 <label>Marca</label>
@@ -454,11 +485,68 @@ const OS = {
         document.getElementById('os-cliente-id').value = '';
         infoEl.textContent = '';
         novoEl.classList.remove('hidden');
+        OS._modoCliente('existente'); // padrão: vincular a cliente existente
       } else {
         sugEl.innerHTML = '<div style="padding:10px 14px;color:var(--text-secondary);font-size:13px;">Nenhum veiculo encontrado com "' + esc(placa) + '"</div>';
         sugEl.classList.remove('hidden');
       }
     }, 300);
+  },
+
+  _modoCliente(modo) {
+    const btnEx = document.getElementById('os-btn-cli-existente');
+    const btnNv = document.getElementById('os-btn-cli-novo');
+    const blocoEx = document.getElementById('os-bloco-cli-existente');
+    const blocoNv = document.getElementById('os-bloco-cli-novo');
+    if (!btnEx) return;
+    if (modo === 'existente') {
+      btnEx.style.background = 'var(--primary)'; btnEx.style.color = '#fff'; btnEx.style.borderColor = 'var(--primary)';
+      btnNv.style.background = 'transparent'; btnNv.style.color = 'var(--text-secondary)'; btnNv.style.borderColor = 'var(--border)';
+      blocoEx.classList.remove('hidden');
+      blocoNv.classList.add('hidden');
+    } else {
+      btnNv.style.background = 'var(--primary)'; btnNv.style.color = '#fff'; btnNv.style.borderColor = 'var(--primary)';
+      btnEx.style.background = 'transparent'; btnEx.style.color = 'var(--text-secondary)'; btnEx.style.borderColor = 'var(--border)';
+      blocoNv.classList.remove('hidden');
+      blocoEx.classList.add('hidden');
+      document.getElementById('os-cliente-id').value = '';
+      document.getElementById('os-cliente-existente-info').textContent = '';
+    }
+    this._modoClienteAtual = modo;
+  },
+
+  _buscarClienteExistente(q) {
+    clearTimeout(this._cliAcTimer);
+    const sug = document.getElementById('os-sugestoes-cliente');
+    if (!sug) return;
+    if (q.length < 2) { sug.style.display = 'none'; return; }
+    this._cliAcTimer = setTimeout(async () => {
+      const { data } = await db.from('clientes')
+        .select('id, nome, whatsapp')
+        .eq('oficina_id', APP.oficinaId)
+        .ilike('nome', '%' + q + '%')
+        .order('nome').limit(8);
+      if (!data?.length) {
+        sug.innerHTML = '<div style="padding:10px 14px;color:var(--text-secondary);font-size:13px;">Nenhum cliente encontrado</div>';
+        sug.style.display = 'block'; return;
+      }
+      sug.innerHTML = data.map(c => `
+        <div style="padding:10px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);"
+             onmouseover="this.style.background='rgba(255,69,0,0.1)'" onmouseout="this.style.background=''"
+             onclick="OS._selecionarClienteExistente('${c.id}','${c.nome.replace(/'/g,"\\'")}','${(c.whatsapp||'').replace(/'/g,"\\'")}')">
+          <span style="font-weight:600;">${esc(c.nome)}</span>
+          <span style="font-size:12px;color:var(--text-secondary);">${esc(c.whatsapp||'')}</span>
+        </div>`).join('');
+      sug.style.display = 'block';
+    }, 250);
+  },
+
+  _selecionarClienteExistente(id, nome, whatsapp) {
+    document.getElementById('os-cliente-id').value = id;
+    document.getElementById('os-busca-cliente-existente').value = nome;
+    document.getElementById('os-cliente-existente-info').innerHTML = `✓ ${esc(nome)}${whatsapp ? ' — ' + esc(whatsapp) : ''}`;
+    const sug = document.getElementById('os-sugestoes-cliente');
+    if (sug) sug.style.display = 'none';
   },
 
   _criarSugestoes() {
@@ -493,30 +581,32 @@ const OS = {
     let veiculo_id = document.getElementById('os-veiculo-id').value;
     let cliente_id = document.getElementById('os-cliente-id').value;
 
-    // Se veiculo novo, cria cliente + veiculo
+    // Se veiculo novo, cria (ou reutiliza cliente) + cria veiculo
     if (!veiculo_id) {
-      const nomeCliente = document.getElementById('os-novo-cliente').value.trim();
-      if (!nomeCliente) { APP.toast('Preencha o nome do cliente', 'error'); return; }
+      const modo = this._modoClienteAtual || 'novo';
 
-      // Cria cliente
-      const { data: cli, error: cliErr } = await db
-        .from('clientes')
-        .insert({
-          oficina_id,
-          nome: nomeCliente,
-          whatsapp: document.getElementById('os-novo-whatsapp').value.trim()
-        })
-        .select()
-        .single();
-      if (cliErr) { APP.toast('Erro ao criar cliente: ' + cliErr.message, 'error'); return; }
-      cliente_id = cli.id;
+      if (modo === 'existente') {
+        // Cliente existente selecionado via autocomplete
+        cliente_id = document.getElementById('os-cliente-id').value;
+        if (!cliente_id) { APP.toast('Selecione um cliente da lista', 'error'); return; }
+      } else {
+        // Novo cliente
+        const nomeCliente = document.getElementById('os-novo-cliente').value.trim();
+        if (!nomeCliente) { APP.toast('Preencha o nome do cliente', 'error'); return; }
+        const { data: cli, error: cliErr } = await db
+          .from('clientes')
+          .insert({ oficina_id, nome: nomeCliente, whatsapp: document.getElementById('os-novo-whatsapp').value.trim() })
+          .select().single();
+        if (cliErr) { APP.toast('Erro ao criar cliente: ' + cliErr.message, 'error'); return; }
+        cliente_id = cli.id;
+      }
 
-      // Cria veiculo
+      // Cria veiculo vinculado ao cliente (existente ou novo)
       const { data: vei, error: veiErr } = await db
         .from('veiculos')
         .insert({
           oficina_id,
-          cliente_id: cli.id,
+          cliente_id,
           placa: document.getElementById('os-placa').value.trim().toUpperCase(),
           marca: document.getElementById('os-novo-marca').value.trim(),
           modelo: document.getElementById('os-novo-modelo').value.trim(),
@@ -524,8 +614,7 @@ const OS = {
           cor: (document.getElementById('os-novo-cor').value || '').trim(),
           km_atual: document.getElementById('os-novo-km-atual').value ? parseInt(document.getElementById('os-novo-km-atual').value) : null
         })
-        .select()
-        .single();
+        .select().single();
       if (veiErr) { APP.toast('Erro ao criar veiculo: ' + veiErr.message, 'error'); return; }
       veiculo_id = vei.id;
     }
