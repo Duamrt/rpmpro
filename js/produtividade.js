@@ -21,10 +21,9 @@ const PRODUTIVIDADE = {
     else dataInicio = inicioMes.toISOString().split('T')[0];
 
     // Busca tudo em paralelo
-    const [profilesRes, osRes, osMovRes, clientesRes, veiculosRes, pecasRes, caixaRes, itensRes] = await Promise.all([
+    const [profilesRes, osResAll, clientesRes, veiculosRes, pecasRes, caixaRes, itensRes] = await Promise.all([
       db.from('profiles').select('id, nome, role').eq('oficina_id', oficina_id).eq('ativo', true).order('nome'),
-      db.from('ordens_servico').select('id, numero, status, pago, forma_pagamento, valor_total, created_by, mecanico_id, created_at, updated_at, data_entrega, veiculos(placa), clientes(nome)').eq('oficina_id', oficina_id).gte('created_at', dataInicio),
-      db.from('ordens_servico').select('id, numero, status, pago, forma_pagamento, valor_total, created_by, mecanico_id, created_at, updated_at, data_entrega, veiculos(placa), clientes(nome)').eq('oficina_id', oficina_id).gte('updated_at', dataInicio),
+      db.from('ordens_servico').select('id, numero, status, pago, forma_pagamento, valor_total, created_by, mecanico_id, created_at, updated_at, data_entrega, veiculos(placa), clientes(nome)').eq('oficina_id', oficina_id),
       db.from('clientes').select('id, nome, created_by, created_at').eq('oficina_id', oficina_id).gte('created_at', dataInicio),
       db.from('veiculos').select('id, placa, created_at').eq('oficina_id', oficina_id).gte('created_at', dataInicio),
       db.from('pecas').select('id, nome, created_at').eq('oficina_id', oficina_id).gte('created_at', dataInicio),
@@ -33,13 +32,9 @@ const PRODUTIVIDADE = {
     ]);
 
     const profiles = profilesRes.data || [];
-    // Merge: OS criadas no periodo + OS movimentadas no periodo (sem duplicar)
-    const osCriadas = osRes.data || [];
-    const osMovidas = osMovRes.data || [];
-    const osMap = new Map();
-    osCriadas.forEach(o => osMap.set(o.id, o));
-    osMovidas.forEach(o => osMap.set(o.id, o));
-    const osList = [...osMap.values()];
+    // Filtra OS no JS: criadas OU movimentadas no periodo
+    const todasOS = osResAll.data || [];
+    const osList = todasOS.filter(o => o.created_at >= dataInicio || (o.updated_at && o.updated_at >= dataInicio));
     const clientes = clientesRes.data || [];
     const veiculos = veiculosRes.data || [];
     const pecas = pecasRes.data || [];
