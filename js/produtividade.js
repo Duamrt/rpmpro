@@ -23,7 +23,7 @@ const PRODUTIVIDADE = {
     // Busca tudo em paralelo
     const [profilesRes, osResAll, clientesRes, veiculosRes, pecasRes, caixaRes, itensRes] = await Promise.all([
       db.from('profiles').select('id, nome, role').eq('oficina_id', oficina_id).eq('ativo', true).order('nome'),
-      db.from('ordens_servico').select('id, numero, status, pago, forma_pagamento, valor_total, created_by, mecanico_id, created_at, data_entrega, veiculos(placa), clientes(nome)').eq('oficina_id', oficina_id),
+      db.from('ordens_servico').select('id, numero, status, pago, forma_pagamento, valor_total, mecanico_id, created_at, data_entrega, veiculos(placa), clientes(nome)').eq('oficina_id', oficina_id),
       db.from('clientes').select('id, nome, created_by, created_at').eq('oficina_id', oficina_id).gte('created_at', dataInicio),
       db.from('veiculos').select('id, placa, created_at').eq('oficina_id', oficina_id).gte('created_at', dataInicio),
       db.from('pecas').select('id, nome, created_at').eq('oficina_id', oficina_id).gte('created_at', dataInicio),
@@ -48,42 +48,28 @@ const PRODUTIVIDADE = {
     const periodoLabel = { hoje: 'Hoje', semana: 'Esta semana', mes: 'Este mes' };
     const _mob = window.innerWidth <= 768;
 
-    // Calcula acoes por usuario (admin) e por mecanico (OS atribuidas)
+    // Calcula acoes por usuario (admin) — usa created_by de caixa/clientes (OS nao tem created_by)
     const dadosUser = usuarios.map(u => {
-      const osAbertas = osList.filter(o => o.created_by === u.id && o.created_at >= dataInicio);
-      const osFechadasBy = osList.filter(o => o.created_by === u.id && o.status === 'entregue');
-      const osMovimentadas = osList.filter(o => (o.created_by === u.id || o.mecanico_id === u.id));
       const clientesCad = clientes.filter(c => c.created_by === u.id);
       const veiculosCad = veiculos.filter(v => v.created_by === u.id);
       const pecasCad = pecas.filter(p => p.created_by === u.id);
       const despesas = caixa.filter(c => c.created_by === u.id && c.tipo === 'saida');
       const pagtos = caixa.filter(c => c.created_by === u.id && c.tipo === 'entrada' && c.categoria === 'servico');
 
-      // Timeline: todas as ações com timestamp
       const timeline = [];
-      osAbertas.forEach(o => timeline.push({ hora: o.created_at, desc: `Abriu OS #${o.numero || '-'} — ${o.veiculos?.placa || '-'} (${o.clientes?.nome || '-'})`, tipo: 'OS', cor: 'primary' }));
-      osFechadasBy.forEach(o => timeline.push({ hora: o.data_entrega || o.created_at, desc: `Entregou OS #${o.numero || '-'}`, tipo: 'Entrega', cor: 'success' }));
-      osMovimentadas.filter(o => !osAbertas.find(a => a.id === o.id) && !osFechadasBy.find(a => a.id === o.id)).forEach(o => timeline.push({ hora: o.created_at, desc: `OS #${o.numero || '-'} — ${o.veiculos?.placa || '-'} (${o.status})`, tipo: 'OS ativa', cor: 'primary' }));
       clientesCad.forEach(c => timeline.push({ hora: c.created_at, desc: `Cadastrou cliente: ${c.nome}`, tipo: 'Cliente', cor: 'success' }));
       veiculosCad.forEach(v => timeline.push({ hora: v.created_at, desc: `Cadastrou veiculo: ${v.placa}`, tipo: 'Veiculo', cor: 'success' }));
       pecasCad.forEach(p => timeline.push({ hora: p.created_at, desc: `Cadastrou peca: ${p.nome}`, tipo: 'Peca', cor: 'warning' }));
       despesas.forEach(d => timeline.push({ hora: d.created_at, desc: `Despesa: ${d.descricao} — ${APP.formatMoney(d.valor)}`, tipo: 'Despesa', cor: 'danger' }));
       pagtos.forEach(p => timeline.push({ hora: p.created_at, desc: `Recebeu pagamento — ${APP.formatMoney(p.valor)}`, tipo: 'Pagto', cor: 'success' }));
-
       timeline.sort((a, b) => new Date(b.hora) - new Date(a.hora));
 
-      const movims = osMovimentadas.filter(o => !osAbertas.find(a => a.id === o.id) && !osFechadasBy.find(a => a.id === o.id)).length;
-      const totalAcoes = osAbertas.length + osFechadasBy.length + movims + clientesCad.length + veiculosCad.length + pecasCad.length + despesas.length + pagtos.length;
-
-      // Tempo desde ultima acao
+      const totalAcoes = clientesCad.length + veiculosCad.length + pecasCad.length + despesas.length + pagtos.length;
       const ultimaAcao = timeline.length ? new Date(timeline[0].hora) : null;
       const minSemAcao = ultimaAcao ? Math.floor((Date.now() - ultimaAcao.getTime()) / 60000) : null;
 
       return {
         ...u,
-        osAbertas: osAbertas.length,
-        osFechadas: osFechadasBy.length,
-        movims,
         clientesCad: clientesCad.length,
         veiculosCad: veiculosCad.length,
         pecasCad: pecasCad.length,
@@ -111,12 +97,9 @@ const PRODUTIVIDADE = {
     const totalOSEntregues = osList.filter(o => o.status === 'entregue').length;
     const totalOSAbertas = osList.filter(o => !['entregue','cancelada'].includes(o.status)).length;
     const totalFaturado = osList.filter(o => o.status === 'entregue').reduce((s, o) => s + (o.valor_total || 0), 0);
-    const osSemDono = osList.filter(o => !o.created_by);
-
     // Gaps
     const gaps = [];
     dadosUser.forEach(u => {
-      if (u.osFechadas === 0 && u.osAbertas > 0) gaps.push({ user: u.nome, msg: `${u.osAbertas} OS aberta(s), nenhuma fechada`, nivel: 'danger' });
       if (u.minSemAcao !== null && u.minSemAcao > 120) gaps.push({ user: u.nome, msg: `${Math.floor(u.minSemAcao / 60)}h${u.minSemAcao % 60}min sem atividade`, nivel: u.minSemAcao > 240 ? 'danger' : 'warning' });
     });
     const pendentes = osList.filter(o => o.status === 'entregue' && !o.pago);
@@ -171,7 +154,6 @@ const PRODUTIVIDADE = {
             <div style="font-size:11px;color:var(--text-muted);">Faturado</div>
           </div>
         </div>
-        ${osSemDono.length ? '<div style="margin-top:10px;padding:8px 12px;background:var(--warning-bg);border-radius:var(--radius);font-size:12px;color:var(--warning);">' + osSemDono.length + ' OS sem responsavel atribuido (dados importados)</div>' : ''}
       </div>
 
       <!-- Cards por usuario -->
@@ -194,11 +176,8 @@ const PRODUTIVIDADE = {
             </div>
 
             <!-- Grid atividades -->
-            <div style="display:grid;grid-template-columns:repeat(${_mob ? 4 : 8}, 1fr);border-bottom:1px solid var(--border);">
+            <div style="display:grid;grid-template-columns:repeat(${_mob ? 3 : 5}, 1fr);border-bottom:1px solid var(--border);">
               ${[
-                ['OS abertas', u.osAbertas],
-                ['Moviment.', u.movims],
-                ['OS fechadas', u.osFechadas],
                 ['Clientes', u.clientesCad],
                 ['Veiculos', u.veiculosCad],
                 ['Pecas', u.pecasCad],
