@@ -749,6 +749,7 @@ const OS = {
               <span>${esc(i.descricao)}</span>
               <div style="display:flex;align-items:center;gap:6px;">
                 <span style="color:var(--text-secondary);">R$ ${(i.valor_total || 0).toFixed(2)}</span>
+                <button onclick="OS.editarItem('${i.id}','${os.id}','servico',${i.quantidade},${i.valor_unitario || 0},'${escAttr(i.descricao)}')" style="background:none;border:none;color:var(--primary);cursor:pointer;font-size:12px;" title="Editar">✏️</button>
                 <button onclick="OS.removerItem('${i.id}','${os.id}')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;">&times;</button>
               </div>
             </div>
@@ -775,6 +776,7 @@ const OS = {
               <span>${esc(i.descricao)} ${i.peca_id ? '<span style="color:var(--info);font-size:11px;">(estoque)</span>' : '<span style="color:var(--text-muted);font-size:11px;">(avulso)</span>'}</span>
               <div style="display:flex;align-items:center;gap:6px;">
                 <span style="color:var(--text-secondary);">${i.quantidade}x R$ ${(i.valor_unitario || 0).toFixed(2)} = R$ ${(i.valor_total || 0).toFixed(2)}</span>
+                <button onclick="OS.editarItem('${i.id}','${os.id}','peca',${i.quantidade},${i.valor_unitario || 0},'${escAttr(i.descricao)}')" style="background:none;border:none;color:var(--primary);cursor:pointer;font-size:12px;" title="Editar">✏️</button>
                 <button onclick="OS.removerItem('${i.id}','${os.id}','${i.peca_id || ''}',${i.quantidade})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;">&times;</button>
               </div>
             </div>
@@ -1258,6 +1260,73 @@ const OS = {
     this._pecasEstoque = null; // limpa cache
     APP.toast(salvarEstoque ? 'Peca adicionada e salva no estoque' : 'Item avulso adicionado');
     this.abrirDetalhes(this._osAtualId);
+  },
+
+  editarItem(itemId, osId, tipo, qtdAtual, valorAtual, descricao) {
+    openModal(`
+      <div class="modal-header">
+        <h3>Editar ${tipo === 'peca' ? 'Peca' : 'Servico'}</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size:14px;font-weight:600;margin-bottom:12px;">${descricao}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="form-group">
+            <label>Quantidade</label>
+            <input type="number" class="form-control" id="edit-item-qtd" value="${qtdAtual}" min="0.01" step="0.01">
+          </div>
+          <div class="form-group">
+            <label>Valor unitario (R$)</label>
+            <input type="number" class="form-control" id="edit-item-valor" value="${valorAtual}" min="0" step="0.01">
+          </div>
+        </div>
+        <div style="font-size:13px;color:var(--text-secondary);margin-top:8px;">
+          Total: <strong id="edit-item-total">R$ ${(qtdAtual * valorAtual).toFixed(2)}</strong>
+        </div>
+        <div class="modal-footer" style="padding:16px 0 0;border:0;display:flex;gap:8px;">
+          <button class="btn btn-secondary" onclick="closeModal();OS.abrirDetalhes('${osId}')">Cancelar</button>
+          <button class="btn btn-primary" onclick="OS._salvarEdicaoItem('${itemId}','${osId}')">Salvar</button>
+        </div>
+      </div>
+    `);
+    // Atualiza total em tempo real
+    const qtdEl = document.getElementById('edit-item-qtd');
+    const valEl = document.getElementById('edit-item-valor');
+    const totEl = document.getElementById('edit-item-total');
+    const atualizar = () => { totEl.textContent = 'R$ ' + ((parseFloat(qtdEl.value) || 0) * (parseFloat(valEl.value) || 0)).toFixed(2); };
+    qtdEl.addEventListener('input', atualizar);
+    valEl.addEventListener('input', atualizar);
+  },
+
+  async _salvarEdicaoItem(itemId, osId) {
+    const qtd = parseFloat(document.getElementById('edit-item-qtd')?.value) || 0;
+    const valor = parseFloat(document.getElementById('edit-item-valor')?.value) || 0;
+    if (qtd <= 0) { APP.toast('Quantidade deve ser maior que zero', 'error'); return; }
+
+    const { error } = await db.from('itens_os').update({
+      quantidade: qtd,
+      valor_unitario: valor,
+      valor_total: qtd * valor
+    }).eq('id', itemId);
+
+    if (error) { APP.toast('Erro ao salvar: ' + error.message, 'error'); return; }
+
+    // Recalcula total da OS
+    const { data: itens } = await db.from('itens_os').select('tipo, valor_total').eq('os_id', osId);
+    const totalServicos = (itens || []).filter(i => i.tipo === 'servico').reduce((s, i) => s + (i.valor_total || 0), 0);
+    const totalPecas = (itens || []).filter(i => i.tipo === 'peca').reduce((s, i) => s + (i.valor_total || 0), 0);
+    const { data: osData } = await db.from('ordens_servico').select('desconto').eq('id', osId).single();
+    const desconto = osData?.desconto || 0;
+    await db.from('ordens_servico').update({
+      valor_mao_obra: totalServicos,
+      valor_pecas: totalPecas,
+      valor_total: totalServicos + totalPecas - desconto,
+      updated_at: new Date().toISOString()
+    }).eq('id', osId);
+
+    APP.toast('Item atualizado');
+    closeModal();
+    this.abrirDetalhes(osId);
   },
 
   async removerItem(itemId, osId, pecaId, quantidade) {
