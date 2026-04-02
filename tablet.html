@@ -213,6 +213,48 @@ html{font-size:15px;}body{background:var(--bg);color:var(--w);font-family:var(--
   <div id="det-content"><div class="loading-msg">Carregando...</div></div>
 </div>
 
+<!-- NOVA OS -->
+<div class="v" id="v-nova">
+  <div class="det-top">
+    <div class="det-back" onclick="go('home')">&larr; Voltar</div>
+    <div class="det-tt">Nova OS</div>
+  </div>
+  <div class="det-sec" style="border-top:none;">
+    <div style="margin-bottom:18px;">
+      <div style="font-family:var(--head);font-size:.8rem;font-weight:600;color:var(--w3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Placa do veiculo</div>
+      <div class="search-bar">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="nova-placa" placeholder="ABC-1234" oninput="TBL.buscarPlaca(this.value)" style="text-transform:uppercase;">
+      </div>
+      <div id="nova-veiculo-info"></div>
+    </div>
+
+    <div style="margin-bottom:18px;display:none;" id="nova-cliente-box">
+      <div style="font-family:var(--head);font-size:.8rem;font-weight:600;color:var(--w3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Cliente</div>
+      <div id="nova-cliente-info" style="background:var(--sf);border:1px solid var(--ln);border-left:3px solid var(--amber);border-radius:var(--r);padding:14px 16px;"></div>
+    </div>
+
+    <div style="margin-bottom:18px;">
+      <div style="font-family:var(--head);font-size:.8rem;font-weight:600;color:var(--w3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Reclamacao do cliente</div>
+      <textarea id="nova-descricao" style="width:100%;padding:14px 16px;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r);color:var(--w);font-family:var(--sans);font-size:1rem;outline:none;resize:none;min-height:80px;" placeholder="O que o cliente relatou..."></textarea>
+    </div>
+
+    <div style="margin-bottom:18px;">
+      <div style="font-family:var(--head);font-size:.8rem;font-weight:600;color:var(--w3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">KM atual</div>
+      <input id="nova-km" type="number" style="width:100%;padding:14px 16px;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r);color:var(--w);font-family:var(--head);font-size:1.3rem;font-weight:700;outline:none;" placeholder="Ex: 45320">
+    </div>
+
+    <div style="margin-bottom:18px;">
+      <div style="font-family:var(--head);font-size:.8rem;font-weight:600;color:var(--w3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Mecanico</div>
+      <div id="nova-mecanicos" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"></div>
+    </div>
+  </div>
+
+  <div style="padding:0 24px 24px;">
+    <button id="nova-btn-criar" class="d-btn fill" style="width:100%;font-size:1.1rem;padding:20px;opacity:0.4;pointer-events:none;" onclick="TBL.criarOS()">Abrir OS</button>
+  </div>
+</div>
+
 </div>
 
 <!-- BOTTOM NAV -->
@@ -565,8 +607,129 @@ const TBL={
     document.getElementById('sug-box').classList.remove('show');
   },
 
+  _novaVeiculo:null,
+  _novaCliente:null,
+  _novaMecanico:null,
+
   novaOS(){
-    window.open('index.html','_self');
+    // Reset
+    this._novaVeiculo=null;this._novaCliente=null;this._novaMecanico=null;
+    document.getElementById('nova-placa').value='';
+    document.getElementById('nova-descricao').value='';
+    document.getElementById('nova-km').value='';
+    document.getElementById('nova-veiculo-info').innerHTML='';
+    document.getElementById('nova-cliente-box').style.display='none';
+    document.getElementById('nova-btn-criar').style.opacity='0.4';
+    document.getElementById('nova-btn-criar').style.pointerEvents='none';
+
+    // Mecânicos
+    const mecs=this.profiles.filter(p=>['mecanico','aux_mecanico'].includes(p.role));
+    const osAbertas=this.osList.filter(o=>!['entregue','cancelada'].includes(o.status));
+    document.getElementById('nova-mecanicos').innerHTML=mecs.map(m=>{
+      const carga=osAbertas.filter(o=>o.mecanico_id===m.id).length;
+      return`<div class="g-a" style="padding:16px;" onclick="TBL.selMecanico('${m.id}',this)" data-mec="${m.id}">
+        <div style="font-family:var(--head);font-size:.9rem;font-weight:700;">${esc(m.nome)}</div>
+        <div style="font-size:.72rem;color:var(--w3);margin-top:2px;">${carga} OS ativa${carga!==1?'s':''}</div>
+      </div>`;
+    }).join('')||'<div style="color:var(--w3);font-size:.85rem;">Nenhum mecanico cadastrado</div>';
+
+    go('nova');
+  },
+
+  selMecanico(id,el){
+    this._novaMecanico=id;
+    document.querySelectorAll('#nova-mecanicos .g-a').forEach(e=>{e.style.borderColor='var(--ln)';e.style.background='var(--sf)';e.querySelector('div').style.color='';});
+    el.style.borderColor='var(--amber)';el.style.background='var(--amber-dim)';el.querySelector('div').style.color='var(--amber)';
+    this._checkNovaOS();
+  },
+
+  _buscaPlacaTimer:null,
+  buscarPlaca(val){
+    clearTimeout(this._buscaPlacaTimer);
+    if(!val||val.length<3){document.getElementById('nova-veiculo-info').innerHTML='';document.getElementById('nova-cliente-box').style.display='none';this._novaVeiculo=null;this._novaCliente=null;this._checkNovaOS();return;}
+    this._buscaPlacaTimer=setTimeout(()=>this._executarBuscaPlaca(val),300);
+  },
+
+  _executarBuscaPlaca(placa){
+    const pl=placa.toUpperCase().replace(/[^A-Z0-9]/g,'');
+    const vei=this.veiculos.find(v=>(v.placa||'').replace(/[^A-Z0-9]/g,'').includes(pl));
+    const infoEl=document.getElementById('nova-veiculo-info');
+    const cliBox=document.getElementById('nova-cliente-box');
+
+    if(vei){
+      this._novaVeiculo=vei;
+      const desc=[vei.marca,vei.modelo,vei.ano].filter(Boolean).join(' ');
+      const osVei=this.osList.filter(o=>o.veiculo_id===vei.id);
+      const ultima=osVei.length?osVei[0]:null;
+      const dtUlt=ultima&&ultima.data_entrada?new Date(ultima.data_entrada).toLocaleDateString('pt-BR'):'';
+      infoEl.innerHTML=`<div style="background:var(--sf);border:1px solid var(--ln);border-left:3px solid var(--amber);border-radius:var(--r);padding:14px 16px;margin-top:10px;">
+        <div style="font-weight:700;font-size:1rem;">${esc(vei.placa)} — ${esc(desc)}</div>
+        ${ultima?`<div style="font-size:.75rem;color:var(--w3);margin-top:4px;">Ultima visita: ${dtUlt} &middot; ${osVei.length} OS no historico</div>`:''}
+      </div>`;
+
+      const cli=this.clientes.find(c=>c.id===vei.cliente_id);
+      if(cli){
+        this._novaCliente=cli;
+        cliBox.style.display='block';
+        document.getElementById('nova-cliente-info').innerHTML=`
+          <div style="font-weight:700;">${esc(cli.nome)}</div>
+          ${cli.whatsapp?`<div style="font-size:.82rem;color:var(--w2);margin-top:3px;">${esc(cli.whatsapp)}</div>`:''}
+        `;
+      }
+    } else {
+      this._novaVeiculo=null;this._novaCliente=null;
+      infoEl.innerHTML=`<div style="font-size:.82rem;color:var(--w3);margin-top:8px;padding:10px;">Veiculo nao encontrado — sera criado ao abrir a OS</div>`;
+      cliBox.style.display='none';
+    }
+    this._checkNovaOS();
+  },
+
+  _checkNovaOS(){
+    const btn=document.getElementById('nova-btn-criar');
+    const placa=document.getElementById('nova-placa').value.trim();
+    if(placa.length>=7){btn.style.opacity='1';btn.style.pointerEvents='auto';}
+    else{btn.style.opacity='0.4';btn.style.pointerEvents='none';}
+  },
+
+  async criarOS(){
+    const placa=document.getElementById('nova-placa').value.trim().toUpperCase();
+    const descricao=document.getElementById('nova-descricao').value.trim();
+    const km=parseInt(document.getElementById('nova-km').value)||null;
+    if(!placa){return;}
+
+    const btn=document.getElementById('nova-btn-criar');
+    btn.textContent='Criando...';btn.style.pointerEvents='none';
+
+    let veiculo_id=this._novaVeiculo?.id||null;
+    let cliente_id=this._novaCliente?.id||null;
+
+    // Se veiculo nao existe, cria
+    if(!veiculo_id){
+      const{data:novoVei}=await sb.from('veiculos').insert({oficina_id:this.oficinaId,placa}).select().single();
+      if(novoVei)veiculo_id=novoVei.id;
+    }
+
+    // Proximo numero
+    const{data:ultOS}=await sb.from('ordens_servico').select('numero').eq('oficina_id',this.oficinaId).order('numero',{ascending:false}).limit(1);
+    const proxNum=(ultOS&&ultOS.length?ultOS[0].numero:0)+1;
+
+    const{data:os,error}=await sb.from('ordens_servico').insert({
+      oficina_id:this.oficinaId,
+      numero:proxNum,
+      veiculo_id,
+      cliente_id,
+      status:'entrada',
+      descricao:descricao||null,
+      km_entrada:km,
+      mecanico_id:this._novaMecanico||null,
+      created_by:this.profile.id
+    }).select().single();
+
+    if(error){btn.textContent='Erro!';setTimeout(()=>{btn.textContent='Abrir OS';btn.style.pointerEvents='auto';},2000);return;}
+
+    await this.carregarDados();
+    btn.textContent='Abrir OS';btn.style.pointerEvents='auto';
+    this.abrirOS(os.id);
   }
 };
 
