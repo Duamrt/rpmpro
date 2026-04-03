@@ -190,19 +190,19 @@
 <div class="footer">RPM Pro &copy; 2026 &mdash; Todos os direitos reservados</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../js/config.js?v=04031355"></script>
-<script src="../js/auth.js?v=04031355"></script>
+<script src="../js/config.js?v=04031357"></script>
+<script src="../js/auth.js?v=04031357"></script>
 <script>
   // Redireciona se ja logado
   (async () => {
     const { data: { session } } = await db.auth.getSession();
-    if (session) window.location.href = 'index.html';
+    if (session) window.location.href = 'dashboard-v2.html';
   })();
 
   // Listener de sessao
   db.auth.onAuthStateChange((event, session) => {
     if (event === 'SIGNED_OUT' || !session) return;
-    if (event === 'SIGNED_IN') window.location.href = 'index.html';
+    if (event === 'SIGNED_IN') window.location.href = 'dashboard-v2.html';
   });
 
   function showTab(tab, btn) {
@@ -256,7 +256,7 @@
         document.getElementById('login-email').value,
         document.getElementById('login-senha').value
       );
-      window.location.href = 'index.html';
+      window.location.href = 'dashboard-v2.html';
     } catch (err) {
       showError(err.message === 'Invalid login credentials'
         ? 'Email ou senha incorretos'
@@ -279,7 +279,7 @@
         document.getElementById('cad-oficina').value,
         document.getElementById('cad-nome').value
       );
-      window.location.href = 'index.html';
+      window.location.href = 'dashboard-v2.html';
     } catch (err) {
       showError(err.message);
       btn.disabled = false;
