@@ -3,141 +3,246 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RPM Pro — Login</title>
-<meta name="theme-color" content="#D97706">
+<title>RPM PRO — Login</title>
+<meta name="theme-color" content="#121212">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/svg+xml" href="img/icon-192.svg">
 <link rel="apple-touch-icon" href="img/icon-192.svg">
-<link rel="stylesheet" href="css/style.css?v=04031320">
 <style>
-  body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-  .hazard-login { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: repeating-linear-gradient(-45deg, var(--primary), var(--primary) 6px, transparent 6px, transparent 12px); opacity: 0.5; }
-  .login-container { width: 100%; max-width: 400px; padding: 24px; }
-  .login-logo { text-align: center; margin-bottom: 40px; }
-  .login-logo h1 { font-family: var(--heading); font-size: 48px; font-weight: 800; letter-spacing: 3px; }
-  .login-logo h1 .rpm { color: var(--primary); }
-  .login-logo h1 .pro { color: var(--text); }
-  .login-logo p { color: var(--text-secondary); font-size: 14px; margin-top: 4px; }
-  .login-card { background: var(--bg-card); border: 1px solid var(--border); border-top: 3px solid var(--primary); border-radius: var(--radius-lg); padding: 32px; transition: background .3s; }
-  .login-card h2 { font-family: var(--heading); font-size: 20px; margin-bottom: 24px; text-align: center; letter-spacing: 1px; text-transform: uppercase; }
-  .login-btn { width: 100%; padding: 12px; font-size: 15px; margin-top: 8px; }
-  .login-footer { text-align: center; margin-top: 20px; font-size: 13px; color: var(--text-secondary); }
-  .login-footer a { color: var(--primary); text-decoration: none; font-weight: 600; }
-  .login-error { background: var(--danger-bg); color: var(--danger); padding: 10px 14px; border-radius: var(--radius); font-size: 13px; margin-bottom: 16px; display: none; }
-  .tab-switch { display: flex; gap: 0; margin-bottom: 24px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
-  .tab-switch button { flex: 1; padding: 10px; background: var(--bg-input); color: var(--text-secondary); border: none; font-size: 14px; font-weight: 600; cursor: pointer; font-family: var(--body); transition: background .3s; }
-  .tab-switch button.active { background: var(--primary); color: #000; }
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+  body {
+    background-color: #121212;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: #fff;
+    padding: 32px 16px;
+  }
+
+  .header { text-align: center; margin-bottom: 32px; }
+  .logo { font-size: 42px; font-weight: 800; letter-spacing: -1px; }
+  .logo-rpm { color: #FFB800; }
+  .logo-pro { color: #fff; }
+  .subtitle { font-size: 14px; color: #888; margin-top: 4px; font-weight: 400; }
+
+  .login-card {
+    background-color: #1A1A1B;
+    width: 100%;
+    max-width: 400px;
+    border-radius: 6px;
+    border: 1px solid #2A2A2A;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+
+  .tabs { display: flex; width: 100%; border-bottom: 1px solid #2A2A2A; }
+  .tab {
+    flex: 1;
+    text-align: center;
+    padding: 16px 0;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: #666;
+    transition: background .2s, color .2s;
+  }
+  .tab.active { background-color: #FFB800; color: #000; }
+
+  .form-body { padding: 32px; }
+
+  .input-group { margin-bottom: 20px; }
+  .input-group label {
+    display: block;
+    font-size: 11px;
+    color: #888;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+  }
+  .input-group input {
+    width: 100%;
+    background-color: #121212;
+    border: 1px solid #333;
+    color: #fff;
+    padding: 14px 16px;
+    font-size: 14px;
+    border-radius: 4px;
+    outline: none;
+    font-family: 'Inter', sans-serif;
+    transition: border-color .2s;
+  }
+  .input-group input:focus { border-color: #FFB800; }
+  .input-group input::placeholder { color: #555; }
+
+  .btn-submit {
+    width: 100%;
+    background-color: #FFB800;
+    color: #000;
+    border: none;
+    padding: 16px;
+    font-size: 15px;
+    font-weight: 800;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 8px;
+    font-family: 'Inter', sans-serif;
+    transition: opacity .2s;
+  }
+  .btn-submit:hover { opacity: 0.9; }
+  .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .forgot-password {
+    display: block;
+    text-align: center;
+    margin-top: 24px;
+    color: #FFB800;
+    font-size: 13px;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .forgot-password:hover { text-decoration: underline; }
+
+  .login-error {
+    background: #3b1111;
+    color: #ff6b6b;
+    padding: 10px 14px;
+    border-radius: 4px;
+    font-size: 13px;
+    margin-bottom: 16px;
+    display: none;
+  }
+  .login-error.success {
+    background: #113b1a;
+    color: #6bffb8;
+  }
+
+  .footer {
+    margin-top: 48px;
+    font-size: 12px;
+    color: #555;
+  }
+
+  .hidden { display: none !important; }
 </style>
-<script>
-  (function(){ var t = localStorage.getItem('rpmpro-theme') || 'dark'; document.documentElement.setAttribute('data-theme', t); })();
-</script>
 </head>
 <body>
 
-<div class="hazard-login"></div>
-<div class="login-container">
-  <div class="login-logo">
-    <h1><span class="rpm">RPM</span><span class="pro">PRO</span></h1>
-    <p>Gestao inteligente para oficinas</p>
+<div class="header">
+  <div class="logo"><span class="logo-rpm">RPM</span><span class="logo-pro">PRO</span></div>
+  <div class="subtitle">Gestao Inteligente para Oficinas</div>
+</div>
+
+<div class="login-card">
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('login', this)">Entrar</button>
+    <button class="tab" onclick="showTab('cadastro', this)">Criar conta</button>
   </div>
 
-  <div class="login-card">
-    <div class="tab-switch">
-      <button class="active" onclick="showTab('login', event)">Entrar</button>
-      <button onclick="showTab('cadastro', event)">Criar conta</button>
-    </div>
-
+  <div class="form-body">
     <div class="login-error" id="login-error"></div>
 
     <!-- LOGIN -->
     <form id="form-login" onsubmit="handleLogin(event)">
-      <div class="form-group">
-        <label>Email</label>
-        <input type="email" class="form-control" id="login-email" required placeholder="seu@email.com">
+      <div class="input-group">
+        <label>Email Corporativo</label>
+        <input type="email" id="login-email" required placeholder="seu@email.com.br">
       </div>
-      <div class="form-group">
+      <div class="input-group">
         <label>Senha</label>
-        <input type="password" class="form-control" id="login-senha" required placeholder="Sua senha">
+        <input type="password" id="login-senha" required placeholder="Sua senha">
       </div>
-      <button type="submit" class="btn btn-primary login-btn" id="btn-login">Entrar</button>
-      <div style="text-align:center;margin-top:12px;">
-        <a href="#" onclick="handleRecuperarSenha(event)" style="color:var(--primary);font-size:13px;text-decoration:none;">Esqueci minha senha</a>
-      </div>
+      <button type="submit" class="btn-submit" id="btn-login">ACESSAR SISTEMA</button>
+      <a href="#" class="forgot-password" onclick="handleRecuperarSenha(event)">Esqueci minha senha</a>
     </form>
 
     <!-- CADASTRO -->
     <form id="form-cadastro" class="hidden" onsubmit="handleCadastro(event)">
-      <div class="form-group">
-        <label>Nome da oficina</label>
-        <input type="text" class="form-control" id="cad-oficina" required placeholder="Ex: Carbon Car Service">
+      <div class="input-group">
+        <label>Nome da Oficina</label>
+        <input type="text" id="cad-oficina" required placeholder="Ex: Carbon Car Service">
       </div>
-      <div class="form-group">
-        <label>Seu nome</label>
-        <input type="text" class="form-control" id="cad-nome" required placeholder="Seu nome completo">
+      <div class="input-group">
+        <label>Seu Nome</label>
+        <input type="text" id="cad-nome" required placeholder="Nome completo">
       </div>
-      <div class="form-group">
-        <label>Email</label>
-        <input type="email" class="form-control" id="cad-email" required placeholder="seu@email.com">
+      <div class="input-group">
+        <label>Email Corporativo</label>
+        <input type="email" id="cad-email" required placeholder="seu@email.com.br">
       </div>
-      <div class="form-group">
+      <div class="input-group">
         <label>Senha</label>
-        <input type="password" class="form-control" id="cad-senha" required minlength="6" placeholder="Minimo 6 caracteres">
+        <input type="password" id="cad-senha" required minlength="6" placeholder="Minimo 6 caracteres">
       </div>
-      <button type="submit" class="btn btn-primary login-btn" id="btn-cadastro">Criar minha conta</button>
+      <button type="submit" class="btn-submit" id="btn-cadastro">CRIAR MINHA CONTA</button>
     </form>
-  </div>
-
-  <div class="login-footer">
-    <p>RPM Pro &copy; 2026 — Todos os direitos reservados</p>
   </div>
 </div>
 
+<div class="footer">RPM Pro &copy; 2026 &mdash; Todos os direitos reservados</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/config.js?v=04031320"></script>
-<script src="js/auth.js?v=04031320"></script>
+<script src="js/config.js?v=04031340"></script>
+<script src="js/auth.js?v=04031340"></script>
 <script>
-  // Checa se ja ta logado
+  // Redireciona se ja logado
   (async () => {
     const { data: { session } } = await db.auth.getSession();
     if (session) window.location.href = 'index.html';
   })();
 
-  function showTab(tab, e) {
-    document.querySelectorAll('.tab-switch button').forEach(b => b.classList.remove('active'));
-    if (e && e.target) e.target.classList.add('active');
-    else document.querySelectorAll('.tab-switch button').forEach(b => { if ((tab === 'cadastro' && b.textContent.includes('Criar')) || (tab === 'login' && b.textContent.includes('Entrar'))) b.classList.add('active'); });
+  // Listener de sessao
+  db.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_OUT' || !session) return;
+    if (event === 'SIGNED_IN') window.location.href = 'index.html';
+  });
+
+  function showTab(tab, btn) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
     document.getElementById('form-login').classList.toggle('hidden', tab !== 'login');
     document.getElementById('form-cadastro').classList.toggle('hidden', tab !== 'cadastro');
     document.getElementById('login-error').style.display = 'none';
   }
 
   // Hash #cadastro da landing
-  if (location.hash === '#cadastro') showTab('cadastro');
+  if (location.hash === '#cadastro') {
+    showTab('cadastro', document.querySelectorAll('.tab')[1]);
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('login-error');
+    el.className = 'login-error';
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  function showSuccess(msg) {
+    const el = document.getElementById('login-error');
+    el.className = 'login-error success';
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
 
   async function handleRecuperarSenha(e) {
     e.preventDefault();
     const email = document.getElementById('login-email').value.trim();
     if (!email) { showError('Digite seu email acima pra recuperar a senha'); return; }
     try {
-      const { error } = await db.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/login.html' });
+      const { error } = await db.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/v2/login.html' });
       if (error) throw error;
-      showError('');
-      const el = document.getElementById('login-error');
-      el.style.display = 'block';
-      el.style.background = 'var(--success-bg)';
-      el.style.color = 'var(--success)';
-      el.textContent = 'Link de recuperacao enviado pro email ' + email;
+      showSuccess('Link de recuperacao enviado pro email ' + email);
     } catch (err) {
       showError('Erro: ' + err.message);
     }
-  }
-
-  function showError(msg) {
-    const el = document.getElementById('login-error');
-    el.textContent = msg;
-    el.style.display = 'block';
   }
 
   async function handleLogin(e) {
@@ -157,7 +262,7 @@
         ? 'Email ou senha incorretos'
         : err.message);
       btn.disabled = false;
-      btn.textContent = 'Entrar';
+      btn.textContent = 'ACESSAR SISTEMA';
     }
   }
 
@@ -178,7 +283,7 @@
     } catch (err) {
       showError(err.message);
       btn.disabled = false;
-      btn.textContent = 'Criar minha conta';
+      btn.textContent = 'CRIAR MINHA CONTA';
     }
   }
 </script>
