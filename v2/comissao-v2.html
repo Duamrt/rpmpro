@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro V2 — Comissao</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#09090B;--sf:#111114;--sf2:#18181C;--sf3:#1F1F24;--sf4:#27272D;
+  --ln:rgba(255,255,255,0.04);--ln2:rgba(255,255,255,0.08);--ln3:rgba(255,255,255,0.14);
+  --amber:#E8930C;--amber-dim:rgba(232,147,12,0.1);
+  --orange:#EA580C;--orange-dim:rgba(234,88,12,0.12);
+  --red:#FF3B30;--red-dim:rgba(255,59,48,0.08);
+  --green:#30D158;--green-dim:rgba(48,209,88,0.08);
+  --blue:#0A84FF;--blue-dim:rgba(10,132,255,0.1);
+  --cyan:#00C7BE;
+  --w:#F0F0F2;--w2:rgba(255,255,255,0.6);--w3:rgba(255,255,255,0.32);--w4:rgba(255,255,255,0.14);
+  --mono:'JetBrains Mono',monospace;--head:'Barlow Condensed',sans-serif;--body:'Space Grotesk',sans-serif;
+  --r:3px;--r2:4px;
+}
+body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100vh;-webkit-font-smoothing:antialiased;overflow:hidden;}
+.app{display:flex;height:100vh;overflow:hidden;}
+
+/* ── SIDEBAR ── */
+.sidebar{width:220px;flex-shrink:0;background:var(--sf);border-right:1px solid var(--ln2);display:flex;flex-direction:column;height:100vh;}
+.sidebar-logo{padding:20px 16px 16px;border-bottom:1px solid var(--ln2);}
+.sidebar-logo-brand{font-family:var(--head);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.sidebar-logo-brand span{color:var(--amber);}
+.sidebar-logo-oficina{font-family:var(--body);font-size:11px;color:var(--w3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sidebar-nav{flex:1;overflow-y:auto;padding:12px 0;scrollbar-width:none;}
+.sidebar-nav::-webkit-scrollbar{display:none;}
+.nav-section{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);padding:10px 16px 6px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 16px;font-family:var(--body);font-size:13px;font-weight:500;color:var(--w3);cursor:pointer;transition:all .12s;text-decoration:none;}
+.nav-item:hover{color:var(--w);background:var(--sf2);}
+.nav-item.active{color:var(--amber);background:var(--amber-dim);border-left:2px solid var(--amber);}
+.nav-item .nav-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0;}
+.sidebar-footer{padding:16px;border-top:1px solid var(--ln2);}
+.user-info{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.user-avatar{width:34px;height:34px;border-radius:var(--r);background:var(--amber-dim);border:1px solid rgba(232,147,12,0.3);display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:14px;font-weight:800;color:var(--amber);flex-shrink:0;}
+.user-details{min-width:0;}
+.user-name{font-family:var(--body);font-size:13px;font-weight:600;color:var(--w);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.user-role{font-family:var(--mono);font-size:10px;color:var(--w3);text-transform:uppercase;letter-spacing:.5px;}
+.btn-logout{width:100%;font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--w3);background:none;border:1px solid var(--ln3);padding:7px;border-radius:var(--r);cursor:pointer;transition:all .15s;}
+.btn-logout:hover{color:var(--w);border-color:var(--w3);}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.main-topbar{height:48px;background:var(--sf);border-bottom:1px solid var(--ln2);display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0;}
+.main-title{font-family:var(--head);font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:2px;}
+.main-content{flex:1;overflow-y:auto;padding:20px;scrollbar-width:thin;scrollbar-color:var(--sf3) transparent;}
+.main-content::-webkit-scrollbar{width:4px;}
+.main-content::-webkit-scrollbar-thumb{background:var(--sf3);border-radius:2px;}
+
+/* ── BTN PDF ── */
+.btn-pdf{padding:8px 18px;background:var(--sf2);border:2px solid var(--ln3);border-radius:var(--r2);font-family:var(--head);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:var(--w);cursor:pointer;transition:all .12s;display:flex;align-items:center;gap:6px;}
+.btn-pdf:hover{border-color:var(--amber);background:var(--amber-dim);color:var(--amber);}
+.btn-pdf:active{transform:scale(.97);}
+
+/* ── PERIOD NAV ── */
+.period-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;}
+.period-selector{display:flex;align-items:center;gap:10px;}
+.period-btn{width:38px;height:38px;background:var(--sf2);border:1px solid var(--ln3);border-radius:var(--r2);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .12s;}
+.period-btn:hover{border-color:var(--amber);background:var(--amber-dim);}
+.period-btn:active{transform:scale(.94);}
+.period-btn svg{width:14px;height:14px;stroke:var(--w);stroke-width:2.5;}
+.period-btn:hover svg{stroke:var(--amber);}
+.period-label{font-family:var(--head);font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:2px;min-width:160px;text-align:center;}
+.period-label span{color:var(--amber);}
+.period-taxa{font-family:var(--mono);font-size:12px;color:var(--w2);background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:7px 12px;display:flex;align-items:center;gap:5px;}
+.period-taxa-val{color:var(--amber);font-weight:700;}
+
+/* ── SUMMARY ── */
+.summary{display:flex;gap:6px;margin-bottom:20px;}
+.summary-item{flex:1;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:14px;text-align:center;}
+.summary-val{font-family:var(--mono);font-size:20px;font-weight:800;letter-spacing:-1px;}
+.summary-lbl{font-family:var(--head);font-size:10px;font-weight:600;color:var(--w3);text-transform:uppercase;letter-spacing:1.5px;margin-top:2px;}
+
+/* ── RANKING ── */
+.ranking-head{display:grid;grid-template-columns:40px 1fr 100px 70px 130px;gap:10px;align-items:center;padding:6px 16px;margin-bottom:4px;}
+.ranking-head span{font-family:var(--head);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:var(--w4);}
+.rh-right{text-align:right;}
+
+.perf-card{display:grid;grid-template-columns:40px 1fr 100px 70px 130px;gap:10px;align-items:center;background:var(--sf);border:2px solid var(--ln2);border-radius:var(--r2);padding:14px 16px;margin-bottom:5px;transition:all .12s;position:relative;cursor:pointer;}
+.perf-card:hover{border-color:var(--ln3);background:var(--sf2);}
+.perf-card.gold{border-color:rgba(232,147,12,0.25);background:linear-gradient(135deg,var(--sf) 0%,rgba(232,147,12,0.04) 100%);}
+.perf-card.silver{border-color:rgba(255,255,255,0.1);}
+.perf-card.bronze{border-color:rgba(234,88,12,0.15);}
+.perf-card.inativo{opacity:.5;}
+
+.perf-pos{font-family:var(--head);font-size:26px;font-weight:900;text-align:center;letter-spacing:-1px;}
+.perf-card.gold .perf-pos{color:var(--amber);}
+.perf-card.silver .perf-pos{color:var(--w2);}
+.perf-card.bronze .perf-pos{color:var(--orange);}
+.perf-card:not(.gold):not(.silver):not(.bronze) .perf-pos{color:var(--w4);}
+
+.perf-info{display:flex;align-items:center;gap:10px;}
+.perf-avatar{width:40px;height:40px;border-radius:var(--r2);background:var(--sf3);border:1px solid var(--ln2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--mono);font-size:13px;font-weight:700;color:var(--w3);text-transform:uppercase;letter-spacing:2px;}
+.perf-card.gold .perf-avatar{background:var(--amber-dim);color:var(--amber);border-color:rgba(232,147,12,0.2);}
+.perf-details{flex:1;min-width:0;}
+.perf-nome{font-family:var(--head);font-size:17px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.perf-cargo{font-family:var(--body);font-size:11px;color:var(--w3);margin-top:1px;}
+
+.perf-fat-val{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--w2);text-align:center;}
+.perf-fat-lbl{font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--w4);margin-top:2px;text-align:center;}
+
+.perf-os-badge{font-family:var(--mono);font-size:13px;font-weight:800;background:var(--sf3);border:1px solid var(--ln2);border-radius:var(--r2);padding:5px 10px;display:flex;align-items:center;justify-content:center;gap:4px;}
+.perf-os-num{color:var(--w);}
+.perf-os-lbl{font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--w3);}
+
+.perf-comissao{text-align:right;}
+.perf-comissao-val{font-family:var(--mono);font-size:20px;font-weight:800;letter-spacing:-1px;}
+.perf-card.gold .perf-comissao-val{color:var(--green);text-shadow:0 0 20px rgba(48,209,88,0.2);}
+.perf-card.silver .perf-comissao-val{color:var(--green);text-shadow:0 0 15px rgba(48,209,88,0.12);}
+.perf-card.bronze .perf-comissao-val{color:var(--amber);text-shadow:0 0 15px rgba(232,147,12,0.12);}
+.perf-card:not(.gold):not(.silver):not(.bronze) .perf-comissao-val{color:var(--amber);}
+.perf-card.inativo .perf-comissao-val{color:var(--w4);text-shadow:none;}
+.perf-comissao-pct{font-family:var(--mono);font-size:10px;color:var(--w3);margin-top:2px;}
+
+/* ── TOTALIZADOR ── */
+.total-bar{display:flex;align-items:center;justify-content:space-between;background:var(--sf);border:2px solid var(--amber);border-radius:var(--r2);padding:16px 22px;margin-top:14px;}
+.total-label{font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--w2);}
+.total-val{font-family:var(--mono);font-size:26px;font-weight:800;color:var(--amber);text-shadow:0 0 25px rgba(232,147,12,0.15);}
+.total-detail{font-family:var(--body);font-size:12px;color:var(--w3);}
+
+/* ── SIDE PANEL ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:900;opacity:0;pointer-events:none;transition:opacity .25s;}
+.overlay.open{opacity:1;pointer-events:auto;}
+.side-panel{position:fixed;top:0;right:0;bottom:0;width:480px;max-width:100%;background:#141417;border-left:1px solid var(--ln2);z-index:1000;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden;}
+.side-panel.open{transform:translateX(0);}
+.panel-head{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--ln2);}
+.panel-title{font-family:var(--head);font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.panel-title span{color:var(--amber);}
+.panel-close{width:34px;height:34px;background:var(--sf3);border:1px solid var(--ln2);border-radius:var(--r);color:var(--w3);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.panel-close:hover{background:var(--sf4);color:var(--w);}
+.panel-body{flex:1;overflow-y:auto;padding:22px;}
+.panel-section{margin-bottom:20px;}
+.panel-section-title{font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid var(--ln);}
+.os-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--ln);}
+.os-item-num{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--amber);background:var(--amber-dim);padding:3px 8px;border-radius:2px;min-width:50px;text-align:center;}
+.os-item-desc{flex:1;font-size:12px;color:var(--w2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.os-item-val{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--green);}
+.os-item-date{font-family:var(--mono);font-size:10px;color:var(--w4);min-width:45px;text-align:right;}
+
+/* ── LOGIN ── */
+.login-overlay{position:fixed;inset:0;z-index:2000;background:var(--bg);display:none;align-items:center;justify-content:center;}
+.login-box{width:360px;padding:40px;text-align:center;}
+.login-brand{font-family:var(--head);font-size:36px;font-weight:900;text-transform:uppercase;margin-bottom:28px;}
+.login-brand span{color:var(--amber);}
+.login-input{width:100%;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px 16px;color:var(--w);font-family:var(--body);font-size:14px;margin-bottom:12px;outline:none;transition:border-color .15s;}
+.login-input:focus{border-color:var(--amber);}
+.login-input::placeholder{color:var(--w4);}
+.login-btn{width:100%;padding:14px;background:var(--amber);border:none;border-radius:var(--r2);font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#000;cursor:pointer;}
+.login-err{color:var(--red);font-size:12px;margin-top:8px;display:none;}
+
+/* ── LOADING ── */
+.loading-overlay{position:fixed;inset:0;z-index:1500;background:var(--bg);display:none;align-items:center;justify-content:center;}
+.loading-overlay span{font-family:var(--head);font-size:20px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:var(--amber);animation:pulse 1.2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+/* ── TOAST ── */
+.toast-container{position:fixed;top:16px;right:16px;z-index:3000;display:flex;flex-direction:column;gap:6px;}
+.toast{padding:10px 18px;border-radius:var(--r2);font-family:var(--body);font-size:13px;font-weight:500;color:#000;background:var(--green);animation:toastIn .3s;max-width:340px;}
+.toast.err{background:var(--red);color:#fff;}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:none;}}
+
+.empty-state{text-align:center;padding:60px 20px;color:var(--w3);}
+.empty-state .icon{font-size:48px;margin-bottom:12px;}
+.empty-state h3{font-family:var(--head);font-size:20px;font-weight:700;text-transform:uppercase;color:var(--w2);margin-bottom:6px;}
+.empty-state p{font-size:13px;color:var(--w4);}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-overlay" id="login-overlay">
+  <div class="login-box">
+    <div class="login-brand">RPM <span>PRO</span></div>
+    <input class="login-input" type="email" id="login-email" placeholder="email@oficina.com">
+    <input class="login-input" type="password" id="login-senha" placeholder="••••••••" onkeydown="if(event.key==='Enter')fazerLogin()">
+    <button class="login-btn" id="login-btn" onclick="fazerLogin()">Entrar</button>
+    <div class="login-err" id="login-err">Email ou senha incorretos</div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loading" style="display:flex;"><span>Carregando...</span></div>
+
+<!-- TOAST -->
+<div class="toast-container" id="toasts"></div>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-brand">RPM <span>PRO</span></div>
+      <div class="sidebar-logo-oficina" id="oficina-nome"></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Operacao</div>
+      <a class="nav-item" href="kanban-v2.html"><span class="nav-icon">⬛</span>Patio</a>
+      <a class="nav-item" href="dashboard-v2.html"><span class="nav-icon">◈</span>Dashboard</a>
+      <div class="nav-section">Atendimento</div>
+      <a class="nav-item" href="fila-espera-v2.html"><span class="nav-icon">⏳</span>Fila de Espera</a>
+      <a class="nav-item" href="os-list-v2.html"><span class="nav-icon">📋</span>Ordens de Servico</a>
+      <a class="nav-item" href="execucao-os-v2.html"><span class="nav-icon">🔧</span>Execucao OS</a>
+      <a class="nav-item" href="clientes-v2.html"><span class="nav-icon">👥</span>Clientes</a>
+      <a class="nav-item" href="veiculos-v2.html"><span class="nav-icon">🚗</span>Veiculos</a>
+      <a class="nav-item" href="agendamentos-v2.html"><span class="nav-icon">📅</span>Agendamentos</a>
+      <div class="nav-section">Catalogo</div>
+      <a class="nav-item" href="catalogo-v2.html"><span class="nav-icon">🔧</span>Servicos / Pecas</a>
+      <div class="nav-section">Financeiro</div>
+      <a class="nav-item" href="financeiro-v2.html"><span class="nav-icon">💰</span>Caixa</a>
+      <a class="nav-item active" href="comissao-v2.html"><span class="nav-icon">📊</span>Comissao</a>
+      <a class="nav-item" href="folha-v2.html"><span class="nav-icon">📄</span>Folha</a>
+      <div class="nav-section">Gestao</div>
+      <a class="nav-item" href="equipe-v2.html"><span class="nav-icon">👤</span>Equipe</a>
+      <a class="nav-item" href="produtividade-v2.html"><span class="nav-icon">⚡</span>Produtividade</a>
+      <a class="nav-item" href="crm-v2.html"><span class="nav-icon">📡</span>CRM / Reativacao</a>
+      <a class="nav-item" href="satisfacao-v2.html"><span class="nav-icon">⭐</span>Satisfacao</a>
+      <a class="nav-item" href="config-v2.html"><span class="nav-icon">⚙️</span>Configuracoes</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="user-avatar">?</div>
+        <div class="user-details">
+          <div class="user-name" id="user-nome">...</div>
+          <div class="user-role" id="user-role">...</div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="sair()">Sair</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="main-topbar">
+      <div class="main-title">Comissoes</div>
+      <button class="btn-pdf" onclick="gerarPDF()">Imprimir Relatorio</button>
+    </div>
+    <div class="main-content">
+      <!-- PERIOD NAV -->
+      <div class="period-nav">
+        <div class="period-selector">
+          <div class="period-btn" onclick="mesAnterior()"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></div>
+          <div class="period-label" id="period-label">...</div>
+          <div class="period-btn" onclick="mesProximo()"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+        </div>
+        <div class="period-taxa">Taxa: <span class="period-taxa-val" id="taxa-label">0%</span></div>
+      </div>
+
+      <!-- SUMMARY -->
+      <div class="summary" id="summary"></div>
+
+      <!-- RANKING -->
+      <div class="ranking-head">
+        <span style="text-align:center;">#</span>
+        <span>Mecanico</span>
+        <span style="text-align:center;">Faturamento</span>
+        <span style="text-align:center;">OS</span>
+        <span class="rh-right">Comissao</span>
+      </div>
+      <div id="ranking-lista"></div>
+
+      <!-- TOTAL -->
+      <div id="total-bar"></div>
+    </div>
+  </div>
+</div>
+
+<!-- OVERLAY + SIDE PANEL -->
+<div class="overlay" id="overlay" onclick="fecharPanel()"></div>
+<div class="side-panel" id="panel">
+  <div class="panel-head">
+    <div class="panel-title" id="panel-title">Detalhe</div>
+    <button class="panel-close" onclick="fecharPanel()">&times;</button>
+  </div>
+  <div class="panel-body" id="panel-body"></div>
+</div>
+
+<script>
+const SUPABASE_URL='https://roeeyypssutzfzzkypsq.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZWV5eXBzc3V0emZ6emt5cHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MTk0MTgsImV4cCI6MjA5MDM5NTQxOH0.9oCOmABUTXox3FaRViD2zcUaqv94VfOJFMQYz_fcJi4';
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+let PERFIL=null, OFICINA_ID=null, OFICINA=null;
+let MES=null, ANO=null;
+let _dadosPDF=null;
+
+function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function toast(msg,tipo){const d=document.createElement('div');d.className='toast'+(tipo==='err'?' err':'');d.textContent=msg;document.getElementById('toasts').appendChild(d);setTimeout(()=>d.remove(),3500);}
+function fmt(v){return(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtK(v){return v>=1000?(v/1000).toFixed(1)+'k':'R$ '+fmt(v);}
+
+const MESES=['Janeiro','Fevereiro','Marco','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+function mesAnterior(){MES--;if(MES<1){MES=12;ANO--;}carregar();}
+function mesProximo(){MES++;if(MES>12){MES=1;ANO++;}carregar();}
+
+async function carregar(){
+  const inicio=new Date(ANO,MES-1,1).toISOString();
+  const fim=new Date(ANO,MES,0,23,59,59).toISOString();
+
+  document.getElementById('period-label').innerHTML=MESES[MES-1]+' <span>'+ANO+'</span>';
+
+  // Busca OS entregues no periodo
+  const{data:ordens,error}=await db
+    .from('ordens_servico')
+    .select('id, numero, descricao, valor_total, valor_mao_obra, mecanico_id, data_entrega, status')
+    .eq('oficina_id',OFICINA_ID)
+    .eq('status','entregue')
+    .gte('data_entrega',inicio)
+    .lte('data_entrega',fim)
+    .order('data_entrega');
+
+  if(error){toast('Erro: '+error.message,'err');console.error(error);return;}
+
+  const lista=ordens||[];
+
+  // Busca todos mecanicos da oficina (pra mostrar inativos)
+  const{data:membros,error:errM}=await db.from('profiles').select('id, nome, role, comissao_percent')
+    .eq('oficina_id',OFICINA_ID)
+    .in('role',['mecanico','aux_mecanico']);
+
+  if(errM){toast('Erro membros: '+errM.message,'err');console.error(errM);return;}
+
+  // Agrupa por mecanico
+  const porMecanico={};
+  // Inicializa com todos os membros
+  (membros||[]).forEach(m=>{
+    porMecanico[m.id]={id:m.id,nome:m.nome,role:m.role,comissao_percent:m.comissao_percent||0,ordens:[]};
+  });
+  // Adiciona OS
+  lista.forEach(os=>{
+    const mecId=os.mecanico_id;
+    if(!mecId)return;
+    if(!porMecanico[mecId]){
+      porMecanico[mecId]={id:mecId,nome:os.profiles?.nome||'Sem nome',role:os.profiles?.role||'mecanico',comissao_percent:os.profiles?.comissao_percent||0,ordens:[]};
+    }
+    porMecanico[mecId].ordens.push(os);
+  });
+
+  // Ordena por faturamento (ranking)
+  const ranking=Object.values(porMecanico).sort((a,b)=>{
+    const fa=a.ordens.reduce((s,o)=>s+(o.valor_total||0),0);
+    const fb=b.ordens.reduce((s,o)=>s+(o.valor_total||0),0);
+    return fb-fa;
+  });
+
+  // Calcula totais
+  let totalOS=0, totalFat=0, totalComissao=0;
+  ranking.forEach(m=>{
+    m._fat=m.ordens.reduce((s,o)=>s+(o.valor_total||0),0);
+    m._comissao=m._fat*(m.comissao_percent/100);
+    totalOS+=m.ordens.length;
+    totalFat+=m._fat;
+    totalComissao+=m._comissao;
+  });
+
+  // Taxa label
+  const taxas=[...new Set(ranking.map(m=>m.comissao_percent))].filter(Boolean);
+  document.getElementById('taxa-label').textContent=taxas.length===1?taxas[0]+'% sobre MO':'Individual';
+
+  // Summary
+  document.getElementById('summary').innerHTML=`
+    <div class="summary-item"><div class="summary-val" style="color:var(--w);">${ranking.filter(m=>m.ordens.length>0).length}</div><div class="summary-lbl">Mecanicos</div></div>
+    <div class="summary-item"><div class="summary-val" style="color:var(--green);">${totalOS}</div><div class="summary-lbl">OS Entregues</div></div>
+    <div class="summary-item"><div class="summary-val" style="color:var(--w2);">R$ ${fmtK(totalFat)}</div><div class="summary-lbl">Faturamento MO</div></div>
+    <div class="summary-item"><div class="summary-val" style="color:var(--amber);">R$ ${fmtK(totalComissao)}</div><div class="summary-lbl">Total Comissao</div></div>`;
+
+  // Ranking
+  if(!ranking.length){
+    document.getElementById('ranking-lista').innerHTML=`<div class="empty-state"><div class="icon">💰</div><h3>Nenhum mecanico cadastrado</h3><p>Cadastre mecanicos na equipe</p></div>`;
+    document.getElementById('total-bar').innerHTML='';
+    return;
+  }
+
+  document.getElementById('ranking-lista').innerHTML=ranking.map((m,i)=>{
+    const pos=i+1;
+    const cls=m.ordens.length===0?'inativo':pos===1?'gold':pos===2?'silver':pos===3?'bronze':'';
+    const iniciais=(m.nome||'??').split(' ').map(p=>p[0]).join('').substring(0,2).toUpperCase();
+    const roleTxt=m.role==='aux_mecanico'?'Aux. Mecanico':'Mecanico';
+    return`<div class="perf-card ${cls}" onclick="abrirDetalhe('${m.id}')">
+      <div class="perf-pos">${pos}</div>
+      <div class="perf-info">
+        <div class="perf-avatar">${iniciais}</div>
+        <div class="perf-details">
+          <div class="perf-nome">${esc(m.nome)}</div>
+          <div class="perf-cargo">${roleTxt}</div>
+        </div>
+      </div>
+      <div><div class="perf-fat-val">R$ ${fmt(m._fat)}</div><div class="perf-fat-lbl">Faturado</div></div>
+      <div style="display:flex;justify-content:center;"><div class="perf-os-badge"><span class="perf-os-num">${m.ordens.length}</span><span class="perf-os-lbl">OS</span></div></div>
+      <div class="perf-comissao">
+        <div class="perf-comissao-val">R$ ${fmt(m._comissao)}</div>
+        <div class="perf-comissao-pct">${m.ordens.length?m.comissao_percent+'% s/ MO':'Sem producao'}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Total bar
+  document.getElementById('total-bar').innerHTML=`
+    <div class="total-bar">
+      <div>
+        <div class="total-label">Total Comissoes — ${MESES[MES-1]} ${ANO}</div>
+        <div class="total-detail">${ranking.filter(m=>m.ordens.length).length} mecanicos · ${totalOS} OS · R$ ${fmt(totalFat)} faturado MO</div>
+      </div>
+      <div class="total-val">R$ ${fmt(totalComissao)}</div>
+    </div>`;
+
+  // Guarda pra PDF
+  _dadosPDF={ranking,totalOS,totalFat,totalComissao,lista,mesNome:MESES[MES-1],ano:ANO};
+}
+
+// ── DETALHE MECANICO (side panel) ──
+function abrirDetalhe(mecId){
+  if(!_dadosPDF)return;
+  const m=_dadosPDF.ranking.find(x=>x.id===mecId);
+  if(!m)return;
+
+  document.getElementById('panel-title').innerHTML='<span>'+esc(m.nome)+'</span>';
+  document.getElementById('panel-body').innerHTML=`
+    <div class="panel-section">
+      <div class="panel-section-title">Resumo do Periodo</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;">
+        <div style="background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px;text-align:center;">
+          <div style="font-family:var(--mono);font-size:18px;font-weight:800;color:var(--green);">${m.ordens.length}</div>
+          <div style="font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);margin-top:2px;">OS</div>
+        </div>
+        <div style="background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px;text-align:center;">
+          <div style="font-family:var(--mono);font-size:18px;font-weight:800;color:var(--amber);">R$ ${fmt(m._fat)}</div>
+          <div style="font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);margin-top:2px;">Faturado</div>
+        </div>
+        <div style="background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px;text-align:center;">
+          <div style="font-family:var(--mono);font-size:18px;font-weight:800;color:var(--green);">R$ ${fmt(m._comissao)}</div>
+          <div style="font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);margin-top:2px;">Comissao (${m.comissao_percent}%)</div>
+        </div>
+      </div>
+    </div>
+    ${m.ordens.length?`
+    <div class="panel-section">
+      <div class="panel-section-title">OS Entregues</div>
+      ${m.ordens.map(os=>{
+        const dt=os.data_entrega?new Date(os.data_entrega):null;
+        const dtStr=dt?String(dt.getDate()).padStart(2,'0')+'/'+String(dt.getMonth()+1).padStart(2,'0'):'—';
+        return`<div class="os-item">
+          <div class="os-item-num">#${os.numero||'—'}</div>
+          <div class="os-item-desc">${esc(os.descricao||'OS')}</div>
+          <div class="os-item-val">R$ ${fmt(os.valor_total)}</div>
+          <div class="os-item-date">${dtStr}</div>
+        </div>`;
+      }).join('')}
+    </div>`:`
+    <div class="empty-state" style="padding:30px;">
+      <div class="icon">📋</div>
+      <h3>Sem producao</h3>
+      <p>Nenhuma OS entregue neste periodo</p>
+    </div>`}`;
+
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('panel').classList.add('open');
+}
+
+// ── PDF ──
+async function gerarPDF(){
+  if(!_dadosPDF||!_dadosPDF.ranking.length){toast('Sem dados pra gerar PDF','err');return;}
+
+  // Carrega pdfmake se necessario
+  if(!window.pdfMake){
+    toast('Carregando PDF...');
+    await new Promise((resolve,reject)=>{
+      const s=document.createElement('script');
+      s.src='https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js';
+      s.onload=()=>{
+        const v=document.createElement('script');
+        v.src='https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js';
+        v.onload=resolve;v.onerror=reject;
+        document.head.appendChild(v);
+      };
+      s.onerror=reject;
+      document.head.appendChild(s);
+    });
+  }
+
+  const{ranking,totalOS,totalFat,totalComissao,mesNome,ano}=_dadosPDF;
+  const oficina=OFICINA||{};
+
+  const rows=ranking.filter(m=>m.ordens.length>0).map(m=>[
+    {text:m.nome,fontSize:10},
+    {text:String(m.ordens.length),fontSize:10,alignment:'center'},
+    {text:'R$ '+fmt(m._fat),fontSize:10,alignment:'right'},
+    {text:m.comissao_percent+'%',fontSize:10,alignment:'center'},
+    {text:'R$ '+fmt(m._comissao),fontSize:10,alignment:'right',bold:true}
+  ]);
+
+  const docDef={
+    pageSize:'A4',pageMargins:[40,30,40,50],
+    content:[
+      {columns:[
+        {text:[{text:'RPM ',bold:true,color:'#D97706',fontSize:22},{text:'PRO',bold:true,fontSize:22}],width:'auto'},
+        {stack:[
+          {text:oficina.nome||'Oficina',fontSize:14,bold:true,alignment:'right'},
+          oficina.cnpj?{text:'CNPJ: '+oficina.cnpj,fontSize:9,color:'#666666',alignment:'right'}:{}
+        ],alignment:'right'}
+      ],margin:[0,0,0,8]},
+      {canvas:[{type:'line',x1:0,y1:0,x2:515,y2:0,lineWidth:1,lineColor:'#D97706'}],margin:[0,0,0,15]},
+      {text:'RELATORIO DE COMISSAO',fontSize:16,bold:true,alignment:'center',margin:[0,0,0,5]},
+      {text:mesNome+' / '+ano,fontSize:12,alignment:'center',color:'#666666',margin:[0,0,0,15]},
+      {text:totalOS+' OS entregues no periodo',fontSize:10,color:'#999999',margin:[0,0,0,12]},
+      {table:{
+        headerRows:1,widths:['*',50,85,60,85],
+        body:[
+          [{text:'Mecanico',bold:true,fontSize:10,fillColor:'#f5f5f5'},{text:'OS',bold:true,fontSize:10,alignment:'center',fillColor:'#f5f5f5'},{text:'Faturamento',bold:true,fontSize:10,alignment:'right',fillColor:'#f5f5f5'},{text:'Taxa',bold:true,fontSize:10,alignment:'center',fillColor:'#f5f5f5'},{text:'Comissao',bold:true,fontSize:10,alignment:'right',fillColor:'#f5f5f5'}],
+          ...rows,
+          [{text:'TOTAL',bold:true,fontSize:11,fillColor:'#f5f5f5'},{text:String(totalOS),bold:true,fontSize:11,alignment:'center',fillColor:'#f5f5f5'},{text:'R$ '+fmt(totalFat),bold:true,fontSize:11,alignment:'right',fillColor:'#f5f5f5'},{text:'',fillColor:'#f5f5f5'},{text:'R$ '+fmt(totalComissao),bold:true,fontSize:12,alignment:'right',color:'#2e7d32',fillColor:'#f5f5f5'}]
+        ]
+      },layout:{hLineWidth:(i,n)=>(i===0||i===1||i===n.table.body.length)?0.5:0.3,vLineWidth:()=>0.5,hLineColor:()=>'#cccccc',vLineColor:()=>'#cccccc',paddingLeft:()=>6,paddingRight:()=>6,paddingTop:()=>4,paddingBottom:()=>4}}
+    ],
+    footer:{text:'Documento gerado pelo RPM Pro — rpmpro.com.br',alignment:'center',fontSize:8,color:'#999999',margin:[40,10,40,0]}
+  };
+
+  pdfMake.createPdf(docDef).open();
+}
+
+// ── PANEL ──
+function fecharPanel(){
+  document.getElementById('panel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')fecharPanel();});
+
+// ── AUTH ──
+async function fazerLogin(){
+  const email=document.getElementById('login-email').value.trim();
+  const senha=document.getElementById('login-senha').value;
+  const btn=document.getElementById('login-btn');
+  const err=document.getElementById('login-err');
+  if(!email||!senha)return;
+  btn.disabled=true;btn.textContent='Entrando...';err.style.display='none';
+  const{error}=await db.auth.signInWithPassword({email,password:senha});
+  if(error){err.style.display='block';btn.disabled=false;btn.textContent='Entrar';return;}
+  await init();
+}
+function sair(){db.auth.signOut();location.reload();}
+
+async function init(){
+  const{data:{session}}=await db.auth.getSession();
+  if(!session){document.getElementById('login-overlay').style.display='flex';return;}
+  document.getElementById('login-overlay').style.display='none';
+  document.getElementById('loading').style.display='flex';
+
+  const{data:perfil}=await db.from('profiles').select('*, oficinas(*)').eq('user_id',session.user.id).single();
+  if(!perfil){toast('Perfil nao encontrado','err');document.getElementById('loading').style.display='none';document.getElementById('login-overlay').style.display='flex';return;}
+
+  PERFIL=perfil;
+  OFICINA_ID=perfil.oficina_id;
+  OFICINA=perfil.oficinas;
+
+  const nome=perfil.nome||session.user.email;
+  document.getElementById('user-nome').textContent=nome;
+  document.getElementById('user-role').textContent=perfil.role||'';
+  document.getElementById('user-avatar').textContent=nome.charAt(0).toUpperCase();
+  document.getElementById('oficina-nome').textContent=perfil.oficinas?.nome||'';
+
+  const agora=new Date();
+  MES=agora.getMonth()+1;
+  ANO=agora.getFullYear();
+
+  await carregar();
+  document.getElementById('loading').style.display='none';
+}
+
+init();
+</script>
+</body>
+</html>

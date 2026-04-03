@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro V2 — Satisfacao</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#09090B;--sf:#1A1A1E;--sf2:#202024;--sf3:#28282E;
+  --ln:rgba(255,255,255,0.04);--ln2:rgba(255,255,255,0.07);--ln3:rgba(255,255,255,0.12);
+  --amber:#E8930C;--amber-dim:rgba(232,147,12,0.08);
+  --gold:#F5C518;
+  --red:#FF3B30;--red-dim:rgba(255,59,48,0.06);
+  --green:#30D158;--green-dim:rgba(48,209,88,0.06);--green-wpp:#25D366;--green-dark:#0B2E12;
+  --orange:#FF5E00;--orange-dim:rgba(255,94,0,0.06);
+  --w:#EAEAEC;--w2:rgba(255,255,255,0.55);--w3:rgba(255,255,255,0.28);--w4:rgba(255,255,255,0.12);
+  --mono:'JetBrains Mono',monospace;--head:'Barlow Condensed',sans-serif;--body:'Space Grotesk',sans-serif;
+  --r:4px;
+}
+body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100vh;-webkit-font-smoothing:antialiased;padding:32px 40px;max-width:1060px;margin:0 auto;}
+
+/* HEADER */
+.page-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
+.page-title{font-family:var(--head);font-size:32px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.page-title span{color:var(--amber);}
+
+/* PERIOD */
+.period-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;}
+.period-nav{display:flex;align-items:center;gap:12px;}
+.period-btn{
+  width:38px;height:38px;background:var(--sf);border:1px solid var(--ln3);border-radius:var(--r);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .12s;
+}
+.period-btn:hover{border-color:var(--amber);background:var(--amber-dim);}
+.period-btn svg{width:16px;height:16px;stroke:var(--w2);stroke-width:2.5;}
+.period-btn:hover svg{stroke:var(--amber);}
+.period-label{font-family:var(--head);font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:2px;}
+.period-label span{color:var(--amber);}
+
+/* TOP PANEL — Score + Raio-X + KPIs */
+.top-panel{display:grid;grid-template-columns:220px 1fr 140px 140px;gap:8px;margin-bottom:24px;}
+
+/* Score gigante */
+.score-card{
+  background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r);
+  padding:24px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  border-top:3px solid var(--gold);
+}
+.score-val{font-family:var(--mono);font-size:52px;font-weight:800;color:var(--gold);letter-spacing:-3px;line-height:1;}
+.score-max{font-family:var(--mono);font-size:18px;font-weight:600;color:var(--w3);margin-left:2px;}
+.score-stars{display:flex;gap:3px;margin-top:8px;}
+.score-star{font-size:18px;color:var(--gold);}
+.score-star.off{color:var(--w4);}
+.score-lbl{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w3);margin-top:6px;}
+
+/* Raio-X distribuicao */
+.dist-card{
+  background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r);
+  padding:16px 20px;
+}
+.dist-title{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w3);margin-bottom:12px;}
+.dist-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.dist-row:last-child{margin-bottom:0;}
+.dist-label{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--w2);min-width:14px;text-align:right;}
+.dist-star{font-size:12px;color:var(--gold);min-width:16px;}
+.dist-bar{flex:1;height:8px;background:var(--sf3);border-radius:2px;overflow:hidden;}
+.dist-bar-fill{height:100%;border-radius:2px;}
+.dist-bar-5{background:var(--green);}
+.dist-bar-4{background:var(--gold);}
+.dist-bar-3{background:var(--amber);}
+.dist-bar-2{background:var(--orange);}
+.dist-bar-1{background:var(--red);}
+.dist-count{font-family:var(--mono);font-size:11px;color:var(--w3);min-width:24px;}
+
+/* KPIs menores */
+.mini-kpi{
+  background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r);
+  padding:20px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;
+}
+.mini-kpi-val{font-family:var(--mono);font-size:28px;font-weight:800;letter-spacing:-1px;}
+.mini-kpi-lbl{font-family:var(--head);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w3);margin-top:4px;}
+
+/* FILTERS */
+.filters{display:flex;gap:4px;margin-bottom:20px;overflow-x:auto;padding-bottom:8px;-webkit-overflow-scrolling:touch;}
+.filters::-webkit-scrollbar{height:4px;}
+.filters::-webkit-scrollbar-track{background:rgba(255,255,255,0.05);border-radius:10px;}
+.filters::-webkit-scrollbar-thumb{background:#333;border-radius:10px;}
+.filters:hover::-webkit-scrollbar-thumb{background:var(--amber);}
+.f-btn{
+  font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;
+  padding:7px 14px;border:1px solid var(--ln2);border-radius:var(--r);
+  background:var(--sf);color:var(--w3);cursor:pointer;white-space:nowrap;transition:all .12s;
+}
+.f-btn:hover{border-color:var(--ln3);color:var(--w2);}
+.f-btn.on{background:var(--amber);color:#000;border-color:var(--amber);}
+
+/* FEED ITEM — satisfeito */
+.feed-item{
+  background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r);
+  padding:14px 16px;margin-bottom:6px;transition:all .12s;
+  position:relative;display:flex;gap:14px;
+}
+.feed-item:hover{border-color:var(--ln3);background:var(--sf2);}
+
+/* Indicador lateral */
+.feed-indicator{position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:var(--r) 0 0 var(--r);}
+.feed-green{background:var(--green);}
+.feed-amber{background:var(--gold);}
+.feed-red{background:var(--red);animation:feedPulse 1.5s infinite;}
+@keyframes feedPulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+
+/* Crise */
+.feed-item.crise{border-color:rgba(255,59,48,0.15);background:var(--red-dim);}
+.feed-item.crise:hover{background:rgba(255,59,48,0.08);}
+
+/* Nota (estrelas inline) */
+.feed-nota{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-width:48px;flex-shrink:0;
+}
+.feed-nota-num{font-family:var(--mono);font-size:24px;font-weight:800;}
+.feed-nota-num.nota-5{color:var(--green);}
+.feed-nota-num.nota-4{color:var(--gold);}
+.feed-nota-num.nota-3{color:var(--amber);}
+.feed-nota-num.nota-2{color:var(--orange);}
+.feed-nota-num.nota-1{color:var(--red);}
+.feed-stars{display:flex;gap:1px;margin-top:2px;}
+.feed-star{font-size:10px;color:var(--gold);}
+.feed-star.off{color:var(--w4);}
+
+/* Info */
+.feed-body{flex:1;min-width:0;}
+.feed-top{display:flex;align-items:center;gap:10px;margin-bottom:4px;}
+.feed-nome{font-family:var(--head);font-size:15px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;}
+.feed-tag{
+  font-family:var(--head);font-size:9px;font-weight:700;text-transform:uppercase;
+  letter-spacing:1px;padding:2px 7px;border-radius:2px;
+}
+.tag-reclamacao{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,59,48,0.15);}
+.feed-os{font-family:var(--mono);font-size:10px;color:var(--w3);}
+.feed-comentario{font-family:var(--body);font-size:12px;color:var(--w2);font-style:italic;margin-top:4px;line-height:1.5;}
+.feed-date{font-family:var(--mono);font-size:10px;color:var(--w4);margin-top:4px;}
+
+/* Placa mini */
+.placa-micro{
+  display:inline-flex;flex-direction:column;
+  background:#FFF;overflow:hidden;line-height:1;flex-shrink:0;
+  border:1.5px solid #C8C8C8;
+}
+.placa-micro-topo{background:#003399;padding:0px 3px;display:flex;align-items:center;justify-content:center;}
+.placa-micro-br{font-family:var(--mono);font-size:4px;font-weight:700;color:#fff;}
+.placa-micro-cod{padding:1px 4px 2px;font-family:var(--mono);font-size:10px;font-weight:800;color:#1A1A1A;letter-spacing:1px;text-align:center;line-height:1;}
+
+/* Acoes */
+.feed-actions{display:flex;flex-direction:column;gap:4px;flex-shrink:0;justify-content:center;}
+.feed-act{
+  padding:6px 10px;border:1px solid var(--ln2);border-radius:var(--r);
+  background:transparent;font-family:var(--head);font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:1px;
+  cursor:pointer;transition:all .12s;white-space:nowrap;text-align:center;
+}
+.feed-act:active{transform:scale(.96);}
+.feed-act-agradecer{color:var(--w3);border-color:var(--ln3);}
+.feed-act-agradecer:hover{color:var(--green);border-color:var(--green);background:var(--green-dim);}
+.feed-act-resolver{color:var(--red);border-color:rgba(255,59,48,0.25);background:var(--red-dim);}
+.feed-act-resolver:hover{background:rgba(255,59,48,0.12);border-color:rgba(255,59,48,0.4);}
+.feed-act-wpp{color:var(--w3);border-color:var(--ln3);}
+.feed-act-wpp:hover{color:var(--green-wpp);border-color:var(--green-wpp);background:rgba(37,211,102,0.06);}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="page-head">
+  <div class="page-title">Monitor de <span>Satisfação</span></div>
+</div>
+
+<!-- PERIOD -->
+<div class="period-bar">
+  <div class="period-nav">
+    <div class="period-btn"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></div>
+    <div class="period-label">Abril <span>2026</span></div>
+    <div class="period-btn"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+  </div>
+</div>
+
+<!-- TOP PANEL -->
+<div class="top-panel">
+
+  <!-- Score gigante -->
+  <div class="score-card">
+    <div><span class="score-val">4.6</span><span class="score-max">/ 5</span></div>
+    <div class="score-stars">
+      <span class="score-star">★</span>
+      <span class="score-star">★</span>
+      <span class="score-star">★</span>
+      <span class="score-star">★</span>
+      <span class="score-star off">★</span>
+    </div>
+    <div class="score-lbl">Nota Média</div>
+  </div>
+
+  <!-- Raio-X distribuicao -->
+  <div class="dist-card">
+    <div class="dist-title">Distribuição de Notas</div>
+    <div class="dist-row">
+      <div class="dist-label">5</div><div class="dist-star">★</div>
+      <div class="dist-bar"><div class="dist-bar-fill dist-bar-5" style="width:62%;"></div></div>
+      <div class="dist-count">62</div>
+    </div>
+    <div class="dist-row">
+      <div class="dist-label">4</div><div class="dist-star">★</div>
+      <div class="dist-bar"><div class="dist-bar-fill dist-bar-4" style="width:24%;"></div></div>
+      <div class="dist-count">24</div>
+    </div>
+    <div class="dist-row">
+      <div class="dist-label">3</div><div class="dist-star">★</div>
+      <div class="dist-bar"><div class="dist-bar-fill dist-bar-3" style="width:8%;"></div></div>
+      <div class="dist-count">8</div>
+    </div>
+    <div class="dist-row">
+      <div class="dist-label">2</div><div class="dist-star">★</div>
+      <div class="dist-bar"><div class="dist-bar-fill dist-bar-2" style="width:4%;"></div></div>
+      <div class="dist-count">4</div>
+    </div>
+    <div class="dist-row">
+      <div class="dist-label">1</div><div class="dist-star">★</div>
+      <div class="dist-bar"><div class="dist-bar-fill dist-bar-1" style="width:2%;"></div></div>
+      <div class="dist-count">2</div>
+    </div>
+  </div>
+
+  <!-- KPI Enviadas -->
+  <div class="mini-kpi">
+    <div class="mini-kpi-val" style="color:var(--w2);">145</div>
+    <div class="mini-kpi-lbl">Enviadas</div>
+  </div>
+
+  <!-- KPI Taxa -->
+  <div class="mini-kpi">
+    <div class="mini-kpi-val" style="color:var(--green);">68%</div>
+    <div class="mini-kpi-lbl">Taxa Resposta</div>
+  </div>
+</div>
+
+<!-- FILTERS -->
+<div class="filters">
+  <div class="f-btn on">Todas</div>
+  <div class="f-btn">5 Estrelas</div>
+  <div class="f-btn">4 Estrelas</div>
+  <div class="f-btn">3 Estrelas</div>
+  <div class="f-btn">Reclamações</div>
+  <div class="f-btn">Sem Resposta</div>
+</div>
+
+<!-- FEED DE AVALIACOES -->
+
+<!-- Nota 5 — Satisfeito -->
+<div class="feed-item">
+  <div class="feed-indicator feed-green"></div>
+  <div class="feed-nota">
+    <div class="feed-nota-num nota-5">5</div>
+    <div class="feed-stars"><span class="feed-star">★</span><span class="feed-star">★</span><span class="feed-star">★</span><span class="feed-star">★</span><span class="feed-star">★</span></div>
+  </div>
+  <div class="feed-body">
+    <div class="feed-top">
+      <span class="feed-nome">Carlos Eduardo Silva</span>
+      <div class="placa-micro"><div class="placa-micro-topo"><div class="placa-micro-br">BR</div></div><div class="placa-micro-cod">ABC1D23</div></div>
+      <span class="feed-os">OS #10 — Toro 2022</span>
+    </div>
+    <div class="feed-comentario">"Serviço rápido e bem feito. Trocaram óleo e filtros em menos de 1 hora. Recomendo demais!"</div>
+    <div class="feed-date">02/04/2026 — 14:45</div>
+  </div>
+  <div class="feed-actions">
+    <button class="feed-act feed-act-agradecer">Agradecer</button>
+    <button class="feed-act feed-act-wpp">WPP</button>
+  </div>
+</div>
+
+<!-- Nota 5 — Satisfeito -->
+<div class="feed-item">
+  <div class="feed-indicator feed-green"></div>
+  <div class="feed-nota">
+    <div class="feed-nota-num nota-5">5</div>
+    <div class="feed-stars"><span class="feed-star">★</span><span class="feed-star">★</span><span class="feed-star">★</span><span class="feed-star">★</span><span class="feed-star">★</span></div>
+  </div>
+  <div class="feed-body">
+    <div class="feed-top">
+      <span class="feed-nome">Dolphin Veiculos</span>
+      <div class="placa-micro"><div class="placa-micro-topo"><div class="placa-micro-br">BR</div></div><div class="placa-micro-cod">QWE3R45</div></div>
+      <span class="feed-os">OS #08 — Onix 2022</span>
+    </div>
+    <div class="feed-comentario">"Sempre confiável. Atendimento profissional e preço justo."</div>
+    <div class="feed-date">01/04/2026 — 17:20</div>
+  </div>
+  <div class="feed-actions">
+    <button class="feed-act feed-act-agradecer">Agradecer</button>
+    <button class="feed-act feed-act-wpp">WPP</button>
+  </div>
+</div>
+
+<!-- Nota 4 — Bom -->
+<div class="feed-item">
+  <div class="feed-indicator feed-amber"></div>
+  <div class="feed-nota">
+    <div class="feed-nota-num nota-4">4</div>
+    <div class="feed-stars"><span class="feed-star">★</span><span class="feed-star">★</span><span class="feed-star">★</span><span class="feed-star">★</span><span class="feed-star off">★</span></div>
+  </div>
+  <div class="feed-body">
+    <div class="feed-top">
+      <span class="feed-nome">Fernanda Oliveira</span>
+      <div class="placa-micro"><div class="placa-micro-topo"><div class="placa-micro-br">BR</div></div><div class="placa-micro-cod">QRS4F56</div></div>
+      <span class="feed-os">OS #09 — Polo TSI 2023</span>
+    </div>
+    <div class="feed-comentario">"Bom serviço, só demorou um pouco mais do que o combinado. Mas ficou perfeito."</div>
+    <div class="feed-date">01/04/2026 — 11:30</div>
+  </div>
+  <div class="feed-actions">
+    <button class="feed-act feed-act-agradecer">Agradecer</button>
+    <button class="feed-act feed-act-wpp">WPP</button>
+  </div>
+</div>
+
+<!-- Nota 3 — Neutro -->
+<div class="feed-item">
+  <div class="feed-indicator" style="background:var(--amber);"></div>
+  <div class="feed-nota">
+    <div class="feed-nota-num nota-3">3</div>
+    <div class="feed-stars"><span class="feed-star">★</span><span class="feed-star">★</span><span class="feed-star">★</span><span class="feed-star off">★</span><span class="feed-star off">★</span></div>
+  </div>
+  <div class="feed-body">
+    <div class="feed-top">
+      <span class="feed-nome">Mercio Ramos</span>
+      <div class="placa-micro"><div class="placa-micro-topo"><div class="placa-micro-br">BR</div></div><div class="placa-micro-cod">RZM8H30</div></div>
+      <span class="feed-os">OS #06 — Sandero 2020</span>
+    </div>
+    <div class="feed-comentario">"Resolveu o problema, mas achei o preço salgado pra troca de pastilha."</div>
+    <div class="feed-date">31/03/2026 — 16:10</div>
+  </div>
+  <div class="feed-actions">
+    <button class="feed-act feed-act-wpp">WPP</button>
+  </div>
+</div>
+
+<!-- Nota 1 — CRISE -->
+<div class="feed-item crise">
+  <div class="feed-indicator feed-red"></div>
+  <div class="feed-nota">
+    <div class="feed-nota-num nota-1">1</div>
+    <div class="feed-stars"><span class="feed-star" style="color:var(--red);">★</span><span class="feed-star off">★</span><span class="feed-star off">★</span><span class="feed-star off">★</span><span class="feed-star off">★</span></div>
+  </div>
+  <div class="feed-body">
+    <div class="feed-top">
+      <span class="feed-nome">Michael Freitas</span>
+      <span class="feed-tag tag-reclamacao">! Reclamação</span>
+      <span class="feed-os">OS #07 — Civic 1.8</span>
+    </div>
+    <div class="feed-comentario">"Levei o carro pra trocar óleo e voltou com barulho no motor. Fui mal atendido na recepção. Não voltarei se não resolverem."</div>
+    <div class="feed-date">28/03/2026 — 09:40</div>
+  </div>
+  <div class="feed-actions">
+    <button class="feed-act feed-act-resolver">Resolver Agora</button>
+    <button class="feed-act feed-act-wpp" style="color:var(--green-wpp);border-color:var(--green-wpp);">WPP Recuperar</button>
+  </div>
+</div>
+
+<!-- Nota 2 — CRISE -->
+<div class="feed-item crise">
+  <div class="feed-indicator feed-red"></div>
+  <div class="feed-nota">
+    <div class="feed-nota-num nota-2">2</div>
+    <div class="feed-stars"><span class="feed-star" style="color:var(--orange);">★</span><span class="feed-star" style="color:var(--orange);">★</span><span class="feed-star off">★</span><span class="feed-star off">★</span><span class="feed-star off">★</span></div>
+  </div>
+  <div class="feed-body">
+    <div class="feed-top">
+      <span class="feed-nome">Antonio Santos</span>
+      <span class="feed-tag tag-reclamacao">! Reclamação</span>
+      <span class="feed-os">OS #03 — Corsa Classic</span>
+    </div>
+    <div class="feed-comentario">"Demoraram 4 dias pra um serviço simples. Sem comunicação nenhuma sobre o andamento."</div>
+    <div class="feed-date">25/03/2026 — 14:55</div>
+  </div>
+  <div class="feed-actions">
+    <button class="feed-act feed-act-resolver">Resolver Agora</button>
+    <button class="feed-act feed-act-wpp" style="color:var(--green-wpp);border-color:var(--green-wpp);">WPP Recuperar</button>
+  </div>
+</div>
+
+<!-- Nota 5 — sem comentario -->
+<div class="feed-item">
+  <div class="feed-indicator feed-green"></div>
+  <div class="feed-nota">
+    <div class="feed-nota-num nota-5">5</div>
+    <div class="feed-stars"><span class="feed-star">★</span><span class="feed-star">★</span><span class="feed-star">★</span><span class="feed-star">★</span><span class="feed-star">★</span></div>
+  </div>
+  <div class="feed-body">
+    <div class="feed-top">
+      <span class="feed-nome">Romario da Silva</span>
+      <div class="placa-micro"><div class="placa-micro-topo"><div class="placa-micro-br">BR</div></div><div class="placa-micro-cod">PGA2J53</div></div>
+      <span class="feed-os">OS #12 — HB20 2020</span>
+    </div>
+    <div class="feed-comentario" style="color:var(--w4);font-style:normal;">Sem comentário</div>
+    <div class="feed-date">01/04/2026 — 10:15</div>
+  </div>
+  <div class="feed-actions">
+    <button class="feed-act feed-act-agradecer">Agradecer</button>
+  </div>
+</div>
+
+</body>
+</html>

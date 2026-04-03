@@ -1,0 +1,1965 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro V2 — Ordens de Servico</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04031320"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#09090B;--sf:#111114;--sf2:#18181C;--sf3:#1F1F24;--sf4:#27272D;
+  --ln:rgba(255,255,255,0.04);--ln2:rgba(255,255,255,0.08);--ln3:rgba(255,255,255,0.14);
+  --amber:#E8930C;--amber-dim:rgba(232,147,12,0.1);
+  --orange:#EA580C;--orange-dim:rgba(234,88,12,0.1);
+  --red:#FF3B30;--red-dim:rgba(255,59,48,0.08);--red-glow:rgba(255,59,48,0.04);
+  --green:#30D158;--green-dim:rgba(48,209,88,0.08);
+  --blue:#0A84FF;--blue-dim:rgba(10,132,255,0.1);
+  --purple:#7C3AED;--purple-dim:rgba(124,58,237,0.1);
+  --cyan:#00C7BE;--cyan-dim:rgba(0,199,190,0.1);
+  --w:#F0F0F2;--w2:rgba(255,255,255,0.6);--w3:rgba(255,255,255,0.32);--w4:rgba(255,255,255,0.14);
+  --mono:'JetBrains Mono',monospace;--head:'Barlow Condensed',sans-serif;--body:'Space Grotesk',sans-serif;
+  --r:3px;--r2:4px;
+}
+body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100vh;-webkit-font-smoothing:antialiased;overflow:hidden;}
+
+.app{display:flex;height:100vh;overflow:hidden;}
+
+/* ── SIDEBAR ── */
+.sidebar{width:220px;flex-shrink:0;background:var(--sf);border-right:1px solid var(--ln2);display:flex;flex-direction:column;height:100vh;}
+.sidebar-logo{padding:20px 16px 16px;border-bottom:1px solid var(--ln2);}
+.sidebar-logo-brand{font-family:var(--head);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.sidebar-logo-brand span{color:var(--amber);}
+.sidebar-logo-oficina{font-family:var(--body);font-size:11px;color:var(--w3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sidebar-nav{flex:1;overflow-y:auto;padding:12px 0;scrollbar-width:none;}
+.sidebar-nav::-webkit-scrollbar{display:none;}
+.nav-section{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);padding:10px 16px 6px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 16px;font-family:var(--body);font-size:13px;font-weight:500;color:var(--w3);cursor:pointer;transition:all .12s;text-decoration:none;}
+.nav-item:hover{color:var(--w);background:var(--sf2);}
+.nav-item.active{color:var(--amber);background:var(--amber-dim);border-left:2px solid var(--amber);}
+.nav-item .nav-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0;}
+.sidebar-footer{padding:16px;border-top:1px solid var(--ln2);}
+.user-info{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.user-avatar{width:34px;height:34px;border-radius:var(--r);background:var(--amber-dim);border:1px solid rgba(232,147,12,0.3);display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:14px;font-weight:800;color:var(--amber);flex-shrink:0;}
+.user-details{min-width:0;}
+.user-name{font-family:var(--body);font-size:13px;font-weight:600;color:var(--w);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.user-role{font-family:var(--mono);font-size:10px;color:var(--w3);text-transform:uppercase;letter-spacing:.5px;}
+.btn-logout{width:100%;font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--w3);background:none;border:1px solid var(--ln3);padding:7px;border-radius:var(--r);cursor:pointer;transition:all .15s;}
+.btn-logout:hover{color:var(--w);border-color:var(--w3);}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.main-topbar{height:48px;background:var(--sf);border-bottom:1px solid var(--ln2);display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0;}
+.main-title{font-family:var(--head);font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:2px;}
+.main-content{flex:1;overflow-y:auto;padding:20px;scrollbar-width:thin;scrollbar-color:var(--sf3) transparent;}
+.main-content::-webkit-scrollbar{width:4px;}
+.main-content::-webkit-scrollbar-thumb{background:var(--sf3);border-radius:2px;}
+
+/* ── SEARCH ── */
+.search-bar{display:flex;align-items:center;gap:12px;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px 16px;margin-bottom:12px;transition:border-color .15s;}
+.search-bar:focus-within{border-color:var(--amber);}
+.search-bar svg{width:18px;height:18px;stroke:var(--w3);flex-shrink:0;}
+.search-bar input{flex:1;background:none;border:none;color:var(--w);font-family:var(--mono);font-size:14px;outline:none;letter-spacing:.5px;}
+.search-bar input::placeholder{color:var(--w3);font-family:var(--body);letter-spacing:0;}
+
+/* ── SUMMARY ── */
+.summary{display:flex;gap:6px;margin-bottom:12px;}
+.summary-item{flex:1;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:10px 12px;text-align:center;}
+.summary-val{font-family:var(--mono);font-size:20px;font-weight:800;letter-spacing:-1px;}
+.summary-lbl{font-family:var(--head);font-size:10px;font-weight:600;color:var(--w3);text-transform:uppercase;letter-spacing:1.5px;margin-top:2px;}
+
+/* ── FILTERS ── */
+.filters{display:flex;gap:4px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px;}
+.f-btn{font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;padding:8px 16px;border:1px solid var(--ln2);border-radius:var(--r);background:var(--sf);color:var(--w3);cursor:pointer;white-space:nowrap;transition:all .12s;}
+.f-btn:hover{border-color:var(--ln3);color:var(--w2);}
+.f-btn.on{background:var(--amber);color:#000;border-color:var(--amber);}
+.f-btn .f-count{font-family:var(--mono);font-size:11px;margin-left:6px;padding:1px 5px;border-radius:2px;background:rgba(0,0,0,0.2);}
+.f-btn:not(.on) .f-count{background:var(--w4);}
+
+/* ── ALERT BAR ── */
+.alert-bar{display:flex;align-items:center;gap:14px;background:var(--red-dim);border:1px solid rgba(255,59,48,0.15);border-radius:var(--r2);padding:12px 16px;margin-bottom:12px;cursor:pointer;transition:background .12s;}
+.alert-bar:hover{background:rgba(255,59,48,0.12);}
+.alert-pill{font-family:var(--mono);font-size:18px;font-weight:800;color:var(--red);min-width:28px;text-align:center;}
+.alert-text{flex:1;font-size:13px;color:var(--w2);}
+.alert-text strong{color:var(--w);font-weight:600;}
+.alert-val{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--red);}
+
+/* ── OS ROW ── */
+.os-row{display:flex;align-items:center;gap:16px;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:14px 16px;margin-bottom:5px;cursor:pointer;transition:all .12s;position:relative;overflow:hidden;}
+.os-row:hover{border-color:var(--ln3);background:var(--sf2);}
+.os-row:active{background:var(--sf3);}
+.os-row.entregue{opacity:.5;}
+.os-row-sla{position:absolute;left:0;top:0;bottom:0;width:3px;}
+.sla-ok{background:var(--green);}
+.sla-warn{background:var(--amber);}
+.sla-danger{background:var(--red);}
+.sla-critical{background:var(--red);animation:slaPulse 1s infinite;}
+@keyframes slaPulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+/* ── PLACA ── */
+.placa-i{display:inline-flex;flex-direction:column;background:#FFFFFF;border-radius:2px;overflow:hidden;border:2px solid #C8C8C8;flex-shrink:0;line-height:1;}
+.placa-i-topo{background:#003399;padding:1px 6px;display:flex;align-items:center;justify-content:space-between;gap:4px;}
+.placa-i-br{font-family:var(--mono);font-size:5.5px;font-weight:700;color:#fff;letter-spacing:.3px;}
+.placa-i-flag{display:flex;gap:1px;}
+.placa-i-flag span{display:block;width:2px;height:4px;border-radius:1px;}
+.placa-i-cod{padding:3px 8px 4px;font-family:var(--mono);font-size:18px;font-weight:800;color:#1A1A1A;letter-spacing:2px;text-align:center;line-height:1;}
+
+/* ── OS info ── */
+.os-body{flex:1;min-width:0;}
+.os-top{display:flex;align-items:baseline;gap:10px;margin-bottom:3px;}
+.os-num{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--w3);}
+.os-veiculo{font-family:var(--head);font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.os-cliente{font-family:var(--body);font-size:12px;color:var(--w2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.os-meta{display:flex;align-items:center;gap:10px;margin-top:5px;}
+.os-mecanico{font-family:var(--body);font-size:11px;color:#B0B0B0;display:flex;align-items:center;gap:4px;}
+.os-mecanico::before{content:'';width:5px;height:5px;background:var(--green);border-radius:50%;}
+.os-tempo{font-family:var(--mono);font-size:11px;}
+.os-date{font-family:var(--mono);font-size:10px;color:var(--w3);margin-top:3px;}
+.os-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;}
+.os-valor{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--amber);}
+.os-tag{font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:4px 10px;border-radius:2px;}
+.os-alert{font-family:var(--head);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--red);}
+
+/* status tags */
+.tag-entrada{background:rgba(10,132,255,0.18);color:var(--blue);}
+.tag-diagnostico{background:rgba(124,58,237,0.2);color:#A78BFA;}
+.tag-orcamento{background:rgba(232,147,12,0.18);color:var(--amber);}
+.tag-aprovada{background:rgba(0,199,190,0.18);color:var(--cyan);}
+.tag-aguardando_peca{background:rgba(255,59,48,0.18);color:var(--red);}
+.tag-execucao{background:rgba(234,88,12,0.18);color:#FB923C;}
+.tag-pronto{background:rgba(48,209,88,0.18);color:var(--green);}
+.tag-entregue{background:var(--w4);color:var(--w3);}
+.tag-cancelada{background:rgba(255,59,48,0.1);color:var(--red);}
+
+/* ── SIDE PANEL ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:900;opacity:0;pointer-events:none;transition:opacity .25s;}
+.overlay.open{opacity:1;pointer-events:auto;}
+.side-panel{position:fixed;top:0;right:0;bottom:0;width:560px;max-width:100%;background:#141417;border-left:1px solid var(--ln2);z-index:1000;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden;}
+.side-panel.open{transform:translateX(0);}
+.panel-head{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid var(--ln2);}
+.panel-title{font-family:var(--head);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.panel-title span{color:var(--amber);}
+.panel-close{width:36px;height:36px;background:var(--sf3);border:1px solid var(--ln2);border-radius:var(--r);color:var(--w3);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.panel-close:hover{background:var(--sf4);color:var(--w);}
+.panel-body{flex:1;overflow-y:auto;padding:24px;scrollbar-width:thin;scrollbar-color:var(--sf3) transparent;}
+.panel-body::-webkit-scrollbar{width:4px;}
+.panel-body::-webkit-scrollbar-thumb{background:var(--sf3);border-radius:2px;}
+.panel-field{margin-bottom:16px;}
+.panel-label{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--w4);margin-bottom:6px;}
+.panel-input{width:100%;background:var(--sf2);border:2px solid var(--ln3);border-radius:var(--r2);padding:12px 14px;font-family:var(--mono);font-size:14px;font-weight:600;color:var(--w);outline:none;transition:border-color .15s;}
+.panel-input:focus{border-color:var(--amber);}
+.panel-input::placeholder{color:var(--w4);font-family:var(--body);font-weight:400;}
+.panel-textarea{width:100%;background:var(--sf2);border:2px solid var(--ln3);border-radius:var(--r2);padding:12px 14px;font-family:var(--body);font-size:13px;color:var(--w);outline:none;resize:vertical;min-height:70px;transition:border-color .15s;}
+.panel-textarea:focus{border-color:var(--amber);}
+.panel-textarea::placeholder{color:var(--w4);}
+.panel-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.panel-select{width:100%;background:var(--sf2);border:2px solid var(--ln3);border-radius:var(--r2);padding:12px 14px;font-family:var(--body);font-size:13px;color:var(--w);outline:none;cursor:pointer;transition:border-color .15s;}
+.panel-select:focus{border-color:var(--amber);}
+.panel-select option{background:#1a1a1e;color:#F0F0F2;}
+.panel-btn{width:100%;padding:14px;border:none;border-radius:var(--r2);font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:2px;cursor:pointer;transition:all .12s;margin-top:8px;}
+.panel-btn:hover{filter:brightness(1.1);}
+.panel-btn:active{transform:scale(.98);}
+.panel-btn-amber{background:var(--amber);color:#000;}
+.panel-btn-green{background:var(--green);color:#000;}
+.panel-btn-red{background:var(--red);color:#fff;}
+.panel-btn-sec{background:var(--sf3);color:var(--w3);border:1px solid var(--ln3);}
+.panel-btn-sec:hover{color:var(--w);border-color:var(--w3);}
+
+.panel-autocomplete{position:absolute;left:0;right:0;top:100%;z-index:100;background:var(--sf);border:1px solid var(--ln2);border-radius:0 0 var(--r2) var(--r2);max-height:200px;overflow-y:auto;display:none;box-shadow:0 4px 16px rgba(0,0,0,0.5);}
+.panel-ac-item{padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--ln);transition:background .1s;}
+.panel-ac-item:hover{background:var(--sf2);}
+.panel-ac-item strong{color:var(--w);}
+.panel-ac-item span{color:var(--w3);font-size:11px;margin-left:6px;}
+
+/* ── DETAIL SECTIONS ── */
+.det-section{border-top:1px solid var(--ln2);padding-top:14px;margin-top:14px;}
+.det-section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.det-section-title{font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--w4);}
+.det-section-val{font-family:var(--mono);font-size:14px;font-weight:700;}
+.det-item{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px;}
+.det-item-rm{background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:0 4px;}
+
+/* ── EMPTY ── */
+.os-empty{text-align:center;padding:60px 24px;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);}
+.os-empty-text{font-family:var(--head);font-size:16px;font-weight:600;color:var(--w3);text-transform:uppercase;letter-spacing:1px;margin-top:12px;}
+
+/* ── SCAN + AUDIO ── */
+.placa-input-wrap{display:flex;gap:8px;align-items:stretch;}
+.placa-input-wrap .panel-input{flex:1;}
+.scan-btn{width:64px;flex-shrink:0;background:var(--sf2);border:2px solid var(--ln3);border-radius:var(--r2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;}
+.scan-btn:hover{border-color:var(--amber);background:var(--amber-dim);}
+.scan-btn:active{transform:scale(.96);}
+.scan-btn svg{width:24px;height:24px;stroke:var(--w2);transition:stroke .15s;}
+.scan-btn:hover svg{stroke:var(--amber);}
+.scan-btn-label{font-family:var(--head);font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--w3);}
+.scan-btn:hover .scan-btn-label{color:var(--amber);}
+.scan-btn::after{content:'';position:absolute;left:10%;right:10%;height:2px;background:var(--amber);top:-2px;opacity:0;transition:opacity .2s;}
+.scan-btn.scanning::after{opacity:1;animation:scanLine 1.5s ease-in-out infinite;}
+@keyframes scanLine{0%{top:10%;}50%{top:85%;}100%{top:10%;};}
+
+.camera-overlay{position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.95);display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
+.camera-overlay.show{display:flex;}
+.camera-overlay video{width:90%;max-width:480px;border-radius:var(--r2);border:2px solid var(--amber);}
+.camera-overlay canvas{display:none;}
+.camera-guide{position:absolute;width:80%;max-width:360px;height:80px;border:2px dashed var(--amber);border-radius:var(--r2);opacity:.5;pointer-events:none;}
+.camera-btns{display:flex;gap:12px;margin-top:8px;}
+.camera-btns button{padding:14px 28px;border:none;border-radius:var(--r2);font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;cursor:pointer;transition:all .12s;}
+.camera-btns .cam-capture{background:var(--amber);color:#000;}
+.camera-btns .cam-capture:hover{background:#F5A623;}
+.camera-btns .cam-cancel{background:var(--sf3);color:var(--w3);border:1px solid var(--ln3);}
+.camera-btns .cam-cancel:hover{color:var(--w);}
+.camera-status{font-family:var(--mono);font-size:12px;color:var(--amber);margin-top:4px;min-height:18px;}
+
+.diag-wrap{position:relative;}
+.diag-wrap .panel-textarea{padding-bottom:56px;}
+.audio-btn{position:absolute;bottom:10px;left:10px;right:10px;display:flex;align-items:center;justify-content:center;gap:10px;padding:12px;background:var(--sf3);border:1px solid var(--orange);border-radius:var(--r2);cursor:pointer;transition:all .15s;}
+.audio-btn:hover{background:var(--orange-dim);}
+.audio-btn:active{transform:scale(.98);}
+.audio-btn svg{width:20px;height:20px;fill:var(--orange);flex-shrink:0;}
+.audio-btn-text{font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--orange);}
+.audio-btn.recording{background:rgba(255,59,48,0.12);border-color:var(--red);animation:audioPulse 1s infinite;}
+.audio-btn.recording svg{fill:var(--red);}
+.audio-btn.recording .audio-btn-text{color:var(--red);}
+@keyframes audioPulse{0%,100%{opacity:1;}50%{opacity:.7;}}
+.audio-wave{display:none;align-items:center;justify-content:center;gap:2px;height:22px;}
+.audio-wave.show{display:flex;}
+.audio-wave span{width:3px;background:var(--orange);border-radius:1px;animation:wave 0.6s ease-in-out infinite;}
+.audio-wave span:nth-child(1){height:8px;animation-delay:0s;}
+.audio-wave span:nth-child(2){height:16px;animation-delay:.1s;}
+.audio-wave span:nth-child(3){height:12px;animation-delay:.2s;}
+.audio-wave span:nth-child(4){height:20px;animation-delay:.15s;}
+.audio-wave span:nth-child(5){height:10px;animation-delay:.25s;}
+.audio-wave span:nth-child(6){height:18px;animation-delay:.05s;}
+.audio-wave span:nth-child(7){height:8px;animation-delay:.3s;}
+@keyframes wave{0%,100%{transform:scaleY(0.4);}50%{transform:scaleY(1);}}
+
+/* ── BOTAO NOVA OS ── */
+.btn-nova-os{padding:10px 20px;background:var(--amber);border:none;border-radius:var(--r2);font-family:var(--head);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#000;cursor:pointer;transition:all .12s;white-space:nowrap;}
+.btn-nova-os:hover{background:#F5A623;}
+.btn-nova-os:active{transform:scale(.97);}
+
+/* ── LOGIN ── */
+.login-overlay{position:fixed;inset:0;z-index:2000;background:var(--bg);display:flex;align-items:center;justify-content:center;}
+.login-box{width:340px;padding:40px 32px;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);}
+.login-brand{font-family:var(--head);font-size:36px;font-weight:900;text-transform:uppercase;letter-spacing:2px;text-align:center;margin-bottom:4px;}
+.login-brand span{color:var(--amber);}
+.login-sub{font-family:var(--mono);font-size:11px;color:var(--w4);text-align:center;margin-bottom:28px;letter-spacing:2px;}
+.login-label{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--w4);margin-bottom:6px;display:block;}
+.login-input{width:100%;background:var(--sf2);border:2px solid var(--ln3);border-radius:var(--r);padding:12px 14px;font-family:var(--mono);font-size:14px;color:var(--w);outline:none;margin-bottom:14px;transition:border-color .15s;}
+.login-input:focus{border-color:var(--amber);}
+.login-btn{width:100%;padding:14px;border:none;border-radius:var(--r);background:var(--amber);color:#000;font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:2px;cursor:pointer;margin-top:4px;}
+.login-err{display:none;font-family:var(--body);font-size:12px;color:var(--red);text-align:center;margin-top:12px;}
+
+/* ── LOADING ── */
+.loading-screen{position:fixed;inset:0;z-index:1500;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
+.loading-spinner{width:32px;height:32px;border:3px solid var(--ln2);border-top-color:var(--amber);border-radius:50%;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-label{font-family:var(--mono);font-size:12px;color:var(--w4);letter-spacing:2px;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);font-family:var(--body);font-size:13px;font-weight:600;padding:12px 24px;border-radius:var(--r2);z-index:9999;opacity:0;transition:all .3s;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{background:var(--green);color:#000;}
+.toast.err{background:var(--red);color:#fff;}
+
+/* ── ADD ITEM INLINE ── */
+.add-inline{background:var(--sf2);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px;margin-top:8px;}
+.add-inline input,.add-inline select{background:var(--sf3);border:1px solid var(--ln3);border-radius:var(--r);padding:8px 10px;font-family:var(--body);font-size:13px;color:var(--w);outline:none;width:100%;}
+.add-inline input:focus,.add-inline select:focus{border-color:var(--amber);}
+.add-inline-btn{padding:8px 14px;border:none;border-radius:var(--r);background:var(--amber);color:#000;font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;cursor:pointer;}
+
+/* ── MODAL (pra entrega/pagamento) ── */
+.modal-overlay{position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:24px;max-width:420px;width:90%;}
+.modal-title{font-family:var(--head);font-size:18px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;}
+
+@media(max-width:768px){
+  .sidebar{display:none;}
+  .summary{flex-wrap:wrap;}
+  .summary-item{min-width:80px;}
+  .os-row{flex-wrap:wrap;gap:10px;}
+  .placa-wrap{display:none;}
+  .side-panel{width:100%;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-overlay" id="login-overlay">
+  <div class="login-box">
+    <div class="login-brand">RPM <span>PRO</span></div>
+    <div class="login-sub">V2 · Ordens de Servico</div>
+    <label class="login-label">Email</label>
+    <input class="login-input" type="email" id="login-email" placeholder="email@oficina.com" autocomplete="email">
+    <label class="login-label">Senha</label>
+    <input class="login-input" type="password" id="login-senha" placeholder="••••••••" onkeydown="if(event.key==='Enter')fazerLogin()">
+    <button class="login-btn" id="login-btn" onclick="fazerLogin()">Entrar</button>
+    <div class="login-err" id="login-err">Email ou senha incorretos</div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="loading-screen" id="loading" style="display:none;">
+  <div class="loading-spinner"></div>
+  <div class="loading-label">carregando ordens...</div>
+</div>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-brand">RPM <span>PRO</span></div>
+      <div class="sidebar-logo-oficina" id="oficina-nome">—</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Oficina</div>
+      <a class="nav-item" href="kanban-v2.html"><span class="nav-icon">⬛</span>Patio</a>
+      <a class="nav-item" href="dashboard-v2.html"><span class="nav-icon">◈</span>Dashboard</a>
+      <div class="nav-section">Atendimento</div>
+      <a class="nav-item" href="fila-espera-v2.html"><span class="nav-icon">⏳</span>Fila de Espera</a>
+      <a class="nav-item active" href="os-list-v2.html"><span class="nav-icon">📋</span>Ordens de Servico</a>
+      <a class="nav-item" href="execucao-os-v2.html"><span class="nav-icon">🔧</span>Execucao OS</a>
+      <a class="nav-item" href="clientes-v2.html"><span class="nav-icon">👥</span>Clientes</a>
+      <a class="nav-item" href="veiculos-v2.html"><span class="nav-icon">🚗</span>Veiculos</a>
+      <a class="nav-item" href="agendamentos-v2.html"><span class="nav-icon">📅</span>Agendamentos</a>
+      <div class="nav-section">Catalogo</div>
+      <a class="nav-item" href="catalogo-v2.html"><span class="nav-icon">🔧</span>Servicos / Pecas</a>
+      <div class="nav-section">Financeiro</div>
+      <a class="nav-item" href="financeiro-v2.html"><span class="nav-icon">💰</span>Caixa</a>
+      <a class="nav-item" href="comissao-v2.html"><span class="nav-icon">📊</span>Comissao</a>
+      <a class="nav-item" href="folha-v2.html"><span class="nav-icon">📄</span>Folha</a>
+      <div class="nav-section">Equipe</div>
+      <a class="nav-item" href="equipe-v2.html"><span class="nav-icon">👤</span>Equipe</a>
+      <a class="nav-item" href="produtividade-v2.html"><span class="nav-icon">⚡</span>Produtividade</a>
+      <a class="nav-item" href="crm-v2.html"><span class="nav-icon">📡</span>CRM / Reativacao</a>
+      <a class="nav-item" href="satisfacao-v2.html"><span class="nav-icon">⭐</span>Satisfacao</a>
+      <a class="nav-item" href="config-v2.html"><span class="nav-icon">⚙️</span>Configuracoes</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="user-avatar">—</div>
+        <div class="user-details">
+          <div class="user-name" id="user-nome">—</div>
+          <div class="user-role" id="user-role">—</div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="sair()">Sair</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="main-topbar">
+      <div class="main-title">Ordens de Servico</div>
+      <button class="btn-nova-os" onclick="abrirNovaOS()">+ Nova OS</button>
+    </div>
+    <div class="main-content" id="os-content"></div>
+  </div>
+</div>
+
+<!-- OVERLAY + SIDE PANEL -->
+<div class="overlay" id="overlay" onclick="fecharPanel()"></div>
+<div class="side-panel" id="panel">
+  <div class="panel-head">
+    <div class="panel-title" id="panel-titulo">Detalhe <span>OS</span></div>
+    <button class="panel-close" onclick="fecharPanel()">×</button>
+  </div>
+  <div class="panel-body" id="panel-body"></div>
+</div>
+
+<!-- MODAL (entrega/pagamento) -->
+<div class="modal-overlay" id="modal-ov">
+  <div class="modal-box" id="modal-box"></div>
+</div>
+
+<div class="toast" id="toast-el"></div>
+
+<!-- CAMERA OVERLAY (OCR scan) -->
+<div class="camera-overlay" id="camera-overlay">
+  <video id="camera-video" autoplay playsinline></video>
+  <div class="camera-guide"></div>
+  <canvas id="camera-canvas"></canvas>
+  <div class="camera-status" id="camera-status"></div>
+  <div class="camera-btns">
+    <button type="button" class="cam-capture" onclick="capturarPlaca()">Capturar</button>
+    <button type="button" class="cam-cancel" onclick="fecharCamera()">Cancelar</button>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://roeeyypssutzfzzkypsq.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZWV5eXBzc3V0emZ6emt5cHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MTk0MTgsImV4cCI6MjA5MDM5NTQxOH0.9oCOmABUTXox3FaRViD2zcUaqv94VfOJFMQYz_fcJi4';
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let PERFIL = null, OFICINA_ID = null, OFICINA = null;
+let OS_LISTA = [];
+let FILTRO = '';
+let BUSCA = '';
+let MECANICOS = [];
+let MAQUININHAS = [];
+let SERVICOS_CACHE = null;
+
+function esc(s){ return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmt(v){ return (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+function fmtK(v){ return v >= 1000 ? (v/1000).toFixed(1).replace('.0','') + 'k' : v.toFixed(0); }
+function toast(msg, tipo='ok'){ const el=document.getElementById('toast-el'); el.textContent=msg; el.className='toast '+tipo+' show'; setTimeout(()=>el.classList.remove('show'),3000); }
+
+const STATUS_LABEL = {
+  entrada:'Entrada', diagnostico:'Diagnostico', orcamento:'Orcamento',
+  aprovada:'Aprovada', aguardando_peca:'Ag. Peca', execucao:'Execucao',
+  pronto:'Pronto', entregue:'Entregue', cancelada:'Cancelada'
+};
+const STATUS_ALL = ['entrada','diagnostico','orcamento','aprovada','aguardando_peca','execucao','pronto','entregue','cancelada'];
+
+function tempoHumano(ms) {
+  if (!ms || ms <= 0) return '—';
+  const h = Math.floor(ms / 3600000);
+  if (h < 24) return h + 'h';
+  const d = Math.floor(h / 24);
+  return d + 'd ' + (h % 24) + 'h';
+}
+
+function slaClass(ms) {
+  const h = ms / 3600000;
+  if (h > 72) return 'sla-critical';
+  if (h > 48) return 'sla-danger';
+  if (h > 24) return 'sla-warn';
+  return 'sla-ok';
+}
+
+function placaHTML(placa) {
+  if (!placa) return '<div style="font-family:var(--mono);font-size:11px;color:var(--w4);">SEM PLACA</div>';
+  return `<div class="placa-i"><div class="placa-i-topo"><div class="placa-i-flag"><span style="background:#009739;"></span><span style="background:#FEDD00;"></span><span style="background:#012169;"></span></div><div class="placa-i-br">BRASIL</div></div><div class="placa-i-cod">${esc(placa)}</div></div>`;
+}
+
+// ── CARREGAR ──
+async function carregar() {
+  let query = db.from('ordens_servico')
+    .select('*, veiculos(placa, marca, modelo), clientes(nome, whatsapp, prazo_pagamento), profiles!ordens_servico_mecanico_id_fkey(nome)', { count: 'exact' })
+    .eq('oficina_id', OFICINA_ID)
+    .order('created_at', { ascending: false });
+
+  if (FILTRO === 'pendente') {
+    query = query.eq('status', 'entregue').eq('pago', false);
+  } else if (FILTRO) {
+    query = query.eq('status', FILTRO);
+  }
+
+  const { data, count } = await query;
+  OS_LISTA = data || [];
+  renderLista();
+}
+
+function filtrar() {
+  let lista = OS_LISTA;
+  const b = BUSCA.toLowerCase().trim();
+  if (b) {
+    lista = lista.filter(os => {
+      const placa = (os.veiculos?.placa || '').toLowerCase();
+      const cliente = (os.clientes?.nome || '').toLowerCase();
+      const num = String(os.numero_os || '');
+      const desc = (os.descricao || '').toLowerCase();
+      return placa.includes(b) || cliente.includes(b) || num.includes(b) || desc.includes(b);
+    });
+  }
+  return lista;
+}
+
+function renderLista() {
+  const el = document.getElementById('os-content');
+  const lista = filtrar();
+  const all = OS_LISTA;
+
+  // Contadores
+  const abertas = all.filter(o => !['entregue','cancelada'].includes(o.status)).length;
+  const prontas = all.filter(o => o.status === 'pronto').length;
+  const entregues = all.filter(o => o.status === 'entregue' && o.pago).length;
+  const semPag = all.filter(o => o.status === 'entregue' && !o.pago).length;
+  const faturado = all.filter(o => o.status === 'entregue' && o.pago).reduce((s, o) => s + (o.valor_total || 0), 0);
+
+  const totalSemPagVal = all.filter(o => o.status === 'entregue' && !o.pago).reduce((s, o) => s + (o.valor_total || 0), 0);
+
+  el.innerHTML = `
+    <!-- SEARCH -->
+    <div class="search-bar">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="os-busca" placeholder="Buscar por placa, cliente ou numero..." value="${esc(BUSCA)}" oninput="BUSCA=this.value;renderLista()">
+    </div>
+
+    <!-- SUMMARY -->
+    <div class="summary">
+      <div class="summary-item"><div class="summary-val" style="color:var(--amber);">${abertas}</div><div class="summary-lbl">Abertas</div></div>
+      <div class="summary-item"><div class="summary-val" style="color:var(--green);">${prontas}</div><div class="summary-lbl">Prontas</div></div>
+      <div class="summary-item"><div class="summary-val">${entregues}</div><div class="summary-lbl">Entregues</div></div>
+      <div class="summary-item"><div class="summary-val" style="color:var(--red);">${semPag}</div><div class="summary-lbl">Sem Pgto</div></div>
+      <div class="summary-item"><div class="summary-val">R$ ${fmtK(faturado)}</div><div class="summary-lbl">Faturado</div></div>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="filters">
+      <div class="f-btn ${!FILTRO?'on':''}" onclick="FILTRO='';carregar()">Todas <span class="f-count">${all.length}</span></div>
+      <div class="f-btn ${FILTRO==='entrada'||FILTRO==='diagnostico'||FILTRO==='orcamento'||FILTRO==='aprovada'||FILTRO==='aguardando_peca'||FILTRO==='execucao'?'':''}${FILTRO==='abertas'?'on':''}" onclick="FILTRO='';BUSCA='';carregar()" style="display:none;">Abertas</div>
+      ${['entrada','diagnostico','execucao','pronto','entregue','cancelada'].map(s =>
+        `<div class="f-btn ${FILTRO===s?'on':''}" onclick="FILTRO='${s}';carregar()">${STATUS_LABEL[s]} <span class="f-count">${all.filter(o=>o.status===s).length}</span></div>`
+      ).join('')}
+      <div class="f-btn ${FILTRO==='pendente'?'on':''}" onclick="FILTRO='pendente';carregar()">Pendentes <span class="f-count">${semPag}</span></div>
+    </div>
+
+    <!-- ALERT -->
+    ${semPag > 0 ? `
+    <div class="alert-bar" onclick="FILTRO='pendente';carregar()">
+      <div class="alert-pill">${semPag}</div>
+      <div class="alert-text"><strong>OS entregues sem pagamento</strong></div>
+      <div class="alert-val">R$ ${totalSemPagVal.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+    </div>` : ''}
+
+    <!-- OS LIST -->
+    <div id="os-lista">
+    ${lista.length ? lista.map(os => {
+      const placa = os.veiculos?.placa || '';
+      const veiculo = [os.veiculos?.marca, os.veiculos?.modelo].filter(Boolean).join(' ');
+      const cliente = os.clientes?.nome || '—';
+      const mecanico = os.profiles?.nome || '';
+      const ms = os.data_entrada ? Date.now() - new Date(os.data_entrada).getTime() : 0;
+      const isEntregue = os.status === 'entregue';
+      const isCancelada = os.status === 'cancelada';
+      const semPgto = isEntregue && !os.pago;
+      const sla = !isEntregue && !isCancelada ? slaClass(ms) : '';
+      const dt = os.data_entrada ? new Date(os.data_entrada).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) : '';
+
+      return `
+      <div class="os-row${isEntregue && os.pago ? ' entregue' : ''}" onclick="abrirDetalhes('${os.id}')">
+        <div class="os-row-sla ${sla}" ${isEntregue||isCancelada?'style="background:var(--sf3);"':''}></div>
+        <div class="placa-wrap">${placaHTML(placa)}</div>
+        <div class="os-body">
+          <div class="os-top">
+            <span class="os-num">#${esc(os.numero_os || '—')}</span>
+            <span class="os-veiculo">${esc(veiculo || placa)}</span>
+          </div>
+          <div class="os-cliente">${esc(cliente)}</div>
+          <div class="os-meta">
+            ${mecanico ? `<span class="os-mecanico">${esc(mecanico)}</span>` : ''}
+            ${!isEntregue && !isCancelada && ms > 0 ? `<span class="os-tempo" style="color:${ms>172800000?'var(--red)':ms>86400000?'var(--amber)':'var(--w3)'};">${tempoHumano(ms)}</span>` : ''}
+          </div>
+          <div class="os-date">${dt ? 'Entrada: '+dt : ''}</div>
+        </div>
+        <div class="os-right">
+          <div class="os-valor" ${isEntregue&&os.pago?'style="color:var(--green);"':!os.valor_total?'style="color:var(--w3);"':''}>${os.valor_total ? fmt(os.valor_total) : '—'}</div>
+          <div class="os-tag tag-${os.status}">${STATUS_LABEL[os.status] || os.status}</div>
+          ${semPgto ? '<div class="os-alert">SEM PAGAMENTO</div>' : ''}
+        </div>
+      </div>`;
+    }).join('') : `
+      <div class="os-empty">
+        <div style="font-size:32px;color:var(--w4);">📋</div>
+        <div class="os-empty-text">${BUSCA || FILTRO ? 'Nenhuma OS encontrada' : 'Nenhuma OS registrada'}</div>
+      </div>
+    `}
+    </div>
+  `;
+}
+
+// ── ABRIR DETALHES ──
+async function abrirDetalhes(id) {
+  document.getElementById('panel-titulo').innerHTML = 'Detalhe <span>OS</span>';
+  abrirPanel();
+
+  const pb = document.getElementById('panel-body');
+  pb.innerHTML = '<div style="text-align:center;padding:40px;"><div class="loading-spinner" style="margin:0 auto;"></div></div>';
+
+  const [osRes, itensRes, mecsRes, maqsRes] = await Promise.all([
+    db.from('ordens_servico')
+      .select('*, veiculos(placa, marca, modelo, km_atual), clientes(nome, whatsapp, prazo_pagamento), profiles!ordens_servico_mecanico_id_fkey(nome)')
+      .eq('id', id).eq('oficina_id', OFICINA_ID).single(),
+    db.from('itens_os')
+      .select('*, pecas(nome)')
+      .eq('os_id', id).eq('oficina_id', OFICINA_ID)
+      .order('tipo', { ascending: false })
+      .order('created_at'),
+    db.from('profiles')
+      .select('id, nome')
+      .eq('oficina_id', OFICINA_ID)
+      .in('role', ['mecanico', 'aux_mecanico', 'dono', 'gerente'])
+      .eq('ativo', true)
+      .order('nome'),
+    db.from('maquininhas')
+      .select('id,nome,taxa_debito,taxa_credito,taxa_parcelado_6,taxa_parcelado_12')
+      .eq('oficina_id', OFICINA_ID)
+      .eq('ativo', true)
+      .order('nome')
+  ]);
+
+  const os = osRes.data;
+  if (!os) { pb.innerHTML = '<div style="padding:40px;text-align:center;color:var(--w3);">OS nao encontrada</div>'; return; }
+  const itens = itensRes.data || [];
+  MECANICOS = mecsRes.data || [];
+  MAQUININHAS = maqsRes.data || [];
+
+  const itensServico = itens.filter(i => i.tipo === 'servico');
+  const itensPeca = itens.filter(i => i.tipo === 'peca');
+  const totalServicos = itensServico.reduce((s, i) => s + (i.valor_total || 0), 0);
+  const totalPecas = itensPeca.reduce((s, i) => s + (i.valor_total || 0), 0);
+  const desconto = os.desconto || 0;
+  const totalGeral = totalServicos + totalPecas - desconto;
+  const placa = os.veiculos?.placa || '';
+  const veiculo = [os.veiculos?.marca, os.veiculos?.modelo].filter(Boolean).join(' ');
+
+  pb.innerHTML = `
+    <!-- RESUMO -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+          ${placaHTML(placa)}
+          <div>
+            <div style="font-family:var(--head);font-size:18px;font-weight:800;text-transform:uppercase;">${esc(veiculo)}</div>
+            <div style="font-family:var(--mono);font-size:12px;color:var(--w3);">OS #${esc(os.numero_os||'—')}</div>
+          </div>
+        </div>
+        <div style="font-size:14px;color:var(--w2);margin-top:4px;">${esc(os.clientes?.nome||'—')}</div>
+        ${os.clientes?.whatsapp ? `<div style="font-family:var(--mono);font-size:11px;color:var(--w4);">${esc(os.clientes.whatsapp)}</div>` : ''}
+      </div>
+      <div style="text-align:right;">
+        <div id="det-total" style="font-family:var(--mono);font-size:24px;font-weight:800;color:var(--amber);">${fmt(totalGeral)}</div>
+        <div class="os-tag tag-${os.status}" style="display:inline-block;margin-top:4px;">${STATUS_LABEL[os.status]}</div>
+        ${os.status === 'entregue' && !os.pago ? '<div class="os-alert" style="margin-top:4px;">SEM PAGAMENTO</div>' : ''}
+      </div>
+    </div>
+
+    <!-- MECANICO -->
+    <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:var(--r2);background:${os.mecanico_id ? 'rgba(48,209,88,0.06);border-left:3px solid var(--green)' : 'rgba(255,59,48,0.06);border-left:3px solid var(--red)'};margin-bottom:14px;">
+      <span style="font-size:12px;font-weight:700;color:${os.mecanico_id?'var(--green)':'var(--red)'};white-space:nowrap;">Mecanico:</span>
+      <select id="det-mecanico" onchange="trocarMecanico('${os.id}',this.value)" style="background:#18181C;border:1px solid rgba(255,255,255,0.14);color:#F0F0F2;font-family:var(--body);font-size:14px;font-weight:700;cursor:pointer;padding:8px 10px;flex:1;border-radius:3px;">
+        <option value="" style="background:#1a1a1e;color:#F0F0F2;">Selecionar...</option>
+        ${MECANICOS.map(m => `<option value="${m.id}" style="background:#1a1a1e;color:#F0F0F2;" ${m.id===os.mecanico_id?'selected':''}>${esc(m.nome)}</option>`).join('')}
+      </select>
+    </div>
+
+    <!-- STATUS + PAGAMENTO -->
+    <div class="panel-row" style="margin-bottom:14px;">
+      <div class="panel-field" style="margin:0;">
+        <div class="panel-label">Status</div>
+        <select class="panel-select" id="det-status" onchange="mudarStatus('${os.id}',this.value,'${os.status}')">
+          ${STATUS_ALL.map(s => `<option value="${s}" ${s===os.status?'selected':''}>${STATUS_LABEL[s]}</option>`).join('')}
+        </select>
+      </div>
+      <div class="panel-field" style="margin:0;">
+        <div class="panel-label">Pagamento</div>
+        <select class="panel-select" id="det-pagamento" onchange="_onChangePagamento('${os.id}',this.value)">
+          <option value="pendente" ${os.forma_pagamento==='pendente'||!os.forma_pagamento?'selected':''}>Pendente</option>
+          ${[{v:'dinheiro',l:'Dinheiro'},{v:'pix',l:'PIX'},{v:'debito',l:'Cartao Debito'},{v:'credito',l:'Cartao Credito'},{v:'faturado',l:'Faturado'}].map(f=>`<option value="${f.v}" ${os.forma_pagamento===f.v?'selected':''}>${f.l}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+
+    <!-- MAQUININHA + PARCELAS -->
+    <div id="row-maq-${os.id}" class="panel-row" style="margin-bottom:14px;display:${ ['debito','credito'].includes(os.forma_pagamento) && MAQUININHAS.length ? '' : 'none' };">
+      <div class="panel-field" style="margin:0;flex:1;">
+        <div class="panel-label">Maquininha</div>
+        <select class="panel-select" id="sel-maq-${os.id}" onchange="_onChangeMaq('${os.id}')">
+          <option value="">Selecionar...</option>
+          ${MAQUININHAS.map(m=>`<option value="${m.id}" ${os.maquininha_id===m.id?'selected':''}>${esc(m.nome)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="panel-field" style="margin:0;width:90px;display:${ os.forma_pagamento==='credito' ? '' : 'none' };" id="parcelas-wrap-${os.id}">
+        <div class="panel-label">Parcelas</div>
+        <select class="panel-select" id="sel-parcelas-${os.id}" onchange="_onChangeMaq('${os.id}')">
+          ${[1,2,3,4,5,6,7,8,9,10,11,12].map(n=>`<option value="${n}" ${(os.parcelas||1)===n?'selected':''}>${n}x</option>`).join('')}
+        </select>
+      </div>
+    </div>
+
+    <!-- INFO -->
+    <div class="panel-row" style="margin-bottom:14px;">
+      <div><div class="panel-label">Entrada</div><div style="font-size:13px;">${os.data_entrada ? new Date(os.data_entrada).toLocaleDateString('pt-BR') + ' ' + new Date(os.data_entrada).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '—'}</div></div>
+      <div><div class="panel-label">KM</div><div style="font-size:13px;">${os.km_entrada ? os.km_entrada.toLocaleString('pt-BR') : '—'}</div></div>
+    </div>
+
+    ${os.descricao ? `<div style="padding:10px 14px;background:var(--sf2);border-radius:var(--r2);font-size:12px;color:var(--w2);margin-bottom:14px;"><strong style="color:var(--w4);">Obs:</strong> ${esc(os.descricao)}</div>` : ''}
+
+    <!-- SERVICOS -->
+    <div class="det-section">
+      <div class="det-section-head">
+        <div class="det-section-title">Servicos (Mao de Obra)</div>
+        <div class="det-section-val" style="color:var(--green);">${fmt(totalServicos)}</div>
+      </div>
+      ${itensServico.length ? itensServico.map(i => `
+        <div class="det-item">
+          <span>${esc(i.descricao)}</span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="color:var(--w3);">${fmt(i.valor_total)}</span>
+            <button class="det-item-rm" onclick="removerItem('${i.id}','${os.id}')">&times;</button>
+          </div>
+        </div>
+      `).join('') : '<div style="font-size:12px;color:var(--w4);padding:4px 0;">Nenhum servico</div>'}
+      <div style="margin-top:8px;">
+        <button class="add-inline-btn" onclick="toggleAddServico('${os.id}')">+ Servico</button>
+      </div>
+      <div id="add-servico-area" style="display:none;"></div>
+    </div>
+
+    <!-- PECAS -->
+    <div class="det-section">
+      <div class="det-section-head">
+        <div class="det-section-title">Pecas / Materiais</div>
+        <div class="det-section-val" style="color:var(--amber);">${fmt(totalPecas)}</div>
+      </div>
+      ${itensPeca.length ? itensPeca.map(i => `
+        <div class="det-item">
+          <span>${esc(i.descricao)} ${i.peca_id ? '<span style="color:var(--cyan);font-size:10px;">(estoque)</span>' : ''}</span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="color:var(--w3);">${i.quantidade > 1 ? i.quantidade+'x '+fmt(i.valor_unitario)+' = ' : ''}${fmt(i.valor_total)}</span>
+            <button class="det-item-rm" onclick="removerItem('${i.id}','${os.id}','${i.peca_id||''}',${i.quantidade})">&times;</button>
+          </div>
+        </div>
+      `).join('') : '<div style="font-size:12px;color:var(--w4);padding:4px 0;">Nenhuma peca</div>'}
+      <div style="margin-top:8px;">
+        <button class="add-inline-btn" onclick="toggleAddPeca('${os.id}')">+ Peca avulsa</button>
+      </div>
+      <div id="add-peca-area" style="display:none;"></div>
+    </div>
+
+    <!-- TOTAIS -->
+    <div class="det-section">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:8px;">
+        <div><div class="panel-label">Servicos</div><div style="font-weight:600;">${fmt(totalServicos)}</div></div>
+        <div><div class="panel-label">Pecas</div><div style="font-weight:600;">${fmt(totalPecas)}</div></div>
+        <div><div class="panel-label">Desconto</div><input type="number" class="panel-input" id="det-desconto" value="${desconto}" min="0" step="0.01" style="padding:6px 10px;font-size:13px;" onchange="atualizarDesconto('${os.id}',${totalServicos},${totalPecas})"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:14px;background:var(--sf2);border-radius:var(--r2);">
+        <span style="font-family:var(--head);font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:1px;">Total</span>
+        <span style="font-family:var(--mono);font-size:22px;font-weight:800;color:var(--amber);" id="det-total-bottom">${fmt(totalGeral)}</span>
+      </div>
+    </div>
+
+    <!-- ACOES -->
+    <div class="det-section">
+      ${os.status === 'pronto' ? `<button class="panel-btn panel-btn-green" onclick="entregarVeiculo('${os.id}')">Entregar Veiculo</button>` : ''}
+      ${!['pronto','entregue','cancelada'].includes(os.status) ? `<button class="panel-btn panel-btn-green" style="background:var(--sf3);color:var(--w2);border:1px solid var(--ln3);" onclick="mudarStatus('${os.id}','pronto','${os.status}')">Marcar Pronto</button>` : ''}
+      ${os.clientes?.whatsapp ? `<button class="panel-btn panel-btn-sec" style="margin-top:6px;" onclick="enviarWhatsApp('${esc(os.clientes.whatsapp)}','${esc(placa)}','${os.status}')">WhatsApp Cliente</button>` : ''}
+      <div style="display:flex;gap:8px;margin-top:6px;">
+        <button class="panel-btn panel-btn-sec" style="flex:1;" onclick="editarOS('${os.id}')">Editar</button>
+        ${os.status !== 'entregue' ? `<button class="panel-btn panel-btn-red" style="flex:1;" onclick="excluirOS('${os.id}')">Excluir</button>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+// ── TROCAR MECANICO ──
+async function trocarMecanico(id, mecId) {
+  if (_busy.trocaMec) return;
+  _busy.trocaMec = true;
+  try {
+  await db.from('ordens_servico').update({ mecanico_id: mecId || null, updated_at: new Date().toISOString() }).eq('id', id).eq('oficina_id', OFICINA_ID);
+  toast('Mecanico atualizado');
+  } catch(e) { toast('Erro inesperado','err'); console.error('[trocarMecanico]',e); }
+  finally { _busy.trocaMec = false; }
+}
+
+// ── MUDAR STATUS ──
+async function mudarStatus(id, novoStatus, statusAtual) {
+  if (novoStatus === 'entregue') {
+    document.getElementById('det-status').value = statusAtual;
+    entregarVeiculo(id);
+    return;
+  }
+  if (novoStatus === 'cancelada') {
+    abrirModalCancelar(id, statusAtual);
+    return;
+  }
+  // Bloqueia retrocesso (exceto dono/gerente)
+  const FLUXO_ORDEM = ['entrada','diagnostico','orcamento','aprovada','execucao','aguardando_peca','pronto','entregue'];
+  const idxAtual = FLUXO_ORDEM.indexOf(statusAtual);
+  const idxNovo = FLUXO_ORDEM.indexOf(novoStatus);
+  if (idxNovo < idxAtual && idxAtual >= 0 && !['dono','gerente'].includes(PERFIL?.role)) {
+    document.getElementById('det-status').value = statusAtual;
+    toast('Nao e possivel voltar status — fale com o gerente', 'err');
+    return;
+  }
+
+  if (_busy.mudarSt) return;
+  _busy.mudarSt = true;
+  try {
+  // Bloqueia pronto sem pagamento ou sem maquininha (cartão)
+  if (novoStatus === 'pronto') {
+    const { data: osCheck } = await db.from('ordens_servico').select('forma_pagamento, maquininha_id, mecanico_id').eq('id', id).eq('oficina_id', OFICINA_ID).single();
+    const faltando = [];
+    if (!osCheck?.mecanico_id) faltando.push('mecanico');
+    if (!osCheck?.forma_pagamento || osCheck.forma_pagamento === 'pendente') faltando.push('forma de pagamento');
+    else if (['debito','credito'].includes(osCheck.forma_pagamento) && MAQUININHAS.length && !osCheck.maquininha_id) faltando.push('maquininha');
+    if (faltando.length) {
+      document.getElementById('det-status').value = statusAtual;
+      toast('Informe: ' + faltando.join(' e '), 'err');
+      return;
+    }
+  }
+
+  const update = { status: novoStatus, updated_at: new Date().toISOString() };
+  if (novoStatus === 'aprovada') update.data_aprovacao = new Date().toISOString();
+  if (novoStatus === 'pronto') update.data_conclusao = new Date().toISOString();
+
+  await db.from('ordens_servico').update(update).eq('id', id).eq('oficina_id', OFICINA_ID);
+  toast('Status atualizado');
+  abrirDetalhes(id);
+  carregar();
+  } catch(e) { toast('Erro inesperado','err'); console.error('[mudarStatus]',e); }
+  finally { _busy.mudarSt = false; }
+}
+
+// ── PAGAMENTO COM MAQUININHA ──
+function _onChangePagamento(osId, forma) {
+  const rowMaq = document.getElementById('row-maq-'+osId);
+  const selMaq = document.getElementById('sel-maq-'+osId);
+  const parcelasWrap = document.getElementById('parcelas-wrap-'+osId);
+  const selParc = document.getElementById('sel-parcelas-'+osId);
+  const isCartao = ['debito','credito'].includes(forma) && MAQUININHAS.length;
+  if (rowMaq) rowMaq.style.display = isCartao ? '' : 'none';
+  if (selMaq) selMaq.value = '';
+  if (parcelasWrap) parcelasWrap.style.display = forma === 'credito' ? '' : 'none';
+  if (selParc) selParc.value = '1';
+  if (!['debito','credito'].includes(forma) || !MAQUININHAS.length) mudarPagamento(osId, forma);
+}
+
+function _getTaxaCartao(maq, forma, parcelas) {
+  if (!maq) return 0;
+  if (forma === 'debito') return maq.taxa_debito || 0;
+  const p = parcelas || 1;
+  if (p === 1) return maq.taxa_credito || 0;
+  if (p <= 6) return maq.taxa_parcelado_6 || maq.taxa_credito || 0;
+  return maq.taxa_parcelado_12 || maq.taxa_parcelado_6 || maq.taxa_credito || 0;
+}
+
+async function _onChangeMaq(osId) {
+  const forma = document.getElementById('det-pagamento')?.value;
+  const maqId = document.getElementById('sel-maq-'+osId)?.value;
+  const parcelas = parseInt(document.getElementById('sel-parcelas-'+osId)?.value) || 1;
+  if (!maqId || !forma) return;
+  const maq = MAQUININHAS.find(m => m.id === maqId);
+  const taxa = _getTaxaCartao(maq, forma, parcelas);
+  const payload = { forma_pagamento: forma, pago: true, maquininha_id: maqId, taxa_cartao: taxa, parcelas, updated_at: new Date().toISOString() };
+  const { data, error } = await db.from('ordens_servico')
+    .update(payload).eq('id', osId).eq('oficina_id', OFICINA_ID).select('id, forma_pagamento').single();
+  if (error) { toast('Erro ao salvar', 'err'); return; }
+  if (!data) { toast('Sem permissao', 'err'); return; }
+  toast(`${maq?.nome||''} · ${parcelas}x · Taxa ${taxa}%`);
+  await lancarNoCaixa(osId);
+  carregar();
+}
+
+async function mudarPagamento(id, forma) {
+  if (_busy.mudarPag) return;
+  _busy.mudarPag = true;
+  try {
+  if (forma === 'faturado') {
+    const { data: os } = await db.from('ordens_servico').select('valor_total, cliente_id, clientes(prazo_pagamento)').eq('id', id).eq('oficina_id', OFICINA_ID).single();
+    if (!os) return;
+    const prazo = parseInt(os.clientes?.prazo_pagamento) || 7;
+    const venc = new Date(); venc.setDate(venc.getDate() + prazo);
+    await db.from('ordens_servico').update({ forma_pagamento:'faturado', pago:false, taxa_cartao:0, maquininha_id:null, parcelas:null, updated_at:new Date().toISOString() }).eq('id', id).eq('oficina_id', OFICINA_ID);
+    await db.from('caixa').delete().eq('oficina_id', OFICINA_ID).eq('os_id', id);
+    await db.from('contas_receber').delete().eq('os_id', id).eq('oficina_id', OFICINA_ID).eq('pago', false);
+    await db.from('contas_receber').insert({ oficina_id:OFICINA_ID, cliente_id:os.cliente_id, os_id:id, valor:os.valor_total, vencimento:venc.toISOString().split('T')[0] });
+    toast('Faturado! Vencimento: ' + venc.toLocaleDateString('pt-BR'));
+    abrirDetalhes(id);
+    return;
+  }
+  const pago = forma !== 'pendente';
+  const update = { forma_pagamento:forma, pago, taxa_cartao:0, maquininha_id:null, parcelas:null, updated_at:new Date().toISOString() };
+  await db.from('ordens_servico').update(update).eq('id', id).eq('oficina_id', OFICINA_ID);
+  if (!pago) {
+    await db.from('caixa').delete().eq('oficina_id', OFICINA_ID).eq('os_id', id);
+    await db.from('contas_receber').delete().eq('os_id', id).eq('oficina_id', OFICINA_ID).eq('pago', false);
+  } else {
+    await db.from('contas_receber').delete().eq('os_id', id).eq('oficina_id', OFICINA_ID).eq('pago', false);
+    await lancarNoCaixa(id);
+  }
+  toast('Pagamento atualizado');
+  abrirDetalhes(id);
+  } catch(e) { toast('Erro inesperado','err'); console.error('[mudarPagamento]',e); }
+  finally { _busy.mudarPag = false; }
+}
+
+// ── ENTREGAR VEICULO ──
+async function entregarVeiculo(osId) {
+  if (_busy.entrega) return;
+  _busy.entrega = true;
+  try {
+  const { data: os } = await db.from('ordens_servico').select('valor_total, pago, forma_pagamento, maquininha_id').eq('id', osId).eq('oficina_id', OFICINA_ID).single();
+  if (!os || !os.valor_total || os.valor_total <= 0) { toast('OS sem valor', 'err'); return; }
+  // Se cartão sem maquininha, não entrega direto — abre modal
+  if (os.pago && os.forma_pagamento && os.forma_pagamento !== 'pendente') {
+    if (['debito','credito'].includes(os.forma_pagamento) && MAQUININHAS.length && !os.maquininha_id) {
+      // cai pro modal abaixo
+    } else {
+      await confirmarEntrega(osId);
+      return;
+    }
+  }
+  // Modal de pagamento
+  const maqOpts = MAQUININHAS.map(m=>`<option value="${m.id}">${esc(m.nome)}</option>`).join('');
+  const parcOpts = [1,2,3,4,5,6,7,8,9,10,11,12].map(n=>`<option value="${n}">${n}x</option>`).join('');
+  document.getElementById('modal-box').innerHTML = `
+    <div class="modal-title">Como o cliente pagou?</div>
+    <div style="font-size:14px;color:var(--w2);margin-bottom:16px;">Total: <strong style="font-size:20px;color:var(--amber);">${fmt(os.valor_total)}</strong></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <button class="panel-btn panel-btn-green" style="margin:0;" onclick="entregarComPag('${osId}','dinheiro')">Dinheiro</button>
+      <button class="panel-btn panel-btn-green" style="margin:0;" onclick="entregarComPag('${osId}','pix')">Pix</button>
+      <button class="panel-btn panel-btn-green" style="margin:0;" onclick="entregarCartao('${osId}','debito')">Debito</button>
+      <button class="panel-btn panel-btn-green" style="margin:0;" onclick="entregarCartao('${osId}','credito')">Credito</button>
+    </div>
+    ${MAQUININHAS.length ? `<div id="entrega-maq-area" style="display:none;margin-top:12px;padding:12px;background:var(--sf2);border-radius:var(--r2);">
+      <div style="font-size:12px;font-weight:700;color:var(--amber);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;" id="entrega-maq-titulo">Debito</div>
+      <div class="panel-field" style="margin:0 0 8px;">
+        <div class="panel-label">Maquininha</div>
+        <select class="panel-select" id="entrega-maq-sel"><option value="">Selecionar...</option>${maqOpts}</select>
+      </div>
+      <div class="panel-field" style="margin:0 0 8px;display:none;" id="entrega-parcelas-wrap">
+        <div class="panel-label">Parcelas</div>
+        <select class="panel-select" id="entrega-parcelas-sel">${parcOpts}</select>
+      </div>
+      <button class="panel-btn panel-btn-green" style="margin:0;" onclick="confirmarEntregaCartao('${osId}')">Confirmar</button>
+    </div>` : ''}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+      <button class="panel-btn panel-btn-sec" style="margin:0;" onclick="entregarFaturado('${osId}')">Faturado</button>
+      <button class="panel-btn panel-btn-red" style="margin:0;" onclick="entregarComPag('${osId}','fiado')">Fiado</button>
+    </div>
+    <button class="panel-btn panel-btn-sec" style="margin-top:10px;" onclick="fecharModal()">Cancelar</button>
+  `;
+  document.getElementById('modal-ov').classList.add('open');
+  } catch(e) { toast('Erro inesperado','err'); console.error('[entregarVeiculo]',e); }
+  finally { _busy.entrega = false; }
+}
+
+async function entregarComPag(osId, forma) {
+  if (_busy.entregaPag) return;
+  _busy.entregaPag = true;
+  try {
+  const pago = forma !== 'fiado';
+  await db.from('ordens_servico').update({
+    forma_pagamento: forma === 'fiado' ? 'pendente' : forma,
+    pago, taxa_cartao: 0, maquininha_id: null, parcelas: null,
+    status: 'entregue',
+    data_entrega: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }).eq('id', osId).eq('oficina_id', OFICINA_ID);
+
+  if (pago) await lancarNoCaixa(osId);
+  fecharModal();
+  toast('Veiculo entregue');
+  abrirDetalhes(osId);
+  carregar();
+  } catch(e) { toast('Erro inesperado','err'); console.error('[entregarComPag]',e); }
+  finally { _busy.entregaPag = false; }
+}
+
+let _entregaForma = '';
+function entregarCartao(osId, forma) {
+  _entregaForma = forma;
+  if (!MAQUININHAS.length) { entregarComPag(osId, forma); return; }
+  const area = document.getElementById('entrega-maq-area');
+  const titulo = document.getElementById('entrega-maq-titulo');
+  const parcelasWrap = document.getElementById('entrega-parcelas-wrap');
+  if (area) area.style.display = '';
+  if (titulo) titulo.textContent = forma === 'debito' ? 'Debito' : 'Credito';
+  if (parcelasWrap) parcelasWrap.style.display = forma === 'credito' ? '' : 'none';
+  document.getElementById('entrega-maq-sel').value = '';
+  document.getElementById('entrega-parcelas-sel').value = '1';
+}
+
+async function confirmarEntregaCartao(osId) {
+  const maqId = document.getElementById('entrega-maq-sel')?.value;
+  if (!maqId) { toast('Selecione a maquininha', 'err'); return; }
+  if (_busy.entregaCartao) return;
+  _busy.entregaCartao = true;
+  try {
+  const maq = MAQUININHAS.find(m => m.id === maqId);
+  const parcelas = parseInt(document.getElementById('entrega-parcelas-sel')?.value) || 1;
+  const taxa = _getTaxaCartao(maq, _entregaForma, parcelas);
+
+  await db.from('ordens_servico').update({
+    forma_pagamento: _entregaForma, pago: true,
+    maquininha_id: maqId, taxa_cartao: taxa, parcelas,
+    status: 'entregue',
+    data_entrega: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }).eq('id', osId).eq('oficina_id', OFICINA_ID);
+
+  await lancarNoCaixa(osId);
+  fecharModal();
+  toast(`${maq?.nome||''} · ${parcelas}x · Taxa ${taxa}%`);
+  abrirDetalhes(osId);
+  carregar();
+  } catch(e) { toast('Erro inesperado','err'); console.error('[confirmarEntregaCartao]',e); }
+  finally { _busy.entregaCartao = false; }
+}
+
+async function entregarFaturado(osId) {
+  if (_busy.entregaFat) return;
+  _busy.entregaFat = true;
+  try {
+  const { data: os } = await db.from('ordens_servico').select('valor_total, cliente_id, clientes(prazo_pagamento)').eq('id', osId).eq('oficina_id', OFICINA_ID).single();
+  if (!os) return;
+  const prazo = parseInt(os.clientes?.prazo_pagamento) || 7;
+  const venc = new Date(); venc.setDate(venc.getDate() + prazo);
+  await db.from('ordens_servico').update({ forma_pagamento:'faturado', pago:false, status:'entregue', data_entrega:new Date().toISOString(), updated_at:new Date().toISOString() }).eq('id', osId).eq('oficina_id', OFICINA_ID);
+  await db.from('contas_receber').insert({ oficina_id:OFICINA_ID, cliente_id:os.cliente_id, os_id:osId, valor:os.valor_total, vencimento:venc.toISOString().split('T')[0] });
+  fecharModal();
+  toast('Faturado! Vencimento: ' + venc.toLocaleDateString('pt-BR'));
+  abrirDetalhes(osId);
+  carregar();
+  } catch(e) { toast('Erro inesperado','err'); console.error('[entregarFaturado]',e); }
+  finally { _busy.entregaFat = false; }
+}
+
+async function confirmarEntrega(osId) {
+  if (_busy.confEntrega) return;
+  _busy.confEntrega = true;
+  try {
+  await db.from('ordens_servico').update({ status:'entregue', data_entrega:new Date().toISOString(), updated_at:new Date().toISOString() }).eq('id', osId).eq('oficina_id', OFICINA_ID);
+  await lancarNoCaixa(osId);
+  toast('Veiculo entregue');
+  abrirDetalhes(osId);
+  carregar();
+  } catch(e) { toast('Erro inesperado','err'); console.error('[confirmarEntrega]',e); }
+  finally { _busy.confEntrega = false; }
+}
+
+// ── LANCAR NO CAIXA ──
+async function lancarNoCaixa(osId) {
+  if (_busy.lancCaixa) return;
+  _busy.lancCaixa = true;
+  try {
+  const { data: os } = await db.from('ordens_servico')
+    .select('id, numero, status, pago, valor_mao_obra, valor_pecas, valor_total, forma_pagamento, veiculos(placa), clientes(nome)')
+    .eq('id', osId).eq('oficina_id', OFICINA_ID).single();
+  if (!os || !os.pago || os.status !== 'entregue') return;
+
+  await db.from('caixa').delete().eq('oficina_id', OFICINA_ID).eq('os_id', osId);
+
+  const desc = 'OS #' + (os.numero_os||'') + ' — ' + (os.veiculos?.placa||'') + ' — ' + (os.clientes?.nome||'');
+  const lancamentos = [];
+  if (os.valor_mao_obra > 0) lancamentos.push({ oficina_id:OFICINA_ID, os_id:osId, tipo:'entrada', categoria:'servico', descricao:desc+' (mao de obra)', valor:os.valor_mao_obra, forma_pagamento:os.forma_pagamento, created_by:PERFIL.id });
+  if (os.valor_pecas > 0) lancamentos.push({ oficina_id:OFICINA_ID, os_id:osId, tipo:'entrada', categoria:'peca', descricao:desc+' (pecas)', valor:os.valor_pecas, forma_pagamento:os.forma_pagamento, created_by:PERFIL.id });
+  if (!lancamentos.length && os.valor_total > 0) lancamentos.push({ oficina_id:OFICINA_ID, os_id:osId, tipo:'entrada', categoria:'servico', descricao:desc, valor:os.valor_total, forma_pagamento:os.forma_pagamento, created_by:PERFIL.id });
+  if (lancamentos.length) await db.from('caixa').insert(lancamentos);
+  } catch(e) { toast('Erro inesperado','err'); console.error('[lancarNoCaixa]',e); }
+  finally { _busy.lancCaixa = false; }
+}
+
+// ── ADD SERVICO ──
+function toggleAddServico(osId) {
+  const area = document.getElementById('add-servico-area');
+  if (area.style.display === 'block') { area.style.display = 'none'; return; }
+  area.style.display = 'block';
+  area.innerHTML = `
+    <div class="add-inline">
+      <div style="font-size:12px;font-weight:600;margin-bottom:8px;color:var(--w2);">Adicionar servico</div>
+      <div style="position:relative;margin-bottom:8px;">
+        <input id="add-srv-nome" placeholder="Buscar ou digitar servico..." autocomplete="off" oninput="buscarServicoCatalogo(this.value)">
+        <div id="add-srv-sug" style="position:absolute;left:0;right:0;top:100%;background:var(--sf);border:1px solid var(--ln2);border-radius:0 0 var(--r2) var(--r2);max-height:180px;overflow-y:auto;display:none;z-index:10;"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:end;">
+        <div style="flex:1;"><label style="font-size:10px;color:var(--w4);">Valor R$</label><input id="add-srv-valor" type="number" value="0" min="0" step="0.01"></div>
+        <button class="add-inline-btn" onclick="addServico('${osId}')">Add</button>
+      </div>
+    </div>
+  `;
+}
+
+async function buscarServicoCatalogo(val) {
+  const sug = document.getElementById('add-srv-sug');
+  const termo = val.trim().toLowerCase();
+  if (termo.length < 2) { sug.style.display = 'none'; return; }
+
+  if (!SERVICOS_CACHE) {
+    const { data } = await db.from('servicos_catalogo').select('nome, valor_padrao, categoria').eq('oficina_id', OFICINA_ID).order('nome');
+    SERVICOS_CACHE = data || [];
+  }
+
+  const res = SERVICOS_CACHE.filter(s => s.nome.toLowerCase().includes(termo) || (s.categoria||'').toLowerCase().includes(termo)).slice(0, 10);
+  if (!res.length) { sug.style.display = 'none'; return; }
+
+  sug.style.display = 'block';
+  sug.innerHTML = res.map(s => `
+    <div class="panel-ac-item" onmousedown="document.getElementById('add-srv-nome').value='${esc(s.nome).replace(/'/g,"\\'")}';document.getElementById('add-srv-valor').value=${s.valor_padrao||0};document.getElementById('add-srv-sug').style.display='none';">
+      <strong>${esc(s.nome)}</strong><span>${esc(s.categoria||'')}</span>
+      <span style="float:right;color:var(--green);font-weight:700;">${fmt(s.valor_padrao)}</span>
+    </div>
+  `).join('');
+}
+
+async function addServico(osId) {
+  const nome = document.getElementById('add-srv-nome').value.trim();
+  if (!nome) { toast('Digite o servico', 'err'); return; }
+  if (_busy.addServ) return;
+  _busy.addServ = true;
+  try {
+  const valor = parseFloat(document.getElementById('add-srv-valor').value) || 0;
+
+  await db.from('itens_os').insert({ oficina_id:OFICINA_ID, os_id:osId, tipo:'servico', descricao:nome, quantidade:1, valor_unitario:valor, valor_total:valor });
+  await recalcularTotais(osId);
+  toast('Servico adicionado');
+  abrirDetalhes(osId);
+  } catch(e) { toast('Erro inesperado','err'); console.error('[addServico]',e); }
+  finally { _busy.addServ = false; }
+}
+
+// ── ADD PECA ──
+function toggleAddPeca(osId) {
+  const area = document.getElementById('add-peca-area');
+  if (area.style.display === 'block') { area.style.display = 'none'; return; }
+  area.style.display = 'block';
+  area.innerHTML = `
+    <div class="add-inline">
+      <div style="font-size:12px;font-weight:600;margin-bottom:8px;color:var(--w2);">Adicionar peca avulsa</div>
+      <div style="margin-bottom:8px;"><input id="add-peca-nome" placeholder="Nome da peca"></div>
+      <div style="display:flex;gap:8px;align-items:end;">
+        <div><label style="font-size:10px;color:var(--w4);">Qtd</label><input id="add-peca-qtd" type="number" value="1" min="1" style="width:60px;"></div>
+        <div style="flex:1;"><label style="font-size:10px;color:var(--w4);">Valor unit.</label><input id="add-peca-valor" type="number" value="0" min="0" step="0.01"></div>
+        <button class="add-inline-btn" onclick="addPeca('${osId}')">Add</button>
+      </div>
+    </div>
+  `;
+}
+
+async function addPeca(osId) {
+  const nome = document.getElementById('add-peca-nome').value.trim();
+  if (!nome) { toast('Digite o nome da peca', 'err'); return; }
+  if (_busy.addPeca) return;
+  _busy.addPeca = true;
+  try {
+  const qtd = parseInt(document.getElementById('add-peca-qtd').value) || 1;
+  const valor = parseFloat(document.getElementById('add-peca-valor').value) || 0;
+
+  await db.from('itens_os').insert({ oficina_id:OFICINA_ID, os_id:osId, tipo:'peca', descricao:nome+' (avulso)', quantidade:qtd, valor_unitario:valor, valor_total:qtd*valor });
+  await recalcularTotais(osId);
+  toast('Peca adicionada');
+  abrirDetalhes(osId);
+  } catch(e) { toast('Erro inesperado','err'); console.error('[addPeca]',e); }
+  finally { _busy.addPeca = false; }
+}
+
+// ── REMOVER ITEM ──
+async function removerItem(itemId, osId, pecaId, qtd) {
+  if (_busy.remItem) return;
+  _busy.remItem = true;
+  try {
+  if (pecaId) {
+    try { await db.rpc('devolver_estoque', { p_peca_id: pecaId, p_quantidade: qtd }); } catch(_){}
+  }
+  await db.from('itens_os').delete().eq('id', itemId).eq('oficina_id', OFICINA_ID);
+  await recalcularTotais(osId);
+  toast('Item removido');
+  abrirDetalhes(osId);
+  } catch(e) { toast('Erro inesperado','err'); console.error('[removerItem]',e); }
+  finally { _busy.remItem = false; }
+}
+
+// ── RECALCULAR TOTAIS ──
+async function recalcularTotais(osId) {
+  if (_busy.recalc) return;
+  _busy.recalc = true;
+  try {
+  const { data: itens } = await db.from('itens_os').select('tipo, valor_total').eq('os_id', osId).eq('oficina_id', OFICINA_ID);
+  const totalMao = (itens||[]).filter(i=>i.tipo==='servico').reduce((s,i)=>s+(i.valor_total||0),0);
+  const totalPecas = (itens||[]).filter(i=>i.tipo==='peca').reduce((s,i)=>s+(i.valor_total||0),0);
+  const { data: os } = await db.from('ordens_servico').select('desconto').eq('id', osId).eq('oficina_id', OFICINA_ID).single();
+  const desc = os?.desconto || 0;
+  await db.from('ordens_servico').update({ valor_mao_obra:totalMao, valor_pecas:totalPecas, valor_total:totalMao+totalPecas-desc, updated_at:new Date().toISOString() }).eq('id', osId).eq('oficina_id', OFICINA_ID);
+  } catch(e) { toast('Erro inesperado','err'); console.error('[recalcularTotais]',e); }
+  finally { _busy.recalc = false; }
+}
+
+// ── DESCONTO ──
+async function atualizarDesconto(osId, totalSrv, totalPecas) {
+  if (_busy.desconto) return;
+  _busy.desconto = true;
+  try {
+  const desc = parseFloat(document.getElementById('det-desconto').value) || 0;
+  const total = totalSrv + totalPecas - desc;
+  const el1 = document.getElementById('det-total');
+  const el2 = document.getElementById('det-total-bottom');
+  if (el1) el1.textContent = fmt(total);
+  if (el2) el2.textContent = fmt(total);
+  await db.from('ordens_servico').update({ desconto:desc, valor_total:total, updated_at:new Date().toISOString() }).eq('id', osId).eq('oficina_id', OFICINA_ID);
+  toast('Desconto aplicado');
+  } catch(e) { toast('Erro inesperado','err'); console.error('[atualizarDesconto]',e); }
+  finally { _busy.desconto = false; }
+}
+
+// ── EDITAR OS ──
+async function editarOS(osId) {
+  const { data: os } = await db.from('ordens_servico').select('*').eq('id', osId).eq('oficina_id', OFICINA_ID).single();
+  if (!os) return;
+  document.getElementById('panel-titulo').innerHTML = 'Editar <span>OS</span>';
+  document.getElementById('panel-body').innerHTML = `
+    <form onsubmit="salvarEdicao(event,'${osId}')">
+      <div class="panel-field">
+        <div class="panel-label">Mecanico</div>
+        <select class="panel-select" id="edit-mec">
+          <option value="">Nao definido</option>
+          ${MECANICOS.map(m => `<option value="${m.id}" ${m.id===os.mecanico_id?'selected':''}>${esc(m.nome)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="panel-field">
+        <div class="panel-label">Descricao / Observacoes</div>
+        <textarea class="panel-textarea" id="edit-desc">${esc(os.descricao||'')}</textarea>
+      </div>
+      <div class="panel-row">
+        <div class="panel-field">
+          <div class="panel-label">KM Entrada</div>
+          <input class="panel-input" type="number" id="edit-km" value="${os.km_entrada||''}">
+        </div>
+        <div class="panel-field">
+          <div class="panel-label">Desconto R$</div>
+          <input class="panel-input" type="number" id="edit-desconto" value="${os.desconto||0}" min="0" step="0.01">
+        </div>
+      </div>
+      <button type="submit" class="panel-btn panel-btn-amber">Salvar</button>
+      <button type="button" class="panel-btn panel-btn-sec" onclick="abrirDetalhes('${osId}')">Voltar</button>
+    </form>
+  `;
+}
+
+async function salvarEdicao(e, osId) {
+  e.preventDefault();
+  if (_busy.salvarEd) return;
+  _busy.salvarEd = true;
+  try {
+  await db.from('ordens_servico').update({
+    mecanico_id: document.getElementById('edit-mec').value || null,
+    descricao: document.getElementById('edit-desc').value.trim(),
+    km_entrada: document.getElementById('edit-km').value ? parseInt(document.getElementById('edit-km').value) : null,
+    desconto: parseFloat(document.getElementById('edit-desconto').value) || 0,
+    updated_at: new Date().toISOString()
+  }).eq('id', osId).eq('oficina_id', OFICINA_ID);
+  toast('OS atualizada');
+  abrirDetalhes(osId);
+  } catch(e) { toast('Erro inesperado','err'); console.error('[salvarEdicao]',e); }
+  finally { _busy.salvarEd = false; }
+}
+
+// ── EXCLUIR OS ──
+async function excluirOS(osId) {
+  if (!confirm('Excluir esta OS? Nao pode desfazer.')) return;
+  if (_busy.exclOS) return;
+  _busy.exclOS = true;
+  try {
+  const { data: os } = await db.from('ordens_servico').select('status').eq('id', osId).eq('oficina_id', OFICINA_ID).single();
+  if (os?.status === 'entregue') { toast('OS entregue nao pode ser excluida', 'err'); return; }
+  await db.from('itens_os').delete().eq('os_id', osId).eq('oficina_id', OFICINA_ID);
+  await db.from('ordens_servico').delete().eq('id', osId).eq('oficina_id', OFICINA_ID);
+  fecharPanel();
+  toast('OS excluida');
+  carregar();
+  } catch(e) { toast('Erro inesperado','err'); console.error('[excluirOS]',e); }
+  finally { _busy.exclOS = false; }
+}
+
+// ── CANCELAR OS ──
+function abrirModalCancelar(osId, statusAtual) {
+  document.getElementById('modal-box').innerHTML = `
+    <div class="modal-title">Cancelar OS</div>
+    <div style="margin-bottom:12px;color:var(--w2);font-size:13px;">Motivo do cancelamento:</div>
+    <select class="panel-select" id="cancel-tipo" style="margin-bottom:10px;" onchange="document.getElementById('cancel-outro').style.display=this.value==='outro'?'block':'none'">
+      <option value="">Selecione...</option>
+      <option>Cliente desistiu</option>
+      <option>Preco alto</option>
+      <option>Peca indisponivel</option>
+      <option>Erro de cadastro</option>
+      <option value="outro">Outro...</option>
+    </select>
+    <textarea class="panel-textarea" id="cancel-outro" style="display:none;margin-bottom:10px;" placeholder="Descreva..."></textarea>
+    <div style="display:flex;gap:8px;">
+      <button class="panel-btn panel-btn-sec" style="flex:1;" onclick="fecharModal();document.getElementById('det-status').value='${statusAtual}';">Voltar</button>
+      <button class="panel-btn panel-btn-red" style="flex:1;" onclick="confirmarCancelamento('${osId}')">Cancelar OS</button>
+    </div>
+  `;
+  document.getElementById('modal-ov').classList.add('open');
+}
+
+async function confirmarCancelamento(osId) {
+  const tipo = document.getElementById('cancel-tipo')?.value;
+  const texto = document.getElementById('cancel-outro')?.value?.trim();
+  const motivo = tipo === 'outro' ? (texto || 'Outro') : tipo;
+  if (!motivo) { toast('Selecione o motivo', 'err'); return; }
+  if (_busy.cancelar) return;
+  _busy.cancelar = true;
+  try {
+  await db.from('ordens_servico').update({ status:'cancelada', motivo_cancelamento:motivo, updated_at:new Date().toISOString() }).eq('id', osId).eq('oficina_id', OFICINA_ID);
+  fecharModal();
+  toast('OS cancelada');
+  abrirDetalhes(osId);
+  carregar();
+  } catch(e) { toast('Erro inesperado','err'); console.error('[confirmarCancelamento]',e); }
+  finally { _busy.cancelar = false; }
+}
+
+// ── NOVA OS ──
+async function abrirNovaOS() {
+  document.getElementById('panel-titulo').innerHTML = 'Nova <span>OS</span>';
+  abrirPanel();
+
+  if (!MECANICOS.length) {
+    const { data } = await db.from('profiles').select('id, nome').eq('oficina_id', OFICINA_ID).in('role', ['mecanico','aux_mecanico','dono','gerente']).eq('ativo', true).order('nome');
+    MECANICOS = data || [];
+  }
+
+  document.getElementById('panel-body').innerHTML = `
+    <form onsubmit="salvarNovaOS(event)">
+      <div class="panel-field" style="position:relative;">
+        <div class="panel-label">Veiculo <span style="flex:1;height:1px;background:var(--ln2);display:inline-block;margin-left:8px;vertical-align:middle;"></span></div>
+        <div class="placa-input-wrap">
+          <input class="panel-input" id="nos-placa" required placeholder="PLACA" style="text-transform:uppercase;font-size:22px;font-weight:800;letter-spacing:4px;text-align:center;padding:18px 14px;" maxlength="8" autocomplete="off" oninput="buscarPlaca(this.value)">
+          <div class="scan-btn" onclick="iniciarScan()">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 7V3a2 2 0 0 1 2-2h4"/><path d="M16 1h4a2 2 0 0 1 2 2v4"/>
+              <path d="M22 17v4a2 2 0 0 1-2 2h-4"/><path d="M8 23H4a2 2 0 0 1-2-2v-4"/>
+              <circle cx="12" cy="12" r="4"/>
+            </svg>
+            <div class="scan-btn-label">Scan</div>
+          </div>
+        </div>
+        <div id="nos-placa-info" style="font-size:12px;color:var(--w3);margin-top:6px;"></div>
+        <div class="panel-autocomplete" id="nos-placa-ac"></div>
+        <input type="hidden" id="nos-veiculo-id">
+        <input type="hidden" id="nos-cliente-id">
+      </div>
+
+      <div id="nos-novo-reg" style="display:none;">
+        <div style="background:var(--amber-dim);border:1px solid rgba(232,147,12,0.2);border-radius:var(--r2);padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--amber);">Veiculo nao encontrado. Vincule a um cliente ou cadastre um novo.</div>
+
+        <!-- Bifurcacao: cliente existente x novo -->
+        <div style="display:flex;gap:8px;margin-bottom:14px;">
+          <button type="button" id="nos-btn-cli-existente" onclick="modoCliente('existente')"
+            style="flex:1;padding:12px;border-radius:var(--r2);border:2px solid var(--amber);background:var(--amber);color:#000;font-family:var(--head);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1px;cursor:pointer;">
+            Cliente existente
+          </button>
+          <button type="button" id="nos-btn-cli-novo" onclick="modoCliente('novo')"
+            style="flex:1;padding:12px;border-radius:var(--r2);border:2px solid var(--ln3);background:transparent;color:var(--w3);font-family:var(--head);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1px;cursor:pointer;">
+            Novo cliente
+          </button>
+        </div>
+
+        <!-- Bloco cliente existente: autocomplete -->
+        <div id="nos-bloco-cli-existente" style="position:relative;">
+          <div class="panel-field">
+            <div class="panel-label">Buscar cliente *</div>
+            <input class="panel-input" id="nos-busca-cli" placeholder="Digite o nome do cliente..." autocomplete="off" oninput="buscarClienteExistente(this.value)">
+            <div class="panel-autocomplete" id="nos-cli-ac"></div>
+            <div id="nos-cli-selecionado" style="font-family:var(--mono);font-size:12px;color:var(--green);margin-top:4px;"></div>
+          </div>
+        </div>
+
+        <!-- Bloco novo cliente: nome + whatsapp -->
+        <div id="nos-bloco-cli-novo" style="display:none;">
+          <div class="panel-field"><div class="panel-label">Nome do cliente *</div><input class="panel-input" id="nos-cli-nome" placeholder="Nome completo"></div>
+          <div class="panel-field"><div class="panel-label">WhatsApp</div><input class="panel-input" id="nos-cli-whats" placeholder="(00) 00000-0000" maxlength="15"></div>
+        </div>
+
+        <!-- Dados do veiculo (sempre visivel) -->
+        <div class="panel-row">
+          <div class="panel-field"><div class="panel-label">Marca</div><input class="panel-input" id="nos-marca" placeholder="Fiat, VW..."></div>
+          <div class="panel-field"><div class="panel-label">Modelo</div><input class="panel-input" id="nos-modelo" placeholder="Uno, Gol..."></div>
+        </div>
+        <div class="panel-row">
+          <div class="panel-field"><div class="panel-label">Ano</div><input class="panel-input" type="number" id="nos-ano" placeholder="2020"></div>
+          <div class="panel-field"><div class="panel-label">Cor</div><input class="panel-input" id="nos-cor" placeholder="Branco"></div>
+        </div>
+      </div>
+
+      <div class="panel-field">
+        <div class="panel-label">Quilometragem <span style="flex:1;height:1px;background:var(--ln2);display:inline-block;margin-left:8px;vertical-align:middle;"></span></div>
+        <input class="panel-input" type="number" id="nos-km" placeholder="KM atual do veiculo" style="font-size:18px;font-weight:700;letter-spacing:1px;">
+        <div id="nos-km-info" style="font-family:var(--mono);font-size:11px;color:var(--w3);margin-top:4px;"></div>
+      </div>
+
+      <div class="panel-field">
+        <div class="panel-label">Problema Relatado <span style="flex:1;height:1px;background:var(--ln2);display:inline-block;margin-left:8px;vertical-align:middle;"></span></div>
+        <div class="diag-wrap">
+          <textarea class="panel-textarea" id="nos-desc" placeholder="Descreva o problema ou use o microfone..." style="min-height:120px;padding-bottom:56px;"></textarea>
+          <div class="audio-btn" onclick="toggleGravacao()">
+            <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="12" y1="19" x2="12" y2="23" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <span class="audio-btn-text" id="audio-label">Gravar Diagnostico</span>
+            <div class="audio-wave" id="audio-wave"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-field">
+        <div class="panel-label">Mecanico <span style="flex:1;height:1px;background:var(--ln2);display:inline-block;margin-left:8px;vertical-align:middle;"></span></div>
+        <select class="panel-select" id="nos-mecanico">
+          <option value="">Definir depois</option>
+          ${MECANICOS.map(m => `<option value="${m.id}">${esc(m.nome)}</option>`).join('')}
+        </select>
+      </div>
+
+      <div class="panel-field" style="position:relative;">
+        <div class="panel-label">Servico</div>
+        <input class="panel-input" id="nos-servico" placeholder="Buscar servico..." autocomplete="off" oninput="buscarServicoCatalogoNova(this.value)" style="font-family:var(--body);font-weight:400;">
+        <div class="panel-autocomplete" id="nos-srv-ac"></div>
+      </div>
+      <div id="nos-servicos-lista" style="margin-bottom:12px;"></div>
+
+      <div class="panel-field">
+        <div class="panel-label">Status inicial</div>
+        <select class="panel-select" id="nos-status">
+          <option value="entrada">Entrada</option>
+          <option value="diagnostico">Diagnostico</option>
+          <option value="orcamento">Orcamento</option>
+        </select>
+      </div>
+
+      <button type="submit" class="panel-btn panel-btn-amber" style="padding:20px;font-size:16px;display:flex;align-items:center;justify-content:center;gap:10px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Abrir Ordem de Servico
+      </button>
+    </form>
+  `;
+}
+
+let NOS_SERVICOS = []; // [{nome, valor}]
+
+function buscarServicoCatalogoNova(val) {
+  const sug = document.getElementById('nos-srv-ac');
+  const termo = val.trim().toLowerCase();
+  if (termo.length < 2) { sug.style.display = 'none'; return; }
+
+  const cache = SERVICOS_CACHE || [];
+  const res = cache.filter(s => s.nome.toLowerCase().includes(termo)).slice(0, 8);
+  if (!res.length) { sug.style.display = 'none'; return; }
+
+  sug.style.display = 'block';
+  sug.innerHTML = res.map(s => `
+    <div class="panel-ac-item" onmousedown="addServicoNova('${esc(s.nome).replace(/'/g,"\\'")}',${s.valor_padrao||0})">
+      <strong>${esc(s.nome)}</strong><span style="float:right;color:var(--green);">${fmt(s.valor_padrao)}</span>
+    </div>
+  `).join('');
+}
+
+function addServicoNova(nome, valor) {
+  document.getElementById('nos-srv-ac').style.display = 'none';
+  document.getElementById('nos-servico').value = '';
+  if (NOS_SERVICOS.find(s => s.nome === nome)) { toast('Ja adicionado', 'err'); return; }
+  NOS_SERVICOS.push({ nome, valor });
+  renderServicosNova();
+}
+
+function renderServicosNova() {
+  const el = document.getElementById('nos-servicos-lista');
+  if (!NOS_SERVICOS.length) { el.innerHTML = ''; return; }
+  const total = NOS_SERVICOS.reduce((s, x) => s + x.valor, 0);
+  el.innerHTML = NOS_SERVICOS.map((s, i) => `
+    <div style="display:flex;align-items:center;gap:8px;background:var(--sf2);padding:8px 12px;border-radius:var(--r2);margin-bottom:3px;">
+      <span style="flex:1;font-size:13px;">${esc(s.nome)}</span>
+      <input type="number" value="${s.valor}" min="0" step="0.01" style="width:90px;background:var(--sf3);border:1px solid var(--ln3);border-radius:var(--r);color:var(--w);padding:4px 8px;font-size:13px;text-align:right;" onchange="NOS_SERVICOS[${i}].valor=parseFloat(this.value)||0;renderServicosNova()">
+      <button type="button" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;" onclick="NOS_SERVICOS.splice(${i},1);renderServicosNova()">&times;</button>
+    </div>
+  `).join('') + `<div style="text-align:right;font-family:var(--mono);font-size:13px;font-weight:700;color:var(--green);padding:4px 0;">Mao de obra: ${fmt(total)}</div>`;
+}
+
+let _buscarPlacaTimeout = null;
+function buscarPlaca(val) {
+  clearTimeout(_buscarPlacaTimeout);
+  const placa = val.trim().toUpperCase();
+  const ac = document.getElementById('nos-placa-ac');
+  const info = document.getElementById('nos-placa-info');
+  const novoReg = document.getElementById('nos-novo-reg');
+
+  if (placa.length < 2) { ac.style.display='none'; info.textContent=''; novoReg.style.display='none'; return; }
+
+  _buscarPlacaTimeout = setTimeout(async () => {
+    const { data: veiculos } = await db.from('veiculos').select('*, clientes(id, nome, whatsapp)').eq('oficina_id', OFICINA_ID).ilike('placa', placa+'%').order('placa').limit(8);
+
+    if (veiculos && veiculos.length) {
+      ac.style.display = 'block';
+      ac.innerHTML = veiculos.map(v => `
+        <div class="panel-ac-item" onmousedown="selecionarVeiculo('${v.id}','${v.clientes?.id||''}','${esc(v.placa)}','${esc(v.marca||'')}','${esc(v.modelo||'')}','${esc(v.clientes?.nome||'')}')">
+          <strong style="color:var(--amber);">${esc(v.placa)}</strong>
+          <span>${esc(v.marca||'')} ${esc(v.modelo||'')} ${v.ano||''}</span>
+          <span style="float:right;">${esc(v.clientes?.nome||'')}</span>
+        </div>
+      `).join('');
+      novoReg.style.display = 'none';
+    } else if (placa.length >= 7) {
+      ac.style.display = 'none';
+      document.getElementById('nos-veiculo-id').value = '';
+      document.getElementById('nos-cliente-id').value = '';
+      novoReg.style.display = 'block';
+      modoCliente('existente');
+    } else {
+      ac.style.display = 'none';
+    }
+  }, 300);
+}
+
+function selecionarVeiculo(vId, cId, placa, marca, modelo, cliNome) {
+  document.getElementById('nos-placa').value = placa;
+  document.getElementById('nos-veiculo-id').value = vId;
+  document.getElementById('nos-cliente-id').value = cId;
+  document.getElementById('nos-placa-info').innerHTML = '<span style="color:var(--green);">✓ ' + esc(marca) + ' ' + esc(modelo) + ' — ' + esc(cliNome) + '</span>';
+  document.getElementById('nos-placa-ac').style.display = 'none';
+  document.getElementById('nos-novo-reg').style.display = 'none';
+  // Buscar ultimo KM
+  buscarUltimoKm(vId);
+}
+
+let _modoClienteAtual = 'existente';
+function modoCliente(modo) {
+  const btnEx = document.getElementById('nos-btn-cli-existente');
+  const btnNv = document.getElementById('nos-btn-cli-novo');
+  const blocoEx = document.getElementById('nos-bloco-cli-existente');
+  const blocoNv = document.getElementById('nos-bloco-cli-novo');
+  if (!btnEx) return;
+  _modoClienteAtual = modo;
+  if (modo === 'existente') {
+    btnEx.style.background = 'var(--amber)'; btnEx.style.color = '#000'; btnEx.style.borderColor = 'var(--amber)';
+    btnNv.style.background = 'transparent'; btnNv.style.color = 'var(--w3)'; btnNv.style.borderColor = 'var(--ln3)';
+    blocoEx.style.display = 'block';
+    blocoNv.style.display = 'none';
+  } else {
+    btnNv.style.background = 'var(--amber)'; btnNv.style.color = '#000'; btnNv.style.borderColor = 'var(--amber)';
+    btnEx.style.background = 'transparent'; btnEx.style.color = 'var(--w3)'; btnEx.style.borderColor = 'var(--ln3)';
+    blocoNv.style.display = 'block';
+    blocoEx.style.display = 'none';
+    document.getElementById('nos-cliente-id').value = '';
+    document.getElementById('nos-cli-selecionado').textContent = '';
+  }
+}
+
+let _cliAcTimer = null;
+function buscarClienteExistente(q) {
+  clearTimeout(_cliAcTimer);
+  const ac = document.getElementById('nos-cli-ac');
+  if (!ac) return;
+  if (q.length < 2) { ac.style.display = 'none'; return; }
+  _cliAcTimer = setTimeout(async () => {
+    const { data } = await db.from('clientes').select('id, nome, whatsapp').eq('oficina_id', OFICINA_ID).ilike('nome', '%'+q+'%').order('nome').limit(8);
+    if (!data?.length) {
+      ac.innerHTML = '<div class="panel-ac-item" style="color:var(--w3);cursor:default;">Nenhum cliente encontrado</div>';
+      ac.style.display = 'block'; return;
+    }
+    ac.innerHTML = data.map(c => `
+      <div class="panel-ac-item" onmousedown="selecionarClienteExistente('${c.id}','${esc(c.nome).replace(/'/g,"\\'")}','${esc(c.whatsapp||'').replace(/'/g,"\\'")}')">
+        <strong>${esc(c.nome)}</strong>
+        <span style="float:right;color:var(--w3);">${esc(c.whatsapp||'')}</span>
+      </div>`).join('');
+    ac.style.display = 'block';
+  }, 250);
+}
+
+function selecionarClienteExistente(id, nome, whats) {
+  document.getElementById('nos-cliente-id').value = id;
+  document.getElementById('nos-busca-cli').value = nome;
+  document.getElementById('nos-cli-selecionado').innerHTML = '✓ ' + esc(nome) + (whats ? ' — ' + esc(whats) : '');
+  document.getElementById('nos-cli-ac').style.display = 'none';
+}
+
+async function buscarUltimoKm(veiculoId) {
+  const kmInfo = document.getElementById('nos-km-info');
+  if (!kmInfo) return;
+  const { data } = await db.from('ordens_servico').select('km_entrada, created_at').eq('veiculo_id', veiculoId).eq('oficina_id', OFICINA_ID).not('km_entrada','is',null).order('created_at',{ascending:false}).limit(1);
+  if (data && data.length && data[0].km_entrada) {
+    const dt = new Date(data[0].created_at);
+    kmInfo.textContent = 'Ultimo registro: ' + data[0].km_entrada.toLocaleString('pt-BR') + ' km (' + dt.toLocaleDateString('pt-BR') + ')';
+  } else {
+    kmInfo.textContent = '';
+  }
+}
+
+// ── SCAN OCR (Camera → Tesseract.js) ──
+let _cameraStream = null;
+
+async function iniciarScan() {
+  const overlay = document.getElementById('camera-overlay');
+  const video = document.getElementById('camera-video');
+  const status = document.getElementById('camera-status');
+  status.textContent = 'Abrindo camera...';
+
+  try {
+    _cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+    });
+    video.srcObject = _cameraStream;
+    overlay.classList.add('show');
+    status.textContent = 'Posicione a placa e toque em Capturar';
+  } catch (err) {
+    toast('Sem acesso a camera', 'err');
+    // Fallback: input de arquivo
+    iniciarScanFallback();
+  }
+}
+
+function iniciarScanFallback() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.capture = 'environment';
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const scanBtn = document.querySelector('.scan-btn');
+    if (scanBtn) scanBtn.classList.add('scanning');
+    toast('Lendo placa...');
+    try {
+      await processarImagemOCR(file);
+    } catch(err) {
+      toast('Nao consegui ler a placa', 'err');
+    }
+    if (scanBtn) scanBtn.classList.remove('scanning');
+  };
+  input.click();
+}
+
+async function capturarPlaca() {
+  const video = document.getElementById('camera-video');
+  const canvas = document.getElementById('camera-canvas');
+  const status = document.getElementById('camera-status');
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0);
+
+  status.textContent = 'Processando...';
+
+  // Converter canvas pra blob
+  const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+  fecharCamera();
+  const scanBtn = document.querySelector('.scan-btn');
+  if (scanBtn) scanBtn.classList.add('scanning');
+
+  try {
+    await processarImagemOCR(blob);
+  } catch(err) {
+    toast('Nao consegui ler a placa', 'err');
+  }
+  if (scanBtn) scanBtn.classList.remove('scanning');
+}
+
+async function processarImagemOCR(imageData) {
+  const worker = await Tesseract.createWorker('por');
+  const { data: { text } } = await worker.recognize(imageData);
+  await worker.terminate();
+
+  // Extrair placa brasileira do texto OCR
+  // Mercosul: ABC1D23 | Antiga: ABC1234
+  const limpo = text.replace(/[^A-Za-z0-9\n]/g, ' ');
+  const padraoMercosul = /[A-Z]{3}\s*\d\s*[A-Z]\s*\d{2}/gi;
+  const padraoAntiga = /[A-Z]{3}\s*\d{4}/gi;
+
+  let placa = null;
+  let match = limpo.match(padraoMercosul);
+  if (match) {
+    placa = match[0].replace(/\s/g, '').toUpperCase();
+  } else {
+    match = limpo.match(padraoAntiga);
+    if (match) placa = match[0].replace(/\s/g, '').toUpperCase();
+  }
+
+  if (!placa) {
+    // Tenta tratamento agressivo: pega qualquer sequencia 7 chars alfanumerica
+    const todas = limpo.replace(/\s/g, '').match(/[A-Z0-9]{7}/gi);
+    if (todas) {
+      // Filtra: 3 letras + 4 alfanum
+      placa = todas.find(p => /^[A-Z]{3}[0-9A-Z]{4}$/i.test(p));
+      if (placa) placa = placa.toUpperCase();
+    }
+  }
+
+  if (placa) {
+    const placaInput = document.getElementById('nos-placa');
+    if (placaInput) {
+      placaInput.value = placa;
+      buscarPlaca(placa);
+      toast('Placa detectada: ' + placa);
+    }
+  } else {
+    toast('Nao detectei placa — digite manualmente', 'err');
+  }
+}
+
+function fecharCamera() {
+  const overlay = document.getElementById('camera-overlay');
+  overlay.classList.remove('show');
+  if (_cameraStream) {
+    _cameraStream.getTracks().forEach(t => t.stop());
+    _cameraStream = null;
+  }
+  document.getElementById('camera-video').srcObject = null;
+}
+
+// ── GRAVACAO DE AUDIO (Web Speech API) ──
+let _recognition = null;
+let _gravando = false;
+
+async function toggleGravacao() {
+  if (_gravando) {
+    pararGravacao();
+  } else {
+    await iniciarGravacao();
+  }
+}
+
+async function iniciarGravacao() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    toast('Use o Chrome ou Edge pra gravar voz', 'err');
+    return;
+  }
+
+  // Pedir permissao de microfone primeiro
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    // Parar o stream de teste (so queriamos a permissao)
+    stream.getTracks().forEach(t => t.stop());
+  } catch (err) {
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      toast('Permita o microfone no navegador', 'err');
+    } else if (err.name === 'NotFoundError') {
+      toast('Nenhum microfone detectado', 'err');
+    } else {
+      toast('Erro no microfone: ' + err.message, 'err');
+    }
+    return;
+  }
+
+  _recognition = new SpeechRecognition();
+  _recognition.lang = 'pt-BR';
+  _recognition.continuous = true;
+  _recognition.interimResults = true;
+  _recognition.maxAlternatives = 1;
+
+  const textarea = document.getElementById('nos-desc');
+  const btn = document.querySelector('.audio-btn');
+  const label = document.getElementById('audio-label');
+  const wave = document.getElementById('audio-wave');
+  const textoAnterior = textarea.value;
+
+  let finalText = '';
+
+  _recognition.onstart = () => {
+    _gravando = true;
+    if (btn) btn.classList.add('recording');
+    if (label) label.textContent = 'Gravando... toque pra parar';
+    if (wave) wave.classList.add('show');
+    toast('Microfone ativo — pode falar');
+  };
+
+  _recognition.onresult = (event) => {
+    let interim = '';
+    let acumulado = '';
+    for (let i = 0; i < event.results.length; i++) {
+      const r = event.results[i][0].transcript;
+      if (event.results[i].isFinal) {
+        acumulado += r + ' ';
+      } else {
+        interim += r;
+      }
+    }
+    finalText = acumulado;
+    const separador = textoAnterior ? '\n' : '';
+    textarea.value = textoAnterior + separador + (acumulado + interim).trim();
+  };
+
+  _recognition.onerror = (event) => {
+    if (event.error === 'no-speech') {
+      // Chrome para apos silencio — reiniciar
+      return;
+    }
+    if (event.error === 'network') {
+      toast('Sem internet — transcricao precisa de conexao', 'err');
+      pararGravacao();
+      return;
+    }
+    if (event.error === 'not-allowed') {
+      toast('Microfone bloqueado pelo navegador', 'err');
+      pararGravacao();
+      return;
+    }
+    toast('Erro: ' + event.error, 'err');
+    pararGravacao();
+  };
+
+  _recognition.onend = () => {
+    // Chrome corta apos silencio — reiniciar se ainda tava gravando
+    if (_gravando) {
+      try { _recognition.start(); } catch(e) { pararGravacao(); }
+    }
+  };
+
+  try {
+    _recognition.start();
+  } catch(e) {
+    toast('Erro ao iniciar gravacao', 'err');
+  }
+}
+
+function pararGravacao() {
+  _gravando = false;
+  if (_recognition) {
+    _recognition.onend = null;
+    try { _recognition.stop(); } catch(e) {}
+    _recognition = null;
+  }
+  const btn = document.querySelector('.audio-btn');
+  const label = document.getElementById('audio-label');
+  const wave = document.getElementById('audio-wave');
+  if (btn) btn.classList.remove('recording');
+  if (label) label.textContent = 'Gravar Diagnostico';
+  if (wave) wave.classList.remove('show');
+  toast('Transcricao finalizada');
+}
+
+async function salvarNovaOS(e) {
+  e.preventDefault();
+  const placaVal = document.getElementById('nos-placa').value.trim().toUpperCase();
+  if (placaVal.length < 7) { toast('Placa incompleta', 'err'); return; }
+  if (_busy.novaOS) return;
+  _busy.novaOS = true;
+  try {
+  let veiculo_id = document.getElementById('nos-veiculo-id').value;
+  let cliente_id = document.getElementById('nos-cliente-id').value;
+
+  // Bloqueia OS duplicada — veiculo ja com OS aberta
+  if (veiculo_id) {
+    const { data: osAberta } = await db.from('ordens_servico').select('id, numero_os').eq('oficina_id', OFICINA_ID).eq('veiculo_id', veiculo_id).not('status', 'in', '("entregue","cancelada")').limit(1);
+    if (osAberta && osAberta.length) {
+      toast('Esse veiculo ja tem OS aberta (#' + (osAberta[0].numero_os||'') + ')', 'err');
+      return;
+    }
+  }
+
+  // Cria veiculo vinculado a cliente existente ou novo
+  if (!veiculo_id) {
+    if (_modoClienteAtual === 'existente') {
+      cliente_id = document.getElementById('nos-cliente-id').value;
+      if (!cliente_id) { toast('Selecione um cliente da lista', 'err'); return; }
+    } else {
+      const cliNome = document.getElementById('nos-cli-nome').value.trim();
+      if (!cliNome) { toast('Preencha o nome do cliente', 'err'); return; }
+      const { data: cli, error: cliErr } = await db.from('clientes').insert({ oficina_id:OFICINA_ID, nome:cliNome, whatsapp:document.getElementById('nos-cli-whats').value.trim()||null }).select().single();
+      if (cliErr) { toast('Erro: ' + cliErr.message, 'err'); return; }
+      cliente_id = cli.id;
+    }
+    const { data: vei, error: veiErr } = await db.from('veiculos').insert({
+      oficina_id:OFICINA_ID, cliente_id, placa:placaVal,
+      marca:document.getElementById('nos-marca').value.trim(),
+      modelo:document.getElementById('nos-modelo').value.trim(),
+      ano:document.getElementById('nos-ano').value?parseInt(document.getElementById('nos-ano').value):null,
+      cor:document.getElementById('nos-cor').value.trim()||null
+    }).select().single();
+    if (veiErr) { toast('Erro: ' + veiErr.message, 'err'); return; }
+    veiculo_id = vei.id;
+  }
+
+  const servicos = NOS_SERVICOS.map(s => s.nome);
+  const descLivre = document.getElementById('nos-desc').value.trim();
+  if (descLivre) servicos.push(descLivre);
+  const descFinal = servicos.join(' | ');
+  const totalMao = NOS_SERVICOS.reduce((s, x) => s + x.valor, 0);
+
+  const { data: osData, error } = await db.from('ordens_servico').insert({
+    oficina_id:OFICINA_ID, veiculo_id, cliente_id,
+    mecanico_id: document.getElementById('nos-mecanico').value || null,
+    descricao: descFinal,
+    valor_mao_obra: totalMao,
+    valor_total: totalMao,
+    km_entrada: document.getElementById('nos-km').value ? parseInt(document.getElementById('nos-km').value) : null,
+    status: document.getElementById('nos-status').value
+  }).select().single();
+
+  if (error) { toast('Erro: ' + error.message, 'err'); return; }
+
+  // Salva itens
+  if (NOS_SERVICOS.length && osData) {
+    const itens = NOS_SERVICOS.map(s => ({ oficina_id:OFICINA_ID, os_id:osData.id, tipo:'servico', descricao:s.nome, quantidade:1, valor_unitario:s.valor, valor_total:s.valor }));
+    await db.from('itens_os').insert(itens);
+  }
+
+  NOS_SERVICOS = [];
+  toast('OS aberta');
+  abrirDetalhes(osData.id);
+  carregar();
+  } catch(e) { toast('Erro inesperado','err'); console.error('[salvarNovaOS]',e); }
+  finally { _busy.novaOS = false; }
+}
+
+// ── WHATSAPP ──
+function enviarWhatsApp(whats, placa, status) {
+  const nomeOficina = OFICINA?.nome || 'oficina';
+  const msgs = {
+    pronto: `Ola! Seu veiculo ${placa} esta pronto aqui na ${nomeOficina}. Quando pode vir buscar?`,
+    execucao: `Ola! Seu veiculo ${placa} ja esta em execucao aqui na ${nomeOficina}. Te aviso quando ficar pronto!`,
+    orcamento: `Ola! O orcamento do ${placa} ficou pronto aqui na ${nomeOficina}. Posso enviar os detalhes?`
+  };
+  const msg = msgs[status] || `Ola! Passando pra te atualizar sobre seu veiculo ${placa} aqui na ${nomeOficina}.`;
+  const num = whats.replace(/\D/g, '');
+  window.open('https://wa.me/' + (num.startsWith('55') ? num : '55'+num) + '?text=' + encodeURIComponent(msg), '_blank');
+}
+
+// ── UI HELPERS ──
+function abrirPanel() {
+  document.getElementById('panel').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+}
+function fecharPanel() {
+  document.getElementById('panel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+}
+function fecharModal() { document.getElementById('modal-ov').classList.remove('open'); }
+
+// ── LOGIN ──
+async function fazerLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const senha = document.getElementById('login-senha').value;
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('login-err');
+  if (!email || !senha) return;
+  btn.disabled=true; btn.textContent='Entrando...'; err.style.display='none';
+  const { error } = await db.auth.signInWithPassword({email, password:senha});
+  if (error) { err.style.display='block'; btn.disabled=false; btn.textContent='Entrar'; return; }
+  await init();
+}
+
+function sair() { db.auth.signOut(); location.reload(); }
+const _busy = {};
+
+async function init() {
+  db.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_OUT') window.location.href = 'login.html'; });
+  const { data:{session} } = await db.auth.getSession();
+  if (!session) { document.getElementById('login-overlay').style.display='flex'; return; }
+  document.getElementById('login-overlay').style.display='none';
+  document.getElementById('loading').style.display='flex';
+
+  const { data: perfil } = await db.from('profiles').select('*, oficinas(*)').eq('user_id', session.user.id).single();
+  if (!perfil) { toast('Perfil nao encontrado','err'); return; }
+
+  PERFIL = perfil;
+  OFICINA_ID = perfil.oficina_id;
+  OFICINA = perfil.oficinas;
+
+  const nome = perfil.nome || session.user.email;
+  document.getElementById('user-nome').textContent = nome;
+  document.getElementById('user-role').textContent = perfil.role || '';
+  document.getElementById('user-avatar').textContent = nome.charAt(0).toUpperCase();
+  document.getElementById('oficina-nome').textContent = perfil.oficinas?.nome || '';
+
+  // Pre-load servicos catalogo
+  db.from('servicos_catalogo').select('nome, valor_padrao, categoria').eq('oficina_id', perfil.oficina_id).order('nome').then(r => { SERVICOS_CACHE = r.data || []; });
+
+  await carregar();
+
+  // Realtime
+  db.channel('os-v2-'+OFICINA_ID)
+    .on('postgres_changes',{event:'*',schema:'public',table:'ordens_servico',filter:'oficina_id=eq.'+OFICINA_ID},()=>carregar())
+    .subscribe();
+
+  document.getElementById('loading').style.display='none';
+}
+
+init();
+</script>
+</body>
+</html>

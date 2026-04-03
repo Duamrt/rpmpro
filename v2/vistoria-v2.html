@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro V2 — Vistoria</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#09090B;color:#F0F0F2;font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.6;}
+.w{max-width:600px;margin:0 auto;padding:12px 12px 80px;}
+
+/* NAV FIXA */
+.nav{position:sticky;top:0;z-index:10;background:#09090B;border-bottom:1px solid rgba(255,255,255,0.08);padding:8px 0;margin-bottom:12px;display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.nav a{color:rgba(255,255,255,0.5);text-decoration:none;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;padding:6px 10px;border-radius:3px;background:rgba(255,255,255,0.04);white-space:nowrap;flex-shrink:0;}
+.nav a:active{background:rgba(232,147,12,0.15);color:#E8930C;}
+
+h1{font-size:24px;font-weight:900;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
+h1 span{color:#E8930C;}
+.sub{font-size:11px;color:rgba(255,255,255,0.32);margin-bottom:16px;}
+
+/* CARDS */
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
+.cd{background:#111114;border:1px solid rgba(255,255,255,0.08);border-radius:4px;padding:10px;text-align:center;}
+.cd b{display:block;font-size:28px;font-weight:900;}
+.cd small{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.32);}
+.red{color:#FF3B30;} .org{color:#EA580C;} .blu{color:#0A84FF;} .grn{color:#30D158;} .cyn{color:#00C7BE;} .amb{color:#E8930C;}
+
+/* PROGRESS */
+.bar-wrap{margin-bottom:20px;}
+.bar-top{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;}
+.bar-top span:first-child{color:rgba(255,255,255,0.32);font-weight:700;text-transform:uppercase;letter-spacing:1px;font-size:10px;}
+.bar-top b{color:#FF3B30;font-size:18px;}
+.bar{height:5px;background:#18181C;border-radius:3px;overflow:hidden;}
+
+/* SECTIONS */
+.sec{margin-bottom:24px;scroll-margin-top:52px;}
+.sec-h{font-size:16px;font-weight:900;text-transform:uppercase;letter-spacing:1px;padding:10px;background:#111114;border:1px solid rgba(255,255,255,0.08);border-radius:4px 4px 0 0;display:flex;align-items:center;gap:8px;}
+.sec-b{background:#111114;border:1px solid rgba(255,255,255,0.06);border-top:none;border-radius:0 0 4px 4px;padding:12px 10px;}
+
+/* TABLES */
+table{width:100%;border-collapse:collapse;}
+th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:rgba(255,255,255,0.32);padding:5px 6px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.08);}
+td{font-size:11px;padding:5px 6px;border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:top;word-break:break-word;}
+
+/* BADGES */
+.b{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;padding:2px 6px;border-radius:2px;display:inline-block;}
+.b-blk{background:rgba(255,59,48,0.1);color:#FF3B30;}
+.b-fix{background:rgba(234,88,12,0.12);color:#EA580C;}
+.b-ok{background:rgba(48,209,88,0.1);color:#30D158;}
+
+/* TAGS */
+.tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
+.t{font-size:9px;padding:2px 5px;border-radius:2px;background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.32);}
+.t-bad{background:rgba(255,59,48,0.1);color:#FF3B30;}
+.t-mid{background:rgba(234,88,12,0.12);color:#EA580C;}
+.t-ok{background:rgba(48,209,88,0.1);color:#30D158;}
+
+/* LISTS */
+ul{padding-left:16px;margin:6px 0;}
+li{margin-bottom:2px;font-size:12px;color:rgba(255,255,255,0.6);}
+
+/* SUB TITLE */
+.st{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin:14px 0 6px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.04);}
+
+/* FLOW */
+.fl{background:#18181C;border:1px solid rgba(255,255,255,0.06);border-radius:4px;padding:8px;margin-bottom:8px;}
+.fl-n{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#E8930C;margin-bottom:6px;}
+.fl-s{display:flex;flex-wrap:wrap;gap:3px;align-items:center;font-size:10px;}
+.fl-s span{padding:2px 6px;border-radius:2px;border:1px solid rgba(255,255,255,0.06);background:#111114;}
+.fl-s .ok{border-color:rgba(48,209,88,0.3);color:#30D158;}
+.fl-s .brk{border-color:rgba(255,59,48,0.3);color:#FF3B30;background:rgba(255,59,48,0.08);}
+.fl-note{font-size:10px;color:rgba(255,255,255,0.32);margin-top:4px;}
+.fl-note.red{color:#FF3B30;}
+
+/* FCARD */
+.fc{background:#18181C;border:1px solid rgba(255,255,255,0.04);border-radius:4px;padding:8px;margin-bottom:6px;}
+.fc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.fc-name{font-size:11px;color:#00C7BE;font-weight:600;}
+</style>
+</head>
+<body>
+<div class="w">
+
+<!-- NAV FIXA -->
+<nav class="nav">
+  <a href="#resumo">Resumo</a>
+  <a href="#estrutura">Estrutura</a>
+  <a href="#seguranca">Seguranca</a>
+  <a href="#integridade">Integridade</a>
+  <a href="#fluxos">Fluxos</a>
+  <a href="#resistencia">Resistencia</a>
+  <a href="#arquivos">Arquivos</a>
+</nav>
+
+<h1>VISTORIA <span>V2</span></h1>
+<div class="sub">17 arquivos · 6 etapas · 2026-04-03 · PRE-DEPLOY</div>
+
+<!-- CARDS -->
+<div class="cards">
+  <div class="cd"><b class="red">72</b><small>Criticos</small></div>
+  <div class="cd"><b class="org">49</b><small>Avisos</small></div>
+  <div class="cd"><b class="blu">6</b><small>Gaps Fluxo</small></div>
+  <div class="cd"><b class="grn">17</b><small>Auditados</small></div>
+</div>
+
+<!-- PROGRESS -->
+<div class="bar-wrap">
+  <div class="bar-top"><span>Prontidao</span><b>0%</b></div>
+  <div class="bar"></div>
+</div>
+
+<!-- ==================== RESUMO ==================== -->
+<div class="sec" id="resumo">
+  <div class="sec-h">📋 RESUMO</div>
+  <div class="sec-b">
+    <p style="color:rgba(255,255,255,0.6);margin-bottom:10px;">19 areas em 17 arquivos. Design system e login OK em todas. Bloqueadores impedem deploy.</p>
+
+    <div class="st red">Bloqueadores</div>
+    <ul>
+      <li>~46 queries sem oficina_id (multi-tenant)</li>
+      <li>5 arquivos com XSS em onclick (falta escAttr)</li>
+      <li>13 operacoes fire-and-forget (sem error check)</li>
+      <li>0 paginas com double-click protection</li>
+      <li>0 paginas com onAuthStateChange</li>
+      <li>valor_total calculado de 2 formas diferentes</li>
+      <li>contas_receber deletando registros pagos</li>
+    </ul>
+
+    <div class="st org">Importantes</div>
+    <ul>
+      <li>13 de 17 sidebars com links faltando</li>
+      <li>Loading overlay inconsistente</li>
+      <li>7 arquivos faltando variaveis CSS</li>
+      <li>Pesquisa satisfacao nunca criada</li>
+      <li>Fila espera nao cria agendamento</li>
+      <li>Comissao/Folha sem travamento mensal</li>
+      <li>Race condition no estoque</li>
+    </ul>
+
+    <div class="st grn">O que esta bom</div>
+    <ul>
+      <li>17/17 com login inline funcional</li>
+      <li>17/17 com mesmo Supabase URL e key</li>
+      <li>17/17 com funcao esc() definida</li>
+      <li>17/17 com cores e fontes corretas</li>
+      <li>0 eval() ou dados sensiveis em log</li>
+      <li>execucao-os faz re-read antes de write</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ==================== ESTRUTURA ==================== -->
+<div class="sec" id="estrutura">
+  <div class="sec-h">🏗️ 1. ESTRUTURA <span class="b b-fix" style="margin-left:auto;">13 sidebar</span></div>
+  <div class="sec-b">
+    <div class="st amb">Sidebar — 13/17 com problema</div>
+    <table>
+      <tr><th>Arquivo</th><th>Problema</th><th></th></tr>
+      <tr><td class="cyn">catalogo-v2</td><td>Comissao sem href</td><td><span class="b b-blk">CRIT</span></td></tr>
+      <tr><td class="cyn">kanban-v2</td><td>Caixa sem href</td><td><span class="b b-blk">CRIT</span></td></tr>
+      <tr><td class="cyn">fila-espera</td><td>Falta Agend + Caixa</td><td><span class="b b-fix">AVISO</span></td></tr>
+      <tr><td class="cyn">os-list</td><td>Falta Agendamentos</td><td><span class="b b-fix">AVISO</span></td></tr>
+      <tr><td class="cyn">crm</td><td>Falta Produtividade</td><td><span class="b b-fix">AVISO</span></td></tr>
+      <tr><td class="cyn">config</td><td>Falta Comissao</td><td><span class="b b-fix">AVISO</span></td></tr>
+      <tr><td class="cyn">comissao</td><td>Falta 1 link</td><td><span class="b b-fix">AVISO</span></td></tr>
+      <tr><td class="cyn">equipe</td><td>Falta 1 link</td><td><span class="b b-fix">AVISO</span></td></tr>
+      <tr><td class="cyn">financeiro</td><td>Falta 1 link</td><td><span class="b b-fix">AVISO</span></td></tr>
+      <tr><td class="cyn">folha</td><td>Falta 1 link</td><td><span class="b b-fix">AVISO</span></td></tr>
+      <tr><td class="cyn">produtividade</td><td>Falta 1 link</td><td><span class="b b-fix">AVISO</span></td></tr>
+      <tr><td class="cyn">satisfacao</td><td>Falta 1 link</td><td><span class="b b-fix">AVISO</span></td></tr>
+      <tr><td class="cyn">veiculos</td><td>Falta 1 link</td><td><span class="b b-fix">AVISO</span></td></tr>
+      <tr><td class="grn">agend/client/dash/exec</td><td class="grn">100% OK</td><td><span class="b b-ok">OK</span></td></tr>
+    </table>
+
+    <div class="st amb">Loading Overlay</div>
+    <table>
+      <tr><th>Padrao</th><th>Arquivos</th></tr>
+      <tr><td class="grn">none (correto)</td><td>agend, client, config, dash, fila, fin, kanban, os-list, veic</td></tr>
+      <tr><td class="org">flex (diferente)</td><td>catalogo, comissao, crm, equipe, exec, folha, prod, satisf</td></tr>
+    </table>
+
+    <div class="st amb">CSS Variables — 13/17 com desvio</div>
+    <table>
+      <tr><th>Arquivo</th><th>Problema</th></tr>
+      <tr><td class="cyn">config, kanban</td><td>Opacidades dim erradas</td></tr>
+      <tr><td class="cyn">comissao, crm, equipe, folha, prod</td><td>Falta --cyan-dim e --purple</td></tr>
+      <tr><td class="cyn">execucao-os</td><td>Falta --cyan-dim</td></tr>
+      <tr><td class="cyn">satisfacao</td><td>Falta --cyan inteira</td></tr>
+      <tr><td class="cyn">dash, fila, fin, os-list</td><td>--orange-dim 0.1 (deveria 0.12)</td></tr>
+      <tr><td class="grn">agend, catalogo, client, veic</td><td class="grn">100% OK</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== SEGURANCA ==================== -->
+<div class="sec" id="seguranca">
+  <div class="sec-h">🔒 2. SEGURANCA <span class="b b-blk" style="margin-left:auto;">~46 crit</span></div>
+  <div class="sec-b">
+    <div class="st red">Queries sem oficina_id</div>
+    <p style="font-size:10px;color:rgba(255,255,255,0.32);margin-bottom:6px;">RLS protege no servidor, falta defesa no frontend</p>
+    <table>
+      <tr><th>Arquivo</th><th>Qtd</th><th>Operacoes</th></tr>
+      <tr><td class="cyn">kanban</td><td class="red">12+</td><td>OS, itens, contas, vistoria, diag</td></tr>
+      <tr><td class="cyn">os-list</td><td class="red">15+</td><td>OS, itens, contas_receber</td></tr>
+      <tr><td class="cyn">veiculos</td><td class="red">5</td><td>veiculo + cross-tenant placa</td></tr>
+      <tr><td class="cyn">financeiro</td><td class="red">3</td><td>contas_receber, OS</td></tr>
+      <tr><td class="cyn">clientes</td><td class="red">3</td><td>cliente por ID, veiculo</td></tr>
+      <tr><td class="cyn">config</td><td class="red">3</td><td>maquininha (2x), salario</td></tr>
+      <tr><td class="cyn">execucao-os</td><td class="red">3</td><td>OS, checklist, log</td></tr>
+      <tr><td class="cyn">equipe</td><td class="org">1</td><td>profile por ID</td></tr>
+      <tr><td class="cyn">fila-espera</td><td class="org">1</td><td>fila por ID</td></tr>
+      <tr><td class="grn">8 arquivos</td><td class="grn">0</td><td class="grn">Todas queries OK</td></tr>
+    </table>
+
+    <div class="st org">XSS — onclick com dados</div>
+    <p style="font-size:10px;color:rgba(255,255,255,0.32);margin-bottom:6px;">15/17 NAO definem escAttr(). So crm e satisfacao usam.</p>
+    <table>
+      <tr><th>Arquivo</th><th>Linhas</th><th>Risco</th></tr>
+      <tr><td class="cyn">agendamentos</td><td>609</td><td>Nome/WhatsApp</td></tr>
+      <tr><td class="cyn">catalogo</td><td>400-677</td><td>Nome peca/servico</td></tr>
+      <tr><td class="cyn">clientes</td><td>613-644</td><td>Placa e nome</td></tr>
+      <tr><td class="cyn">config</td><td>531-532</td><td>Nome maquininha</td></tr>
+      <tr><td class="cyn">kanban</td><td>1680</td><td>Nome cliente</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== INTEGRIDADE ==================== -->
+<div class="sec" id="integridade">
+  <div class="sec-h">🔗 3. INTEGRIDADE <span class="b b-blk" style="margin-left:auto;">3 P0</span></div>
+  <div class="sec-b">
+    <div class="st red">P0 — Criticos</div>
+    <table>
+      <tr><th>Problema</th><th>Onde</th></tr>
+      <tr><td class="red">valor_total: kanban soma itens_os vs os-list soma MO+Pecas-Desconto</td><td class="cyn">kanban, os-list</td></tr>
+      <tr><td class="red">contas_receber.delete() sem filtro — deleta registros ja pagos</td><td class="cyn">kanban L1217</td></tr>
+      <tr><td class="red">financeiro marca pago mas NAO atualiza OS.pago</td><td class="cyn">financeiro L1117</td></tr>
+    </table>
+
+    <div class="st org">P1 — Importantes</div>
+    <table>
+      <tr><th>Problema</th><th>Onde</th></tr>
+      <tr><td class="org">numero vs numero_os — 4 arquivos usam numero_os</td><td class="cyn">kanban, os-list, client, veic</td></tr>
+      <tr><td class="org">Desconto lido mas nunca salvo no kanban</td><td class="cyn">kanban</td></tr>
+      <tr><td class="org">Comissao e Folha calculam valores diferentes</td><td class="cyn">comissao, folha</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== FLUXOS ==================== -->
+<div class="sec" id="fluxos">
+  <div class="sec-h">🔄 4. FLUXOS <span class="b b-blk" style="margin-left:auto;">6 gaps</span></div>
+  <div class="sec-b">
+
+    <div class="fl">
+      <div class="fl-n">1. Ciclo da OS</div>
+      <div class="fl-s">
+        <span class="ok">Criar</span> → <span class="ok">Status</span> → <span class="ok">Exec</span> → <span class="ok">Faturar</span> → <span class="ok">Entregar</span> → <span class="ok">Financeiro</span>
+      </div>
+      <div class="fl-note">80% — status pode ir pra tras, sem mecanico obrigatorio</div>
+    </div>
+
+    <div class="fl">
+      <div class="fl-n">2. Jornada do Cliente</div>
+      <div class="fl-s">
+        <span class="ok">Criar</span> → <span class="ok">Veiculo</span> → <span class="ok">OS</span> → <span class="ok">CRM</span> → <span class="brk">Satisfacao NUNCA CRIADA</span>
+      </div>
+      <div class="fl-note red">Nenhum codigo insere pesquisas_satisfacao. Tela sempre vazia.</div>
+    </div>
+
+    <div class="fl">
+      <div class="fl-n">3. Financeiro</div>
+      <div class="fl-s">
+        <span class="ok">Faturada</span> → <span class="ok">contas_receber</span> → <span class="ok">Financeiro</span> → <span class="brk">Pago nao sync</span> → <span class="ok">Comissao</span> → <span class="brk">Folha sem lock</span>
+      </div>
+      <div class="fl-note">70% — pago nao sync com OS, folha recalcula sempre</div>
+    </div>
+
+    <div class="fl">
+      <div class="fl-n">4. Equipe</div>
+      <div class="fl-s">
+        <span class="ok">Criar</span> → <span class="ok">Login</span> → <span class="ok">Atribuir OS</span> → <span class="ok">Produtividade</span>
+      </div>
+      <div class="fl-note" style="color:#30D158;">Funcional. Sem gaps.</div>
+    </div>
+
+    <div class="fl">
+      <div class="fl-n">5. Fila de Espera</div>
+      <div class="fl-s">
+        <span class="ok">Adicionar</span> → <span class="ok">Contatar</span> → <span class="brk">Agendar (nao cria)</span> → <span class="brk">OS (manual)</span>
+      </div>
+      <div class="fl-note red">DEAD END: "agendado" nao cria registro em agendamentos.</div>
+    </div>
+
+    <div class="st red">Gaps Criticos</div>
+    <table>
+      <tr><th>#</th><th>Gap</th><th>Onde</th></tr>
+      <tr><td>1</td><td>Pesquisa satisfacao nunca inserida</td><td class="cyn">satisfacao</td></tr>
+      <tr><td>2</td><td>Fila "agendado" nao cria agendamento</td><td class="cyn">fila-espera</td></tr>
+      <tr><td>3</td><td>Status pode ir pra tras</td><td class="cyn">kanban, os-list</td></tr>
+      <tr><td>4</td><td>Folha sem lock mensal</td><td class="cyn">folha</td></tr>
+      <tr><td>5</td><td>Comissao historica nao armazenada</td><td class="cyn">comissao</td></tr>
+      <tr><td>6</td><td>Exec sem link do kanban</td><td class="cyn">kanban</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== RESISTENCIA ==================== -->
+<div class="sec" id="resistencia">
+  <div class="sec-h">🛡️ 5. RESISTENCIA <span class="b b-blk" style="margin-left:auto;">13 crit</span></div>
+  <div class="sec-b">
+    <div class="st red">Top 10 Criticos</div>
+    <table>
+      <tr><th>#</th><th>Problema</th><th>Arquivo</th></tr>
+      <tr><td>1</td><td>entregarVeiculo: 6 writes sem check</td><td class="cyn">os-list</td></tr>
+      <tr><td>2</td><td>trocarMecanico/mudarStatus: fire-forget</td><td class="cyn">os-list</td></tr>
+      <tr><td>3</td><td>receberFaturado: 3 writes/item sem check</td><td class="cyn">financeiro</td></tr>
+      <tr><td>4</td><td>moverOS sem double-click</td><td class="cyn">kanban</td></tr>
+      <tr><td>5</td><td>salvarAjuste estoque: race condition</td><td class="cyn">catalogo</td></tr>
+      <tr><td>6</td><td>removerItem/editarItem: fire-forget</td><td class="cyn">kanban</td></tr>
+      <tr><td>7</td><td>excluirOS: delete sem check</td><td class="cyn">os-list</td></tr>
+      <tr><td>8</td><td>excluirVeiculo/Cliente: fire-forget</td><td class="cyn">clientes</td></tr>
+      <tr><td>9</td><td>Double-click ausente TODOS botoes</td><td class="cyn">12 arq.</td></tr>
+      <tr><td>10</td><td>ZERO paginas com onAuthStateChange</td><td class="cyn">17 arq.</td></tr>
+    </table>
+
+    <div class="st amb">Por Arquivo</div>
+    <table>
+      <tr><th>Arquivo</th><th>D-Click</th><th>Error</th><th>Race</th><th>CRITs</th></tr>
+      <tr><td class="cyn">os-list</td><td>❌</td><td>❌</td><td>⚠</td><td class="red">4</td></tr>
+      <tr><td class="cyn">kanban</td><td>⚠</td><td>❌</td><td>⚠</td><td class="red">3</td></tr>
+      <tr><td class="cyn">financeiro</td><td>❌</td><td>❌</td><td>⚠</td><td class="red">2</td></tr>
+      <tr><td class="cyn">catalogo</td><td>❌</td><td>❌</td><td>⚠</td><td class="red">2</td></tr>
+      <tr><td class="cyn">clientes</td><td>❌</td><td>❌</td><td>—</td><td class="red">2</td></tr>
+      <tr><td class="cyn">exec-os</td><td>⚠</td><td>⚠</td><td>⚠</td><td class="grn">0</td></tr>
+      <tr><td class="cyn">config</td><td>❌</td><td>⚠</td><td>—</td><td class="grn">0</td></tr>
+      <tr><td class="cyn">veiculos</td><td>❌</td><td>⚠</td><td>—</td><td class="grn">0</td></tr>
+      <tr><td class="cyn">fila</td><td>❌</td><td>⚠</td><td>—</td><td class="grn">0</td></tr>
+      <tr><td class="cyn">equipe</td><td>❌</td><td>✅</td><td>—</td><td class="grn">0</td></tr>
+      <tr><td class="cyn">agend</td><td>❌</td><td>✅</td><td>⚠</td><td class="grn">0</td></tr>
+      <tr><td class="grn">6 read-only</td><td>—</td><td>✅</td><td>—</td><td class="grn">0</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== POR ARQUIVO ==================== -->
+<div class="sec" id="arquivos">
+  <div class="sec-h">📊 POR ARQUIVO <span class="b b-fix" style="margin-left:auto;">17</span></div>
+  <div class="sec-b">
+
+    <div class="st red">BLOQUEIA — 6 arquivos</div>
+
+    <div class="fc">
+      <div class="fc-top"><span class="fc-name">kanban-v2.html</span><span class="b b-blk">BLOQUEIA</span></div>
+      <div class="tags">
+        <span class="t t-bad">12+ sem oficina</span>
+        <span class="t t-bad">valor_total diverge</span>
+        <span class="t t-bad">contas deleta pago</span>
+        <span class="t t-bad">3 fire-forget</span>
+        <span class="t t-mid">sidebar href</span>
+      </div>
+    </div>
+
+    <div class="fc">
+      <div class="fc-top"><span class="fc-name">os-list-v2.html</span><span class="b b-blk">BLOQUEIA</span></div>
+      <div class="tags">
+        <span class="t t-bad">15+ sem oficina</span>
+        <span class="t t-bad">6 writes sem check</span>
+        <span class="t t-bad">valor_total diverge</span>
+        <span class="t t-bad">4 criticos</span>
+        <span class="t t-mid">falta Agendamentos</span>
+      </div>
+    </div>
+
+    <div class="fc">
+      <div class="fc-top"><span class="fc-name">financeiro-v2.html</span><span class="b b-blk">BLOQUEIA</span></div>
+      <div class="tags">
+        <span class="t t-bad">3 sem oficina</span>
+        <span class="t t-bad">pago nao sync OS</span>
+        <span class="t t-bad">3 writes sem check</span>
+        <span class="t t-mid">sidebar link</span>
+      </div>
+    </div>
+
+    <div class="fc">
+      <div class="fc-top"><span class="fc-name">clientes-v2.html</span><span class="b b-blk">BLOQUEIA</span></div>
+      <div class="tags">
+        <span class="t t-bad">3 sem oficina</span>
+        <span class="t t-bad">excluir fire-forget</span>
+        <span class="t t-mid">XSS onclick</span>
+        <span class="t t-mid">numero_os</span>
+      </div>
+    </div>
+
+    <div class="fc">
+      <div class="fc-top"><span class="fc-name">veiculos-v2.html</span><span class="b b-blk">BLOQUEIA</span></div>
+      <div class="tags">
+        <span class="t t-bad">5 sem oficina</span>
+        <span class="t t-mid">cross-tenant placa</span>
+        <span class="t t-mid">sidebar link</span>
+        <span class="t t-mid">numero_os</span>
+      </div>
+    </div>
+
+    <div class="fc">
+      <div class="fc-top"><span class="fc-name">config-v2.html</span><span class="b b-blk">BLOQUEIA</span></div>
+      <div class="tags">
+        <span class="t t-bad">3 sem oficina</span>
+        <span class="t t-mid">XSS onclick</span>
+        <span class="t t-mid">CSS opacidades</span>
+        <span class="t t-mid">sidebar link</span>
+      </div>
+    </div>
+
+    <div class="st org">CORRIGIR — 10 arquivos</div>
+
+    <div class="fc">
+      <div class="fc-top"><span class="fc-name">catalogo-v2.html</span><span class="b b-fix">CORRIGIR</span></div>
+      <div class="tags">
+        <span class="t t-bad">race estoque</span>
+        <span class="t t-bad">fire-forget</span>
+        <span class="t t-mid">sidebar href</span>
+      </div>
+    </div>
+
+    <div class="fc">
+      <div class="fc-top"><span class="fc-name">execucao-os-v2.html</span><span class="b b-fix">CORRIGIR</span></div>
+      <div class="tags">
+        <span class="t t-bad">3 sem oficina</span>
+        <span class="t t-ok">sidebar OK</span>
+        <span class="t t-ok">re-read OK</span>
+      </div>
+    </div>
+
+    <div class="fc">
+      <div class="fc-top"><span class="fc-name">equipe-v2.html</span><span class="b b-fix">CORRIGIR</span></div>
+      <div class="tags">
+        <span class="t t-mid">1 sem oficina</span>
+        <span class="t t-mid">sidebar link</span>
+        <span class="t t-ok">error OK</span>
+      </div>
+    </div>
+
+    <div class="fc">
+      <div class="fc-top"><span class="fc-name">fila-espera-v2.html</span><span class="b b-fix">CORRIGIR</span></div>
+      <div class="tags">
+        <span class="t t-mid">1 sem oficina</span>
+        <span class="t t-mid">dead end agendado</span>
+        <span class="t t-mid">sidebar 2 links</span>
+      </div>
+    </div>
+
+    <div class="fc">
+      <div class="fc-top"><span class="fc-name">agendamentos-v2.html</span><span class="b b-fix">CORRIGIR</span></div>
+      <div class="tags">
+        <span class="t t-mid">XSS onclick</span>
+        <span class="t t-ok">sidebar OK</span>
+        <span class="t t-ok">error OK</span>
+      </div>
+    </div>
+
+    <div class="fc">
+      <div class="fc-top"><span class="fc-name">comissao-v2.html</span><span class="b b-fix">CORRIGIR</span></div>
+      <div class="tags">
+        <span class="t t-mid">formula inconsistente</span>
+        <span class="t t-mid">sidebar link</span>
+        <span class="t t-ok">seguranca OK</span>
+      </div>
+    </div>
+
+    <div class="fc">
+      <div class="fc-top"><span class="fc-name">folha-v2.html</span><span class="b b-fix">CORRIGIR</span></div>
+      <div class="tags">
+        <span class="t t-mid">sem lock mensal</span>
+        <span class="t t-mid">sidebar link</span>
+        <span class="t t-ok">seguranca OK</span>
+      </div>
+    </div>
+
+    <div class="fc">
+      <div class="fc-top"><span class="fc-name">crm-v2.html</span><span class="b b-fix">CORRIGIR</span></div>
+      <div class="tags">
+        <span class="t t-mid">dead end campanha</span>
+        <span class="t t-mid">sidebar link</span>
+        <span class="t t-ok">escAttr OK</span>
+      </div>
+    </div>
+
+    <div class="fc">
+      <div class="fc-top"><span class="fc-name">produtividade-v2.html</span><span class="b b-fix">CORRIGIR</span></div>
+      <div class="tags">
+        <span class="t t-mid">sidebar link</span>
+        <span class="t t-ok">seguranca OK</span>
+        <span class="t t-ok">read-only</span>
+      </div>
+    </div>
+
+    <div class="fc">
+      <div class="fc-top"><span class="fc-name">satisfacao-v2.html</span><span class="b b-fix">CORRIGIR</span></div>
+      <div class="tags">
+        <span class="t t-mid">pesquisa nunca inserida</span>
+        <span class="t t-mid">sidebar link</span>
+        <span class="t t-ok">escAttr OK</span>
+      </div>
+    </div>
+
+    <div class="st grn">PASSA — 1 arquivo</div>
+
+    <div class="fc">
+      <div class="fc-top"><span class="fc-name">dashboard-v2.html</span><span class="b b-ok">PASSA</span></div>
+      <div class="tags">
+        <span class="t t-ok">sidebar OK</span>
+        <span class="t t-ok">seguranca OK</span>
+        <span class="t t-ok">read-only</span>
+      </div>
+    </div>
+
+    <div style="margin-top:12px;font-size:11px;display:flex;gap:12px;flex-wrap:wrap;">
+      <span><span class="red">■</span> BLOQUEIA: 6</span>
+      <span><span class="org">■</span> CORRIGIR: 10</span>
+      <span><span class="grn">■</span> PASSA: 1</span>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top:32px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.04);font-size:10px;color:rgba(255,255,255,0.14);text-align:center;">
+  RPM Pro V2 · Vistoria Pre-Deploy · 2026-04-03
+</div>
+
+</div>
+</body>
+</html>

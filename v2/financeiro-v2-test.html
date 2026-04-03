@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro V2 — Financeiro</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#09090B;--sf:#111114;--sf2:#18181C;--sf3:#1F1F24;--sf4:#27272D;
+  --ln:rgba(255,255,255,0.04);--ln2:rgba(255,255,255,0.08);--ln3:rgba(255,255,255,0.14);
+  --amber:#E8930C;--amber-dim:rgba(232,147,12,0.1);
+  --orange:#EA580C;--orange-dim:rgba(234,88,12,0.12);
+  --red:#FF3B30;--red-dim:rgba(255,59,48,0.08);--red-glow:rgba(255,59,48,0.04);
+  --green:#30D158;--green-dim:rgba(48,209,88,0.08);
+  --blue:#0A84FF;--blue-dim:rgba(10,132,255,0.1);
+  --purple:#7C3AED;--purple-dim:rgba(124,58,237,0.1);
+  --cyan:#00C7BE;--cyan-dim:rgba(0,199,190,0.1);
+  --w:#F0F0F2;--w2:rgba(255,255,255,0.6);--w3:rgba(255,255,255,0.32);--w4:rgba(255,255,255,0.14);
+  --mono:'JetBrains Mono',monospace;--head:'Barlow Condensed',sans-serif;--body:'Space Grotesk',sans-serif;
+  --r:3px;--r2:4px;
+}
+body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100vh;-webkit-font-smoothing:antialiased;padding:32px 40px;max-width:1060px;margin:0 auto;}
+
+/* HEADER */
+.page-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+.page-title{font-family:var(--head);font-size:32px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.page-title span{color:var(--amber);}
+.page-actions{display:flex;gap:8px;}
+.btn-cmd{
+  padding:10px 20px;border:none;border-radius:var(--r2);
+  font-family:var(--head);font-size:13px;font-weight:800;text-transform:uppercase;
+  letter-spacing:1.5px;cursor:pointer;transition:all .12s;
+  display:flex;align-items:center;gap:5px;
+}
+.btn-cmd:active{transform:scale(.97);}
+.btn-entrada{background:var(--green);color:#000;}.btn-entrada:hover{background:#3DE066;}
+.btn-saida{background:var(--sf2);border:1px solid var(--ln3);color:var(--red);}.btn-saida:hover{background:var(--red-dim);border-color:rgba(255,59,48,0.3);}
+.btn-icon{font-family:var(--mono);font-size:16px;font-weight:800;}
+
+/* TABS (industrial) */
+.tabs{display:flex;gap:0;margin-bottom:24px;border-bottom:2px solid var(--ln2);}
+.tab{
+  font-family:var(--head);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;
+  padding:12px 24px;cursor:pointer;color:var(--w3);position:relative;transition:color .12s;
+}
+.tab:hover{color:var(--w2);}
+.tab.on{color:var(--amber);}
+.tab.on::after{content:'';position:absolute;left:0;right:0;bottom:-2px;height:2px;background:var(--amber);}
+.tab .tab-count{font-family:var(--mono);font-size:11px;margin-left:6px;opacity:.6;}
+
+/* ALERT CRITICO — Inadimplencia */
+.alert-critico{
+  display:flex;align-items:center;gap:14px;
+  background:var(--red-glow);border:1px solid rgba(255,59,48,0.15);border-radius:var(--r2);
+  padding:14px 18px;margin-bottom:20px;cursor:pointer;transition:background .12s;
+  border-left:4px solid var(--red);animation:alertGlow 2s infinite;
+}
+@keyframes alertGlow{0%,100%{box-shadow:0 0 0 rgba(255,59,48,0);}50%{box-shadow:0 0 20px rgba(255,59,48,0.08);}}
+.alert-critico:hover{background:rgba(255,59,48,0.06);}
+.alert-critico-icon{font-family:var(--mono);font-size:20px;font-weight:800;color:var(--red);}
+.alert-critico-text{flex:1;}
+.alert-critico-title{font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--w);}
+.alert-critico-sub{font-family:var(--body);font-size:12px;color:var(--w2);margin-top:2px;}
+.alert-critico-val{font-family:var(--mono);font-size:22px;font-weight:800;color:var(--red);}
+
+/* ============ ABA FECHAMENTO ============ */
+#tab-fechamento{}
+
+/* Saldo soberano */
+.saldo-soberano{
+  background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);
+  padding:28px 24px;margin-bottom:16px;text-align:center;
+  position:relative;overflow:hidden;
+}
+.saldo-soberano::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(48,209,88,0.04) 0%,transparent 70%);pointer-events:none;}
+.saldo-soberano.negativo::before{background:radial-gradient(ellipse at center,rgba(255,59,48,0.04) 0%,transparent 70%);}
+.saldo-label{font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:var(--w3);margin-bottom:8px;}
+.saldo-hero-val{font-family:var(--mono);font-size:48px;font-weight:800;letter-spacing:-2px;line-height:1;text-shadow:0 0 40px rgba(48,209,88,0.15);}
+.saldo-hero-val.positivo{color:var(--green);}
+.saldo-hero-val.negativo{color:var(--red);text-shadow:0 0 40px rgba(255,59,48,0.15);}
+.saldo-periodo{font-family:var(--body);font-size:12px;color:var(--w3);margin-top:8px;}
+
+/* Grid denso de composicao */
+.comp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px;}
+.comp-block{
+  background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);
+  padding:16px;position:relative;
+}
+.comp-block-label{font-family:var(--head);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--w4);margin-bottom:6px;}
+.comp-block-val{font-family:var(--mono);font-size:20px;font-weight:800;letter-spacing:-1px;}
+.comp-block-sub{font-family:var(--body);font-size:10px;color:var(--w3);margin-top:4px;}
+.comp-block-bar{height:3px;background:var(--sf3);border-radius:2px;margin-top:8px;overflow:hidden;}
+.comp-block-bar-fill{height:100%;border-radius:2px;}
+
+/* Resumo por metodo */
+.metodo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px;}
+.metodo-card{
+  background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);
+  padding:12px;display:flex;align-items:center;gap:10px;
+}
+.metodo-icon{font-family:var(--mono);font-size:18px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:var(--sf3);border-radius:var(--r2);flex-shrink:0;}
+.metodo-info{flex:1;}
+.metodo-name{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--w3);}
+.metodo-val{font-family:var(--mono);font-size:14px;font-weight:700;margin-top:2px;}
+
+/* Period filter (reuso) */
+.period-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.period-filters{display:flex;gap:4px;}
+.p-btn{
+  font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;
+  padding:8px 18px;border:1px solid var(--ln2);border-radius:var(--r);
+  background:var(--sf);color:var(--w3);cursor:pointer;transition:all .12s;
+}
+.p-btn:hover{border-color:var(--ln3);color:var(--w2);}
+.p-btn.on{background:var(--amber);color:#000;border-color:var(--amber);}
+
+/* ============ ABA CAIXA (extrato) ============ */
+#tab-caixa{display:none;}
+
+.extrato-head{
+  display:grid;grid-template-columns:70px 1fr 90px 80px 110px;
+  gap:10px;align-items:center;padding:8px 16px;margin-bottom:4px;
+}
+.extrato-head span{font-family:var(--head);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:var(--w4);}
+.extrato-head .eh-right{text-align:right;}
+
+.ext-row{
+  display:grid;grid-template-columns:70px 1fr 90px 80px 110px;
+  gap:10px;align-items:center;
+  background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);
+  padding:12px 16px;margin-bottom:4px;cursor:pointer;transition:all .12s;
+}
+.ext-row:hover{border-color:var(--ln3);background:var(--sf2);}
+
+.ext-tipo{display:flex;align-items:center;gap:6px;}
+.ext-seta{width:28px;height:28px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ext-seta.entrada{background:var(--green-dim);}
+.ext-seta.saida{background:var(--red-dim);}
+.ext-seta svg{width:14px;height:14px;stroke-width:3;}
+.ext-hora{font-family:var(--mono);font-size:11px;color:var(--w3);}
+.ext-desc{min-width:0;}
+.ext-desc-text{font-family:var(--body);font-size:13px;color:var(--w);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ext-desc-sub{font-family:var(--mono);font-size:10px;color:var(--w3);margin-top:2px;}
+.ext-cat{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:4px 8px;border-radius:2px;text-align:center;white-space:nowrap;}
+.cat-servico{background:var(--amber-dim);color:var(--amber);}
+.cat-peca{background:var(--cyan-dim);color:var(--cyan);}
+.cat-despesa{background:var(--red-dim);color:var(--red);}
+.cat-prolabore{background:var(--blue-dim);color:var(--blue);}
+.cat-fixo{background:var(--purple-dim);color:#A78BFA;}
+.ext-metodo{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--w2);display:flex;align-items:center;gap:4px;}
+.ext-valor{font-family:var(--mono);font-size:15px;font-weight:700;text-align:right;}
+.ext-valor.entrada{color:var(--green);}
+.ext-valor.saida{color:var(--red);}
+
+.date-divider{display:flex;align-items:center;gap:12px;padding:16px 0 8px;}
+.date-divider-line{flex:1;height:1px;background:var(--ln2);}
+.date-divider-text{font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);white-space:nowrap;}
+.date-divider-total{font-family:var(--mono);font-size:11px;color:var(--w3);}
+
+/* ============ ABA LUCRO PECAS ============ */
+#tab-lucro{display:none;}
+
+.ranking-head{
+  display:grid;grid-template-columns:32px 1fr 80px 80px 100px 60px;
+  gap:10px;align-items:center;padding:8px 16px;margin-bottom:4px;
+}
+.ranking-head span{font-family:var(--head);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:var(--w4);}
+
+.rank-row{
+  display:grid;grid-template-columns:32px 1fr 80px 80px 100px 60px;
+  gap:10px;align-items:center;
+  background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);
+  padding:12px 16px;margin-bottom:4px;transition:all .12s;
+}
+.rank-row:hover{border-color:var(--ln3);background:var(--sf2);}
+.rank-pos{font-family:var(--head);font-size:20px;font-weight:900;color:var(--w4);text-align:center;}
+.rank-row:nth-child(2) .rank-pos{color:var(--amber);}
+.rank-row:nth-child(3) .rank-pos{color:var(--w2);}
+.rank-row:nth-child(4) .rank-pos{color:var(--orange);}
+.rank-info{min-width:0;}
+.rank-nome{font-family:var(--head);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rank-sub{font-family:var(--mono);font-size:10px;color:var(--w3);margin-top:2px;}
+.rank-custo{font-family:var(--mono);font-size:12px;color:var(--w3);}
+.rank-venda{font-family:var(--mono);font-size:12px;color:var(--w2);}
+.rank-lucro{font-family:var(--mono);font-size:16px;font-weight:800;color:var(--amber);}
+.rank-markup{min-width:0;}
+.rank-markup-val{font-family:var(--mono);font-size:13px;font-weight:800;}
+.rank-markup-bar{height:4px;background:var(--sf3);border-radius:2px;margin-top:3px;overflow:hidden;}
+.rank-markup-bar-fill{height:100%;border-radius:2px;}
+.markup-high{color:var(--green);}.markup-high .rank-markup-bar-fill{background:var(--green);}
+.markup-mid{color:var(--amber);}.markup-mid .rank-markup-bar-fill{background:var(--amber);}
+.markup-low{color:var(--red);}.markup-low .rank-markup-bar-fill{background:var(--red);}
+
+/* ============ ABA DESPESAS ============ */
+#tab-despesas{display:none;}
+
+.desp-row{
+  display:flex;align-items:center;gap:14px;
+  background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);
+  padding:14px 16px;margin-bottom:4px;transition:all .12s;
+}
+.desp-row:hover{border-color:var(--ln3);background:var(--sf2);}
+.desp-cat-tag{
+  font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.8px;padding:5px 10px;border-radius:2px;min-width:70px;text-align:center;flex-shrink:0;
+}
+.desp-fixo{background:var(--purple-dim);color:#A78BFA;border:1px solid rgba(124,58,237,0.15);}
+.desp-variavel{background:var(--orange-dim);color:var(--orange);border:1px solid rgba(234,88,12,0.15);}
+.desp-pessoal{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(10,132,255,0.15);}
+.desp-body{flex:1;min-width:0;}
+.desp-nome{font-family:var(--head);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;}
+.desp-detail{font-family:var(--body);font-size:11px;color:var(--w3);margin-top:2px;}
+.desp-val{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--red);flex-shrink:0;}
+.desp-date{font-family:var(--mono);font-size:10px;color:var(--w4);flex-shrink:0;}
+.desp-recorrente{font-family:var(--mono);font-size:9px;color:var(--w4);background:var(--sf3);padding:2px 6px;border-radius:2px;flex-shrink:0;}
+
+/* SIDE PANEL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:900;opacity:0;pointer-events:none;transition:opacity .25s;}
+.overlay.open{opacity:1;pointer-events:auto;}
+.side-panel{
+  position:fixed;top:0;right:0;bottom:0;width:480px;max-width:100%;
+  background:#141417;border-left:1px solid var(--ln2);z-index:1000;
+  transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.side-panel.open{transform:translateX(0);}
+.panel-head{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid var(--ln2);}
+.panel-title{font-family:var(--head);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.panel-title span{color:var(--amber);}
+.panel-close{width:36px;height:36px;background:var(--sf3);border:1px solid var(--ln2);border-radius:var(--r);color:var(--w3);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.panel-close:hover{background:var(--sf4);color:var(--w);}
+.panel-body{flex:1;overflow-y:auto;padding:24px;}
+
+/* Panel form */
+.panel-field{margin-bottom:18px;}
+.panel-label{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--w4);margin-bottom:6px;}
+.panel-input{
+  width:100%;background:var(--sf2);border:2px solid var(--ln3);border-radius:var(--r2);
+  padding:12px 14px;font-family:var(--mono);font-size:14px;font-weight:600;
+  color:var(--w);outline:none;transition:border-color .15s;
+}
+.panel-input:focus{border-color:var(--amber);}
+.panel-input::placeholder{color:var(--w4);font-family:var(--body);font-weight:400;}
+.panel-input-valor{font-size:24px;font-weight:800;letter-spacing:1px;text-align:center;}
+
+.panel-metodos{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+.panel-metodo{
+  padding:10px;text-align:center;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);
+  font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;
+  color:var(--w3);cursor:pointer;transition:all .12s;
+}
+.panel-metodo:hover{border-color:var(--ln3);color:var(--w2);}
+.panel-metodo.selected{background:var(--amber);color:#000;border-color:var(--amber);}
+.panel-metodo-icon{font-size:16px;margin-bottom:3px;}
+
+.panel-cats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+.panel-cat{
+  padding:8px;text-align:center;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);
+  font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;
+  color:var(--w3);cursor:pointer;transition:all .12s;
+}
+.panel-cat:hover{border-color:var(--ln3);color:var(--w2);}
+.panel-cat.selected{background:var(--amber);color:#000;border-color:var(--amber);}
+
+.panel-btn-submit{
+  width:100%;padding:14px;border:none;border-radius:var(--r2);
+  font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;
+  letter-spacing:2px;cursor:pointer;transition:all .12s;margin-top:24px;
+}
+.panel-btn-submit:hover{filter:brightness(1.1);}
+.panel-btn-submit:active{transform:scale(.98);}
+.panel-btn-entrada{background:var(--green);color:#000;}
+.panel-btn-saida{background:var(--red);color:#fff;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="page-head">
+  <div class="page-title"><span>Financeiro</span></div>
+  <div class="page-actions">
+    <button class="btn-cmd btn-entrada" onclick="abrirLanc('entrada')"><span class="btn-icon">+</span> Entrada</button>
+    <button class="btn-cmd btn-saida" onclick="abrirLanc('saida')"><span class="btn-icon">−</span> Saida</button>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab on" onclick="switchTab('fechamento')">Fechamento</div>
+  <div class="tab" onclick="switchTab('caixa')">Caixa</div>
+  <div class="tab" onclick="switchTab('lucro')">Lucro Pecas</div>
+  <div class="tab" onclick="switchTab('despesas')">Despesas</div>
+</div>
+
+<!-- ALERTA CRITICO — Inadimplencia -->
+<div class="alert-critico">
+  <div class="alert-critico-icon">!</div>
+  <div class="alert-critico-text">
+    <div class="alert-critico-title">3 OS Entregues Sem Pagamento</div>
+    <div class="alert-critico-sub">Michael Freitas (2) · Carlos Eduardo (1) — faturado vence 15/04</div>
+  </div>
+  <div class="alert-critico-val">R$ 2.890</div>
+</div>
+
+<!-- ============ FECHAMENTO ============ -->
+<div id="tab-fechamento">
+
+  <!-- Period -->
+  <div class="period-bar">
+    <div class="period-filters">
+      <div class="p-btn on">Hoje</div>
+      <div class="p-btn">Semana</div>
+      <div class="p-btn">Mes</div>
+      <div class="p-btn">Personalizado</div>
+    </div>
+  </div>
+
+  <!-- Saldo soberano -->
+  <div class="saldo-soberano">
+    <div class="saldo-label">Lucro Liquido — Abril 2026</div>
+    <div class="saldo-hero-val positivo">R$ 12.847,60</div>
+    <div class="saldo-periodo">Receitas R$ 18.420 — Despesas R$ 5.572</div>
+  </div>
+
+  <!-- Composicao grid -->
+  <div class="comp-grid">
+    <div class="comp-block">
+      <div class="comp-block-label">Mao de Obra</div>
+      <div class="comp-block-val" style="color:var(--green);">R$ 11.640</div>
+      <div class="comp-block-sub">28 OS fechadas</div>
+      <div class="comp-block-bar"><div class="comp-block-bar-fill" style="width:63%;background:var(--green);"></div></div>
+    </div>
+    <div class="comp-block">
+      <div class="comp-block-label">Pecas</div>
+      <div class="comp-block-val" style="color:var(--cyan);">R$ 6.780</div>
+      <div class="comp-block-sub">Lucro: R$ 2.480 (37%)</div>
+      <div class="comp-block-bar"><div class="comp-block-bar-fill" style="width:37%;background:var(--cyan);"></div></div>
+    </div>
+    <div class="comp-block">
+      <div class="comp-block-label">Despesas Fixas</div>
+      <div class="comp-block-val" style="color:var(--red);">R$ 3.200</div>
+      <div class="comp-block-sub">Aluguel + energia + agua</div>
+      <div class="comp-block-bar"><div class="comp-block-bar-fill" style="width:57%;background:var(--red);"></div></div>
+    </div>
+    <div class="comp-block">
+      <div class="comp-block-label">Folha</div>
+      <div class="comp-block-val" style="color:var(--orange);">R$ 2.372</div>
+      <div class="comp-block-sub">7 mecanicos</div>
+      <div class="comp-block-bar"><div class="comp-block-bar-fill" style="width:42%;background:var(--orange);"></div></div>
+    </div>
+  </div>
+
+  <!-- Metodos de recebimento -->
+  <div style="font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);margin-bottom:10px;">Por Metodo</div>
+  <div class="metodo-grid">
+    <div class="metodo-card">
+      <div class="metodo-icon">◈</div>
+      <div class="metodo-info">
+        <div class="metodo-name">PIX</div>
+        <div class="metodo-val" style="color:var(--green);">R$ 9.240</div>
+      </div>
+    </div>
+    <div class="metodo-card">
+      <div class="metodo-icon">◇</div>
+      <div class="metodo-info">
+        <div class="metodo-name">Cartao</div>
+        <div class="metodo-val" style="color:var(--green);">R$ 4.820</div>
+      </div>
+    </div>
+    <div class="metodo-card">
+      <div class="metodo-icon">$</div>
+      <div class="metodo-info">
+        <div class="metodo-name">Dinheiro</div>
+        <div class="metodo-val" style="color:var(--green);">R$ 3.160</div>
+      </div>
+    </div>
+    <div class="metodo-card">
+      <div class="metodo-icon">⊘</div>
+      <div class="metodo-info">
+        <div class="metodo-name">Faturado</div>
+        <div class="metodo-val" style="color:var(--amber);">R$ 1.200</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ CAIXA (extrato) ============ -->
+<div id="tab-caixa">
+  <div class="period-bar">
+    <div class="period-filters">
+      <div class="p-btn on">Hoje</div><div class="p-btn">Ontem</div><div class="p-btn">7 Dias</div><div class="p-btn">Mes</div>
+    </div>
+    <span style="font-family:var(--mono);font-size:12px;color:var(--w3);">8 lancamentos</span>
+  </div>
+
+  <div class="date-divider">
+    <div class="date-divider-text">Hoje — 02/04</div>
+    <div class="date-divider-line"></div>
+    <div class="date-divider-total">+R$ 3.240 | -R$ 680</div>
+  </div>
+
+  <div class="extrato-head">
+    <span>Hora</span><span>Descricao</span><span>Categoria</span><span>Metodo</span><span class="eh-right">Valor</span>
+  </div>
+
+  <div class="ext-row">
+    <div class="ext-tipo"><div class="ext-seta entrada"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-linecap="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></div><div class="ext-hora">14:32</div></div>
+    <div class="ext-desc"><div class="ext-desc-text">OS #10 — Toro ABC1D23</div><div class="ext-desc-sub">Carlos Eduardo</div></div>
+    <div class="ext-cat cat-servico">Servico</div>
+    <div class="ext-metodo"><span>◈</span> PIX</div>
+    <div class="ext-valor entrada">+R$ 1.240</div>
+  </div>
+
+  <div class="ext-row">
+    <div class="ext-tipo"><div class="ext-seta entrada"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-linecap="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></div><div class="ext-hora">11:15</div></div>
+    <div class="ext-desc"><div class="ext-desc-text">Pecas OS #10 — Filtros + oleo</div><div class="ext-desc-sub">Carlos Eduardo</div></div>
+    <div class="ext-cat cat-peca">Pecas</div>
+    <div class="ext-metodo"><span>◈</span> PIX</div>
+    <div class="ext-valor entrada">+R$ 380</div>
+  </div>
+
+  <div class="ext-row">
+    <div class="ext-tipo"><div class="ext-seta entrada"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-linecap="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></div><div class="ext-hora">10:48</div></div>
+    <div class="ext-desc"><div class="ext-desc-text">OS #08 — Onix QWE3R45</div><div class="ext-desc-sub">Dolphin Veiculos</div></div>
+    <div class="ext-cat cat-servico">Servico</div>
+    <div class="ext-metodo"><span>◇</span> Cartao</div>
+    <div class="ext-valor entrada">+R$ 820</div>
+  </div>
+
+  <div class="ext-row">
+    <div class="ext-tipo"><div class="ext-seta entrada"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-linecap="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></div><div class="ext-hora">09:20</div></div>
+    <div class="ext-desc"><div class="ext-desc-text">OS #09 — Polo QRS4F56</div><div class="ext-desc-sub">Fernanda Oliveira</div></div>
+    <div class="ext-cat cat-servico">Servico</div>
+    <div class="ext-metodo"><span>$</span> Dinheiro</div>
+    <div class="ext-valor entrada">+R$ 800</div>
+  </div>
+
+  <div class="ext-row">
+    <div class="ext-tipo"><div class="ext-seta saida"><svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div><div class="ext-hora">08:45</div></div>
+    <div class="ext-desc"><div class="ext-desc-text">Compra pecas — Dist. Tecfil</div><div class="ext-desc-sub">NF #4588</div></div>
+    <div class="ext-cat cat-despesa">Despesa</div>
+    <div class="ext-metodo"><span>◈</span> PIX</div>
+    <div class="ext-valor saida">-R$ 450</div>
+  </div>
+
+  <div class="ext-row">
+    <div class="ext-tipo"><div class="ext-seta saida"><svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div><div class="ext-hora">08:10</div></div>
+    <div class="ext-desc"><div class="ext-desc-text">Energia eletrica — CEMIG</div><div class="ext-desc-sub">Ref. Marco/2026</div></div>
+    <div class="ext-cat cat-fixo">Fixo</div>
+    <div class="ext-metodo"><span>◇</span> Boleto</div>
+    <div class="ext-valor saida">-R$ 230</div>
+  </div>
+</div>
+
+<!-- ============ LUCRO PECAS ============ -->
+<div id="tab-lucro">
+  <div class="period-bar">
+    <div class="period-filters">
+      <div class="p-btn on">Mes</div><div class="p-btn">Semana</div><div class="p-btn">Hoje</div>
+    </div>
+    <span style="font-family:var(--mono);font-size:13px;color:var(--amber);font-weight:700;">Lucro Total: R$ 2.480</span>
+  </div>
+
+  <div class="ranking-head">
+    <span>#</span><span>Peca</span><span>Custo</span><span>Venda</span><span style="text-align:right;">Lucro</span><span>Markup</span>
+  </div>
+
+  <div class="rank-row">
+    <div class="rank-pos">1</div>
+    <div class="rank-info"><div class="rank-nome">Pastilha Freio Diant.</div><div class="rank-sub">Cobreq RCDI-04580 · 8 vendas</div></div>
+    <div class="rank-custo">R$ 896</div><div class="rank-venda">R$ 1.512</div>
+    <div class="rank-lucro" style="text-align:right;">R$ 616</div>
+    <div class="rank-markup markup-high"><div class="rank-markup-val">+69%</div><div class="rank-markup-bar"><div class="rank-markup-bar-fill" style="width:69%;"></div></div></div>
+  </div>
+
+  <div class="rank-row">
+    <div class="rank-pos">2</div>
+    <div class="rank-info"><div class="rank-nome">Filtro de Oleo</div><div class="rank-sub">Tecfil FL-820S · 22 vendas</div></div>
+    <div class="rank-custo">R$ 495</div><div class="rank-venda">R$ 856</div>
+    <div class="rank-lucro" style="text-align:right;">R$ 361</div>
+    <div class="rank-markup markup-high"><div class="rank-markup-val">+73%</div><div class="rank-markup-bar"><div class="rank-markup-bar-fill" style="width:73%;"></div></div></div>
+  </div>
+
+  <div class="rank-row">
+    <div class="rank-pos">3</div>
+    <div class="rank-info"><div class="rank-nome">Oleo Motor 5W30 1L</div><div class="rank-sub">Mobil Super 3000 · 38 vendas</div></div>
+    <div class="rank-custo">R$ 1.064</div><div class="rank-venda">R$ 1.596</div>
+    <div class="rank-lucro" style="text-align:right;">R$ 532</div>
+    <div class="rank-markup markup-mid"><div class="rank-markup-val">+50%</div><div class="rank-markup-bar"><div class="rank-markup-bar-fill" style="width:50%;"></div></div></div>
+  </div>
+
+  <div class="rank-row">
+    <div class="rank-pos">4</div>
+    <div class="rank-info"><div class="rank-nome">Amortecedor Diant.</div><div class="rank-sub">Monroe AMT-2243 · 4 vendas</div></div>
+    <div class="rank-custo">R$ 780</div><div class="rank-venda">R$ 1.280</div>
+    <div class="rank-lucro" style="text-align:right;">R$ 500</div>
+    <div class="rank-markup markup-high"><div class="rank-markup-val">+64%</div><div class="rank-markup-bar"><div class="rank-markup-bar-fill" style="width:64%;"></div></div></div>
+  </div>
+
+  <div class="rank-row">
+    <div class="rank-pos">5</div>
+    <div class="rank-info"><div class="rank-nome">Correia Dentada</div><div class="rank-sub">Gates CT-1086 · 3 vendas</div></div>
+    <div class="rank-custo">R$ 255</div><div class="rank-venda">R$ 435</div>
+    <div class="rank-lucro" style="text-align:right;">R$ 180</div>
+    <div class="rank-markup markup-high"><div class="rank-markup-val">+71%</div><div class="rank-markup-bar"><div class="rank-markup-bar-fill" style="width:71%;"></div></div></div>
+  </div>
+
+  <div class="rank-row">
+    <div class="rank-pos">6</div>
+    <div class="rank-info"><div class="rank-nome">Vela de Ignicao</div><div class="rank-sub">NGK BKR6E · 16 vendas</div></div>
+    <div class="rank-custo">R$ 192</div><div class="rank-venda">R$ 288</div>
+    <div class="rank-lucro" style="text-align:right;">R$ 96</div>
+    <div class="rank-markup markup-mid"><div class="rank-markup-val">+50%</div><div class="rank-markup-bar"><div class="rank-markup-bar-fill" style="width:50%;"></div></div></div>
+  </div>
+</div>
+
+<!-- ============ DESPESAS ============ -->
+<div id="tab-despesas">
+  <div class="period-bar">
+    <div class="period-filters">
+      <div class="p-btn on">Mes</div><div class="p-btn">Semana</div><div class="p-btn">Hoje</div>
+    </div>
+    <span style="font-family:var(--mono);font-size:13px;color:var(--red);font-weight:700;">Total: R$ 5.572</span>
+  </div>
+
+  <div class="desp-row">
+    <div class="desp-cat-tag desp-fixo">Fixo</div>
+    <div class="desp-body"><div class="desp-nome">Aluguel Galpao</div><div class="desp-detail">Mensal — contrato ate Dez/2026</div></div>
+    <div class="desp-recorrente">Recorrente</div>
+    <div class="desp-val">-R$ 1.800</div>
+    <div class="desp-date">01/04</div>
+  </div>
+
+  <div class="desp-row">
+    <div class="desp-cat-tag desp-pessoal">Pessoal</div>
+    <div class="desp-body"><div class="desp-nome">Prolabore — Marcondes Jr</div><div class="desp-detail">Parcela mensal</div></div>
+    <div class="desp-recorrente">Recorrente</div>
+    <div class="desp-val">-R$ 1.200</div>
+    <div class="desp-date">01/04</div>
+  </div>
+
+  <div class="desp-row">
+    <div class="desp-cat-tag desp-fixo">Fixo</div>
+    <div class="desp-body"><div class="desp-nome">Energia Eletrica — CEMIG</div><div class="desp-detail">Ref. Marco/2026</div></div>
+    <div class="desp-val">-R$ 680</div>
+    <div class="desp-date">02/04</div>
+  </div>
+
+  <div class="desp-row">
+    <div class="desp-cat-tag desp-fixo">Fixo</div>
+    <div class="desp-body"><div class="desp-nome">Internet + Telefone</div><div class="desp-detail">Vivo Empresas</div></div>
+    <div class="desp-recorrente">Recorrente</div>
+    <div class="desp-val">-R$ 320</div>
+    <div class="desp-date">05/04</div>
+  </div>
+
+  <div class="desp-row">
+    <div class="desp-cat-tag desp-variavel">Variavel</div>
+    <div class="desp-body"><div class="desp-nome">Compra Pecas — Dist. Tecfil</div><div class="desp-detail">NF #4588 — Filtros e oleos</div></div>
+    <div class="desp-val">-R$ 450</div>
+    <div class="desp-date">02/04</div>
+  </div>
+
+  <div class="desp-row">
+    <div class="desp-cat-tag desp-variavel">Variavel</div>
+    <div class="desp-body"><div class="desp-nome">Material de Limpeza</div><div class="desp-detail">Atacadao</div></div>
+    <div class="desp-val">-R$ 122</div>
+    <div class="desp-date">01/04</div>
+  </div>
+</div>
+
+<!-- OVERLAY + SIDE PANEL -->
+<div class="overlay" id="overlay" onclick="fecharPanel()"></div>
+<div class="side-panel" id="panel">
+  <div class="panel-head">
+    <div class="panel-title" id="panel-titulo">Lancar <span>Entrada</span></div>
+    <button class="panel-close" onclick="fecharPanel()">&times;</button>
+  </div>
+  <div class="panel-body">
+    <div class="panel-field">
+      <div class="panel-label">Valor</div>
+      <input class="panel-input panel-input-valor" placeholder="0,00">
+    </div>
+    <div class="panel-field">
+      <div class="panel-label">Descricao</div>
+      <input class="panel-input" placeholder="Ex: Recebimento OS #12, Compra pecas...">
+    </div>
+    <div class="panel-field">
+      <div class="panel-label">Metodo</div>
+      <div class="panel-metodos">
+        <div class="panel-metodo selected"><div class="panel-metodo-icon">◈</div>PIX</div>
+        <div class="panel-metodo"><div class="panel-metodo-icon">◇</div>Cartao</div>
+        <div class="panel-metodo"><div class="panel-metodo-icon">$</div>Dinheiro</div>
+        <div class="panel-metodo"><div class="panel-metodo-icon">◇</div>Boleto</div>
+      </div>
+    </div>
+    <div class="panel-field">
+      <div class="panel-label">Categoria</div>
+      <div class="panel-cats">
+        <div class="panel-cat selected">Servico</div>
+        <div class="panel-cat">Pecas</div>
+        <div class="panel-cat">Despesa</div>
+        <div class="panel-cat">Prolabore</div>
+        <div class="panel-cat">Fixo</div>
+        <div class="panel-cat">Outros</div>
+      </div>
+    </div>
+    <button class="panel-btn-submit panel-btn-entrada" id="panel-submit">Confirmar Entrada</button>
+  </div>
+</div>
+
+<script>
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  document.querySelectorAll('[id^="tab-"]').forEach(v => v.style.display = 'none');
+  event.target.classList.add('on');
+  document.getElementById('tab-' + tab).style.display = '';
+}
+function abrirLanc(tipo) {
+  const t = document.getElementById('panel-titulo');
+  const s = document.getElementById('panel-submit');
+  if (tipo === 'entrada') {
+    t.innerHTML = 'Lancar <span style="color:var(--green);">Entrada</span>';
+    s.textContent = 'Confirmar Entrada'; s.className = 'panel-btn-submit panel-btn-entrada';
+  } else {
+    t.innerHTML = 'Lancar <span style="color:var(--red);">Saida</span>';
+    s.textContent = 'Confirmar Saida'; s.className = 'panel-btn-submit panel-btn-saida';
+  }
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('panel').classList.add('open');
+}
+function fecharPanel() {
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('panel').classList.remove('open');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharPanel(); });
+</script>
+
+</body>
+</html>

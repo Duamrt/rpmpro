@@ -6,8 +6,8 @@ VERSION=$(date +%m%d%H%M)
 echo "RPM Pro — Deploy v$VERSION"
 echo "=========================="
 
-# Cache busting: atualiza ?v= em todos os HTML
-for f in *.html; do
+# Cache busting: atualiza ?v= em todos os HTML (raiz + v2/)
+for f in *.html v2/*.html; do
   if [ -f "$f" ]; then
     # Atualiza versão existente ou adiciona
     sed -i "s/\.js?v=[0-9]*/\.js?v=$VERSION/g" "$f"

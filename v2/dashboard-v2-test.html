@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro V2 — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#09090B;--sf:#111114;--sf2:#18181C;--sf3:#1F1F24;--sf4:#27272D;
+  --ln:rgba(255,255,255,0.04);--ln2:rgba(255,255,255,0.08);--ln3:rgba(255,255,255,0.14);
+  --amber:#E8930C;--amber-dim:rgba(232,147,12,0.1);
+  --orange:#EA580C;--orange-dim:rgba(234,88,12,0.12);
+  --red:#FF3B30;--red-dim:rgba(255,59,48,0.1);
+  --green:#30D158;--green-dim:rgba(48,209,88,0.1);
+  --blue:#0A84FF;--blue-dim:rgba(10,132,255,0.1);
+  --purple:#7C3AED;--purple-dim:rgba(124,58,237,0.12);
+  --cyan:#00C7BE;
+  --w:#F0F0F2;--w2:rgba(255,255,255,0.6);--w3:rgba(255,255,255,0.32);--w4:rgba(255,255,255,0.14);
+  --mono:'JetBrains Mono',monospace;--head:'Barlow Condensed',sans-serif;--body:'Space Grotesk',sans-serif;
+  --r:3px;--r2:4px;
+}
+body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100vh;-webkit-font-smoothing:antialiased;padding:32px 40px;max-width:1200px;margin:0 auto;}
+
+/* PAGE HEADER */
+.page-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:28px;}
+.page-title{font-family:var(--head);font-size:32px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.page-title span{color:var(--amber);}
+.page-date{font-family:var(--mono);font-size:13px;color:var(--w3);}
+
+/* KPI ROW */
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:24px;}
+.kpi{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:18px 16px;}
+.kpi-val{font-family:var(--mono);font-size:28px;font-weight:800;letter-spacing:-1px;line-height:1;}
+.kpi-lbl{font-family:var(--head);font-size:10px;font-weight:600;color:var(--w3);text-transform:uppercase;letter-spacing:1.5px;margin-top:6px;}
+.kpi-sub{font-family:var(--mono);font-size:11px;color:var(--w3);margin-top:2px;text-transform:uppercase;letter-spacing:.5px;}
+.kpi-alert{border-left:3px solid var(--red);}
+
+/* ALERT BAR */
+.alert{
+  display:flex;align-items:center;gap:14px;
+  background:var(--red-dim);border:1px solid rgba(255,59,48,0.15);border-radius:var(--r2);
+  padding:14px 18px;margin-bottom:24px;cursor:pointer;transition:background .12s;
+}
+.alert:hover{background:rgba(255,59,48,0.14);}
+.alert-pill{font-family:var(--mono);font-size:20px;font-weight:800;color:var(--red);min-width:32px;text-align:center;}
+.alert-text{flex:1;font-size:13px;color:var(--w2);}
+.alert-text strong{color:var(--w);font-weight:600;}
+.alert-val{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--red);}
+
+/* GRID 2 COL */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;}
+.grid-2-wide{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:24px;}
+
+/* CARD */
+.card{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);overflow:hidden;}
+.card-head{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:14px 18px;border-bottom:1px solid var(--ln);
+}
+.card-title{font-family:var(--head);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w3);}
+.card-badge{font-family:var(--mono);font-size:12px;color:var(--w3);}
+.card-body{padding:16px 18px;}
+
+/* RANKING MECANICO */
+.mec-row{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 0;border-bottom:1px solid var(--ln);
+}
+.mec-row:last-child{border-bottom:none;}
+.mec-pos{
+  font-family:var(--mono);font-size:14px;font-weight:700;
+  width:24px;text-align:center;color:var(--w3);
+}
+.mec-pos.top{color:var(--amber);}
+.mec-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;}
+.mec-name{font-family:var(--head);font-size:15px;font-weight:700;text-transform:uppercase;flex:1;}
+.mec-stats{display:flex;gap:16px;align-items:center;}
+.mec-os{font-family:var(--mono);font-size:13px;font-weight:600;}
+.mec-val{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--amber);}
+
+/* BAR CHART (faturamento 7 dias) */
+.chart{display:flex;align-items:flex-end;gap:6px;height:120px;padding-top:8px;}
+.chart-bar{
+  flex:1;background:var(--sf3);border-radius:2px 2px 0 0;
+  position:relative;transition:height .3s;min-height:4px;
+  display:flex;flex-direction:column;justify-content:flex-end;align-items:center;
+}
+.chart-bar.today{background:var(--amber);}
+.chart-bar-val{
+  font-family:var(--mono);font-size:9px;font-weight:600;color:var(--w3);
+  position:absolute;top:-16px;white-space:nowrap;
+}
+.chart-bar.today .chart-bar-val{color:var(--amber);}
+.chart-labels{display:flex;gap:6px;margin-top:6px;}
+.chart-label{
+  flex:1;text-align:center;font-family:var(--head);font-size:10px;
+  font-weight:600;color:var(--w4);text-transform:uppercase;letter-spacing:.5px;
+}
+.chart-label.today{color:var(--amber);}
+
+/* RESUMO MES */
+.resumo-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 0;border-bottom:1px solid var(--ln);
+}
+.resumo-row:last-child{border-bottom:none;}
+.resumo-label{font-family:var(--body);font-size:13px;color:var(--w2);}
+.resumo-val{font-family:var(--mono);font-size:14px;font-weight:700;}
+
+/* FILA DE HOJE */
+.fila-row{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 0;border-bottom:1px solid var(--ln);
+  cursor:pointer;transition:background .1s;
+  margin:0 -18px;padding-left:18px;padding-right:18px;
+}
+.fila-row:hover{background:var(--sf2);}
+.fila-row:last-child{border-bottom:none;}
+
+.fila-sla{width:3px;height:36px;border-radius:2px;flex-shrink:0;}
+.sla-ok{background:var(--green);}
+.sla-warn{background:var(--amber);}
+.sla-danger{background:var(--red);}
+.sla-critical{background:var(--red);animation:slaPulse 1s infinite;}
+@keyframes slaPulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+/* Placa mini */
+.placa-mini{
+  display:inline-flex;flex-direction:column;
+  background:#FFFFFF;border-radius:2px;overflow:hidden;
+  border:1.5px solid #C8C8C8;flex-shrink:0;line-height:1;
+}
+.placa-mini-topo{
+  background:#003399;padding:1px 4px;
+  display:flex;align-items:center;justify-content:center;
+}
+.placa-mini-br{font-family:var(--mono);font-size:4px;font-weight:700;color:#fff;letter-spacing:.2px;}
+.placa-mini-cod{
+  padding:2px 6px 2px;font-family:var(--mono);
+  font-size:13px;font-weight:800;color:#1A1A1A;
+  letter-spacing:1.5px;text-align:center;line-height:1;
+}
+
+.fila-info{flex:1;min-width:0;}
+.fila-veiculo{font-family:var(--head);font-size:14px;font-weight:700;text-transform:uppercase;}
+.fila-cliente{font-family:var(--body);font-size:11px;color:var(--w2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.fila-right{display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0;}
+.fila-val{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--amber);}
+.fila-tag{
+  font-family:var(--head);font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.8px;
+  padding:2px 8px;border-radius:2px;
+}
+.fila-mec{font-family:var(--body);font-size:10px;color:#B0B0B0;}
+
+.tag-entrada{background:rgba(10,132,255,0.18);color:var(--blue);}
+.tag-diagnostico{background:rgba(124,58,237,0.2);color:#A78BFA;}
+.tag-orcamento{background:var(--amber-dim);color:var(--amber);}
+.tag-execucao{background:rgba(234,88,12,0.18);color:#FB923C;}
+.tag-aguardando_peca{background:rgba(255,59,48,0.18);color:var(--red);}
+.tag-pronto{background:rgba(48,209,88,0.18);color:var(--green);}
+
+/* STATUS PATIO (mini kanban) */
+.patio-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+.patio-col{
+  background:var(--sf2);border-radius:var(--r2);padding:12px;
+  text-align:center;border-top:3px solid var(--w4);
+}
+.patio-col-num{font-family:var(--head);font-size:28px;font-weight:900;letter-spacing:-1px;}
+.patio-col-lbl{font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--w3);margin-top:2px;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="page-head">
+  <div class="page-title">Dash<span>board</span></div>
+  <div class="page-date">QUA, 02 ABR 2026 &middot; 08:42</div>
+</div>
+
+<!-- KPIs -->
+<div class="kpis">
+  <div class="kpi">
+    <div class="kpi-val" style="color:var(--amber);">5</div>
+    <div class="kpi-lbl">OS Abertas</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-val" style="color:var(--green);">2</div>
+    <div class="kpi-lbl">Prontas</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-val">R$ 486</div>
+    <div class="kpi-lbl">Ticket Medio</div>
+    <div class="kpi-sub">4 entregas</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-val">R$ 3.2k</div>
+    <div class="kpi-lbl">Faturado Mes</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-val">2d</div>
+    <div class="kpi-lbl">Tempo Medio</div>
+    <div class="kpi-sub">permanencia</div>
+  </div>
+  <div class="kpi kpi-alert">
+    <div class="kpi-val" style="color:var(--red);">3</div>
+    <div class="kpi-lbl">Sem Pagamento</div>
+    <div class="kpi-sub" style="color:var(--red);">R$ 1.164</div>
+  </div>
+</div>
+
+<!-- ALERTA -->
+<div class="alert">
+  <div class="alert-pill">3</div>
+  <div class="alert-text"><strong>OS entregues sem pagamento</strong> — cobrar antes de fechar o dia</div>
+  <div class="alert-val">R$ 1.164,80</div>
+</div>
+
+<!-- PATIO STATUS + FATURAMENTO -->
+<div class="grid-2" style="margin-bottom:16px;">
+
+  <!-- Status do Patio (mini kanban numerico) -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">Status do Patio</div>
+      <div class="card-badge">5 veiculos</div>
+    </div>
+    <div class="card-body">
+      <div class="patio-grid">
+        <div class="patio-col" style="border-top-color:var(--blue);">
+          <div class="patio-col-num">0</div>
+          <div class="patio-col-lbl">Entrada</div>
+        </div>
+        <div class="patio-col" style="border-top-color:var(--purple);">
+          <div class="patio-col-num">2</div>
+          <div class="patio-col-lbl">Diag</div>
+        </div>
+        <div class="patio-col" style="border-top-color:var(--orange);">
+          <div class="patio-col-num">1</div>
+          <div class="patio-col-lbl">Exec</div>
+        </div>
+        <div class="patio-col" style="border-top-color:var(--red);">
+          <div class="patio-col-num" style="color:var(--red);">1</div>
+          <div class="patio-col-lbl">Ag. Peca</div>
+        </div>
+      </div>
+      <div style="margin-top:10px;">
+        <div class="patio-grid" style="grid-template-columns:1fr 1fr;">
+          <div class="patio-col" style="border-top-color:var(--green);">
+            <div class="patio-col-num" style="color:var(--green);">2</div>
+            <div class="patio-col-lbl">Prontas</div>
+          </div>
+          <div class="patio-col" style="border-top-color:var(--w4);">
+            <div class="patio-col-num">4</div>
+            <div class="patio-col-lbl">Entregues (mes)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Faturamento 7 dias -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">Faturamento 7 Dias</div>
+      <div class="card-badge">R$ 3.240</div>
+    </div>
+    <div class="card-body">
+      <div class="chart">
+        <div class="chart-bar" style="height:25%;"><span class="chart-bar-val">195</span></div>
+        <div class="chart-bar" style="height:65%;"><span class="chart-bar-val">821</span></div>
+        <div class="chart-bar" style="height:0%;"><span class="chart-bar-val">0</span></div>
+        <div class="chart-bar" style="height:40%;"><span class="chart-bar-val">486</span></div>
+        <div class="chart-bar" style="height:55%;"><span class="chart-bar-val">600</span></div>
+        <div class="chart-bar" style="height:20%;"><span class="chart-bar-val">147</span></div>
+        <div class="chart-bar today" style="height:75%;"><span class="chart-bar-val">990</span></div>
+      </div>
+      <div class="chart-labels">
+        <div class="chart-label">SEG</div>
+        <div class="chart-label">TER</div>
+        <div class="chart-label">QUA</div>
+        <div class="chart-label">QUI</div>
+        <div class="chart-label">SEX</div>
+        <div class="chart-label">SAB</div>
+        <div class="chart-label today">HOJE</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RANKING MECANICOS + RESUMO MES -->
+<div class="grid-2-wide">
+
+  <!-- Ranking -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">Ranking Mecanicos</div>
+      <div class="card-badge">abril</div>
+    </div>
+    <div class="card-body">
+      <div class="mec-row">
+        <div class="mec-pos top">1</div>
+        <div class="mec-dot"></div>
+        <div class="mec-name">Daniel</div>
+        <div class="mec-stats">
+          <div class="mec-os">2 OS</div>
+          <div class="mec-val">R$ 1.421</div>
+        </div>
+      </div>
+      <div class="mec-row">
+        <div class="mec-pos top">2</div>
+        <div class="mec-dot"></div>
+        <div class="mec-name">Evandro</div>
+        <div class="mec-stats">
+          <div class="mec-os">2 OS</div>
+          <div class="mec-val">R$ 969</div>
+        </div>
+      </div>
+      <div class="mec-row">
+        <div class="mec-pos">3</div>
+        <div class="mec-dot"></div>
+        <div class="mec-name">Clodoaldo</div>
+        <div class="mec-stats">
+          <div class="mec-os">1 OS</div>
+          <div class="mec-val">R$ 147</div>
+        </div>
+      </div>
+      <div class="mec-row">
+        <div class="mec-pos">4</div>
+        <div class="mec-dot" style="background:var(--w4);"></div>
+        <div class="mec-name" style="color:var(--w3);">Sergio</div>
+        <div class="mec-stats">
+          <div class="mec-os" style="color:var(--w4);">1 OS</div>
+          <div class="mec-val" style="color:var(--w4);">R$ 195</div>
+        </div>
+      </div>
+      <div class="mec-row">
+        <div class="mec-pos">—</div>
+        <div class="mec-dot" style="background:var(--red);"></div>
+        <div class="mec-name" style="color:var(--w3);">Renerson</div>
+        <div class="mec-stats">
+          <div class="mec-os" style="color:var(--w4);">0 OS</div>
+          <div class="mec-val" style="color:var(--w4);">R$ 0</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resumo do Mes -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">Resumo do Mes</div>
+      <div class="card-badge">abril</div>
+    </div>
+    <div class="card-body">
+      <div class="resumo-row">
+        <div class="resumo-label">Faturamento</div>
+        <div class="resumo-val" style="color:var(--amber);">R$ 3.240,58</div>
+      </div>
+      <div class="resumo-row">
+        <div class="resumo-label">Ticket Medio</div>
+        <div class="resumo-val">R$ 486,78</div>
+      </div>
+      <div class="resumo-row">
+        <div class="resumo-label">OS Abertas</div>
+        <div class="resumo-val">5</div>
+      </div>
+      <div class="resumo-row">
+        <div class="resumo-label">OS Entregues</div>
+        <div class="resumo-val">4</div>
+      </div>
+      <div class="resumo-row">
+        <div class="resumo-label">Tempo Medio</div>
+        <div class="resumo-val">2d 8h</div>
+      </div>
+      <div class="resumo-row">
+        <div class="resumo-label">Total Historico</div>
+        <div class="resumo-val" style="color:var(--w3);">13 OS</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FILA DE HOJE -->
+<div class="card">
+  <div class="card-head">
+    <div class="card-title">Fila de Hoje</div>
+    <div class="card-badge">5 veiculos</div>
+  </div>
+  <div class="card-body">
+
+    <div class="fila-row">
+      <div class="fila-sla sla-critical"></div>
+      <div class="placa-mini">
+        <div class="placa-mini-topo"><div class="placa-mini-br">BR</div></div>
+        <div class="placa-mini-cod">OFF6D14</div>
+      </div>
+      <div class="fila-info">
+        <div class="fila-veiculo">Honda Civic 1.8</div>
+        <div class="fila-cliente">Michael Freitas</div>
+      </div>
+      <div class="fila-right">
+        <div class="fila-val">R$ 450</div>
+        <div class="fila-tag tag-aguardando_peca">AG. PECA</div>
+        <div class="fila-mec">Evandro &middot; 52h</div>
+      </div>
+    </div>
+
+    <div class="fila-row">
+      <div class="fila-sla sla-warn"></div>
+      <div class="placa-mini">
+        <div class="placa-mini-topo"><div class="placa-mini-br">BR</div></div>
+        <div class="placa-mini-cod">PGA2J53</div>
+      </div>
+      <div class="fila-info">
+        <div class="fila-veiculo">Hyundai HB20 2020</div>
+        <div class="fila-cliente">Romario da Silva</div>
+      </div>
+      <div class="fila-right">
+        <div class="fila-val" style="color:var(--w3);">—</div>
+        <div class="fila-tag tag-diagnostico">DIAGNOSTICO</div>
+        <div class="fila-mec">28h</div>
+      </div>
+    </div>
+
+    <div class="fila-row">
+      <div class="fila-sla sla-danger"></div>
+      <div class="placa-mini">
+        <div class="placa-mini-topo"><div class="placa-mini-br">BR</div></div>
+        <div class="placa-mini-cod">KGS3171</div>
+      </div>
+      <div class="fila-info">
+        <div class="fila-veiculo">Fiat Strada 2019</div>
+        <div class="fila-cliente">Antonio Rilke de Almeida Matos</div>
+      </div>
+      <div class="fila-right">
+        <div class="fila-val">R$ 600</div>
+        <div class="fila-tag tag-execucao">EXECUCAO</div>
+        <div class="fila-mec">Daniel &middot; 3d 14h</div>
+      </div>
+    </div>
+
+    <div class="fila-row">
+      <div class="fila-sla sla-warn"></div>
+      <div class="placa-mini">
+        <div class="placa-mini-topo"><div class="placa-mini-br">BR</div></div>
+        <div class="placa-mini-cod">PGW3H28</div>
+      </div>
+      <div class="fila-info">
+        <div class="fila-veiculo">Toyota Corolla 2021</div>
+        <div class="fila-cliente">Adilson Ramos</div>
+      </div>
+      <div class="fila-right">
+        <div class="fila-val">R$ 821</div>
+        <div class="fila-tag tag-pronto">PRONTO</div>
+        <div class="fila-mec" style="color:var(--red);">SEM PAGAMENTO</div>
+      </div>
+    </div>
+
+    <div class="fila-row">
+      <div class="fila-sla sla-ok"></div>
+      <div class="placa-mini">
+        <div class="placa-mini-topo"><div class="placa-mini-br">BR</div></div>
+        <div class="placa-mini-cod">KFY1I71</div>
+      </div>
+      <div class="fila-info">
+        <div class="fila-veiculo">Fiat Toro Ranch</div>
+        <div class="fila-cliente">PrintJet Solucoes Graficas</div>
+      </div>
+      <div class="fila-right">
+        <div class="fila-val">R$ 147</div>
+        <div class="fila-tag tag-pronto">PRONTO</div>
+        <div class="fila-mec" style="color:var(--red);">SEM PAGAMENTO</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

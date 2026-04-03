@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro V2 — Catalogo</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#09090B;--sf:#111114;--sf2:#18181C;--sf3:#1F1F24;--sf4:#27272D;
+  --ln:rgba(255,255,255,0.04);--ln2:rgba(255,255,255,0.08);--ln3:rgba(255,255,255,0.14);
+  --amber:#E8930C;--amber-dim:rgba(232,147,12,0.1);
+  --orange:#EA580C;--orange-dim:rgba(234,88,12,0.12);
+  --red:#FF3B30;--red-dim:rgba(255,59,48,0.08);
+  --green:#30D158;--green-dim:rgba(48,209,88,0.08);
+  --blue:#0A84FF;--blue-dim:rgba(10,132,255,0.1);
+  --purple:#7C3AED;--purple-dim:rgba(124,58,237,0.1);
+  --cyan:#00C7BE;--cyan-dim:rgba(0,199,190,0.1);
+  --w:#F0F0F2;--w2:rgba(255,255,255,0.6);--w3:rgba(255,255,255,0.32);--w4:rgba(255,255,255,0.14);
+  --mono:'JetBrains Mono',monospace;--head:'Barlow Condensed',sans-serif;--body:'Space Grotesk',sans-serif;
+  --r:3px;--r2:4px;
+}
+body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100vh;-webkit-font-smoothing:antialiased;padding:32px 40px;max-width:1000px;margin:0 auto;}
+
+/* HEADER */
+.page-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
+.page-title{font-family:var(--head);font-size:32px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.page-title span{color:var(--amber);}
+.page-actions{display:flex;gap:8px;align-items:center;}
+.btn-novo{
+  padding:10px 22px;background:var(--amber);border:none;border-radius:var(--r2);
+  font-family:var(--head);font-size:13px;font-weight:800;text-transform:uppercase;
+  letter-spacing:1.5px;color:#000;cursor:pointer;transition:all .12s;
+  display:flex;align-items:center;gap:6px;
+}
+.btn-novo:hover{background:#F5A623;}
+.btn-novo:active{transform:scale(.97);}
+.btn-novo svg{width:16px;height:16px;stroke:currentColor;stroke-width:2.5;}
+
+/* TABS (Pecas / Servicos) */
+.tabs{display:flex;gap:2px;margin-bottom:20px;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:3px;width:fit-content;}
+.tab{
+  font-family:var(--head);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;
+  padding:10px 28px;border-radius:var(--r);cursor:pointer;transition:all .12s;color:var(--w3);
+}
+.tab:hover{color:var(--w2);}
+.tab.on{background:var(--amber);color:#000;}
+.tab .tab-count{font-family:var(--mono);font-size:11px;margin-left:6px;opacity:.7;}
+
+/* SEARCH (gigante) */
+.search-bar{
+  display:flex;align-items:center;gap:12px;
+  background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);
+  padding:16px 20px;margin-bottom:16px;transition:border-color .15s;
+}
+.search-bar:focus-within{border-color:var(--amber);}
+.search-bar svg{width:20px;height:20px;stroke:var(--w3);flex-shrink:0;}
+.search-bar input{flex:1;background:none;border:none;color:var(--w);font-family:var(--mono);font-size:16px;outline:none;letter-spacing:.5px;}
+.search-bar input::placeholder{color:var(--w3);font-family:var(--body);font-size:14px;letter-spacing:0;}
+.search-scan{
+  width:48px;height:40px;flex-shrink:0;
+  background:var(--sf2);border:2px solid var(--ln3);border-radius:var(--r2);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  cursor:pointer;transition:all .15s;position:relative;overflow:hidden;
+}
+.search-scan:hover{border-color:var(--amber);background:var(--amber-dim);}
+.search-scan svg{width:20px;height:20px;stroke:var(--w2);transition:stroke .15s;}
+.search-scan:hover svg{stroke:var(--amber);}
+.search-scan-lbl{font-family:var(--head);font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--w3);}
+.search-scan:hover .search-scan-lbl{color:var(--amber);}
+.search-scan::after{content:'';position:absolute;left:10%;right:10%;height:2px;background:var(--amber);top:-2px;opacity:0;}
+.search-scan.scanning::after{opacity:1;animation:scanLine 1.5s ease-in-out infinite;}
+@keyframes scanLine{0%{top:10%;}50%{top:85%;}100%{top:10%;}}
+
+/* SUMMARY */
+.summary{display:flex;gap:6px;margin-bottom:20px;}
+.summary-item{
+  flex:1;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);
+  padding:12px 14px;text-align:center;
+}
+.summary-val{font-family:var(--mono);font-size:22px;font-weight:800;letter-spacing:-1px;}
+.summary-lbl{font-family:var(--head);font-size:10px;font-weight:600;color:var(--w3);text-transform:uppercase;letter-spacing:1.5px;margin-top:2px;}
+
+/* FILTERS */
+.filters{display:flex;gap:4px;margin-bottom:20px;overflow-x:auto;padding-bottom:8px;white-space:nowrap;-webkit-overflow-scrolling:touch;}
+.filters::-webkit-scrollbar{height:4px;}
+.filters::-webkit-scrollbar-track{background:rgba(255,255,255,0.05);border-radius:10px;}
+.filters::-webkit-scrollbar-thumb{background:#333;border-radius:10px;transition:background .3s;}
+.filters:hover::-webkit-scrollbar-thumb{background:var(--amber);}
+.f-btn{
+  font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;
+  padding:8px 16px;border:1px solid var(--ln2);border-radius:var(--r);
+  background:var(--sf);color:var(--w3);cursor:pointer;white-space:nowrap;transition:all .12s;
+}
+.f-btn:hover{border-color:var(--ln3);color:var(--w2);}
+.f-btn.on{background:var(--amber);color:#000;border-color:var(--amber);}
+.f-btn .f-count{font-family:var(--mono);font-size:11px;margin-left:6px;padding:1px 5px;border-radius:2px;background:rgba(0,0,0,0.2);}
+.f-btn:not(.on) .f-count{background:var(--w4);}
+
+/* ALERT — estoque baixo */
+.alert-bar{
+  display:flex;align-items:center;gap:14px;
+  background:var(--orange-dim);border:1px solid rgba(234,88,12,0.2);border-radius:var(--r2);
+  padding:12px 16px;margin-bottom:20px;cursor:pointer;transition:background .12s;
+}
+.alert-bar:hover{background:rgba(234,88,12,0.15);}
+.alert-pill{font-family:var(--mono);font-size:18px;font-weight:800;color:var(--orange);min-width:28px;text-align:center;}
+.alert-text{flex:1;font-size:13px;color:var(--w2);}
+.alert-text strong{color:var(--w);font-weight:600;}
+
+/* ============================================ */
+/* PECAS — ROW                                  */
+/* ============================================ */
+.peca-row{
+  display:flex;align-items:center;gap:14px;
+  background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);
+  padding:14px 16px;margin-bottom:6px;cursor:pointer;
+  transition:all .12s;position:relative;overflow:hidden;
+}
+.peca-row:hover{border-color:var(--ln3);background:var(--sf2);}
+
+/* Indicador estoque */
+.peca-row-indicator{position:absolute;left:0;top:0;bottom:0;width:3px;}
+.peca-row-indicator.estoque-ok{background:var(--green);}
+.peca-row-indicator.estoque-baixo{background:var(--orange);animation:slaPulse 1s infinite;}
+.peca-row-indicator.estoque-zero{background:var(--red);animation:slaPulse 1s infinite;}
+@keyframes slaPulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+/* SKU (carimbo metalico) */
+.peca-sku{
+  font-family:var(--mono);font-size:13px;font-weight:800;
+  color:var(--w);letter-spacing:1px;
+  background:var(--sf3);border:1px solid var(--ln3);border-radius:2px;
+  padding:6px 10px;text-align:center;min-width:100px;flex-shrink:0;
+  text-transform:uppercase;
+}
+
+/* Info */
+.peca-body{flex:1;min-width:0;}
+.peca-nome{font-family:var(--head);font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.peca-meta{display:flex;align-items:center;gap:10px;margin-top:3px;flex-wrap:wrap;}
+.peca-marca{font-family:var(--body);font-size:11px;color:var(--w2);}
+.peca-aplicacao{display:flex;gap:3px;align-items:center;}
+.peca-app-tag{
+  font-family:var(--head);font-size:8px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.5px;padding:2px 5px;border-radius:2px;
+  background:var(--sf4);border:1px solid var(--ln3);color:var(--w2);
+}
+
+/* Localizacao (corredor/prateleira) */
+.peca-local{
+  font-family:var(--mono);font-size:12px;font-weight:700;color:var(--w2);
+  background:var(--sf3);padding:4px 8px;border-radius:2px;
+  border:1px dashed var(--ln3);flex-shrink:0;text-align:center;min-width:48px;
+}
+
+/* Estoque qty */
+.peca-estoque{
+  display:flex;flex-direction:column;align-items:center;flex-shrink:0;min-width:50px;
+}
+.peca-estoque-num{font-family:var(--mono);font-size:18px;font-weight:800;}
+.peca-estoque-lbl{font-family:var(--head);font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--w4);}
+.estoque-ok{color:var(--w);}
+.estoque-baixo{color:var(--orange);}
+.estoque-zero{color:var(--red);}
+
+/* Preco */
+.peca-preco{
+  display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;min-width:90px;
+}
+.peca-venda{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--amber);}
+.peca-custo{font-family:var(--mono);font-size:10px;color:var(--w4);}
+.peca-margem{font-family:var(--head);font-size:9px;font-weight:600;color:var(--green);text-transform:uppercase;letter-spacing:.5px;}
+
+/* ============================================ */
+/* SERVICOS — ROW                               */
+/* ============================================ */
+.serv-row{
+  display:flex;align-items:center;gap:14px;
+  background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);
+  padding:14px 16px;margin-bottom:6px;cursor:pointer;
+  transition:all .12s;position:relative;
+  border-left:3px solid var(--blue);
+}
+.serv-row:hover{border-color:var(--ln3);background:var(--sf2);border-left-color:var(--blue);}
+
+/* Codigo servico */
+.serv-cod{
+  font-family:var(--mono);font-size:12px;font-weight:700;
+  color:var(--blue);letter-spacing:1px;
+  background:var(--blue-dim);border:1px solid rgba(10,132,255,0.15);border-radius:2px;
+  padding:6px 10px;text-align:center;min-width:60px;flex-shrink:0;
+}
+
+/* Info */
+.serv-body{flex:1;min-width:0;}
+.serv-nome{font-family:var(--head);font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.serv-meta{display:flex;align-items:center;gap:10px;margin-top:3px;flex-wrap:wrap;}
+.serv-categoria{font-family:var(--body);font-size:11px;color:var(--w2);}
+.serv-aplicacao{display:flex;gap:3px;align-items:center;}
+
+/* TMT (tempo medio de trabalho) */
+.serv-tmt{
+  display:flex;flex-direction:column;align-items:center;flex-shrink:0;min-width:60px;
+  background:var(--sf3);border:1px solid var(--ln2);border-radius:var(--r2);padding:6px 10px;
+}
+.serv-tmt-val{font-family:var(--mono);font-size:16px;font-weight:800;color:var(--cyan);}
+.serv-tmt-lbl{font-family:var(--head);font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--w4);}
+
+/* Preco servico */
+.serv-preco{
+  display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;min-width:90px;
+}
+.serv-valor{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--amber);}
+.serv-hora{font-family:var(--mono);font-size:10px;color:var(--w3);}
+
+/* SECTION DIVIDER */
+.section-divider{display:none;}
+
+/* SIDE PANEL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:900;opacity:0;pointer-events:none;transition:opacity .25s;}
+.overlay.open{opacity:1;pointer-events:auto;}
+.side-panel{
+  position:fixed;top:0;right:0;bottom:0;width:480px;max-width:100%;
+  background:#141417;border-left:1px solid var(--ln2);z-index:1000;
+  transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.side-panel.open{transform:translateX(0);}
+.panel-head{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid var(--ln2);}
+.panel-title{font-family:var(--head);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.panel-title span{color:var(--amber);}
+.panel-close{width:36px;height:36px;background:var(--sf3);border:1px solid var(--ln2);border-radius:var(--r);color:var(--w3);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.panel-close:hover{background:var(--sf4);color:var(--w);}
+.panel-body{flex:1;overflow-y:auto;padding:24px;}
+
+/* Panel sections */
+.panel-section{margin-bottom:24px;}
+.panel-section-title{
+  font-family:var(--head);font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:2px;color:var(--w4);
+  margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--ln);
+}
+.panel-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.panel-info-item{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px;}
+.panel-info-label{font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--w4);margin-bottom:4px;}
+.panel-info-value{font-family:var(--mono);font-size:14px;font-weight:600;letter-spacing:.5px;}
+.panel-info-value.small{font-family:var(--body);font-size:13px;font-weight:400;color:var(--w2);}
+
+/* Panel KPIs */
+.panel-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.panel-kpi{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:14px;text-align:center;}
+.panel-kpi-val{font-family:var(--mono);font-size:20px;font-weight:800;letter-spacing:-1px;}
+.panel-kpi-lbl{font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);margin-top:3px;}
+
+/* Panel — movimentacao */
+.panel-mov-row{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 0;border-bottom:1px solid var(--ln);
+}
+.panel-mov-tipo{font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;min-width:60px;}
+.panel-mov-entrada{color:var(--green);}
+.panel-mov-saida{color:var(--red);}
+.panel-mov-desc{flex:1;font-family:var(--body);font-size:12px;color:var(--w2);}
+.panel-mov-qty{font-family:var(--mono);font-size:13px;font-weight:700;}
+.panel-mov-date{font-family:var(--mono);font-size:10px;color:var(--w4);min-width:50px;text-align:right;}
+
+/* Panel actions */
+.panel-actions{display:flex;gap:8px;margin-top:20px;}
+.panel-btn{
+  flex:1;padding:12px;border:none;border-radius:var(--r2);
+  font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;
+  letter-spacing:1.5px;cursor:pointer;transition:all .12s;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.panel-btn:active{transform:scale(.97);}
+.panel-btn-primary{background:var(--amber);color:#000;}
+.panel-btn-primary:hover{background:#F5A623;}
+.panel-btn-secondary{background:var(--sf2);border:1px solid var(--ln2);color:var(--w2);}
+.panel-btn-secondary:hover{border-color:var(--ln3);color:var(--w);}
+.panel-btn svg{width:14px;height:14px;stroke:currentColor;stroke-width:2;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="page-head">
+  <div class="page-title"><span>Catalogo</span></div>
+  <div class="page-actions">
+    <button class="btn-novo" id="btn-novo-label">
+      <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span id="btn-novo-text">Nova Peca</span>
+    </button>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab on" onclick="switchTab('pecas')">Pecas<span class="tab-count">1.286</span></div>
+  <div class="tab" onclick="switchTab('servicos')">Servicos<span class="tab-count">105</span></div>
+</div>
+
+<!-- SEARCH -->
+<div class="search-bar">
+  <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+  <input id="search-input" placeholder="Buscar por nome, codigo, fabricante ou aplicacao..." value="">
+  <div class="search-scan" id="scan-btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M2 7V3a2 2 0 0 1 2-2h4"/>
+      <path d="M16 1h4a2 2 0 0 1 2 2v4"/>
+      <path d="M22 17v4a2 2 0 0 1-2 2h-4"/>
+      <path d="M8 23H4a2 2 0 0 1-2-2v-4"/>
+      <line x1="6" y1="12" x2="18" y2="12"/>
+    </svg>
+    <div class="search-scan-lbl">Scan</div>
+  </div>
+</div>
+
+<!-- ============== PECAS VIEW ============== -->
+<div id="view-pecas">
+
+  <!-- SUMMARY -->
+  <div class="summary">
+    <div class="summary-item">
+      <div class="summary-val" style="color:var(--w);">1.286</div>
+      <div class="summary-lbl">Itens</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-val" style="color:var(--orange);">23</div>
+      <div class="summary-lbl">Estoque Baixo</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-val" style="color:var(--red);">4</div>
+      <div class="summary-lbl">Sem Estoque</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-val" style="color:var(--amber);">R$ 84k</div>
+      <div class="summary-lbl">Valor Estoque</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-val" style="color:var(--green);">38%</div>
+      <div class="summary-lbl">Margem Media</div>
+    </div>
+  </div>
+
+  <!-- FILTERS -->
+  <div class="filters">
+    <div class="f-btn on">Todas <span class="f-count">1286</span></div>
+    <div class="f-btn">Estoque Baixo <span class="f-count">23</span></div>
+    <div class="f-btn">Sem Estoque <span class="f-count">4</span></div>
+    <div class="f-btn">Filtros <span class="f-count">12</span></div>
+    <div class="f-btn">Suspensao <span class="f-count">89</span></div>
+    <div class="f-btn">Motor <span class="f-count">156</span></div>
+    <div class="f-btn">Freios <span class="f-count">112</span></div>
+    <div class="f-btn">Eletrica <span class="f-count">98</span></div>
+    <div class="f-btn">Lubrificantes <span class="f-count">45</span></div>
+  </div>
+
+  <!-- ALERT -->
+  <div class="alert-bar">
+    <div class="alert-pill">23</div>
+    <div class="alert-text"><strong>Pecas com estoque abaixo do minimo</strong> — verificar reposicao</div>
+  </div>
+
+  <!-- PECAS LIST -->
+
+  <!-- 1. Estoque OK -->
+  <div class="peca-row" onclick="abrirDetalhe()">
+    <div class="peca-row-indicator estoque-ok"></div>
+    <div class="peca-sku">FL-820S</div>
+    <div class="peca-body">
+      <div class="peca-nome">Filtro de Oleo — Tecfil</div>
+      <div class="peca-meta">
+        <span class="peca-marca">Tecfil</span>
+        <div class="peca-aplicacao">
+          <span class="peca-app-tag">VW</span>
+          <span class="peca-app-tag">FIAT</span>
+          <span class="peca-app-tag">GM</span>
+        </div>
+      </div>
+    </div>
+    <div class="peca-local">B-14</div>
+    <div class="peca-estoque">
+      <div class="peca-estoque-num estoque-ok">32</div>
+      <div class="peca-estoque-lbl">Estoque</div>
+    </div>
+    <div class="peca-preco">
+      <div class="peca-venda">R$ 38,90</div>
+      <div class="peca-custo">Custo: R$ 22,50</div>
+      <div class="peca-margem">+73%</div>
+    </div>
+  </div>
+
+  <!-- 2. Estoque baixo -->
+  <div class="peca-row" onclick="abrirDetalhe()">
+    <div class="peca-row-indicator estoque-baixo"></div>
+    <div class="peca-sku">RCDI-04580</div>
+    <div class="peca-body">
+      <div class="peca-nome">Pastilha Freio Diant. — Cobreq</div>
+      <div class="peca-meta">
+        <span class="peca-marca">Cobreq</span>
+        <div class="peca-aplicacao">
+          <span class="peca-app-tag">HONDA</span>
+          <span class="peca-app-tag">TOYOTA</span>
+        </div>
+      </div>
+    </div>
+    <div class="peca-local">C-02</div>
+    <div class="peca-estoque">
+      <div class="peca-estoque-num estoque-baixo">3</div>
+      <div class="peca-estoque-lbl">Estoque</div>
+    </div>
+    <div class="peca-preco">
+      <div class="peca-venda">R$ 189,00</div>
+      <div class="peca-custo">Custo: R$ 112,00</div>
+      <div class="peca-margem">+69%</div>
+    </div>
+  </div>
+
+  <!-- 3. Sem estoque -->
+  <div class="peca-row" onclick="abrirDetalhe()">
+    <div class="peca-row-indicator estoque-zero"></div>
+    <div class="peca-sku">CT-1086</div>
+    <div class="peca-body">
+      <div class="peca-nome">Correia Dentada — Gates</div>
+      <div class="peca-meta">
+        <span class="peca-marca">Gates</span>
+        <div class="peca-aplicacao">
+          <span class="peca-app-tag">VW</span>
+          <span class="peca-app-tag">FIAT</span>
+        </div>
+      </div>
+    </div>
+    <div class="peca-local">A-07</div>
+    <div class="peca-estoque">
+      <div class="peca-estoque-num estoque-zero">0</div>
+      <div class="peca-estoque-lbl">Estoque</div>
+    </div>
+    <div class="peca-preco">
+      <div class="peca-venda">R$ 145,00</div>
+      <div class="peca-custo">Custo: R$ 85,00</div>
+      <div class="peca-margem">+71%</div>
+    </div>
+  </div>
+
+  <!-- 4. OK — lubrificante -->
+  <div class="peca-row" onclick="abrirDetalhe()">
+    <div class="peca-row-indicator estoque-ok"></div>
+    <div class="peca-sku">5W30-SN</div>
+    <div class="peca-body">
+      <div class="peca-nome">Oleo Motor 5W30 Sintetico 1L — Mobil</div>
+      <div class="peca-meta">
+        <span class="peca-marca">Mobil Super 3000</span>
+        <div class="peca-aplicacao">
+          <span class="peca-app-tag">UNIVERSAL</span>
+        </div>
+      </div>
+    </div>
+    <div class="peca-local">D-01</div>
+    <div class="peca-estoque">
+      <div class="peca-estoque-num estoque-ok">48</div>
+      <div class="peca-estoque-lbl">Estoque</div>
+    </div>
+    <div class="peca-preco">
+      <div class="peca-venda">R$ 42,00</div>
+      <div class="peca-custo">Custo: R$ 28,00</div>
+      <div class="peca-margem">+50%</div>
+    </div>
+  </div>
+
+  <!-- 5. Estoque baixo -->
+  <div class="peca-row" onclick="abrirDetalhe()">
+    <div class="peca-row-indicator estoque-baixo"></div>
+    <div class="peca-sku">AMT-2243</div>
+    <div class="peca-body">
+      <div class="peca-nome">Amortecedor Diant. — Monroe</div>
+      <div class="peca-meta">
+        <span class="peca-marca">Monroe Reflex</span>
+        <div class="peca-aplicacao">
+          <span class="peca-app-tag">HYUNDAI</span>
+          <span class="peca-app-tag">KIA</span>
+        </div>
+      </div>
+    </div>
+    <div class="peca-local">E-11</div>
+    <div class="peca-estoque">
+      <div class="peca-estoque-num estoque-baixo">2</div>
+      <div class="peca-estoque-lbl">Estoque</div>
+    </div>
+    <div class="peca-preco">
+      <div class="peca-venda">R$ 320,00</div>
+      <div class="peca-custo">Custo: R$ 195,00</div>
+      <div class="peca-margem">+64%</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============== SERVICOS VIEW ============== -->
+<div id="view-servicos" style="display:none;">
+
+  <!-- SUMMARY -->
+  <div class="summary">
+    <div class="summary-item">
+      <div class="summary-val" style="color:var(--w);">105</div>
+      <div class="summary-lbl">Servicos</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-val" style="color:var(--cyan);">1.2h</div>
+      <div class="summary-lbl">TMT Medio</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-val" style="color:var(--amber);">R$ 120</div>
+      <div class="summary-lbl">Hora MO</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-val" style="color:var(--green);">R$ 18.4k</div>
+      <div class="summary-lbl">MO Mes</div>
+    </div>
+  </div>
+
+  <!-- FILTERS -->
+  <div class="filters">
+    <div class="f-btn on">Todos <span class="f-count">105</span></div>
+    <div class="f-btn">Motor <span class="f-count">22</span></div>
+    <div class="f-btn">Freios <span class="f-count">18</span></div>
+    <div class="f-btn">Suspensao <span class="f-count">15</span></div>
+    <div class="f-btn">Eletrica <span class="f-count">14</span></div>
+    <div class="f-btn">Revisao <span class="f-count">12</span></div>
+    <div class="f-btn">AC <span class="f-count">8</span></div>
+    <div class="f-btn">Cambio <span class="f-count">6</span></div>
+    <div class="f-btn">Diagnostico <span class="f-count">10</span></div>
+  </div>
+
+  <!-- SERVICOS LIST -->
+
+  <!-- 1. Troca de oleo -->
+  <div class="serv-row">
+    <div class="serv-cod">S-001</div>
+    <div class="serv-body">
+      <div class="serv-nome">Troca de Oleo + Filtro</div>
+      <div class="serv-meta">
+        <span class="serv-categoria">Revisao</span>
+        <div class="serv-aplicacao">
+          <span class="peca-app-tag">UNIVERSAL</span>
+        </div>
+      </div>
+    </div>
+    <div class="serv-tmt">
+      <div class="serv-tmt-val">0.5h</div>
+      <div class="serv-tmt-lbl">TMT</div>
+    </div>
+    <div class="serv-preco">
+      <div class="serv-valor">R$ 60,00</div>
+      <div class="serv-hora">0.5h x R$120</div>
+    </div>
+  </div>
+
+  <!-- 2. Alinhamento -->
+  <div class="serv-row">
+    <div class="serv-cod">S-012</div>
+    <div class="serv-body">
+      <div class="serv-nome">Alinhamento + Balanceamento</div>
+      <div class="serv-meta">
+        <span class="serv-categoria">Suspensao</span>
+        <div class="serv-aplicacao">
+          <span class="peca-app-tag">UNIVERSAL</span>
+        </div>
+      </div>
+    </div>
+    <div class="serv-tmt">
+      <div class="serv-tmt-val">0.8h</div>
+      <div class="serv-tmt-lbl">TMT</div>
+    </div>
+    <div class="serv-preco">
+      <div class="serv-valor">R$ 96,00</div>
+      <div class="serv-hora">0.8h x R$120</div>
+    </div>
+  </div>
+
+  <!-- 3. Troca pastilha -->
+  <div class="serv-row">
+    <div class="serv-cod">S-024</div>
+    <div class="serv-body">
+      <div class="serv-nome">Troca Pastilha de Freio Diant.</div>
+      <div class="serv-meta">
+        <span class="serv-categoria">Freios</span>
+        <div class="serv-aplicacao">
+          <span class="peca-app-tag">UNIVERSAL</span>
+        </div>
+      </div>
+    </div>
+    <div class="serv-tmt">
+      <div class="serv-tmt-val">1.0h</div>
+      <div class="serv-tmt-lbl">TMT</div>
+    </div>
+    <div class="serv-preco">
+      <div class="serv-valor">R$ 120,00</div>
+      <div class="serv-hora">1.0h x R$120</div>
+    </div>
+  </div>
+
+  <!-- 4. Revisao completa -->
+  <div class="serv-row">
+    <div class="serv-cod">S-050</div>
+    <div class="serv-body">
+      <div class="serv-nome">Revisao Completa 30.000km</div>
+      <div class="serv-meta">
+        <span class="serv-categoria">Revisao</span>
+        <div class="serv-aplicacao">
+          <span class="peca-app-tag">VW</span>
+          <span class="peca-app-tag">FIAT</span>
+          <span class="peca-app-tag">GM</span>
+        </div>
+      </div>
+    </div>
+    <div class="serv-tmt">
+      <div class="serv-tmt-val">3.0h</div>
+      <div class="serv-tmt-lbl">TMT</div>
+    </div>
+    <div class="serv-preco">
+      <div class="serv-valor">R$ 360,00</div>
+      <div class="serv-hora">3.0h x R$120</div>
+    </div>
+  </div>
+
+  <!-- 5. Diagnostico eletronico -->
+  <div class="serv-row">
+    <div class="serv-cod">S-090</div>
+    <div class="serv-body">
+      <div class="serv-nome">Diagnostico Eletronico (Scanner)</div>
+      <div class="serv-meta">
+        <span class="serv-categoria">Diagnostico</span>
+        <div class="serv-aplicacao">
+          <span class="peca-app-tag">UNIVERSAL</span>
+        </div>
+      </div>
+    </div>
+    <div class="serv-tmt">
+      <div class="serv-tmt-val">0.5h</div>
+      <div class="serv-tmt-lbl">TMT</div>
+    </div>
+    <div class="serv-preco">
+      <div class="serv-valor">R$ 80,00</div>
+      <div class="serv-hora">Valor fixo</div>
+    </div>
+  </div>
+
+  <!-- 6. Troca correia dentada -->
+  <div class="serv-row">
+    <div class="serv-cod">S-033</div>
+    <div class="serv-body">
+      <div class="serv-nome">Troca Correia Dentada + Tensor</div>
+      <div class="serv-meta">
+        <span class="serv-categoria">Motor</span>
+        <div class="serv-aplicacao">
+          <span class="peca-app-tag">VW</span>
+          <span class="peca-app-tag">FIAT</span>
+        </div>
+      </div>
+    </div>
+    <div class="serv-tmt">
+      <div class="serv-tmt-val">2.5h</div>
+      <div class="serv-tmt-lbl">TMT</div>
+    </div>
+    <div class="serv-preco">
+      <div class="serv-valor">R$ 300,00</div>
+      <div class="serv-hora">2.5h x R$120</div>
+    </div>
+  </div>
+
+  <!-- 7. Carga AC -->
+  <div class="serv-row">
+    <div class="serv-cod">S-071</div>
+    <div class="serv-body">
+      <div class="serv-nome">Carga AR Condicionado + Higienizacao</div>
+      <div class="serv-meta">
+        <span class="serv-categoria">AC</span>
+        <div class="serv-aplicacao">
+          <span class="peca-app-tag">UNIVERSAL</span>
+        </div>
+      </div>
+    </div>
+    <div class="serv-tmt">
+      <div class="serv-tmt-val">1.0h</div>
+      <div class="serv-tmt-lbl">TMT</div>
+    </div>
+    <div class="serv-preco">
+      <div class="serv-valor">R$ 180,00</div>
+      <div class="serv-hora">Valor fixo</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- OVERLAY + SIDE PANEL (detalhe peca) -->
+<div class="overlay" id="overlay" onclick="fecharPanel()"></div>
+<div class="side-panel" id="panel">
+  <div class="panel-head">
+    <div class="panel-title">FL-820S — <span>Filtro de Oleo</span></div>
+    <button class="panel-close" onclick="fecharPanel()">&times;</button>
+  </div>
+  <div class="panel-body">
+
+    <!-- KPIs -->
+    <div class="panel-section">
+      <div class="panel-section-title">Resumo</div>
+      <div class="panel-kpis">
+        <div class="panel-kpi">
+          <div class="panel-kpi-val" style="color:var(--green);">32</div>
+          <div class="panel-kpi-lbl">Em Estoque</div>
+        </div>
+        <div class="panel-kpi">
+          <div class="panel-kpi-val" style="color:var(--amber);">R$ 38,90</div>
+          <div class="panel-kpi-lbl">Preco Venda</div>
+        </div>
+        <div class="panel-kpi">
+          <div class="panel-kpi-val">87</div>
+          <div class="panel-kpi-lbl">Vendidos Mes</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dados -->
+    <div class="panel-section">
+      <div class="panel-section-title">Dados da Peca</div>
+      <div class="panel-info-grid">
+        <div class="panel-info-item">
+          <div class="panel-info-label">Codigo / SKU</div>
+          <div class="panel-info-value">FL-820S</div>
+        </div>
+        <div class="panel-info-item">
+          <div class="panel-info-label">Fabricante</div>
+          <div class="panel-info-value small">Tecfil</div>
+        </div>
+        <div class="panel-info-item">
+          <div class="panel-info-label">Localizacao</div>
+          <div class="panel-info-value">B-14</div>
+        </div>
+        <div class="panel-info-item">
+          <div class="panel-info-label">Estoque Min.</div>
+          <div class="panel-info-value">10</div>
+        </div>
+        <div class="panel-info-item">
+          <div class="panel-info-label">Custo</div>
+          <div class="panel-info-value">R$ 22,50</div>
+        </div>
+        <div class="panel-info-item">
+          <div class="panel-info-label">Margem</div>
+          <div class="panel-info-value" style="color:var(--green);">+73%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Aplicacao -->
+    <div class="panel-section">
+      <div class="panel-section-title">Aplicacao</div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap;">
+        <span class="peca-app-tag" style="font-size:10px;padding:4px 8px;">VW GOL G5/G6</span>
+        <span class="peca-app-tag" style="font-size:10px;padding:4px 8px;">VW POLO</span>
+        <span class="peca-app-tag" style="font-size:10px;padding:4px 8px;">FIAT PALIO</span>
+        <span class="peca-app-tag" style="font-size:10px;padding:4px 8px;">FIAT UNO</span>
+        <span class="peca-app-tag" style="font-size:10px;padding:4px 8px;">GM ONIX</span>
+        <span class="peca-app-tag" style="font-size:10px;padding:4px 8px;">GM PRISMA</span>
+      </div>
+    </div>
+
+    <!-- Movimentacao -->
+    <div class="panel-section">
+      <div class="panel-section-title">Movimentacao Recente</div>
+      <div class="panel-mov-row">
+        <div class="panel-mov-tipo panel-mov-saida">SAIDA</div>
+        <div class="panel-mov-desc">OS #11 — Kwid (Dolphin)</div>
+        <div class="panel-mov-qty" style="color:var(--red);">-1</div>
+        <div class="panel-mov-date">01/04</div>
+      </div>
+      <div class="panel-mov-row">
+        <div class="panel-mov-tipo panel-mov-saida">SAIDA</div>
+        <div class="panel-mov-desc">OS #08 — Onix (Dolphin)</div>
+        <div class="panel-mov-qty" style="color:var(--red);">-1</div>
+        <div class="panel-mov-date">28/03</div>
+      </div>
+      <div class="panel-mov-row">
+        <div class="panel-mov-tipo panel-mov-entrada">ENTRADA</div>
+        <div class="panel-mov-desc">Compra NF #4521 — Dist. Tecfil</div>
+        <div class="panel-mov-qty" style="color:var(--green);">+20</div>
+        <div class="panel-mov-date">25/03</div>
+      </div>
+      <div class="panel-mov-row">
+        <div class="panel-mov-tipo panel-mov-saida">SAIDA</div>
+        <div class="panel-mov-desc">OS #05 — Kwid (Dolphin)</div>
+        <div class="panel-mov-qty" style="color:var(--red);">-1</div>
+        <div class="panel-mov-date">15/03</div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="panel-actions">
+      <button class="panel-btn panel-btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Dar Entrada
+      </button>
+      <button class="panel-btn panel-btn-secondary">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Editar
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+function switchTab(tab) {
+  const tabs = document.querySelectorAll('.tab');
+  tabs.forEach(t => t.classList.remove('on'));
+  if (tab === 'pecas') {
+    tabs[0].classList.add('on');
+    document.getElementById('view-pecas').style.display = '';
+    document.getElementById('view-servicos').style.display = 'none';
+    document.getElementById('btn-novo-text').textContent = 'Nova Peca';
+    document.getElementById('search-input').placeholder = 'Buscar por nome, codigo, fabricante ou aplicacao...';
+  } else {
+    tabs[1].classList.add('on');
+    document.getElementById('view-pecas').style.display = 'none';
+    document.getElementById('view-servicos').style.display = '';
+    document.getElementById('btn-novo-text').textContent = 'Novo Servico';
+    document.getElementById('search-input').placeholder = 'Buscar servico por nome, codigo ou categoria...';
+  }
+}
+function abrirDetalhe() {
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('panel').classList.add('open');
+}
+function fecharPanel() {
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('panel').classList.remove('open');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharPanel(); });
+</script>
+
+</body>
+</html>

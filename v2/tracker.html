@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro V2 — Tracker Integração</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#09090B;--sf:#111114;--sf2:#18181C;--sf3:#1F1F24;
+  --ln:rgba(255,255,255,0.04);--ln2:rgba(255,255,255,0.08);--ln3:rgba(255,255,255,0.14);
+  --amber:#E8930C;--amber-dim:rgba(232,147,12,0.1);
+  --green:#30D158;--green-dim:rgba(48,209,88,0.1);
+  --red:#FF3B30;--red-dim:rgba(255,59,48,0.08);
+  --blue:#0A84FF;--blue-dim:rgba(10,132,255,0.1);
+  --w:#F0F0F2;--w2:rgba(255,255,255,0.6);--w3:rgba(255,255,255,0.32);--w4:rgba(255,255,255,0.14);
+  --mono:'JetBrains Mono',monospace;--head:'Barlow Condensed',sans-serif;--body:'Space Grotesk',sans-serif;
+  --r:3px;
+}
+body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100vh;-webkit-font-smoothing:antialiased;}
+.container{max-width:900px;margin:0 auto;padding:40px 24px;}
+
+/* HEADER */
+.header{margin-bottom:40px;padding-bottom:24px;border-bottom:1px solid var(--ln2);}
+.header-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+.header-title{font-family:var(--head);font-size:36px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.header-title span{color:var(--amber);}
+.header-version{font-family:var(--mono);font-size:13px;color:var(--amber);background:var(--amber-dim);padding:4px 10px;border-radius:var(--r);}
+.header-sub{font-family:var(--body);font-size:14px;color:var(--w3);margin-top:6px;}
+.header-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  margin-top:10px;padding:6px 12px;
+  background:var(--blue-dim);border:1px solid rgba(10,132,255,0.2);border-radius:var(--r);
+  font-family:var(--mono);font-size:11px;color:var(--blue);
+}
+.header-badge .dot{width:6px;height:6px;border-radius:50%;background:var(--blue);animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+/* PROGRESS BAR */
+.progress-wrap{margin-bottom:40px;}
+.progress-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;}
+.progress-label{font-family:var(--head);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w3);}
+.progress-pct{font-family:var(--mono);font-size:28px;font-weight:800;color:var(--amber);}
+.progress-bar{height:6px;background:var(--sf2);border-radius:var(--r);overflow:hidden;}
+.progress-fill{height:100%;background:var(--amber);border-radius:var(--r);transition:width .5s;}
+.progress-stats{display:flex;gap:24px;margin-top:12px;}
+.progress-stat{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:12px;color:var(--w3);}
+.progress-stat .dot{width:8px;height:8px;border-radius:50%;}
+
+/* FASE BADGE */
+.fase-wrap{display:flex;gap:12px;margin-bottom:32px;flex-wrap:wrap;}
+.fase{
+  font-family:var(--mono);font-size:11px;font-weight:600;
+  padding:5px 12px;border-radius:var(--r);
+  display:flex;align-items:center;gap:6px;
+}
+.fase.done{background:var(--green-dim);color:var(--green);border:1px solid rgba(48,209,88,0.2);}
+.fase.active{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(232,147,12,0.3);}
+.fase.pending{background:var(--sf2);color:var(--w3);border:1px solid var(--ln2);}
+
+/* SECTION */
+.section{margin-bottom:32px;}
+.section-header{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 16px;background:var(--sf);
+  border:1px solid var(--ln2);border-radius:var(--r);
+  margin-bottom:2px;
+}
+.section-icon{font-size:16px;width:24px;text-align:center;}
+.section-title{font-family:var(--head);font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;flex:1;}
+.section-progress{font-family:var(--mono);font-size:13px;font-weight:600;}
+.section-bar{width:80px;height:4px;background:var(--sf3);border-radius:2px;overflow:hidden;}
+.section-bar-fill{height:100%;border-radius:2px;background:var(--amber);transition:width .4s;}
+
+/* TASK ROW */
+.task{
+  display:flex;align-items:center;gap:14px;
+  padding:14px 16px 14px 52px;
+  border:1px solid var(--ln);border-top:none;
+  background:var(--sf);
+  transition:background .12s;
+}
+.task:last-child{border-radius:0 0 var(--r) var(--r);}
+.task:hover{background:var(--sf2);}
+
+.task-check{
+  width:22px;height:22px;border:2px solid var(--ln3);border-radius:var(--r);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;font-size:12px;color:transparent;
+}
+.task.done .task-check{background:var(--green);border-color:var(--green);color:#000;}
+.task.wip .task-check{background:var(--amber-dim);border-color:var(--amber);color:var(--amber);}
+
+.task-name{font-family:var(--body);font-size:14px;font-weight:500;flex:1;}
+.task.done .task-name{color:var(--w3);text-decoration:line-through;}
+
+.task-status{
+  font-family:var(--head);font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:1px;
+  padding:3px 10px;border-radius:2px;
+}
+.task-status.done{background:var(--green-dim);color:var(--green);}
+.task-status.wip{background:var(--amber-dim);color:var(--amber);}
+.task-status.todo{background:var(--w4);color:var(--w3);}
+
+.task-link{
+  font-family:var(--mono);font-size:11px;color:var(--blue);
+  text-decoration:none;opacity:.6;transition:opacity .15s;
+}
+.task-link:hover{opacity:1;}
+
+/* BLOQUEADO */
+.task.blocked .task-name{color:var(--w4);}
+.task.blocked .task-status{background:var(--red-dim);color:var(--red);}
+
+/* FOOTER */
+.footer{
+  margin-top:48px;padding-top:20px;border-top:1px solid var(--ln);
+  font-family:var(--mono);font-size:11px;color:var(--w3);
+  display:flex;justify-content:space-between;
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
+    <div class="header-title">RPM <span>PRO</span></div>
+    <div class="header-version">V2 · INTEGRAÇÃO</div>
+  </div>
+  <div class="header-sub">Conectar visual V2 com Supabase real — rodar local, sem comprometer produção</div>
+  <div class="header-badge"><span class="dot"></span>LOCAL ONLY · Porta 3001 · V1 no ar intacta</div>
+</div>
+
+<!-- FASES -->
+<div class="fase-wrap">
+  <div class="fase done">&#10003; FASE 1 · Design Estático (18/18)</div>
+  <div class="fase active">&#9654; FASE 2 · Integração Supabase (0/<span id="total-count">0</span>)</div>
+  <div class="fase pending">○ FASE 3 · Deploy Produção</div>
+</div>
+
+<!-- PROGRESS -->
+<div class="progress-wrap">
+  <div class="progress-header">
+    <div class="progress-label">Progresso Integração</div>
+    <div class="progress-pct" id="pct">0%</div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="bar" style="width:0%;"></div></div>
+  <div class="progress-stats">
+    <div class="progress-stat"><span class="dot" style="background:var(--green);"></span><span id="cnt-done">0</span> Integrado</div>
+    <div class="progress-stat"><span class="dot" style="background:var(--amber);"></span><span id="cnt-wip">0</span> Em andamento</div>
+    <div class="progress-stat"><span class="dot" style="background:var(--w4);"></span><span id="cnt-todo">0</span> Pendente</div>
+  </div>
+</div>
+
+<!-- OFICINA -->
+<div class="section" id="s-oficina">
+  <div class="section-header">
+    <div class="section-icon">&#9881;</div>
+    <div class="section-title">Oficina</div>
+    <div class="section-progress" id="sp-oficina">0/2</div>
+    <div class="section-bar"><div class="section-bar-fill" id="sb-oficina" style="width:0%;"></div></div>
+  </div>
+  <div class="task done" data-file="kanban-v2.html">
+    <div class="task-check">&#10003;</div>
+    <div class="task-name">Patio (Kanban)</div>
+    <div class="task-status done">Integrado</div>
+    <a class="task-link" href="kanban-v2.html" target="_blank">abrir</a>
+  </div>
+  <div class="task done" data-file="dashboard-v2.html">
+    <div class="task-check">&#10003;</div>
+    <div class="task-name">Dashboard</div>
+    <div class="task-status done">Integrado</div>
+    <a class="task-link" href="dashboard-v2.html" target="_blank">abrir</a>
+  </div>
+</div>
+
+<!-- ATENDIMENTO -->
+<div class="section" id="s-atendimento">
+  <div class="section-header">
+    <div class="section-icon">&#9998;</div>
+    <div class="section-title">Atendimento</div>
+    <div class="section-progress" id="sp-atendimento">0/6</div>
+    <div class="section-bar"><div class="section-bar-fill" id="sb-atendimento" style="width:0%;"></div></div>
+  </div>
+  <div class="task done" data-file="fila-espera-v2.html">
+    <div class="task-check">&#10003;</div>
+    <div class="task-name">Fila de Espera</div>
+    <div class="task-status done">Integrado</div>
+    <a class="task-link" href="fila-espera-v2.html" target="_blank">abrir</a>
+  </div>
+  <div class="task done" data-file="os-list-v2.html">
+    <div class="task-check">✓</div>
+    <div class="task-name">Ordens de Serviço (Lista + Nova OS)</div>
+    <div class="task-status done">Integrado</div>
+    <a class="task-link" href="os-list-v2.html" target="_blank">abrir</a>
+  </div>
+  <div class="task done" data-file="clientes-v2.html">
+    <div class="task-check">✓</div>
+    <div class="task-name">Clientes</div>
+    <div class="task-status done">Integrado</div>
+    <a class="task-link" href="clientes-v2.html" target="_blank">abrir</a>
+  </div>
+  <div class="task done" data-file="veiculos-v2.html">
+    <div class="task-check">✓</div>
+    <div class="task-name">Veículos</div>
+    <div class="task-status done">Integrado</div>
+    <a class="task-link" href="veiculos-v2.html" target="_blank">abrir</a>
+  </div>
+  <div class="task done" data-file="agendamentos-v2.html">
+    <div class="task-check">&#10003;</div>
+    <div class="task-name">Agendamentos</div>
+    <div class="task-status done">Integrado</div>
+    <a class="task-link" href="agendamentos-v2.html" target="_blank">abrir</a>
+  </div>
+</div>
+
+<!-- CATALOGO -->
+<div class="section" id="s-catalogo">
+  <div class="section-header">
+    <div class="section-icon">&#9776;</div>
+    <div class="section-title">Catálogo</div>
+    <div class="section-progress" id="sp-catalogo">0/2</div>
+    <div class="section-bar"><div class="section-bar-fill" id="sb-catalogo" style="width:0%;"></div></div>
+  </div>
+  <div class="task done" data-file="catalogo-v2.html">
+    <div class="task-check">&#10003;</div>
+    <div class="task-name">Serviços + Peças (unificado)</div>
+    <div class="task-status done">Integrado</div>
+    <a class="task-link" href="catalogo-v2.html" target="_blank">abrir</a>
+  </div>
+</div>
+
+<!-- FINANCEIRO -->
+<div class="section" id="s-financeiro">
+  <div class="section-header">
+    <div class="section-icon">&#9636;</div>
+    <div class="section-title">Financeiro</div>
+    <div class="section-progress" id="sp-financeiro">0/4</div>
+    <div class="section-bar"><div class="section-bar-fill" id="sb-financeiro" style="width:0%;"></div></div>
+  </div>
+  <div class="task done" data-file="financeiro-v2.html">
+    <div class="task-check">&#10003;</div>
+    <div class="task-name">Caixa / Fechamento / Lucro / Despesas</div>
+    <div class="task-status done">Integrado</div>
+    <a class="task-link" href="financeiro-v2.html" target="_blank">abrir</a>
+  </div>
+  <div class="task done" data-file="financeiro-v2.html">
+    <div class="task-check">&#10003;</div>
+    <div class="task-name">Contas a Receber</div>
+    <div class="task-status done">Integrado</div>
+    <a class="task-link" href="financeiro-v2.html" target="_blank">abrir</a>
+  </div>
+  <div class="task done" data-file="comissao-v2.html">
+    <div class="task-check">&#10003;</div>
+    <div class="task-name">Comissão</div>
+    <div class="task-status done">Integrado</div>
+    <a class="task-link" href="comissao-v2.html" target="_blank">abrir</a>
+  </div>
+  <div class="task done" data-file="folha-v2.html">
+    <div class="task-check">&#10003;</div>
+    <div class="task-name">Folha de Pagamento</div>
+    <div class="task-status done">Integrado</div>
+    <a class="task-link" href="folha-v2.html" target="_blank">abrir</a>
+  </div>
+</div>
+
+<!-- RELACIONAMENTO -->
+<div class="section" id="s-relacionamento">
+  <div class="section-header">
+    <div class="section-icon">&#9829;</div>
+    <div class="section-title">Relacionamento</div>
+    <div class="section-progress" id="sp-relacionamento">0/2</div>
+    <div class="section-bar"><div class="section-bar-fill" id="sb-relacionamento" style="width:0%;"></div></div>
+  </div>
+  <div class="task done" data-file="crm-v2.html">
+    <div class="task-check">&#10003;</div>
+    <div class="task-name">CRM / Reativação</div>
+    <div class="task-status done">Integrado</div>
+    <a class="task-link" href="crm-v2.html" target="_blank">abrir</a>
+  </div>
+  <div class="task done" data-file="satisfacao-v2.html">
+    <div class="task-check">&#10003;</div>
+    <div class="task-name">Satisfação</div>
+    <div class="task-status done">Integrado</div>
+    <a class="task-link" href="satisfacao-v2.html" target="_blank">abrir</a>
+  </div>
+</div>
+
+<!-- EQUIPE -->
+<div class="section" id="s-equipe">
+  <div class="section-header">
+    <div class="section-icon">&#9679;</div>
+    <div class="section-title">Equipe</div>
+    <div class="section-progress" id="sp-equipe">0/3</div>
+    <div class="section-bar"><div class="section-bar-fill" id="sb-equipe" style="width:0%;"></div></div>
+  </div>
+  <div class="task done" data-file="equipe-v2.html">
+    <div class="task-check">&#10003;</div>
+    <div class="task-name">Equipe / Operadores</div>
+    <div class="task-status done">Integrado</div>
+    <a class="task-link" href="equipe-v2.html" target="_blank">abrir</a>
+  </div>
+  <div class="task done" data-file="produtividade-v2.html">
+    <div class="task-check">&#10003;</div>
+    <div class="task-name">Produtividade</div>
+    <div class="task-status done">Integrado</div>
+    <a class="task-link" href="produtividade-v2.html" target="_blank">abrir</a>
+  </div>
+  <div class="task done" data-file="config-v2.html">
+    <div class="task-check">&#10003;</div>
+    <div class="task-name">Configuracoes</div>
+    <div class="task-status done">Integrado</div>
+    <a class="task-link" href="config-v2.html" target="_blank">abrir</a>
+  </div>
+</div>
+
+<!-- BONUS -->
+<div class="section" id="s-bonus">
+  <div class="section-header">
+    <div class="section-icon">&#9889;</div>
+    <div class="section-title">Bônus</div>
+    <div class="section-progress" id="sp-bonus">0/1</div>
+    <div class="section-bar"><div class="section-bar-fill" id="sb-bonus" style="width:0%;"></div></div>
+  </div>
+  <div class="task done" data-file="execucao-os-v2.html">
+    <div class="task-check"></div>
+    <div class="task-name">Execução OS (Prancheta mecânico)</div>
+    <div class="task-status done">Integrado</div>
+    <a class="task-link" href="execucao-os-v2.html" target="_blank">abrir</a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <span>RPM Pro V2 · Integração Supabase · Local OFF</span>
+  <span id="updated">Att: 03/04/2026 · 19/19 integrados</span>
+</div>
+
+</div>
+
+<script>
+function updateProgress(){
+  const all=document.querySelectorAll('.task');
+  const done=document.querySelectorAll('.task.done');
+  const wip=document.querySelectorAll('.task.wip');
+  const total=all.length;
+  const doneCount=done.length;
+  const wipCount=wip.length;
+  const todoCount=total-doneCount-wipCount;
+  const pct=total?Math.round(doneCount/total*100):0;
+
+  document.getElementById('pct').textContent=pct+'%';
+  document.getElementById('bar').style.width=pct+'%';
+  document.getElementById('cnt-done').textContent=doneCount;
+  document.getElementById('cnt-wip').textContent=wipCount;
+  document.getElementById('cnt-todo').textContent=todoCount;
+  document.getElementById('total-count').textContent=total;
+
+  // Por secao
+  document.querySelectorAll('.section').forEach(sec=>{
+    const id=sec.id.replace('s-','');
+    const tasks=sec.querySelectorAll('.task');
+    const d=sec.querySelectorAll('.task.done');
+    const sp=document.getElementById('sp-'+id);
+    const sb=document.getElementById('sb-'+id);
+    if(sp)sp.textContent=d.length+'/'+tasks.length;
+    if(sb)sb.style.width=(tasks.length?Math.round(d.length/tasks.length*100):0)+'%';
+  });
+
+  // Cor da barra geral
+  const fill=document.getElementById('bar');
+  if(pct===100)fill.style.background='var(--green)';
+  else if(pct>=50)fill.style.background='var(--amber)';
+  else fill.style.background='var(--amber)';
+}
+updateProgress();
+</script>
+</body>
+</html>

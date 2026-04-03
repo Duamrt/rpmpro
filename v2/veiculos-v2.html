@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro V2 — Veiculos</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#09090B;--sf:#111114;--sf2:#18181C;--sf3:#1F1F24;--sf4:#27272D;
+  --ln:rgba(255,255,255,0.04);--ln2:rgba(255,255,255,0.08);--ln3:rgba(255,255,255,0.14);
+  --amber:#E8930C;--amber-dim:rgba(232,147,12,0.1);
+  --orange:#EA580C;--orange-dim:rgba(234,88,12,0.12);
+  --red:#FF3B30;--red-dim:rgba(255,59,48,0.08);
+  --green:#30D158;--green-dim:rgba(48,209,88,0.08);
+  --blue:#0A84FF;--blue-dim:rgba(10,132,255,0.1);
+  --purple:#7C3AED;--purple-dim:rgba(124,58,237,0.1);
+  --cyan:#00C7BE;--cyan-dim:rgba(0,199,190,0.1);
+  --w:#F0F0F2;--w2:rgba(255,255,255,0.6);--w3:rgba(255,255,255,0.32);--w4:rgba(255,255,255,0.14);
+  --mono:'JetBrains Mono',monospace;--head:'Barlow Condensed',sans-serif;--body:'Space Grotesk',sans-serif;
+  --r:3px;--r2:4px;
+}
+body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100vh;-webkit-font-smoothing:antialiased;overflow:hidden;}
+
+.app{display:flex;height:100vh;overflow:hidden;}
+
+/* ── SIDEBAR ── */
+.sidebar{width:220px;flex-shrink:0;background:var(--sf);border-right:1px solid var(--ln2);display:flex;flex-direction:column;height:100vh;}
+.sidebar-logo{padding:20px 16px 16px;border-bottom:1px solid var(--ln2);}
+.sidebar-logo-brand{font-family:var(--head);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.sidebar-logo-brand span{color:var(--amber);}
+.sidebar-logo-oficina{font-family:var(--body);font-size:11px;color:var(--w3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sidebar-nav{flex:1;overflow-y:auto;padding:12px 0;scrollbar-width:none;}
+.sidebar-nav::-webkit-scrollbar{display:none;}
+.nav-section{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);padding:10px 16px 6px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 16px;font-family:var(--body);font-size:13px;font-weight:500;color:var(--w3);cursor:pointer;transition:all .12s;text-decoration:none;}
+.nav-item:hover{color:var(--w);background:var(--sf2);}
+.nav-item.active{color:var(--amber);background:var(--amber-dim);border-left:2px solid var(--amber);}
+.nav-item .nav-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0;}
+.sidebar-footer{padding:16px;border-top:1px solid var(--ln2);}
+.user-info{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.user-avatar{width:34px;height:34px;border-radius:var(--r);background:var(--amber-dim);border:1px solid rgba(232,147,12,0.3);display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:14px;font-weight:800;color:var(--amber);flex-shrink:0;}
+.user-details{min-width:0;}
+.user-name{font-family:var(--body);font-size:13px;font-weight:600;color:var(--w);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.user-role{font-family:var(--mono);font-size:10px;color:var(--w3);text-transform:uppercase;letter-spacing:.5px;}
+.btn-logout{width:100%;font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--w3);background:none;border:1px solid var(--ln3);padding:7px;border-radius:var(--r);cursor:pointer;transition:all .15s;}
+.btn-logout:hover{color:var(--w);border-color:var(--w3);}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.main-topbar{height:48px;background:var(--sf);border-bottom:1px solid var(--ln2);display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0;}
+.main-title{font-family:var(--head);font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:2px;}
+.main-content{flex:1;overflow-y:auto;padding:20px;scrollbar-width:thin;scrollbar-color:var(--sf3) transparent;}
+.main-content::-webkit-scrollbar{width:4px;}
+.main-content::-webkit-scrollbar-thumb{background:var(--sf3);border-radius:2px;}
+.btn-novo{padding:8px 18px;background:var(--amber);border:none;border-radius:var(--r2);font-family:var(--head);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#000;cursor:pointer;transition:all .12s;}
+.btn-novo:hover{background:#F5A623;}
+
+/* ── SEARCH ── */
+.search-bar{display:flex;align-items:center;gap:12px;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px 16px;margin-bottom:12px;transition:border-color .15s;}
+.search-bar:focus-within{border-color:var(--amber);}
+.search-bar svg{width:16px;height:16px;stroke:var(--w3);flex-shrink:0;}
+.search-bar input{flex:1;background:none;border:none;color:var(--w);font-family:var(--mono);font-size:14px;outline:none;}
+.search-bar input::placeholder{color:var(--w3);font-family:var(--body);}
+.vei-ac-item{display:flex;align-items:center;gap:12px;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--ln);transition:background .1s;}
+.vei-ac-item:hover{background:var(--sf3);}
+.vei-ac-item:last-child{border-bottom:none;}
+.vei-ac-placa{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--amber);background:var(--amber-dim);padding:2px 8px;border-radius:2px;letter-spacing:1px;}
+.vei-ac-info{flex:1;min-width:0;}
+.vei-ac-modelo{font-family:var(--body);font-size:13px;font-weight:600;color:var(--w);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.vei-ac-dono{font-family:var(--body);font-size:11px;color:var(--w3);}
+
+/* ── SUMMARY ── */
+.summary{display:flex;gap:6px;margin-bottom:16px;}
+.summary-item{flex:1;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px 14px;text-align:center;}
+.summary-val{font-family:var(--mono);font-size:22px;font-weight:800;letter-spacing:-1px;}
+.summary-lbl{font-family:var(--head);font-size:10px;font-weight:600;color:var(--w3);text-transform:uppercase;letter-spacing:1.5px;margin-top:2px;}
+
+/* ── FILTERS ── */
+.filters{display:flex;gap:4px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px;white-space:nowrap;-webkit-overflow-scrolling:touch;}
+.f-btn{font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;padding:8px 16px;border:1px solid var(--ln2);border-radius:var(--r);background:var(--sf);color:var(--w3);cursor:pointer;white-space:nowrap;transition:all .12s;}
+.f-btn:hover{border-color:var(--ln3);color:var(--w2);}
+.f-btn.on{background:var(--amber);color:#000;border-color:var(--amber);}
+.f-btn .f-count{font-family:var(--mono);font-size:11px;margin-left:6px;padding:1px 5px;border-radius:2px;background:rgba(0,0,0,0.2);}
+.f-btn:not(.on) .f-count{background:var(--w4);}
+
+/* ── ALERT BAR ── */
+.alert-bar{display:flex;align-items:center;gap:14px;background:var(--amber-dim);border:1px solid rgba(232,147,12,0.2);border-radius:var(--r2);padding:12px 16px;margin-bottom:16px;}
+.alert-pill{font-family:var(--mono);font-size:18px;font-weight:800;color:var(--amber);min-width:28px;text-align:center;}
+.alert-text{flex:1;font-size:13px;color:var(--w2);}
+.alert-text strong{color:var(--w);font-weight:600;}
+
+/* ── VEHICLE ROW ── */
+.vei-row{display:flex;align-items:center;gap:14px;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:14px 16px;margin-bottom:6px;cursor:pointer;transition:all .12s;position:relative;overflow:hidden;}
+.vei-row:hover{border-color:var(--ln3);background:var(--sf2);}
+.vei-indicator{position:absolute;left:0;top:0;bottom:0;width:3px;}
+.vei-indicator.ind-patio{background:var(--amber);}
+.vei-indicator.ind-pronto{background:var(--green);}
+.vei-indicator.ind-critico{background:var(--red);animation:slaPulse 1s infinite;}
+@keyframes slaPulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+/* Placa Mercosul (row) */
+.placa-vei{display:inline-flex;flex-direction:column;background:#FFFFFF;border-radius:2px;overflow:hidden;border:2px solid #C8C8C8;line-height:1;flex-shrink:0;}
+.placa-vei-topo{background:#003399;padding:1px 6px;display:flex;align-items:center;justify-content:space-between;gap:4px;}
+.placa-vei-flag{display:flex;gap:1px;}
+.placa-vei-flag span{display:block;width:2px;height:4px;border-radius:1px;}
+.placa-vei-br{font-family:var(--mono);font-size:5.5px;font-weight:700;color:#fff;letter-spacing:.3px;}
+.placa-vei-cod{padding:3px 8px 4px;font-family:var(--mono);font-size:18px;font-weight:800;color:#1A1A1A;letter-spacing:2px;text-align:center;line-height:1;}
+
+/* Placa hero (panel) */
+.placa-hero{display:inline-flex;flex-direction:column;background:#FFFFFF;border-radius:3px;overflow:hidden;border:2px solid #C8C8C8;line-height:1;flex-shrink:0;}
+.placa-hero-topo{background:#003399;padding:2px 10px;display:flex;align-items:center;justify-content:space-between;gap:6px;}
+.placa-hero-flag{display:flex;gap:1.5px;}
+.placa-hero-flag span{display:block;width:3px;height:6px;border-radius:1px;}
+.placa-hero-br{font-family:var(--mono);font-size:7px;font-weight:700;color:#fff;letter-spacing:.5px;}
+.placa-hero-cod{padding:5px 12px 6px;font-family:var(--mono);font-size:28px;font-weight:800;color:#1A1A1A;letter-spacing:4px;text-align:center;line-height:1;}
+
+/* Body */
+.vei-body{flex:1;min-width:0;}
+.vei-top{display:flex;align-items:baseline;gap:10px;margin-bottom:2px;}
+.vei-modelo{font-family:var(--head);font-size:17px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.vei-ano{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--w3);}
+.vei-meta{display:flex;align-items:center;gap:12px;margin-top:3px;flex-wrap:wrap;}
+.vei-cor{width:10px;height:10px;border-radius:50%;border:1px solid var(--ln3);flex-shrink:0;}
+.vei-dono{font-family:var(--body);font-size:12px;color:var(--w2);}
+.vei-tag{font-family:var(--head);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:2px 7px;border-radius:2px;flex-shrink:0;}
+.vei-tag-patio{background:var(--amber-dim);color:var(--amber);}
+.vei-tag-pronto{background:var(--green-dim);color:var(--green);}
+.vei-tag-pj{background:var(--blue-dim);color:var(--blue);}
+.vei-km{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--w3);background:var(--sf3);padding:3px 8px;border-radius:2px;flex-shrink:0;}
+
+/* Right */
+.vei-right{display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0;min-width:80px;}
+.vei-os-count{font-family:var(--mono);font-size:14px;font-weight:700;}
+.vei-os-lbl{font-family:var(--head);font-size:9px;font-weight:600;color:var(--w4);text-transform:uppercase;letter-spacing:1px;}
+.vei-total{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--amber);}
+
+/* ── SIDE PANEL ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:900;opacity:0;pointer-events:none;transition:opacity .25s;}
+.overlay.open{opacity:1;pointer-events:auto;}
+.side-panel{position:fixed;top:0;right:0;bottom:0;width:520px;max-width:100%;background:#141417;border-left:1px solid var(--ln2);z-index:1000;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden;}
+.side-panel.open{transform:translateX(0);}
+.panel-head{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid var(--ln2);}
+.panel-title{font-family:var(--head);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.panel-title span{color:var(--amber);}
+.panel-close{width:36px;height:36px;background:var(--sf3);border:1px solid var(--ln2);border-radius:var(--r);color:var(--w3);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.panel-close:hover{background:var(--sf4);color:var(--w);}
+.panel-body{flex:1;overflow-y:auto;padding:24px;}
+
+/* Panel sections */
+.panel-section{margin-bottom:24px;}
+.panel-section-title{font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--ln);}
+.panel-placa-hero{display:flex;align-items:center;gap:20px;margin-bottom:24px;padding:20px;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);}
+.panel-hero-info{flex:1;}
+.panel-hero-modelo{font-family:var(--head);font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;}
+.panel-hero-detail{font-family:var(--body);font-size:13px;color:var(--w2);margin-top:4px;}
+.panel-hero-dono{font-family:var(--body);font-size:12px;color:var(--w3);margin-top:6px;}
+
+/* Panel KPIs */
+.panel-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.panel-kpi{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:14px;text-align:center;}
+.panel-kpi-val{font-family:var(--mono);font-size:20px;font-weight:800;letter-spacing:-1px;}
+.panel-kpi-lbl{font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);margin-top:3px;}
+
+/* Panel info grid */
+.panel-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.panel-info-item{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px;}
+.panel-info-label{font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--w4);margin-bottom:4px;}
+.panel-info-value{font-family:var(--mono);font-size:14px;font-weight:600;letter-spacing:.5px;}
+.panel-info-value.small{font-family:var(--body);font-size:13px;font-weight:400;color:var(--w2);}
+
+/* Panel OS history */
+.os-hist-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--ln);}
+.os-hist-num{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--w3);min-width:36px;}
+.os-hist-desc{flex:1;font-family:var(--body);font-size:13px;color:var(--w2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.os-hist-val{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--amber);}
+.os-hist-date{font-family:var(--mono);font-size:10px;color:var(--w4);min-width:50px;text-align:right;}
+.os-hist-tag{font-family:var(--head);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:2px 6px;border-radius:2px;}
+
+/* Panel form */
+.panel-field{margin-bottom:14px;}
+.panel-label{font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);margin-bottom:6px;}
+.panel-input{width:100%;padding:12px 14px;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);color:var(--w);font-family:var(--mono);font-size:14px;outline:none;transition:border-color .15s;}
+.panel-input:focus{border-color:var(--amber);}
+.panel-input::placeholder{color:var(--w4);}
+.panel-select{width:100%;padding:12px 14px;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);color:var(--w);font-family:var(--mono);font-size:14px;outline:none;cursor:pointer;}
+.panel-select option{background:#18181C;color:var(--w);}
+.panel-textarea{width:100%;padding:12px 14px;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);color:var(--w);font-family:var(--body);font-size:14px;outline:none;resize:vertical;min-height:80px;}
+.panel-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.panel-btn{width:100%;padding:14px;border:none;border-radius:var(--r2);font-family:var(--head);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;cursor:pointer;transition:all .12s;margin-bottom:8px;}
+.panel-btn-amber{background:var(--amber);color:#000;}
+.panel-btn-amber:hover{background:#F5A623;}
+.panel-btn-sec{background:var(--sf2);border:1px solid var(--ln2);color:var(--w3);}
+.panel-btn-sec:hover{border-color:var(--ln3);color:var(--w);}
+.panel-btn-red{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,59,48,0.2);}
+
+/* Panel autocomplete */
+.panel-autocomplete{display:none;position:absolute;left:0;right:0;top:100%;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);max-height:200px;overflow-y:auto;z-index:20;}
+.panel-ac-item{padding:10px 14px;cursor:pointer;font-family:var(--body);font-size:13px;border-bottom:1px solid var(--ln);display:flex;justify-content:space-between;align-items:center;}
+.panel-ac-item:hover{background:var(--sf2);}
+
+/* ── LOGIN ── */
+.login-overlay{position:fixed;inset:0;z-index:2000;background:var(--bg);display:none;align-items:center;justify-content:center;}
+.login-box{width:340px;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:40px 32px;}
+.login-brand{font-family:var(--head);font-size:32px;font-weight:900;text-transform:uppercase;text-align:center;margin-bottom:4px;}
+.login-brand span{color:var(--amber);}
+.login-sub{font-family:var(--mono);font-size:11px;color:var(--w3);text-align:center;margin-bottom:24px;}
+.login-label{font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);display:block;margin-bottom:6px;margin-top:16px;}
+.login-input{width:100%;padding:12px 14px;background:var(--sf2);border:1px solid var(--ln2);border-radius:var(--r);color:var(--w);font-family:var(--mono);font-size:14px;outline:none;}
+.login-input:focus{border-color:var(--amber);}
+.login-btn{width:100%;padding:14px;border:none;border-radius:var(--r);background:var(--amber);color:#000;font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:2px;cursor:pointer;margin-top:20px;}
+.login-err{display:none;font-family:var(--body);font-size:12px;color:var(--red);text-align:center;margin-top:12px;}
+
+/* ── LOADING ── */
+.loading-screen{position:fixed;inset:0;z-index:1500;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
+.loading-spinner{width:32px;height:32px;border:3px solid var(--ln2);border-top-color:var(--amber);border-radius:50%;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-label{font-family:var(--mono);font-size:12px;color:var(--w4);letter-spacing:2px;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px 24px;font-family:var(--body);font-size:14px;color:var(--w);z-index:9999;transition:transform .25s;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.5);}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.err{border-color:var(--red);color:var(--red);}
+
+/* ── EMPTY ── */
+.empty-state{text-align:center;padding:60px 20px;color:var(--w3);}
+.empty-state .icon{font-size:48px;margin-bottom:12px;}
+.empty-state h3{font-family:var(--head);font-size:18px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--w4);margin-bottom:6px;}
+.empty-state p{font-size:13px;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-overlay" id="login-overlay">
+  <div class="login-box">
+    <div class="login-brand">RPM <span>PRO</span></div>
+    <div class="login-sub">V2 · Veiculos</div>
+    <label class="login-label">Email</label>
+    <input class="login-input" type="email" id="login-email" placeholder="email@oficina.com" autocomplete="email">
+    <label class="login-label">Senha</label>
+    <input class="login-input" type="password" id="login-senha" placeholder="••••••••" onkeydown="if(event.key==='Enter')fazerLogin()">
+    <button class="login-btn" id="login-btn" onclick="fazerLogin()">Entrar</button>
+    <div class="login-err" id="login-err">Email ou senha incorretos</div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="loading-screen" id="loading" style="display:none;">
+  <div class="loading-spinner"></div>
+  <div class="loading-label">carregando veiculos...</div>
+</div>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-brand">RPM <span>PRO</span></div>
+      <div class="sidebar-logo-oficina" id="oficina-nome">—</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Oficina</div>
+      <a class="nav-item" href="kanban-v2.html"><span class="nav-icon">⬛</span>Patio</a>
+      <a class="nav-item" href="dashboard-v2.html"><span class="nav-icon">◈</span>Dashboard</a>
+      <div class="nav-section">Atendimento</div>
+      <a class="nav-item" href="fila-espera-v2.html"><span class="nav-icon">⏳</span>Fila de Espera</a>
+      <a class="nav-item" href="os-list-v2.html"><span class="nav-icon">📋</span>Ordens de Servico</a>
+      <a class="nav-item" href="execucao-os-v2.html"><span class="nav-icon">🔧</span>Execucao OS</a>
+      <a class="nav-item" href="clientes-v2.html"><span class="nav-icon">👥</span>Clientes</a>
+      <a class="nav-item active" href="veiculos-v2.html"><span class="nav-icon">🚗</span>Veiculos</a>
+      <a class="nav-item" href="agendamentos-v2.html"><span class="nav-icon">📅</span>Agendamentos</a>
+      <div class="nav-section">Catalogo</div>
+      <a class="nav-item" href="catalogo-v2.html"><span class="nav-icon">🔧</span>Servicos / Pecas</a>
+      <div class="nav-section">Financeiro</div>
+      <a class="nav-item" href="financeiro-v2.html"><span class="nav-icon">💰</span>Caixa</a>
+      <a class="nav-item" href="comissao-v2.html"><span class="nav-icon">📊</span>Comissao</a>
+      <a class="nav-item" href="folha-v2.html"><span class="nav-icon">📄</span>Folha</a>
+      <div class="nav-section">Equipe</div>
+      <a class="nav-item" href="equipe-v2.html"><span class="nav-icon">👤</span>Equipe</a>
+      <a class="nav-item" href="produtividade-v2.html"><span class="nav-icon">⚡</span>Produtividade</a>
+      <a class="nav-item" href="crm-v2.html"><span class="nav-icon">📡</span>CRM / Reativacao</a>
+      <a class="nav-item" href="satisfacao-v2.html"><span class="nav-icon">⭐</span>Satisfacao</a>
+      <a class="nav-item" href="config-v2.html"><span class="nav-icon">⚙️</span>Configuracoes</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="user-avatar">—</div>
+        <div class="user-details">
+          <div class="user-name" id="user-nome">—</div>
+          <div class="user-role" id="user-role">—</div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="sair()">Sair</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="main-topbar">
+      <div class="main-title">Veiculos</div>
+      <button class="btn-novo" onclick="abrirNovoVeiculo()">+ Novo Veiculo</button>
+    </div>
+    <!-- SEARCH FIXO (não re-renderiza) -->
+    <div class="search-bar" id="vei-search-bar" style="display:none;position:relative;">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="vei-busca-input" placeholder="Buscar placa, modelo, marca ou dono..." autocomplete="off" oninput="_onBusca(this.value)">
+      <div id="vei-ac-drop" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:50;background:var(--sf2);border:1px solid var(--ln3);border-radius:var(--r2);max-height:260px;overflow-y:auto;margin-top:4px;"></div>
+    </div>
+    <div class="main-content" id="vei-content"></div>
+  </div>
+</div>
+
+<!-- OVERLAY + SIDE PANEL -->
+<div class="overlay" id="overlay" onclick="fecharPanel()"></div>
+<div class="side-panel" id="panel">
+  <div class="panel-head">
+    <div class="panel-title" id="panel-titulo">Detalhe <span>Veiculo</span></div>
+    <button class="panel-close" onclick="fecharPanel()">×</button>
+  </div>
+  <div class="panel-body" id="panel-body"></div>
+</div>
+
+<div class="toast" id="toast-el"></div>
+
+<script>
+const SUPABASE_URL = 'https://roeeyypssutzfzzkypsq.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZWV5eXBzc3V0emZ6emt5cHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MTk0MTgsImV4cCI6MjA5MDM5NTQxOH0.9oCOmABUTXox3FaRViD2zcUaqv94VfOJFMQYz_fcJi4';
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let PERFIL = null, OFICINA_ID = null, OFICINA = null;
+let VEI_LISTA = [];
+let FILTRO = '';
+let BUSCA = '';
+let _buscaTimer = null;
+
+const COR_MAP = {branco:'#FFFFFF',prata:'#C0C0C0',cinza:'#808080',preto:'#1A1A1A',vermelho:'#CC0000',azul:'#003399',verde:'#006400',amarelo:'#FFD700',laranja:'#FF8C00',marrom:'#5C3317',bege:'#D2B48C',dourado:'#CFB53B',vinho:'#722F37',rosa:'#FF69B4',champagne:'#F7E7CE'};
+const STATUS_LABEL = {entrada:'Entrada',diagnostico:'Diagnostico',orcamento:'Orcamento',aprovada:'Aprovada',aguardando_peca:'Ag. Peca',execucao:'Execucao',pronto:'Pronto',entregue:'Entregue',cancelada:'Cancelada'};
+const STATUS_COR = {entrada:'var(--w4)',diagnostico:'var(--blue-dim)',orcamento:'var(--amber-dim)',aprovada:'var(--green-dim)',aguardando_peca:'var(--red-dim)',execucao:'var(--amber-dim)',pronto:'var(--green-dim)',entregue:'var(--w4)',cancelada:'var(--red-dim)'};
+const STATUS_TXT = {entrada:'var(--w3)',diagnostico:'var(--blue)',orcamento:'var(--amber)',aprovada:'var(--green)',aguardando_peca:'var(--red)',execucao:'var(--amber)',pronto:'var(--green)',entregue:'var(--w3)',cancelada:'var(--red)'};
+
+function esc(s){ return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmt(v){ return (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+function fmtK(v){ return v >= 1000 ? (v/1000).toFixed(1).replace('.0','') + 'k' : (v||0).toFixed(0); }
+function toast(msg, tipo='ok'){ const el=document.getElementById('toast-el'); el.textContent=msg; el.className='toast '+tipo+' show'; setTimeout(()=>el.classList.remove('show'),3000); }
+
+function placaVei(placa) {
+  if (!placa) return '';
+  return `<div class="placa-vei"><div class="placa-vei-topo"><div class="placa-vei-flag"><span style="background:#009739;"></span><span style="background:#FEDD00;"></span><span style="background:#012169;"></span></div><div class="placa-vei-br">BRASIL</div></div><div class="placa-vei-cod">${esc(placa)}</div></div>`;
+}
+
+function placaHero(placa) {
+  if (!placa) return '';
+  return `<div class="placa-hero"><div class="placa-hero-topo"><div class="placa-hero-flag"><span style="background:#009739;"></span><span style="background:#FEDD00;"></span><span style="background:#012169;"></span></div><div class="placa-hero-br">BRASIL</div></div><div class="placa-hero-cod">${esc(placa)}</div></div>`;
+}
+
+function corDot(cor) {
+  if (!cor) return '';
+  const hex = COR_MAP[(cor||'').toLowerCase().trim()] || '#808080';
+  const border = hex === '#FFFFFF' || hex === '#F7E7CE' ? 'border-color:var(--ln3);' : '';
+  return `<span class="vei-cor" style="background:${hex};${border}" title="${esc(cor)}"></span>`;
+}
+
+// ── BUSCA COM AUTOCOMPLETE ──
+function _onBusca(val) {
+  BUSCA = val;
+  clearTimeout(_buscaTimer);
+  const drop = document.getElementById('vei-ac-drop');
+  if (!val || val.length < 2) {
+    if (drop) drop.style.display = 'none';
+    _buscaTimer = setTimeout(() => renderLista(), 150);
+    return;
+  }
+  _buscaTimer = setTimeout(() => {
+    _mostrarAutocomplete(val);
+    renderLista();
+  }, 200);
+}
+
+function _mostrarAutocomplete(q) {
+  const drop = document.getElementById('vei-ac-drop');
+  if (!drop) return;
+  const termo = q.toLowerCase();
+  const matches = VEI_LISTA.filter(v =>
+    (v.placa||'').toLowerCase().includes(termo) ||
+    (v.marca||'').toLowerCase().includes(termo) ||
+    (v.modelo||'').toLowerCase().includes(termo) ||
+    (v.clientes?.nome||'').toLowerCase().includes(termo)
+  ).slice(0, 8);
+
+  if (!matches.length) { drop.style.display = 'none'; return; }
+
+  drop.innerHTML = matches.map(v => `
+    <div class="vei-ac-item" onclick="document.getElementById('vei-ac-drop').style.display='none';abrirDetalhe('${v.id}')">
+      <div class="vei-ac-placa">${esc(v.placa||'???')}</div>
+      <div class="vei-ac-info">
+        <div class="vei-ac-modelo">${esc([v.marca, v.modelo].filter(Boolean).join(' ') || '—')}</div>
+        <div class="vei-ac-dono">${esc(v.clientes?.nome||'Sem dono')}</div>
+      </div>
+      ${v._osAberta > 0 ? '<span style="font-family:var(--mono);font-size:10px;color:var(--amber);background:var(--amber-dim);padding:2px 6px;border-radius:2px;">PATIO</span>' : ''}
+    </div>
+  `).join('');
+  drop.style.display = '';
+}
+
+// Fecha dropdown ao clicar fora
+document.addEventListener('click', e => {
+  const drop = document.getElementById('vei-ac-drop');
+  const bar = document.getElementById('vei-search-bar');
+  if (drop && bar && !bar.contains(e.target)) drop.style.display = 'none';
+});
+
+// ── CARREGAR ──
+async function carregar() {
+  const { data: veiculos } = await db.from('veiculos')
+    .select('*, clientes(id, nome, cpf_cnpj, whatsapp)')
+    .eq('oficina_id', OFICINA_ID)
+    .order('created_at', { ascending: false });
+
+  // Busca OS de cada veiculo (total, valores, status)
+  const { data: osList } = await db.from('ordens_servico')
+    .select('veiculo_id, valor_total, status')
+    .eq('oficina_id', OFICINA_ID);
+
+  // Agrupa por veiculo
+  const osMap = {};
+  (osList||[]).forEach(o => {
+    if (!osMap[o.veiculo_id]) osMap[o.veiculo_id] = { count: 0, total: 0, aberta: 0, statusAtual: null };
+    osMap[o.veiculo_id].count++;
+    osMap[o.veiculo_id].total += o.valor_total || 0;
+    if (!['entregue','cancelada'].includes(o.status)) {
+      osMap[o.veiculo_id].aberta++;
+      osMap[o.veiculo_id].statusAtual = o.status;
+    }
+  });
+
+  VEI_LISTA = (veiculos||[]).map(v => {
+    const os = osMap[v.id] || { count: 0, total: 0, aberta: 0, statusAtual: null };
+    return { ...v, _osCount: os.count, _osTotal: os.total, _osAberta: os.aberta, _statusAtual: os.statusAtual, _isPJ: !!(v.clientes?.cpf_cnpj && v.clientes.cpf_cnpj.length > 14) };
+  });
+
+  document.getElementById('vei-search-bar').style.display = '';
+  renderLista();
+}
+
+function renderLista() {
+  let lista = [...VEI_LISTA];
+  const c = document.getElementById('vei-content');
+
+  // Busca
+  if (BUSCA) {
+    const q = BUSCA.toLowerCase();
+    lista = lista.filter(v =>
+      (v.placa||'').toLowerCase().includes(q) ||
+      (v.marca||'').toLowerCase().includes(q) ||
+      (v.modelo||'').toLowerCase().includes(q) ||
+      (v.clientes?.nome||'').toLowerCase().includes(q)
+    );
+  }
+
+  // Contadores pra filtro
+  const totalCad = lista.length;
+  const noPatio = lista.filter(v => v._osAberta > 0 && v._statusAtual !== 'pronto').length;
+  const prontos = lista.filter(v => v._statusAtual === 'pronto').length;
+  const pj = lista.filter(v => v._isPJ).length;
+
+  // Marcas pra filtro
+  const marcas = {};
+  lista.forEach(v => { if (v.marca) marcas[v.marca] = (marcas[v.marca]||0) + 1; });
+  const topMarcas = Object.entries(marcas).sort((a,b) => b[1] - a[1]).slice(0, 6);
+
+  // Aplica filtro
+  if (FILTRO === 'patio') lista = lista.filter(v => v._osAberta > 0 && v._statusAtual !== 'pronto');
+  else if (FILTRO === 'pronto') lista = lista.filter(v => v._statusAtual === 'pronto');
+  else if (FILTRO === 'pj') lista = lista.filter(v => v._isPJ);
+  else if (FILTRO.startsWith('marca:')) {
+    const m = FILTRO.replace('marca:','');
+    lista = lista.filter(v => v.marca === m);
+  }
+
+  // Summary
+  let html = `
+    <div class="summary">
+      <div class="summary-item"><div class="summary-val" style="color:var(--w);">${totalCad}</div><div class="summary-lbl">Cadastrados</div></div>
+      <div class="summary-item"><div class="summary-val" style="color:var(--amber);">${noPatio}</div><div class="summary-lbl">No Patio</div></div>
+      <div class="summary-item"><div class="summary-val" style="color:var(--green);">${prontos}</div><div class="summary-lbl">Prontos</div></div>
+      <div class="summary-item"><div class="summary-val" style="color:var(--blue);">${pj}</div><div class="summary-lbl">Frota / PJ</div></div>
+    </div>
+    <div class="filters">
+      <div class="f-btn ${FILTRO===''?'on':''}" onclick="FILTRO='';renderLista()">Todos <span class="f-count">${totalCad}</span></div>
+      <div class="f-btn ${FILTRO==='patio'?'on':''}" onclick="FILTRO='patio';renderLista()">No Patio <span class="f-count">${noPatio}</span></div>
+      <div class="f-btn ${FILTRO==='pronto'?'on':''}" onclick="FILTRO='pronto';renderLista()">Prontos <span class="f-count">${prontos}</span></div>
+      <div class="f-btn ${FILTRO==='pj'?'on':''}" onclick="FILTRO='pj';renderLista()">Frota / PJ <span class="f-count">${pj}</span></div>
+      ${topMarcas.map(([m, n]) => `<div class="f-btn ${FILTRO==='marca:'+m?'on':''}" onclick="FILTRO='marca:${esc(m)}';renderLista()">${esc(m)} <span class="f-count">${n}</span></div>`).join('')}
+    </div>`;
+
+  // Alert bar patio
+  if (noPatio > 0) {
+    html += `<div class="alert-bar"><div class="alert-pill">${noPatio}</div><div class="alert-text"><strong>Veiculos no patio agora</strong></div></div>`;
+  }
+
+  if (!lista.length) {
+    html += `<div class="empty-state"><div class="icon">🚗</div><h3>Nenhum veiculo encontrado</h3><p>Cadastre um veiculo para comecar</p></div>`;
+  } else {
+    // Ordena: patio primeiro, depois pronto, depois resto
+    lista.sort((a, b) => {
+      const pa = a._osAberta > 0 ? (a._statusAtual === 'pronto' ? 1 : 0) : 2;
+      const pb = b._osAberta > 0 ? (b._statusAtual === 'pronto' ? 1 : 0) : 2;
+      return pa - pb;
+    });
+
+    lista.forEach(v => {
+      let indicator = '';
+      let tag = '';
+      if (v._statusAtual === 'aguardando_peca') { indicator = 'ind-critico'; tag = '<span class="vei-tag" style="background:var(--red-dim);color:var(--red);">AG. PECA</span>'; }
+      else if (v._statusAtual === 'pronto') { indicator = 'ind-pronto'; tag = '<span class="vei-tag vei-tag-pronto">PRONTO</span>'; }
+      else if (v._osAberta > 0) { indicator = 'ind-patio'; tag = '<span class="vei-tag vei-tag-patio">NO PATIO</span>'; }
+      if (v._isPJ) tag += '<span class="vei-tag vei-tag-pj">PJ</span>';
+
+      html += `
+        <div class="vei-row" onclick="abrirDetalhe('${v.id}')">
+          ${indicator ? `<div class="vei-indicator ${indicator}"></div>` : ''}
+          ${placaVei(v.placa)}
+          <div class="vei-body">
+            <div class="vei-top">
+              <span class="vei-modelo">${esc(v.marca||'')} ${esc(v.modelo||'')}</span>
+              <span class="vei-ano">${v.ano||''}</span>
+              ${tag}
+            </div>
+            <div class="vei-meta">
+              ${corDot(v.cor)}
+              <span class="vei-dono">${esc(v.clientes?.nome||'Sem dono')}</span>
+            </div>
+          </div>
+          ${v.km_atual ? `<div class="vei-km">${v.km_atual.toLocaleString('pt-BR')} km</div>` : ''}
+          <div class="vei-right">
+            <div class="vei-os-count">${v._osCount}</div>
+            <div class="vei-os-lbl">OS Total</div>
+            ${v._osTotal ? `<div class="vei-total">${fmt(v._osTotal)}</div>` : ''}
+          </div>
+        </div>`;
+    });
+  }
+
+  c.innerHTML = html;
+}
+
+// ── DETALHE ──
+async function abrirDetalhe(veiculoId) {
+  document.getElementById('panel-titulo').innerHTML = 'Detalhe <span>Veiculo</span>';
+  const pb = document.getElementById('panel-body');
+  pb.innerHTML = '<div style="text-align:center;padding:40px;color:var(--w4);">Carregando...</div>';
+  abrirPanel();
+
+  const [veiRes, osRes] = await Promise.all([
+    db.from('veiculos').select('*, clientes(id, nome, whatsapp, cpf_cnpj)').eq('id', veiculoId).eq('oficina_id', OFICINA_ID).single(),
+    db.from('ordens_servico').select('id, numero_os, descricao, valor_total, status, created_at, profiles!ordens_servico_mecanico_id_fkey(nome)').eq('oficina_id', OFICINA_ID).eq('veiculo_id', veiculoId).order('created_at', { ascending: false })
+  ]);
+
+  const v = veiRes.data;
+  if (!v) { pb.innerHTML = '<div style="padding:40px;color:var(--red);">Veiculo nao encontrado</div>'; return; }
+
+  const osList = osRes.data || [];
+  const osAberta = osList.filter(o => !['entregue','cancelada'].includes(o.status)).length;
+  const totalGasto = osList.reduce((s, o) => s + (o.valor_total||0), 0);
+
+  let html = `
+    <div class="panel-placa-hero">
+      ${placaHero(v.placa)}
+      <div class="panel-hero-info">
+        <div class="panel-hero-modelo">${esc(v.marca||'')} ${esc(v.modelo||'')}</div>
+        <div class="panel-hero-detail">${v.ano||''} ${v.cor ? '/ ' + esc(v.cor) : ''}</div>
+        <div class="panel-hero-dono">${esc(v.clientes?.nome||'Sem dono')}</div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">Resumo</div>
+      <div class="panel-kpis">
+        <div class="panel-kpi"><div class="panel-kpi-val">${osList.length}</div><div class="panel-kpi-lbl">OS Total</div></div>
+        <div class="panel-kpi"><div class="panel-kpi-val" style="color:var(--amber);">R$ ${fmtK(totalGasto)}</div><div class="panel-kpi-lbl">Gasto Total</div></div>
+        <div class="panel-kpi"><div class="panel-kpi-val" style="color:${osAberta ? 'var(--red)' : 'var(--green)'};">${osAberta}</div><div class="panel-kpi-lbl">OS Aberta</div></div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">Dados do Veiculo</div>
+      <div class="panel-info-grid">
+        <div class="panel-info-item"><div class="panel-info-label">Marca / Modelo</div><div class="panel-info-value small">${esc(v.marca||'-')} ${esc(v.modelo||'')}</div></div>
+        <div class="panel-info-item"><div class="panel-info-label">Ano</div><div class="panel-info-value">${v.ano||'-'}</div></div>
+        <div class="panel-info-item"><div class="panel-info-label">Cor</div><div class="panel-info-value small">${esc(v.cor||'-')}</div></div>
+        <div class="panel-info-item"><div class="panel-info-label">KM Atual</div><div class="panel-info-value">${v.km_atual ? v.km_atual.toLocaleString('pt-BR') : '-'}</div></div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">Proprietario</div>
+      <div style="background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:14px;">
+        <div style="font-weight:600;margin-bottom:4px;">${esc(v.clientes?.nome||'Sem dono')}</div>
+        ${v.clientes?.whatsapp ? `<div style="font-family:var(--mono);font-size:12px;color:var(--w3);margin-bottom:8px;">${esc(v.clientes.whatsapp)}</div>` : ''}
+        ${v.clientes?.whatsapp ? `<button class="panel-btn-sec" style="width:auto;padding:6px 14px;font-size:11px;border-radius:var(--r2);cursor:pointer;background:var(--sf2);border:1px solid var(--ln2);color:var(--w3);font-family:var(--head);font-weight:700;text-transform:uppercase;letter-spacing:1px;" onclick="window.open('https://wa.me/55'+('${esc(v.clientes.whatsapp)}').replace(/\\D/g,''),'_blank')">WhatsApp</button>` : ''}
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">Historico de OS (${osList.length})</div>`;
+
+  if (osList.length) {
+    osList.forEach(o => {
+      const dt = new Date(o.created_at);
+      const dtStr = dt.toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit'});
+      html += `
+        <div class="os-hist-row">
+          <div class="os-hist-num">#${esc(o.numero_os||'-')}</div>
+          <div class="os-hist-desc">${esc(o.descricao||'Sem descricao')}</div>
+          <div class="os-hist-tag" style="background:${STATUS_COR[o.status]||'var(--w4)'};color:${STATUS_TXT[o.status]||'var(--w3)'};">${STATUS_LABEL[o.status]||o.status}</div>
+          <div class="os-hist-val">${fmt(o.valor_total)}</div>
+          <div class="os-hist-date">${dtStr}</div>
+        </div>`;
+    });
+  } else {
+    html += '<div style="text-align:center;padding:24px;color:var(--w4);font-size:13px;">Nenhuma OS registrada</div>';
+  }
+
+  html += `</div>
+    <div style="display:flex;gap:8px;margin-top:20px;">
+      <button class="panel-btn panel-btn-amber" style="flex:1;" onclick="editarVeiculo('${v.id}')">Editar</button>
+      <button class="panel-btn panel-btn-sec" style="flex:1;" onclick="transferirVeiculo('${v.id}','${esc(v.placa)}')">Transferir Dono</button>
+      <button class="panel-btn panel-btn-red" style="width:auto;padding:14px 20px;" onclick="excluirVeiculo('${v.id}','${esc(v.placa)}')">Excluir</button>
+    </div>`;
+
+  pb.innerHTML = html;
+}
+
+// ── NOVO VEICULO ──
+function abrirNovoVeiculo() {
+  document.getElementById('panel-titulo').innerHTML = 'Novo <span>Veiculo</span>';
+  document.getElementById('panel-body').innerHTML = `
+    <form onsubmit="salvarVeiculo(event)">
+      <div class="panel-field"><div class="panel-label">Placa *</div><input class="panel-input" id="vei-placa" required placeholder="ABC1D23" style="text-transform:uppercase;font-size:20px;font-weight:800;letter-spacing:3px;text-align:center;" maxlength="8" oninput="veiBuscarPlaca(this.value)"></div>
+      <div id="vei-placa-info" style="font-family:var(--mono);font-size:12px;margin-bottom:8px;display:none;"></div>
+      <div class="panel-field">
+        <div class="panel-label">Proprietario *</div>
+        <div style="display:flex;gap:6px;margin-bottom:10px;">
+          <button type="button" id="btn-cli-existente" style="flex:1;padding:10px;border-radius:var(--r2);font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;cursor:pointer;border:1px solid var(--amber);background:var(--amber-dim);color:var(--amber);" onclick="veiModoCliente('existente')">Cliente existente</button>
+          <button type="button" id="btn-cli-novo" style="flex:1;padding:10px;border-radius:var(--r2);font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;cursor:pointer;border:1px solid var(--ln3);background:var(--sf2);color:var(--w3);" onclick="veiModoCliente('novo')">Novo cliente</button>
+        </div>
+        <div id="vei-cli-existente-area" style="position:relative;">
+          <input class="panel-input" id="vei-cli-busca" placeholder="Buscar cliente pelo nome..." autocomplete="off" oninput="buscarClienteVei(this.value)">
+          <div class="panel-autocomplete" id="vei-cli-ac"></div>
+        </div>
+        <div id="vei-cli-novo-area" style="display:none;">
+          <input class="panel-input" id="vei-cli-nome-novo" placeholder="Nome do cliente" style="margin-bottom:6px;">
+          <input class="panel-input" id="vei-cli-whats-novo" placeholder="WhatsApp (opcional)">
+        </div>
+        <input type="hidden" id="vei-cli-id">
+        <input type="hidden" id="vei-cli-modo" value="existente">
+        <div id="vei-cli-info" style="font-family:var(--mono);font-size:12px;color:var(--green);margin-top:4px;"></div>
+      </div>
+      <div class="panel-row">
+        <div class="panel-field"><div class="panel-label">Marca</div><input class="panel-input" id="vei-marca" placeholder="Fiat, VW..."></div>
+        <div class="panel-field"><div class="panel-label">Modelo</div><input class="panel-input" id="vei-modelo" placeholder="Uno, Gol..."></div>
+      </div>
+      <div class="panel-row">
+        <div class="panel-field"><div class="panel-label">Ano</div><input class="panel-input" type="number" id="vei-ano" placeholder="2020"></div>
+        <div class="panel-field"><div class="panel-label">Cor</div><input class="panel-input" id="vei-cor" placeholder="Branco"></div>
+      </div>
+      <div class="panel-field"><div class="panel-label">KM Atual</div><input class="panel-input" type="number" id="vei-km" placeholder="50000"></div>
+      <div class="panel-field"><div class="panel-label">Observacoes</div><textarea class="panel-textarea" id="vei-obs" placeholder="Observacoes..."></textarea></div>
+      <button type="submit" class="panel-btn panel-btn-amber">Cadastrar Veiculo</button>
+      <button type="button" class="panel-btn panel-btn-sec" onclick="fecharPanel()">Cancelar</button>
+    </form>`;
+  abrirPanel();
+}
+
+// ── BUSCAR PLACA (auto-preencher marca/modelo/ano/cor) ──
+let _placaTimer = null;
+function veiBuscarPlaca(val) {
+  clearTimeout(_placaTimer);
+  const info = document.getElementById('vei-placa-info');
+  const placa = val.trim().toUpperCase().replace('-','');
+  if (placa.length < 7) { if (info) info.style.display = 'none'; return; }
+  _placaTimer = setTimeout(async () => {
+    // Busca na base local primeiro
+    const { data: vei } = await db.from('veiculos')
+      .select('marca, modelo, ano, cor, cliente_id, clientes(nome)')
+      .eq('oficina_id', OFICINA_ID).eq('placa', placa).maybeSingle();
+    if (vei) {
+      if (vei.marca) document.getElementById('vei-marca').value = vei.marca;
+      if (vei.modelo) document.getElementById('vei-modelo').value = vei.modelo;
+      if (vei.ano) document.getElementById('vei-ano').value = vei.ano;
+      if (vei.cor) document.getElementById('vei-cor').value = vei.cor;
+      if (info) {
+        info.style.display = '';
+        info.style.color = 'var(--amber)';
+        info.innerHTML = '⚠ Placa ja cadastrada' + (vei.clientes?.nome ? ' — dono: ' + esc(vei.clientes.nome) : '');
+      }
+      // Preenche cliente automaticamente
+      if (vei.cliente_id) {
+        document.getElementById('vei-cli-id').value = vei.cliente_id;
+        document.getElementById('vei-cli-info').innerHTML = '✓ ' + esc(vei.clientes?.nome||'');
+        const buscaInput = document.getElementById('vei-cli-busca');
+        if (buscaInput) buscaInput.value = vei.clientes?.nome || '';
+      }
+      return;
+    }
+    // Busca em OS anteriores (outra oficina pode ter registrado)
+    if (info) { info.style.display = 'none'; }
+    // Tenta puxar de veículos de outras oficinas (mesma placa, dados públicos)
+    const { data: outro } = await db.from('veiculos')
+      .select('marca, modelo, ano, cor')
+      .eq('placa', placa).limit(1).maybeSingle();
+    if (outro) {
+      if (outro.marca) document.getElementById('vei-marca').value = outro.marca;
+      if (outro.modelo) document.getElementById('vei-modelo').value = outro.modelo;
+      if (outro.ano) document.getElementById('vei-ano').value = outro.ano;
+      if (outro.cor) document.getElementById('vei-cor').value = outro.cor;
+      if (info) { info.style.display = ''; info.style.color = 'var(--green)'; info.innerHTML = '✓ Dados encontrados: ' + esc([outro.marca, outro.modelo, outro.ano].filter(Boolean).join(' ')); }
+    }
+  }, 300);
+}
+
+// ── MODO CLIENTE (existente/novo) ──
+function veiModoCliente(modo) {
+  document.getElementById('vei-cli-modo').value = modo;
+  const areaExist = document.getElementById('vei-cli-existente-area');
+  const areaNovo = document.getElementById('vei-cli-novo-area');
+  const btnExist = document.getElementById('btn-cli-existente');
+  const btnNovo = document.getElementById('btn-cli-novo');
+  if (modo === 'existente') {
+    areaExist.style.display = '';
+    areaNovo.style.display = 'none';
+    btnExist.style.border = '1px solid var(--amber)'; btnExist.style.background = 'var(--amber-dim)'; btnExist.style.color = 'var(--amber)';
+    btnNovo.style.border = '1px solid var(--ln3)'; btnNovo.style.background = 'var(--sf2)'; btnNovo.style.color = 'var(--w3)';
+  } else {
+    areaExist.style.display = 'none';
+    areaNovo.style.display = '';
+    btnNovo.style.border = '1px solid var(--amber)'; btnNovo.style.background = 'var(--amber-dim)'; btnNovo.style.color = 'var(--amber)';
+    btnExist.style.border = '1px solid var(--ln3)'; btnExist.style.background = 'var(--sf2)'; btnExist.style.color = 'var(--w3)';
+    document.getElementById('vei-cli-id').value = '';
+    document.getElementById('vei-cli-info').innerHTML = '';
+  }
+}
+
+// Busca cliente autocomplete
+let _cliTimer = null;
+function buscarClienteVei(q) {
+  clearTimeout(_cliTimer);
+  const ac = document.getElementById('vei-cli-ac');
+  if (!ac) return;
+  if (q.length < 2) { ac.style.display = 'none'; return; }
+  _cliTimer = setTimeout(async () => {
+    const { data } = await db.from('clientes').select('id, nome, whatsapp').eq('oficina_id', OFICINA_ID).ilike('nome', '%'+q+'%').order('nome').limit(8);
+    if (!data?.length) {
+      ac.innerHTML = '<div class="panel-ac-item" style="color:var(--w3);cursor:default;">Nenhum cliente</div>';
+      ac.style.display = 'block'; return;
+    }
+    ac.innerHTML = data.map(c => `
+      <div class="panel-ac-item" onmousedown="selecionarClienteVei('${c.id}','${esc(c.nome).replace(/'/g,"\\'")}','${esc(c.whatsapp||'').replace(/'/g,"\\'")}')">
+        <strong>${esc(c.nome)}</strong>
+        <span style="color:var(--w3);">${esc(c.whatsapp||'')}</span>
+      </div>`).join('');
+    ac.style.display = 'block';
+  }, 250);
+}
+
+function selecionarClienteVei(id, nome, whats) {
+  document.getElementById('vei-cli-id').value = id;
+  document.getElementById('vei-cli-busca').value = nome;
+  document.getElementById('vei-cli-info').innerHTML = '✓ ' + esc(nome) + (whats ? ' — ' + esc(whats) : '');
+  document.getElementById('vei-cli-ac').style.display = 'none';
+}
+
+// Salvar
+async function salvarVeiculo(e, editId) {
+  e.preventDefault();
+  const placa = document.getElementById('vei-placa').value.trim().toUpperCase().replace('-','');
+  if (placa.length < 7) { toast('Placa incompleta', 'err'); return; }
+
+  let clienteId = document.getElementById('vei-cli-id').value;
+  const modoCliente = document.getElementById('vei-cli-modo')?.value || 'existente';
+
+  if (modoCliente === 'novo') {
+    const nomeNovo = document.getElementById('vei-cli-nome-novo')?.value?.trim();
+    if (!nomeNovo) { toast('Informe o nome do cliente', 'err'); return; }
+  }
+
+  if (!clienteId && modoCliente !== 'novo') { toast('Selecione um proprietario', 'err'); return; }
+
+  if (_busy.salvarVei) return;
+  _busy.salvarVei = true;
+  try {
+  if (modoCliente === 'novo') {
+    const nomeNovo = document.getElementById('vei-cli-nome-novo')?.value?.trim();
+    const whatsNovo = document.getElementById('vei-cli-whats-novo')?.value?.trim() || null;
+    const { data: novoCli, error: errCli } = await db.from('clientes').insert({ oficina_id: OFICINA_ID, nome: nomeNovo, whatsapp: whatsNovo, created_by: PERFIL?.id }).select('id').single();
+    if (errCli || !novoCli) { toast('Erro ao criar cliente: ' + (errCli?.message||''), 'err'); return; }
+    clienteId = novoCli.id;
+  }
+
+  const dados = {
+    oficina_id: OFICINA_ID,
+    cliente_id: clienteId,
+    placa,
+    marca: document.getElementById('vei-marca').value.trim(),
+    modelo: document.getElementById('vei-modelo').value.trim(),
+    ano: document.getElementById('vei-ano').value ? parseInt(document.getElementById('vei-ano').value) : null,
+    cor: document.getElementById('vei-cor').value.trim() || null,
+    km_atual: document.getElementById('vei-km').value ? parseInt(document.getElementById('vei-km').value) : null,
+    observacoes: document.getElementById('vei-obs')?.value?.trim() || null
+  };
+
+  if (editId) {
+    const { error } = await db.from('veiculos').update(dados).eq('id', editId).eq('oficina_id', OFICINA_ID);
+    if (error) { toast('Erro: ' + error.message, 'err'); return; }
+    toast('Veiculo atualizado');
+  } else {
+    // Verifica duplicata
+    const { data: existe } = await db.from('veiculos').select('id, cliente_id, clientes(nome)').eq('oficina_id', OFICINA_ID).eq('placa', placa).maybeSingle();
+    if (existe) {
+      if (existe.cliente_id === clienteId) { toast('Placa ja cadastrada pra esse cliente', 'err'); return; }
+      const donoAtual = existe.clientes?.nome || 'outro cliente';
+      if (!confirm('Placa ' + placa + ' ja pertence a ' + donoAtual + '.\n\nTransferir pra ' + document.getElementById('vei-cli-busca').value + '?')) return;
+      await db.from('veiculos').update({ cliente_id: clienteId }).eq('id', existe.id).eq('oficina_id', OFICINA_ID);
+      toast('Veiculo transferido');
+      await carregar();
+      abrirDetalhe(existe.id);
+      return;
+    }
+    dados.created_by = PERFIL?.id || null;
+    const { error } = await db.from('veiculos').insert(dados);
+    if (error) { toast('Erro: ' + error.message, 'err'); return; }
+    toast('Veiculo cadastrado');
+  }
+
+  fecharPanel();
+  await carregar();
+  } catch(e) { toast('Erro inesperado','err'); console.error('[salvarVeiculo]',e); }
+  finally { _busy.salvarVei = false; }
+}
+
+// ── EDITAR ──
+async function editarVeiculo(id) {
+  const { data: v } = await db.from('veiculos').select('*, clientes(id, nome, whatsapp)').eq('id', id).eq('oficina_id', OFICINA_ID).single();
+  if (!v) return;
+
+  document.getElementById('panel-titulo').innerHTML = 'Editar <span>Veiculo</span>';
+  document.getElementById('panel-body').innerHTML = `
+    <form onsubmit="salvarVeiculo(event, '${v.id}')">
+      <div class="panel-field"><div class="panel-label">Placa *</div><input class="panel-input" id="vei-placa" required value="${esc(v.placa)}" style="text-transform:uppercase;font-size:20px;font-weight:800;letter-spacing:3px;text-align:center;" maxlength="8"></div>
+      <div class="panel-field" style="position:relative;">
+        <div class="panel-label">Proprietario *</div>
+        <input class="panel-input" id="vei-cli-busca" value="${esc(v.clientes?.nome||'')}" autocomplete="off" oninput="buscarClienteVei(this.value)">
+        <div class="panel-autocomplete" id="vei-cli-ac"></div>
+        <input type="hidden" id="vei-cli-id" value="${v.cliente_id||''}">
+        <div id="vei-cli-info" style="font-family:var(--mono);font-size:12px;color:var(--green);margin-top:4px;">${v.clientes?.nome ? '✓ ' + esc(v.clientes.nome) : ''}</div>
+      </div>
+      <div class="panel-row">
+        <div class="panel-field"><div class="panel-label">Marca</div><input class="panel-input" id="vei-marca" value="${esc(v.marca||'')}"></div>
+        <div class="panel-field"><div class="panel-label">Modelo</div><input class="panel-input" id="vei-modelo" value="${esc(v.modelo||'')}"></div>
+      </div>
+      <div class="panel-row">
+        <div class="panel-field"><div class="panel-label">Ano</div><input class="panel-input" type="number" id="vei-ano" value="${v.ano||''}"></div>
+        <div class="panel-field"><div class="panel-label">Cor</div><input class="panel-input" id="vei-cor" value="${esc(v.cor||'')}"></div>
+      </div>
+      <div class="panel-field"><div class="panel-label">KM Atual</div><input class="panel-input" type="number" id="vei-km" value="${v.km_atual||''}"></div>
+      <div class="panel-field"><div class="panel-label">Observacoes</div><textarea class="panel-textarea" id="vei-obs">${esc(v.observacoes||'')}</textarea></div>
+      <button type="submit" class="panel-btn panel-btn-amber">Salvar</button>
+      <button type="button" class="panel-btn panel-btn-sec" onclick="abrirDetalhe('${v.id}')">Cancelar</button>
+    </form>`;
+}
+
+// ── TRANSFERIR DONO ──
+function transferirVeiculo(veiculoId, placa) {
+  document.getElementById('panel-titulo').innerHTML = 'Transferir <span>' + esc(placa) + '</span>';
+  document.getElementById('panel-body').innerHTML = `
+    <div style="background:var(--amber-dim);border:1px solid rgba(232,147,12,0.2);border-radius:var(--r2);padding:14px;margin-bottom:20px;font-size:13px;color:var(--amber);">
+      Selecione o novo proprietario do veiculo ${esc(placa)}
+    </div>
+    <div class="panel-field" style="position:relative;">
+      <div class="panel-label">Novo Proprietario *</div>
+      <input class="panel-input" id="vei-cli-busca" placeholder="Buscar cliente..." autocomplete="off" oninput="buscarClienteVei(this.value)">
+      <div class="panel-autocomplete" id="vei-cli-ac"></div>
+      <input type="hidden" id="vei-cli-id">
+      <div id="vei-cli-info" style="font-family:var(--mono);font-size:12px;color:var(--green);margin-top:4px;"></div>
+    </div>
+    <button class="panel-btn panel-btn-amber" onclick="executarTransferencia('${veiculoId}')">Transferir</button>
+    <button class="panel-btn panel-btn-sec" onclick="abrirDetalhe('${veiculoId}')">Cancelar</button>`;
+}
+
+async function executarTransferencia(veiculoId) {
+  const novoCliId = document.getElementById('vei-cli-id').value;
+  if (!novoCliId) { toast('Selecione o novo dono', 'err'); return; }
+  if (_busy.transfer) return;
+  _busy.transfer = true;
+  try {
+  const { error } = await db.from('veiculos').update({ cliente_id: novoCliId }).eq('id', veiculoId).eq('oficina_id', OFICINA_ID);
+  if (error) { toast('Erro: ' + error.message, 'err'); return; }
+  toast('Veiculo transferido');
+  await carregar();
+  abrirDetalhe(veiculoId);
+  } catch(e) { toast('Erro inesperado','err'); console.error('[executarTransferencia]',e); }
+  finally { _busy.transfer = false; }
+}
+
+// ── EXCLUIR ──
+async function excluirVeiculo(id, placa) {
+  if (!confirm('Excluir veiculo ' + placa + '?\n\nIsso nao apaga as OS vinculadas.')) return;
+  if (_busy.exclVei) return;
+  _busy.exclVei = true;
+  try {
+  const { error } = await db.from('veiculos').delete().eq('id', id).eq('oficina_id', OFICINA_ID);
+  if (error) { toast('Erro: ' + error.message, 'err'); return; }
+  toast('Veiculo excluido');
+  fecharPanel();
+  carregar();
+  } catch(e) { toast('Erro inesperado','err'); console.error('[excluirVeiculo]',e); }
+  finally { _busy.exclVei = false; }
+}
+
+// ── UI HELPERS ──
+function abrirPanel() {
+  document.getElementById('panel').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+}
+
+function fecharPanel() {
+  document.getElementById('panel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharPanel(); });
+
+// ── AUTH ──
+async function fazerLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const senha = document.getElementById('login-senha').value;
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('login-err');
+  if (!email || !senha) return;
+  btn.disabled=true; btn.textContent='Entrando...'; err.style.display='none';
+  const { error } = await db.auth.signInWithPassword({email, password:senha});
+  if (error) { err.style.display='block'; btn.disabled=false; btn.textContent='Entrar'; return; }
+  await init();
+}
+
+function sair() { db.auth.signOut(); location.reload(); }
+const _busy = {};
+
+async function init() {
+  db.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_OUT') window.location.href = 'login.html'; });
+  const { data:{session} } = await db.auth.getSession();
+  if (!session) { document.getElementById('login-overlay').style.display='flex'; return; }
+  document.getElementById('login-overlay').style.display='none';
+  document.getElementById('loading').style.display='flex';
+
+  const { data: perfil } = await db.from('profiles').select('*, oficinas(*)').eq('user_id', session.user.id).single();
+  if (!perfil) { toast('Perfil nao encontrado','err'); return; }
+
+  PERFIL = perfil;
+  OFICINA_ID = perfil.oficina_id;
+  OFICINA = perfil.oficinas;
+
+  const nome = perfil.nome || session.user.email;
+  document.getElementById('user-nome').textContent = nome;
+  document.getElementById('user-role').textContent = perfil.role || '';
+  document.getElementById('user-avatar').textContent = nome.charAt(0).toUpperCase();
+  document.getElementById('oficina-nome').textContent = perfil.oficinas?.nome || '';
+
+  await carregar();
+
+  // Realtime
+  db.channel('vei-v2-'+OFICINA_ID)
+    .on('postgres_changes',{event:'*',schema:'public',table:'veiculos',filter:'oficina_id=eq.'+OFICINA_ID},()=>carregar())
+    .subscribe();
+
+  document.getElementById('loading').style.display='none';
+}
+
+init();
+</script>
+</body>
+</html>

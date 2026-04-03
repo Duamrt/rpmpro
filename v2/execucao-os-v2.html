@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro V2 — Execucao OS</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#09090B;--sf:#111114;--sf2:#18181C;--sf3:#1F1F24;--sf4:#27272D;
+  --ln:rgba(255,255,255,0.04);--ln2:rgba(255,255,255,0.08);--ln3:rgba(255,255,255,0.14);
+  --amber:#E8930C;--amber-dim:rgba(232,147,12,0.1);
+  --orange:#EA580C;--orange-dim:rgba(234,88,12,0.12);
+  --red:#FF3B30;--red-dim:rgba(255,59,48,0.08);
+  --green:#30D158;--green-dim:rgba(48,209,88,0.08);--green-neon:#00FF41;
+  --blue:#0A84FF;--blue-dim:rgba(10,132,255,0.1);
+  --cyan:#00C7BE;
+  --w:#F0F0F2;--w2:rgba(255,255,255,0.6);--w3:rgba(255,255,255,0.32);--w4:rgba(255,255,255,0.14);
+  --mono:'JetBrains Mono',monospace;--head:'Barlow Condensed',sans-serif;--body:'Space Grotesk',sans-serif;
+  --r:3px;--r2:4px;
+}
+body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100vh;-webkit-font-smoothing:antialiased;overflow:hidden;}
+.app{display:flex;height:100vh;overflow:hidden;}
+::selection{background:var(--amber);color:#000;}
+
+/* ── SIDEBAR ── */
+.sidebar{width:220px;flex-shrink:0;background:var(--sf);border-right:1px solid var(--ln2);display:flex;flex-direction:column;height:100vh;}
+.sidebar-logo{padding:20px 16px 16px;border-bottom:1px solid var(--ln2);}
+.sidebar-logo-brand{font-family:var(--head);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.sidebar-logo-brand span{color:var(--amber);}
+.sidebar-logo-oficina{font-family:var(--body);font-size:11px;color:var(--w3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sidebar-nav{flex:1;overflow-y:auto;padding:12px 0;scrollbar-width:none;}
+.sidebar-nav::-webkit-scrollbar{display:none;}
+.nav-section{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);padding:10px 16px 6px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 16px;font-family:var(--body);font-size:13px;font-weight:500;color:var(--w3);cursor:pointer;transition:all .12s;text-decoration:none;}
+.nav-item:hover{color:var(--w);background:var(--sf2);}
+.nav-item.active{color:var(--amber);background:var(--amber-dim);border-left:2px solid var(--amber);}
+.nav-item .nav-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0;}
+.sidebar-footer{padding:16px;border-top:1px solid var(--ln2);}
+.user-info{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.user-avatar{width:34px;height:34px;border-radius:var(--r);background:var(--amber-dim);border:1px solid rgba(232,147,12,0.3);display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:14px;font-weight:800;color:var(--amber);flex-shrink:0;}
+.user-details{min-width:0;}
+.user-name{font-family:var(--body);font-size:13px;font-weight:600;color:var(--w);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.user-role{font-family:var(--mono);font-size:10px;color:var(--w3);text-transform:uppercase;letter-spacing:.5px;}
+.btn-logout{width:100%;font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--w3);background:none;border:1px solid var(--ln3);padding:7px;border-radius:var(--r);cursor:pointer;transition:all .15s;}
+.btn-logout:hover{color:var(--w);border-color:var(--w3);}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.main-topbar{height:48px;background:var(--sf);border-bottom:1px solid var(--ln2);display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0;}
+.main-title{font-family:var(--head);font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:2px;}
+.main-title span{color:var(--amber);}
+.main-content{flex:1;overflow-y:auto;padding:20px;scrollbar-width:thin;scrollbar-color:var(--sf3) transparent;}
+.main-content::-webkit-scrollbar{width:4px;}
+.main-content::-webkit-scrollbar-thumb{background:var(--sf3);border-radius:2px;}
+.btn-back{padding:8px 18px;background:var(--sf2);border:2px solid var(--ln3);border-radius:var(--r2);font-family:var(--head);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:var(--w);cursor:pointer;transition:all .12s;display:flex;align-items:center;gap:6px;text-decoration:none;}
+.btn-back:hover{border-color:var(--amber);background:var(--amber-dim);color:var(--amber);}
+
+/* ── TOP BAR OS ── */
+.top-bar{display:flex;align-items:center;gap:0;border:2px solid var(--ln3);border-radius:var(--r2);margin-bottom:16px;flex-wrap:wrap;}
+.top-bar-cell{padding:10px 16px;border-right:2px solid var(--ln3);display:flex;align-items:center;gap:8px;}
+.top-bar-cell:last-child{border-right:none;flex:1;justify-content:flex-end;}
+.top-os{font-family:var(--mono);font-size:18px;font-weight:800;color:var(--amber);letter-spacing:2px;}
+.top-placa{display:inline-flex;flex-direction:column;background:#FFF;overflow:hidden;line-height:1;border-radius:2px;}
+.top-placa-topo{background:#003399;padding:1px 5px;text-align:center;}
+.top-placa-br{font-family:var(--mono);font-size:4px;font-weight:700;color:#fff;}
+.top-placa-cod{padding:2px 6px 3px;font-family:var(--mono);font-size:14px;font-weight:800;color:#1A1A1A;letter-spacing:2px;text-align:center;line-height:1;}
+.top-veiculo{font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--w2);}
+.top-mecanico{font-family:var(--mono);font-size:11px;color:var(--w3);}
+.top-mecanico span{color:var(--green-neon);}
+.top-status{font-family:var(--head);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;padding:6px 14px;border:2px solid;border-radius:var(--r2);}
+.status-exec{border-color:var(--amber);color:var(--amber);background:var(--amber-dim);}
+.status-pronto{border-color:var(--green);color:var(--green);background:var(--green-dim);}
+.status-entregue{border-color:var(--cyan);color:var(--cyan);background:rgba(0,199,190,0.08);}
+
+/* ── LAYOUT GRID ── */
+.exec-layout{display:grid;grid-template-columns:340px 1fr;gap:16px;}
+@media(max-width:900px){.exec-layout{grid-template-columns:1fr;}}
+
+/* ── CRONOMETRO ── */
+.crono-panel{border:2px solid var(--ln3);border-radius:var(--r2);overflow:hidden;}
+.crono-header{padding:8px 14px;border-bottom:2px solid var(--ln3);font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:var(--w3);}
+.crono-display{padding:24px 16px;text-align:center;background:var(--bg);border-bottom:2px solid var(--ln3);}
+.crono-time{font-family:var(--mono);font-size:56px;font-weight:800;color:var(--green-neon);letter-spacing:4px;line-height:1;text-shadow:0 0 30px rgba(0,255,65,0.3),0 0 60px rgba(0,255,65,0.1);}
+.crono-time.paused{color:var(--amber);text-shadow:0 0 30px rgba(232,147,12,0.3);animation:cronoPulse 2s ease-in-out infinite;}
+@keyframes cronoPulse{0%,100%{opacity:1;}50%{opacity:.6;}}
+.crono-started{font-family:var(--mono);font-size:10px;color:var(--w3);margin-top:8px;letter-spacing:1px;}
+.crono-tmt{font-family:var(--mono);font-size:12px;color:var(--w3);margin-top:4px;display:flex;align-items:center;justify-content:center;gap:8px;}
+.crono-tmt-val{color:var(--amber);}
+
+.crono-controls{display:grid;grid-template-columns:1fr 1fr;gap:0;}
+.crono-btn{padding:16px;border:none;border-top:2px solid var(--ln3);font-family:var(--head);font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:3px;cursor:pointer;transition:all .08s;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--sf);}
+.crono-btn:active{transform:scale(.97);}
+.crono-btn-start{color:var(--green-neon);border-right:2px solid var(--ln3);}
+.crono-btn-start:hover{background:var(--green-dim);}
+.crono-btn-pause{color:var(--amber);}
+.crono-btn-pause:hover{background:var(--amber-dim);}
+
+.crono-task-active{padding:12px 14px;border-top:2px solid var(--ln3);background:var(--green-dim);}
+.crono-task-label{font-family:var(--head);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w3);}
+.crono-task-name{font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--green-neon);margin-top:2px;}
+.crono-task-timer{font-family:var(--mono);font-size:12px;color:var(--green);margin-top:2px;}
+
+.crono-log{border-top:2px solid var(--ln3);}
+.crono-log-header{padding:8px 14px;border-bottom:1px solid var(--ln2);font-family:var(--head);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w3);}
+.crono-log-row{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--ln);font-size:11px;}
+.crono-log-task{font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;color:var(--w2);flex:1;}
+.crono-log-time{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--w2);}
+.crono-log-status{font-family:var(--mono);font-size:9px;font-weight:700;}
+.crono-log-status.ok{color:var(--green);}
+.crono-log-status.over{color:var(--red);}
+
+/* ── CHECKLIST ── */
+.right-panel{display:flex;flex-direction:column;gap:16px;}
+.checklist-panel{border:2px solid var(--ln3);border-radius:var(--r2);overflow:hidden;}
+.checklist-header{padding:8px 14px;border-bottom:2px solid var(--ln3);display:flex;justify-content:space-between;align-items:center;}
+.checklist-title{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:var(--w3);}
+.checklist-count{font-family:var(--mono);font-size:11px;color:var(--amber);}
+
+.check-item{display:flex;align-items:center;gap:0;border-bottom:1px solid var(--ln);transition:background .08s;cursor:pointer;}
+.check-item:hover{background:var(--sf2);}
+.check-item:last-child{border-bottom:none;}
+.check-box{width:44px;min-height:44px;border-right:1px solid var(--ln);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;color:var(--w3);flex-shrink:0;}
+.check-item.done .check-box{color:var(--green-neon);}
+.check-item.active-task{background:var(--green-dim);border-left:3px solid var(--green-neon);}
+.check-item.active-task .check-box{color:var(--green-neon);}
+.check-item.active-task .check-nome{color:var(--green-neon);}
+.check-info{flex:1;padding:8px 12px;min-width:0;}
+.check-nome{font-family:var(--head);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;}
+.check-item.done{background:rgba(10,31,10,0.5);}
+.check-item.done .check-nome{color:var(--w3);text-decoration:line-through;}
+.check-detail{font-family:var(--mono);font-size:9px;color:var(--w3);margin-top:1px;}
+.check-tmt{font-family:var(--mono);font-size:11px;font-weight:600;padding:0 12px;color:var(--w3);flex-shrink:0;min-width:60px;text-align:center;}
+.check-real{font-family:var(--mono);font-size:12px;font-weight:700;padding:0 12px;flex-shrink:0;min-width:70px;text-align:right;border-left:1px solid var(--ln);min-height:44px;display:flex;align-items:center;justify-content:flex-end;}
+.check-real.ok{color:var(--green);}
+.check-real.warn{color:var(--amber);}
+.check-real.over{color:var(--red);}
+
+/* ── PECAS ── */
+.pecas-panel{border:2px solid var(--ln3);border-radius:var(--r2);overflow:hidden;}
+.pecas-header{padding:8px 14px;border-bottom:2px solid var(--ln3);display:flex;justify-content:space-between;align-items:center;}
+.pecas-title{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:var(--w3);}
+.peca-row{display:grid;grid-template-columns:1fr 50px 80px;gap:0;border-bottom:1px solid var(--ln);}
+.peca-row:last-child{border-bottom:none;}
+.peca-cell{padding:8px 12px;border-right:1px solid var(--ln);display:flex;align-items:center;}
+.peca-cell:last-child{border-right:none;justify-content:flex-end;}
+.peca-nome{font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;color:var(--w);}
+.peca-qty{font-family:var(--mono);font-size:14px;font-weight:800;color:var(--amber);text-align:center;width:100%;}
+.peca-val{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--green);}
+.peca-row.peca-head{border-bottom:2px solid var(--ln3);}
+.peca-head .peca-cell{font-family:var(--head);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w3);padding:6px 12px;}
+.pecas-total{padding:10px 14px;border-top:2px solid var(--ln3);display:flex;justify-content:space-between;align-items:center;}
+.pecas-total-label{font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--w3);}
+.pecas-total-val{font-family:var(--mono);font-size:14px;font-weight:800;color:var(--green);}
+
+/* ── LOG TECNICO ── */
+.log-panel{border:2px solid var(--ln3);border-radius:var(--r2);overflow:hidden;margin-top:16px;}
+.log-header{padding:8px 14px;border-bottom:2px solid var(--ln3);display:flex;justify-content:space-between;align-items:center;}
+.log-title{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:var(--w3);}
+.log-body{padding:12px 14px;background:#000;font-family:var(--mono);font-size:11px;line-height:1.8;color:var(--green-neon);max-height:200px;overflow-y:auto;}
+.log-entry-time{color:var(--w3);}
+.log-entry-msg{color:var(--green-neon);}
+.log-input-row{display:flex;gap:0;border-top:2px solid var(--ln3);}
+.log-input{flex:1;background:var(--sf);border:none;padding:12px 14px;color:var(--w);font-family:var(--mono);font-size:12px;outline:none;}
+.log-input::placeholder{color:var(--w4);}
+.log-send{padding:12px 20px;background:var(--sf);border:none;border-left:2px solid var(--ln3);color:var(--green-neon);font-family:var(--head);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;cursor:pointer;transition:all .1s;}
+.log-send:hover{background:var(--green-dim);}
+
+/* ── BOTTOM BAR ── */
+.bottom-bar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border:2px solid var(--ln3);border-radius:var(--r2);margin-top:16px;}
+.bottom-btn{padding:14px;border:none;border-right:2px solid var(--ln3);background:var(--sf);cursor:pointer;transition:all .08s;display:flex;align-items:center;justify-content:center;gap:8px;font-family:var(--head);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:2px;}
+.bottom-btn:last-child{border-right:none;}
+.bottom-btn:active{transform:scale(.97);}
+.bottom-btn-status{color:var(--w2);}
+.bottom-btn-status:hover{background:var(--sf2);}
+.bottom-btn-whats{color:var(--green);}
+.bottom-btn-whats:hover{background:var(--green-dim);}
+.bottom-btn-concluir{color:var(--green-neon);border-left:2px solid var(--green);}
+.bottom-btn-concluir:hover{background:var(--green-dim);}
+
+/* ── STATUS MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:2000;display:none;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--sf);border:2px solid var(--ln3);border-radius:var(--r2);padding:24px;width:340px;max-width:90%;}
+.modal-title{font-family:var(--head);font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:2px;margin-bottom:16px;}
+.modal-title span{color:var(--amber);}
+.modal-opt{display:block;width:100%;padding:10px 14px;margin-bottom:6px;background:var(--sf2);border:1px solid var(--ln2);border-radius:var(--r2);color:var(--w);font-family:var(--body);font-size:13px;cursor:pointer;transition:all .1s;text-align:left;}
+.modal-opt:hover{border-color:var(--amber);background:var(--amber-dim);color:var(--amber);}
+.modal-opt.sel{border-color:var(--amber);background:var(--amber-dim);color:var(--amber);font-weight:700;}
+.modal-close{margin-top:12px;width:100%;padding:10px;background:none;border:1px solid var(--ln3);border-radius:var(--r2);color:var(--w3);font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;cursor:pointer;}
+.modal-close:hover{color:var(--w);border-color:var(--w3);}
+
+/* ── LOGIN ── */
+.login-overlay{position:fixed;inset:0;z-index:2000;background:var(--bg);display:none;align-items:center;justify-content:center;}
+.login-box{width:360px;padding:40px;text-align:center;}
+.login-brand{font-family:var(--head);font-size:36px;font-weight:900;text-transform:uppercase;margin-bottom:28px;}
+.login-brand span{color:var(--amber);}
+.login-input{width:100%;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px 16px;color:var(--w);font-family:var(--body);font-size:14px;margin-bottom:12px;outline:none;transition:border-color .15s;}
+.login-input:focus{border-color:var(--amber);}
+.login-input::placeholder{color:var(--w4);}
+.login-btn{width:100%;padding:14px;background:var(--amber);border:none;border-radius:var(--r2);font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#000;cursor:pointer;}
+.login-err{color:var(--red);font-size:12px;margin-top:8px;display:none;}
+.loading-overlay{position:fixed;inset:0;z-index:1500;background:var(--bg);display:none;align-items:center;justify-content:center;}
+.loading-overlay span{font-family:var(--head);font-size:20px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:var(--amber);animation:pulse 1.2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+.toast-container{position:fixed;top:16px;right:16px;z-index:3000;display:flex;flex-direction:column;gap:6px;}
+.toast{padding:10px 18px;border-radius:var(--r2);font-family:var(--body);font-size:13px;font-weight:500;color:#000;background:var(--green);animation:toastIn .3s;max-width:340px;}
+.toast.err{background:var(--red);color:#fff;}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:none;}}
+.empty-state{text-align:center;padding:60px 20px;color:var(--w3);}
+.empty-state .icon{font-size:48px;margin-bottom:12px;}
+.empty-state h3{font-family:var(--head);font-size:20px;font-weight:700;text-transform:uppercase;color:var(--w2);margin-bottom:6px;}
+.empty-state p{font-size:13px;color:var(--w4);}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-overlay" id="login-overlay">
+  <div class="login-box">
+    <div class="login-brand">RPM <span>PRO</span></div>
+    <input class="login-input" type="email" id="login-email" placeholder="email@oficina.com">
+    <input class="login-input" type="password" id="login-senha" placeholder="••••••••" onkeydown="if(event.key==='Enter')fazerLogin()">
+    <button class="login-btn" id="login-btn" onclick="fazerLogin()">Entrar</button>
+    <div class="login-err" id="login-err">Email ou senha incorretos</div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loading" style="display:flex;"><span>Carregando...</span></div>
+
+<!-- TOAST -->
+<div class="toast-container" id="toasts"></div>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-brand">RPM <span>PRO</span></div>
+      <div class="sidebar-logo-oficina" id="oficina-nome"></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Operacao</div>
+      <a class="nav-item" href="kanban-v2.html"><span class="nav-icon">⬛</span>Patio</a>
+      <a class="nav-item" href="dashboard-v2.html"><span class="nav-icon">◈</span>Dashboard</a>
+      <div class="nav-section">Atendimento</div>
+      <a class="nav-item" href="fila-espera-v2.html"><span class="nav-icon">⏳</span>Fila de Espera</a>
+      <a class="nav-item" href="os-list-v2.html"><span class="nav-icon">📋</span>Ordens de Servico</a>
+      <a class="nav-item" href="execucao-os-v2.html"><span class="nav-icon">🔧</span>Execucao OS</a>
+      <a class="nav-item" href="clientes-v2.html"><span class="nav-icon">👥</span>Clientes</a>
+      <a class="nav-item" href="veiculos-v2.html"><span class="nav-icon">🚗</span>Veiculos</a>
+      <a class="nav-item" href="agendamentos-v2.html"><span class="nav-icon">📅</span>Agendamentos</a>
+      <div class="nav-section">Catalogo</div>
+      <a class="nav-item" href="catalogo-v2.html"><span class="nav-icon">🔧</span>Servicos / Pecas</a>
+      <div class="nav-section">Financeiro</div>
+      <a class="nav-item" href="financeiro-v2.html"><span class="nav-icon">💰</span>Caixa</a>
+      <a class="nav-item" href="comissao-v2.html"><span class="nav-icon">📊</span>Comissao</a>
+      <a class="nav-item" href="folha-v2.html"><span class="nav-icon">📄</span>Folha</a>
+      <div class="nav-section">Gestao</div>
+      <a class="nav-item" href="equipe-v2.html"><span class="nav-icon">👤</span>Equipe</a>
+      <a class="nav-item" href="produtividade-v2.html"><span class="nav-icon">⚡</span>Produtividade</a>
+      <a class="nav-item" href="crm-v2.html"><span class="nav-icon">📡</span>CRM / Reativacao</a>
+      <a class="nav-item" href="satisfacao-v2.html"><span class="nav-icon">⭐</span>Satisfacao</a>
+      <a class="nav-item" href="config-v2.html"><span class="nav-icon">⚙️</span>Configuracoes</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="user-avatar">?</div>
+        <div class="user-details">
+          <div class="user-name" id="user-nome">...</div>
+          <div class="user-role" id="user-role">...</div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="sair()">Sair</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="main-topbar">
+      <div class="main-title">Execucao <span>OS</span></div>
+      <div style="display:flex;gap:8px;">
+        <a class="btn-back" href="kanban-v2.html">Patio</a>
+        <a class="btn-back" href="os-list-v2.html">Ordens</a>
+      </div>
+    </div>
+    <div class="main-content" id="main-content">
+      <!-- Conteudo dinamico -->
+    </div>
+  </div>
+</div>
+
+<!-- MODAL STATUS -->
+<div class="modal-overlay" id="modal-status">
+  <div class="modal-box">
+    <div class="modal-title">Alterar <span>Status</span></div>
+    <div id="modal-status-opts"></div>
+    <button class="modal-close" onclick="fecharModalStatus()">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMAR CONCLUSAO -->
+<div class="modal-overlay" id="modal-confirm">
+  <div class="modal-box">
+    <div class="modal-title">Concluir <span>OS</span></div>
+    <p style="font-size:13px;color:var(--w2);margin-bottom:16px;" id="confirm-msg"></p>
+    <div style="display:flex;gap:8px;">
+      <button class="modal-close" style="flex:1;margin:0;" onclick="fecharModalConfirm()">Cancelar</button>
+      <button class="modal-opt" style="flex:1;margin:0;text-align:center;background:var(--green-dim);border-color:var(--green);color:var(--green-neon);font-weight:800;" onclick="confirmarConcluirOS()">Concluir</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL='https://roeeyypssutzfzzkypsq.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZWV5eXBzc3V0emZ6emt5cHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MTk0MTgsImV4cCI6MjA5MDM5NTQxOH0.9oCOmABUTXox3FaRViD2zcUaqv94VfOJFMQYz_fcJi4';
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+let PERFIL=null, OFICINA_ID=null, OFICINA=null;
+let OS_ID=null, OS_DATA=null, ITENS=[], MECANICO_NOME='';
+let cronoInterval=null, cronoSeconds=0, cronoPaused=false;
+let tarefaAtiva=null, tarefaSegundos=0, tarefaInterval=null;
+let logEntries=[];
+
+function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function toast(msg,tipo){const d=document.createElement('div');d.className='toast'+(tipo==='err'?' err':'');d.textContent=msg;document.getElementById('toasts').appendChild(d);setTimeout(()=>d.remove(),3500);}
+function fmt(v){return(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtHMS(s){const h=String(Math.floor(s/3600)).padStart(2,'0');const m=String(Math.floor((s%3600)/60)).padStart(2,'0');const ss=String(s%60).padStart(2,'0');return h+':'+m+':'+ss;}
+function fmtData(d){if(!d)return'--';const dt=new Date(d);return dt.toLocaleDateString('pt-BR')+' '+dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});}
+
+const STATUS_LABEL={entrada:'Entrada',diagnostico:'Diagnostico',orcamento:'Orcamento',aprovada:'Aprovada',aguardando_peca:'Aguardando Peca',execucao:'Em Execucao',pronto:'Pronto',entregue:'Entregue',cancelada:'Cancelada'};
+const STATUS_ORDER=['entrada','diagnostico','orcamento','aprovada','aguardando_peca','execucao','pronto','entregue','cancelada'];
+
+// ── AUTH ──
+async function fazerLogin(){
+  const email=document.getElementById('login-email').value.trim();
+  const senha=document.getElementById('login-senha').value;
+  if(!email||!senha)return;
+  const{error}=await db.auth.signInWithPassword({email,password:senha});
+  if(error){document.getElementById('login-err').style.display='block';return;}
+  location.reload();
+}
+function sair(){db.auth.signOut();location.reload();}
+
+async function init(){
+  db.auth.onAuthStateChange((ev)=>{if(ev==='SIGNED_OUT')window.location.href='login.html';});
+  const{data:{session}}=await db.auth.getSession();
+  if(!session){document.getElementById('loading').style.display='none';document.getElementById('login-overlay').style.display='flex';return;}
+  const uid=session.user.id;
+  const{data:perfil}=await db.from('profiles').select('*').eq('id',uid).single();
+  if(!perfil){toast('Perfil nao encontrado','err');return;}
+  PERFIL=perfil;OFICINA_ID=perfil.oficina_id;
+  document.getElementById('user-nome').textContent=perfil.nome||perfil.email;
+  document.getElementById('user-role').textContent=perfil.perfil||'';
+  document.getElementById('user-avatar').textContent=(perfil.nome||'?')[0].toUpperCase();
+
+  const{data:ofc}=await db.from('oficinas').select('*').eq('id',OFICINA_ID).single();
+  OFICINA=ofc;
+  document.getElementById('oficina-nome').textContent=ofc?.nome||'';
+
+  // Pegar OS ID da URL
+  const params=new URLSearchParams(window.location.search);
+  OS_ID=params.get('id');
+  if(!OS_ID){
+    document.getElementById('main-content').innerHTML='<div class="empty-state"><div class="icon">🔧</div><h3>Nenhuma OS selecionada</h3><p>Selecione uma OS pelo Kanban ou lista de OS</p></div>';
+    document.getElementById('loading').style.display='none';
+    return;
+  }
+
+  await carregarOS();
+  document.getElementById('loading').style.display='none';
+}
+
+async function carregarOS(){
+  const[osRes, itensRes, mecsRes]=await Promise.all([
+    db.from('ordens_servico').select('*, veiculos(placa, marca, modelo, ano, km_atual), clientes(nome, whatsapp)').eq('id',OS_ID).eq('oficina_id',OFICINA_ID).single(),
+    db.from('itens_os').select('*').eq('os_id',OS_ID).order('tipo',{ascending:false}).order('created_at'),
+    db.from('profiles').select('id, nome').eq('oficina_id',OFICINA_ID).in('perfil',['mecanico','aux_mecanico'])
+  ]);
+
+  if(osRes.error||!osRes.data){
+    document.getElementById('main-content').innerHTML='<div class="empty-state"><div class="icon">❌</div><h3>OS nao encontrada</h3><p>Verifique o ID e tente novamente</p></div>';
+    return;
+  }
+
+  OS_DATA=osRes.data;
+  ITENS=itensRes.data||[];
+
+  // Buscar nome do mecanico
+  if(OS_DATA.mecanico_id){
+    const mec=mecsRes.data?.find(m=>m.id===OS_DATA.mecanico_id);
+    MECANICO_NOME=mec?.nome||'Sem mecanico';
+  } else {
+    MECANICO_NOME='Sem mecanico';
+  }
+
+  restaurarTarefaAtiva();
+  renderizar();
+  iniciarCronometro();
+}
+
+function renderizar(){
+  const os=OS_DATA;
+  const placa=os.veiculos?.placa||'---';
+  const veiculo=[os.veiculos?.marca,os.veiculos?.modelo,os.veiculos?.ano].filter(Boolean).join(' ');
+  const cliente=os.clientes?.nome||'Cliente';
+  const whatsapp=os.clientes?.whatsapp||'';
+
+  // Status class
+  let statusClass='status-exec';
+  if(os.status==='pronto')statusClass='status-pronto';
+  else if(os.status==='entregue')statusClass='status-entregue';
+
+  // Separar servicos e pecas
+  const servicos=ITENS.filter(i=>i.tipo==='servico');
+  const pecas=ITENS.filter(i=>i.tipo==='peca');
+
+  // Calcular TMT total (soma horas dos servicos)
+  const tmtTotal=servicos.reduce((s,i)=>s+(i.tempo_estimado||0),0);
+
+  // Checklist state
+  const checkState=os.checklist_execucao||{};
+
+  // Contar concluidos
+  const totalServicos=servicos.length;
+  const concluidos=servicos.filter(s=>checkState[s.id]?.done).length;
+
+  // Log entries from OS
+  logEntries=os.log_execucao||[];
+
+  let html=`
+    <!-- TOP BAR -->
+    <div class="top-bar">
+      <div class="top-bar-cell"><div class="top-os">OS#${String(os.numero||'').padStart(3,'0')}</div></div>
+      <div class="top-bar-cell">
+        <div class="top-placa"><div class="top-placa-topo"><div class="top-placa-br">BR</div></div><div class="top-placa-cod">${esc(placa)}</div></div>
+      </div>
+      <div class="top-bar-cell"><div class="top-veiculo">${esc(veiculo.toUpperCase())}</div></div>
+      <div class="top-bar-cell"><div class="top-mecanico">OPERADOR: <span>${esc(MECANICO_NOME.toUpperCase())}</span></div></div>
+      <div class="top-bar-cell"><div class="top-status ${statusClass}">${STATUS_LABEL[os.status]||os.status}</div></div>
+    </div>
+
+    <!-- LAYOUT -->
+    <div class="exec-layout">
+      <!-- CRONOMETRO -->
+      <div class="crono-panel">
+        <div class="crono-header">CRONOMETRO // TEMPO TOTAL OS</div>
+        <div class="crono-display">
+          <div class="crono-time${cronoPaused?' paused':''}" id="crono">${fmtHMS(cronoSeconds)}</div>
+          <div class="crono-started">INICIO: ${fmtData(os.data_inicio||os.created_at)}</div>
+          <div class="crono-tmt">TMT ESTIMADO: <span class="crono-tmt-val">${tmtTotal.toFixed(1)}H</span></div>
+        </div>
+        <div class="crono-controls">
+          <button class="crono-btn crono-btn-start" onclick="iniciarTarefa()"><span style="font-family:var(--mono);">▶</span> INICIAR</button>
+          <button class="crono-btn crono-btn-pause" onclick="pausarCrono()"><span style="font-family:var(--mono);">⏸</span> ${cronoPaused?'RETOMAR':'PAUSAR'}</button>
+        </div>
+        ${tarefaAtiva?`
+        <div class="crono-task-active">
+          <div class="crono-task-label">TAREFA ATIVA</div>
+          <div class="crono-task-name">${esc(tarefaAtiva.descricao)}</div>
+          <div class="crono-task-timer">EM ANDAMENTO: <span id="tarefa-timer">${fmtHMS(tarefaSegundos)}</span></div>
+        </div>`:''}
+        <div class="crono-log">
+          <div class="crono-log-header">REGISTRO DE TEMPOS</div>
+          <div id="crono-log-body">${renderLogTempos(servicos,checkState)}</div>
+        </div>
+      </div>
+
+      <!-- DIREITA -->
+      <div class="right-panel">
+        <!-- CHECKLIST -->
+        <div class="checklist-panel">
+          <div class="checklist-header">
+            <div class="checklist-title">CHECKLIST DE EXECUCAO</div>
+            <div class="checklist-count">${concluidos}/${totalServicos} CONCLUIDO</div>
+          </div>
+          ${servicos.map(s=>{
+            const done=checkState[s.id]?.done;
+            const tempoGasto=checkState[s.id]?.tempo||0;
+            const isActive=tarefaAtiva&&tarefaAtiva.id===s.id;
+            const tmt=s.tempo_estimado||0;
+            const tmtSec=tmt*3600;
+            let realClass='';
+            if(done){
+              realClass=tempoGasto>tmtSec*1.2?'over':tempoGasto>tmtSec?'warn':'ok';
+            }else if(isActive){
+              realClass='ok';
+            }
+            let cls='check-item';
+            if(done)cls+=' done';
+            if(isActive)cls+=' active-task';
+            return `
+            <div class="${cls}" data-item-id="${done?'':esc(s.id)}">
+              <div class="check-box">${done?'[X]':isActive?'[▶]':'[ ]'}</div>
+              <div class="check-info">
+                <div class="check-nome">${esc(s.descricao)}</div>
+                <div class="check-detail">${s.quantidade||1}x | R$ ${fmt(s.valor_unitario)}</div>
+              </div>
+              <div class="check-tmt">${tmt>0?'TMT '+tmt.toFixed(1)+'H':'--'}</div>
+              <div class="check-real ${realClass}">${done?fmtHMS(tempoGasto):isActive?fmtHMS(tarefaSegundos):'--:--:--'}</div>
+            </div>`;
+          }).join('')}
+        </div>
+
+        <!-- PECAS -->
+        ${pecas.length>0?`
+        <div class="pecas-panel">
+          <div class="pecas-header"><div class="pecas-title">PECAS UTILIZADAS</div></div>
+          <div class="peca-row peca-head">
+            <div class="peca-cell">DESCRICAO</div>
+            <div class="peca-cell">QTD</div>
+            <div class="peca-cell">VALOR</div>
+          </div>
+          ${pecas.map(p=>`
+          <div class="peca-row">
+            <div class="peca-cell"><span class="peca-nome">${esc(p.descricao)}</span></div>
+            <div class="peca-cell"><span class="peca-qty">${p.quantidade||1}</span></div>
+            <div class="peca-cell"><span class="peca-val">R$ ${fmt((p.valor_unitario||0)*(p.quantidade||1))}</span></div>
+          </div>`).join('')}
+          <div class="pecas-total">
+            <span class="pecas-total-label">TOTAL PECAS</span>
+            <span class="pecas-total-val">R$ ${fmt(pecas.reduce((s,p)=>s+(p.valor_unitario||0)*(p.quantidade||1),0))}</span>
+          </div>
+        </div>`:''}
+      </div>
+    </div>
+
+    <!-- LOG TECNICO -->
+    <div class="log-panel">
+      <div class="log-header"><div class="log-title">LOG DO TECNICO // OBSERVACOES</div></div>
+      <div class="log-body" id="log-body">${renderLogEntries()}</div>
+      <div class="log-input-row">
+        <input class="log-input" id="log-input" placeholder="Digitar observacao..." onkeydown="if(event.key==='Enter')enviarLog()">
+        <button class="log-send" onclick="enviarLog()">ENVIAR</button>
+      </div>
+    </div>
+
+    <!-- BOTTOM BAR -->
+    <div class="bottom-bar">
+      <button class="bottom-btn bottom-btn-status" onclick="abrirModalStatus()"><span style="font-family:var(--mono);">⚙</span> STATUS</button>
+      <button class="bottom-btn bottom-btn-whats" onclick="enviarWhatsApp()"><span style="font-family:var(--mono);">📱</span> WHATSAPP</button>
+      <button class="bottom-btn bottom-btn-concluir" onclick="concluirOS()"><span style="font-family:var(--mono);">✓</span> CONCLUIR OS</button>
+    </div>
+  `;
+
+  document.getElementById('main-content').innerHTML=html;
+
+  // Event delegation para checklist (evita XSS via onclick inline)
+  document.getElementById('main-content').addEventListener('click',function(e){
+    const item=e.target.closest('.check-item[data-item-id]');
+    if(item&&item.dataset.itemId){
+      selecionarTarefa(item.dataset.itemId);
+    }
+  });
+}
+
+function renderLogTempos(servicos,checkState){
+  return servicos.filter(s=>checkState[s.id]?.done).map(s=>{
+    const tempo=checkState[s.id].tempo||0;
+    const tmt=s.tempo_estimado||0;
+    const tmtSec=tmt*3600;
+    const isOver=tempo>tmtSec*1.1;
+    return `<div class="crono-log-row">
+      <div class="crono-log-task">${esc(s.descricao)}</div>
+      <div class="crono-log-time">${fmtHMS(tempo)}</div>
+      <div class="crono-log-status ${isOver?'over':'ok'}">[${isOver?'ESTOURO':'OK'}]</div>
+    </div>`;
+  }).join('')||'<div style="padding:10px 14px;font-family:var(--mono);font-size:10px;color:var(--w4);">Nenhuma tarefa concluida</div>';
+}
+
+function renderLogEntries(){
+  if(!logEntries.length)return'<div style="color:var(--w4);font-style:italic;">Sem observacoes</div>';
+  return logEntries.map(e=>`<div><span class="log-entry-time">[${e.hora}] ${esc(e.autor)} ></span></div><div class="log-entry-msg">${esc(e.msg)}</div>`).join('');
+}
+
+// ── CRONOMETRO ──
+function iniciarCronometro(){
+  if(!OS_DATA)return;
+  // Calcular segundos desde inicio
+  const inicio=OS_DATA.data_inicio||OS_DATA.created_at;
+  if(inicio){
+    const diff=Math.floor((Date.now()-new Date(inicio).getTime())/1000);
+    cronoSeconds=Math.max(0,diff);
+  }
+  // Checar se status nao permite cronometro (entregue, cancelada)
+  if(['entregue','cancelada'].includes(OS_DATA.status)){
+    cronoPaused=true;
+  }
+  if(!cronoPaused){
+    cronoInterval=setInterval(()=>{
+      if(!cronoPaused){
+        cronoSeconds++;
+        const el=document.getElementById('crono');
+        if(el)el.textContent=fmtHMS(cronoSeconds);
+      }
+    },1000);
+  }
+}
+
+function pausarCrono(){
+  cronoPaused=!cronoPaused;
+  if(cronoPaused){
+    if(cronoInterval){clearInterval(cronoInterval);cronoInterval=null;}
+    if(tarefaInterval){clearInterval(tarefaInterval);tarefaInterval=null;}
+  }else{
+    cronoInterval=setInterval(()=>{
+      cronoSeconds++;
+      const el=document.getElementById('crono');
+      if(el)el.textContent=fmtHMS(cronoSeconds);
+    },1000);
+    if(tarefaAtiva){
+      tarefaInterval=setInterval(()=>{
+        tarefaSegundos++;
+        const el=document.getElementById('tarefa-timer');
+        if(el)el.textContent=fmtHMS(tarefaSegundos);
+      },1000);
+    }
+  }
+  renderizar();
+}
+
+// ── TAREFAS ──
+function selecionarTarefa(itemId){
+  const servico=ITENS.find(i=>i.id===itemId);
+  if(!servico)return;
+  const checkState=OS_DATA.checklist_execucao||{};
+  if(checkState[itemId]?.done)return;
+
+  // Se ja tem tarefa ativa, concluir ela primeiro
+  if(tarefaAtiva){
+    concluirTarefa();
+  }
+
+  tarefaAtiva={id:itemId,descricao:servico.descricao,inicio:Date.now()};
+  tarefaSegundos=0;
+  salvarTarefaAtiva();
+  if(tarefaInterval)clearInterval(tarefaInterval);
+  tarefaInterval=setInterval(()=>{
+    if(!cronoPaused){
+      tarefaSegundos++;
+      const el=document.getElementById('tarefa-timer');
+      if(el)el.textContent=fmtHMS(tarefaSegundos);
+    }
+  },1000);
+  renderizar();
+  toast('Tarefa iniciada: '+servico.descricao);
+}
+
+function iniciarTarefa(){
+  // Encontrar proxima tarefa pendente
+  const checkState=OS_DATA.checklist_execucao||{};
+  const servicos=ITENS.filter(i=>i.tipo==='servico');
+  const proxima=servicos.find(s=>!checkState[s.id]?.done&&(!tarefaAtiva||tarefaAtiva.id!==s.id));
+  if(proxima){
+    selecionarTarefa(proxima.id);
+  }else if(!tarefaAtiva){
+    toast('Todas as tarefas foram concluidas');
+  }
+}
+
+async function concluirTarefa(){
+  if(!tarefaAtiva)return;
+  // Re-read do banco pra evitar race condition
+  const{data:fresh}=await db.from('ordens_servico').select('checklist_execucao').eq('id',OS_ID).eq('oficina_id',OFICINA_ID).single();
+  const checkState=fresh?.checklist_execucao||OS_DATA.checklist_execucao||{};
+  checkState[tarefaAtiva.id]={done:true,tempo:tarefaSegundos,concluido_em:new Date().toISOString()};
+  delete checkState._tarefa_ativa;
+  OS_DATA.checklist_execucao=checkState;
+
+  await db.from('ordens_servico').update({checklist_execucao:checkState}).eq('id',OS_ID).eq('oficina_id',OFICINA_ID);
+
+  if(tarefaInterval){clearInterval(tarefaInterval);tarefaInterval=null;}
+  const nome=tarefaAtiva.descricao;
+  tarefaAtiva=null;
+  tarefaSegundos=0;
+  renderizar();
+  toast('Tarefa concluida: '+nome);
+}
+
+// ── LOG ──
+async function enviarLog(){
+  const input=document.getElementById('log-input');
+  const msg=input?.value?.trim();
+  if(!msg)return;
+
+  const agora=new Date();
+  const hora=agora.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  const entry={hora,data_hora:agora.toISOString(),autor:PERFIL.nome||'Tecnico',perfil:PERFIL.perfil||'',msg};
+
+  // Re-read do banco pra evitar perder entradas
+  const{data:fresh}=await db.from('ordens_servico').select('log_execucao').eq('id',OS_ID).eq('oficina_id',OFICINA_ID).single();
+  logEntries=fresh?.log_execucao||logEntries;
+  logEntries.push(entry);
+  OS_DATA.log_execucao=logEntries;
+
+  await db.from('ordens_servico').update({log_execucao:logEntries}).eq('id',OS_ID).eq('oficina_id',OFICINA_ID);
+
+  input.value='';
+  const logBody=document.getElementById('log-body');
+  if(logBody){
+    logBody.innerHTML=renderLogEntries();
+    logBody.scrollTop=logBody.scrollHeight;
+  }
+}
+
+// ── STATUS ──
+function abrirModalStatus(){
+  const opts=STATUS_ORDER.map(s=>`<button class="modal-opt${OS_DATA.status===s?' sel':''}" onclick="alterarStatus('${s}')">${STATUS_LABEL[s]}</button>`).join('');
+  document.getElementById('modal-status-opts').innerHTML=opts;
+  document.getElementById('modal-status').classList.add('open');
+}
+function fecharModalStatus(){document.getElementById('modal-status').classList.remove('open');}
+
+async function alterarStatus(novoStatus){
+  if(novoStatus===OS_DATA.status){fecharModalStatus();return;}
+  const{error}=await db.from('ordens_servico').update({status:novoStatus}).eq('id',OS_ID).eq('oficina_id',OFICINA_ID);
+  if(error){toast('Erro ao alterar status','err');return;}
+  OS_DATA.status=novoStatus;
+  fecharModalStatus();
+  renderizar();
+  toast('Status alterado para: '+STATUS_LABEL[novoStatus]);
+}
+
+// ── WHATSAPP ──
+function enviarWhatsApp(){
+  const os=OS_DATA;
+  const whats=os.clientes?.whatsapp;
+  if(!whats){toast('Cliente sem WhatsApp cadastrado','err');return;}
+  const fone=whats.replace(/\D/g,'');
+  const veiculo=[os.veiculos?.marca,os.veiculos?.modelo].filter(Boolean).join(' ');
+  const nomeOficina=OFICINA?.nome||'oficina';
+  const msg=`Ola! Aqui e da *${nomeOficina}*.\nSeu veiculo *${veiculo}* (placa ${os.veiculos?.placa||''}) esta em execucao.\nOS #${os.numero}\nEstamos cuidando com atencao. Te aviso assim que ficar pronto!`;
+  window.open('https://wa.me/55'+fone+'?text='+encodeURIComponent(msg),'_blank');
+}
+
+// ── CONCLUIR OS ──
+let _concluindoOS=false;
+async function concluirOS(){
+  if(_concluindoOS)return;
+  // Contar pendentes ANTES de concluir tarefa ativa
+  const checkState=OS_DATA.checklist_execucao||{};
+  const servicos=ITENS.filter(i=>i.tipo==='servico');
+  const pendentes=servicos.filter(s=>!checkState[s.id]?.done);
+  // Descontar tarefa ativa (sera concluida)
+  const pendReais=tarefaAtiva?pendentes.filter(p=>p.id!==tarefaAtiva.id):pendentes;
+
+  if(pendReais.length>0){
+    _pendentesConfirm=pendReais.length;
+    abrirModalConfirm();
+    return;
+  }
+
+  await _executarConcluirOS();
+}
+
+async function _executarConcluirOS(){
+  _concluindoOS=true;
+  if(tarefaAtiva) await concluirTarefa();
+
+  const{error}=await db.from('ordens_servico').update({status:'pronto'}).eq('id',OS_ID).eq('oficina_id',OFICINA_ID);
+  _concluindoOS=false;
+  if(error){toast('Erro ao concluir OS','err');return;}
+  OS_DATA.status='pronto';
+  cronoPaused=true;
+  if(cronoInterval){clearInterval(cronoInterval);cronoInterval=null;}
+  if(tarefaInterval){clearInterval(tarefaInterval);tarefaInterval=null;}
+  renderizar();
+  toast('OS concluida! Status: Pronto');
+}
+
+// ── MODAL CONFIRMAR ──
+let _pendentesConfirm=0;
+function abrirModalConfirm(){
+  document.getElementById('confirm-msg').textContent='Existem '+_pendentesConfirm+' tarefa(s) pendente(s). Deseja concluir mesmo assim?';
+  document.getElementById('modal-confirm').classList.add('open');
+}
+function fecharModalConfirm(){document.getElementById('modal-confirm').classList.remove('open');}
+async function confirmarConcluirOS(){
+  fecharModalConfirm();
+  await _executarConcluirOS();
+}
+
+// ── PERSISTIR TAREFA ATIVA ──
+async function salvarTarefaAtiva(){
+  if(!tarefaAtiva)return;
+  const checkState=OS_DATA.checklist_execucao||{};
+  checkState._tarefa_ativa={id:tarefaAtiva.id,inicio:tarefaAtiva.inicio};
+  await db.from('ordens_servico').update({checklist_execucao:checkState}).eq('id',OS_ID).eq('oficina_id',OFICINA_ID);
+}
+
+function restaurarTarefaAtiva(){
+  const checkState=OS_DATA?.checklist_execucao||{};
+  const ta=checkState._tarefa_ativa;
+  if(!ta||!ta.id)return;
+  if(checkState[ta.id]?.done)return;
+  const servico=ITENS.find(i=>i.id===ta.id);
+  if(!servico)return;
+  tarefaAtiva={id:ta.id,descricao:servico.descricao,inicio:ta.inicio};
+  tarefaSegundos=Math.floor((Date.now()-ta.inicio)/1000);
+  if(tarefaInterval)clearInterval(tarefaInterval);
+  tarefaInterval=setInterval(()=>{
+    if(!cronoPaused){
+      tarefaSegundos++;
+      const el=document.getElementById('tarefa-timer');
+      if(el)el.textContent=fmtHMS(tarefaSegundos);
+    }
+  },1000);
+}
+
+init();
+</script>
+</body>
+</html>

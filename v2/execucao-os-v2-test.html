@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro V2 — EXECUÇÃO OS</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --black:#000000;--sf:#0A0A0A;--sf2:#111111;--sf3:#1A1A1A;
+  --border:#222;--border2:#333;
+  --amber:#E8930C;--amber-dim:rgba(232,147,12,0.06);
+  --orange:#EA580C;
+  --red:#FF3B30;--red-dim:rgba(255,59,48,0.06);
+  --green:#30D158;--green-dim:rgba(48,209,88,0.06);--green-neon:#00FF41;
+  --blue:#0A84FF;
+  --w:#E0E0E0;--w2:rgba(255,255,255,0.5);--w3:rgba(255,255,255,0.25);--w4:rgba(255,255,255,0.1);
+  --mono:'JetBrains Mono',monospace;--head:'Barlow Condensed',sans-serif;--body:'Space Grotesk',sans-serif;
+}
+body{background:var(--black);color:var(--w);font-family:var(--body);min-height:100vh;-webkit-font-smoothing:antialiased;padding:16px;max-width:1100px;margin:0 auto;}
+::selection{background:var(--amber);color:#000;}
+
+/* ═══════════════════════════════════════════ */
+/* TOP BAR — OS ID + STATUS                    */
+/* ═══════════════════════════════════════════ */
+.top-bar{
+  display:flex;align-items:center;gap:0;
+  border:2px solid var(--border2);margin-bottom:12px;
+}
+.top-bar-cell{
+  padding:10px 16px;border-right:2px solid var(--border2);
+  display:flex;align-items:center;gap:8px;
+}
+.top-bar-cell:last-child{border-right:none;flex:1;justify-content:flex-end;}
+.top-os{font-family:var(--mono);font-size:18px;font-weight:800;color:var(--amber);letter-spacing:2px;}
+.top-placa{
+  display:inline-flex;flex-direction:column;
+  background:#FFF;overflow:hidden;line-height:1;
+}
+.top-placa-topo{background:#003399;padding:1px 5px;text-align:center;}
+.top-placa-br{font-family:var(--mono);font-size:4px;font-weight:700;color:#fff;}
+.top-placa-cod{padding:2px 6px 3px;font-family:var(--mono);font-size:14px;font-weight:800;color:#1A1A1A;letter-spacing:2px;text-align:center;line-height:1;}
+.top-veiculo{font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--w2);}
+.top-mecanico{font-family:var(--mono);font-size:11px;color:var(--w3);}
+.top-mecanico span{color:var(--green-neon);}
+.top-status{
+  font-family:var(--head);font-size:12px;font-weight:800;text-transform:uppercase;
+  letter-spacing:2px;padding:6px 14px;border:2px solid;
+}
+.status-exec{border-color:var(--amber);color:var(--amber);background:var(--amber-dim);}
+
+/* ═══════════════════════════════════════════ */
+/* LAYOUT: CRONÔMETRO + CHECKLIST + PECAS      */
+/* ═══════════════════════════════════════════ */
+.layout{display:grid;grid-template-columns:340px 1fr;gap:12px;}
+
+/* ═══════════════════════════════════════════ */
+/* CRONÔMETRO — O CORACAO                      */
+/* ═══════════════════════════════════════════ */
+.crono-panel{border:2px solid var(--border2);}
+.crono-header{
+  padding:8px 14px;border-bottom:2px solid var(--border2);
+  font-family:var(--head);font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:3px;color:var(--w3);
+}
+
+.crono-display{
+  padding:24px 16px;text-align:center;
+  background:var(--black);border-bottom:2px solid var(--border2);
+}
+.crono-time{
+  font-family:var(--mono);font-size:64px;font-weight:800;
+  color:var(--green-neon);letter-spacing:4px;line-height:1;
+  text-shadow:0 0 30px rgba(0,255,136,0.3),0 0 60px rgba(0,255,136,0.1);
+  animation:cronoPulse 2s ease-in-out infinite;
+}
+@keyframes cronoPulse{0%,100%{opacity:1;}50%{opacity:.85;}}
+.crono-started{font-family:var(--mono);font-size:10px;color:var(--w3);margin-top:8px;letter-spacing:1px;}
+.crono-tmt{
+  font-family:var(--mono);font-size:12px;color:var(--w3);margin-top:4px;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.crono-tmt-val{color:var(--amber);}
+
+/* Controles massivos */
+.crono-controls{display:grid;grid-template-columns:1fr 1fr;gap:0;}
+.crono-btn{
+  padding:20px;border:none;border-top:2px solid var(--border2);
+  font-family:var(--head);font-size:14px;font-weight:900;
+  text-transform:uppercase;letter-spacing:3px;
+  cursor:pointer;transition:all .08s;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.crono-btn:active{transform:scale(.97);}
+.crono-btn-start{
+  background:var(--sf);color:var(--green-neon);
+  border-right:2px solid var(--border2);
+}
+.crono-btn-start:hover{background:var(--green-dim);color:var(--green-neon);}
+.crono-btn-pause{background:var(--sf);color:var(--amber);}
+.crono-btn-pause:hover{background:var(--amber-dim);}
+.crono-btn-icon{font-family:var(--mono);font-size:16px;}
+
+/* Tarefas em andamento */
+.crono-task-active{
+  padding:12px 14px;border-top:2px solid var(--border2);
+  background:var(--green-dim);
+}
+.crono-task-label{font-family:var(--head);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w3);}
+.crono-task-name{font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--green-neon);margin-top:2px;}
+.crono-task-timer{font-family:var(--mono);font-size:12px;color:var(--green);margin-top:2px;}
+
+/* Historico de tempos */
+.crono-log{border-top:2px solid var(--border2);}
+.crono-log-header{
+  padding:8px 14px;border-bottom:1px solid var(--border);
+  font-family:var(--head);font-size:9px;font-weight:700;
+  text-transform:uppercase;letter-spacing:2px;color:var(--w3);
+}
+.crono-log-row{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 14px;border-bottom:1px solid var(--border);
+  font-size:11px;
+}
+.crono-log-task{font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;color:var(--w2);flex:1;}
+.crono-log-time{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--w2);}
+.crono-log-status{font-family:var(--mono);font-size:9px;font-weight:700;color:var(--w3);}
+
+/* ═══════════════════════════════════════════ */
+/* CHECKLIST — DENSIDADE MAXIMA                */
+/* ═══════════════════════════════════════════ */
+.right-panel{display:flex;flex-direction:column;gap:12px;}
+
+.checklist-panel{border:2px solid var(--border2);flex:1;}
+.checklist-header{
+  padding:8px 14px;border-bottom:2px solid var(--border2);
+  display:flex;justify-content:space-between;align-items:center;
+}
+.checklist-title{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:var(--w3);}
+.checklist-count{font-family:var(--mono);font-size:11px;color:var(--amber);}
+
+.check-item{
+  display:flex;align-items:center;gap:0;
+  border-bottom:1px solid var(--border);
+  transition:background .08s;cursor:pointer;
+}
+.check-item:hover{background:var(--sf2);}
+.check-item:last-child{border-bottom:none;}
+
+/* Simbolo bruto [X] ou [ ] */
+.check-box{
+  width:44px;min-height:44px;border-right:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:16px;font-weight:800;
+  color:var(--w3);flex-shrink:0;
+}
+.check-item.done .check-box{color:var(--green-neon);}
+.check-item.estouro .check-box{color:var(--red);}
+
+/* Info da tarefa */
+.check-info{flex:1;padding:8px 12px;min-width:0;}
+.check-nome{font-family:var(--head);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;}
+.check-item.done{background:#0A1F0A;}
+.check-item.done .check-nome{color:var(--w3);text-decoration:line-through;}
+.check-item.estouro .check-nome{color:var(--red);}
+.check-detail{font-family:var(--mono);font-size:9px;color:var(--w3);margin-top:1px;}
+
+/* TMT estimado */
+.check-tmt{
+  font-family:var(--mono);font-size:11px;font-weight:600;
+  padding:0 12px;color:var(--w3);flex-shrink:0;
+  min-width:60px;text-align:center;
+}
+
+/* Tempo real gasto */
+.check-real{
+  font-family:var(--mono);font-size:12px;font-weight:700;
+  padding:0 12px;flex-shrink:0;min-width:70px;text-align:right;
+  border-left:1px solid var(--border);min-height:44px;
+  display:flex;align-items:center;justify-content:flex-end;
+}
+.check-real.ok{color:var(--green);}
+.check-real.warn{color:var(--amber);}
+.check-real.over{color:#FF0000;animation:blinkRed .8s step-end infinite;}
+@keyframes blinkRed{0%,100%{opacity:1;}50%{opacity:0;}}
+
+/* ESTOURO — linha vermelha solida */
+.check-item.estouro{background:rgba(255,59,48,0.08);border-bottom-color:rgba(255,59,48,0.15);}
+.check-item.estouro .check-real{color:var(--red);border-left-color:rgba(255,59,48,0.2);}
+
+/* ═══════════════════════════════════════════ */
+/* PECAS — MODO INVENTARIO                     */
+/* ═══════════════════════════════════════════ */
+.pecas-panel{border:2px solid var(--border2);}
+.pecas-header{
+  padding:8px 14px;border-bottom:2px solid var(--border2);
+  display:flex;justify-content:space-between;align-items:center;
+}
+.pecas-title{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:var(--w3);}
+
+/* Scan button (mira laser) */
+.pecas-scan{
+  padding:4px 12px;border:2px solid var(--amber);background:transparent;
+  font-family:var(--head);font-size:10px;font-weight:800;text-transform:uppercase;
+  letter-spacing:2px;color:var(--amber);cursor:pointer;transition:all .08s;
+  display:flex;align-items:center;gap:6px;
+}
+.pecas-scan:hover{background:var(--amber-dim);}
+.pecas-scan::before{content:'⊕';font-family:var(--mono);font-size:14px;}
+
+/* Pecas grid */
+.peca-row{
+  display:grid;grid-template-columns:90px 1fr 50px 70px;
+  gap:0;border-bottom:1px solid var(--border);
+}
+.peca-row:last-child{border-bottom:none;}
+.peca-cell{
+  padding:8px 12px;border-right:1px solid var(--border);
+  display:flex;align-items:center;
+}
+.peca-cell:last-child{border-right:none;justify-content:flex-end;}
+.peca-cod{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--w2);letter-spacing:1px;}
+.peca-nome{font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;color:var(--w);}
+.peca-qty{font-family:var(--mono);font-size:14px;font-weight:800;color:var(--amber);text-align:center;width:100%;}
+.peca-val{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--green);}
+
+/* Grid header */
+.peca-row.peca-head{border-bottom:2px solid var(--border2);}
+.peca-head .peca-cell{
+  font-family:var(--head);font-size:9px;font-weight:700;
+  text-transform:uppercase;letter-spacing:2px;color:var(--w3);
+  padding:6px 12px;
+}
+
+/* BOTAO ADICIONAR */
+.peca-add{
+  padding:8px 14px;border-top:2px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:background .08s;
+}
+.peca-add:hover{background:var(--sf2);}
+.peca-add-text{font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w3);}
+
+/* ═══════════════════════════════════════════ */
+/* BOTTOM BAR — ACOES                          */
+/* ═══════════════════════════════════════════ */
+.bottom-bar{
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;
+  border:2px solid var(--border2);margin-top:12px;
+}
+.bottom-btn{
+  padding:16px;border:none;border-right:2px solid var(--border2);
+  background:var(--sf);cursor:pointer;transition:all .08s;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  font-family:var(--head);font-size:13px;font-weight:800;
+  text-transform:uppercase;letter-spacing:2px;
+}
+.bottom-btn:last-child{border-right:none;}
+.bottom-btn:active{transform:scale(.97);}
+.bottom-btn-obs{color:var(--w2);}.bottom-btn-obs:hover{background:var(--sf2);}
+.bottom-btn-foto{color:var(--blue);}.bottom-btn-foto:hover{background:rgba(10,132,255,0.06);}
+.bottom-btn-concluir{color:var(--green-neon);border-left:2px solid var(--green);}.bottom-btn-concluir:hover{background:var(--green-dim);}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <div class="top-bar-cell">
+    <div class="top-os">OS#013</div>
+  </div>
+  <div class="top-bar-cell">
+    <div class="top-placa">
+      <div class="top-placa-topo"><div class="top-placa-br">BR</div></div>
+      <div class="top-placa-cod">OFF6D14</div>
+    </div>
+  </div>
+  <div class="top-bar-cell">
+    <div class="top-veiculo">HONDA CIVIC 1.8 2018</div>
+  </div>
+  <div class="top-bar-cell">
+    <div class="top-mecanico">OPERADOR: <span>EVANDRO</span></div>
+  </div>
+  <div class="top-bar-cell">
+    <div class="top-status status-exec">EM EXECUÇÃO</div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- CRONÔMETRO -->
+  <div class="crono-panel">
+    <div class="crono-header">CRONÔMETRO // TEMPO TOTAL OS</div>
+
+    <div class="crono-display">
+      <div class="crono-time" id="crono">01:42:18</div>
+      <div class="crono-started">INICIO: 02/04/2026 08:14:00</div>
+      <div class="crono-tmt">TMT ESTIMADO: <span class="crono-tmt-val">2.5H</span> | RESTANTE: <span style="color:var(--green);">0:47:42</span></div>
+    </div>
+
+    <!-- Controles -->
+    <div class="crono-controls">
+      <button class="crono-btn crono-btn-start">
+        <span class="crono-btn-icon">▶</span> INICIAR_TAREFA
+      </button>
+      <button class="crono-btn crono-btn-pause">
+        <span class="crono-btn-icon">⏸</span> PAUSAR_SISTEMA
+      </button>
+    </div>
+
+    <!-- Tarefa ativa -->
+    <div class="crono-task-active">
+      <div class="crono-task-label">TAREFA ATIVA</div>
+      <div class="crono-task-name">TROCA KIT EMBREAGEM</div>
+      <div class="crono-task-timer">EM ANDAMENTO: 00:38:12 / TMT 1.0H</div>
+    </div>
+
+    <!-- Log de tempos -->
+    <div class="crono-log">
+      <div class="crono-log-header">REGISTRO DE TEMPOS</div>
+      <div class="crono-log-row">
+        <div class="crono-log-task">DIAGNOSTICO GERAL</div>
+        <div class="crono-log-time">00:22:40</div>
+        <div class="crono-log-status">[OK]</div>
+      </div>
+      <div class="crono-log-row">
+        <div class="crono-log-task">DESMONTAGEM CAMBIO</div>
+        <div class="crono-log-time">00:41:26</div>
+        <div class="crono-log-status">[OK]</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DIREITA: CHECKLIST + PECAS -->
+  <div class="right-panel">
+
+    <!-- CHECKLIST -->
+    <div class="checklist-panel">
+      <div class="checklist-header">
+        <div class="checklist-title">CHECKLIST DE EXECUÇÃO</div>
+        <div class="checklist-count">2/5 CONCLUIDO</div>
+      </div>
+
+      <!-- Concluido -->
+      <div class="check-item done">
+        <div class="check-box">[X]</div>
+        <div class="check-info">
+          <div class="check-nome">DIAGNOSTICO GERAL</div>
+          <div class="check-detail">SCANNER OBD2 + INSPECAO VISUAL</div>
+        </div>
+        <div class="check-tmt">TMT 0.3H</div>
+        <div class="check-real ok">00:22:40</div>
+      </div>
+
+      <!-- Concluido -->
+      <div class="check-item done">
+        <div class="check-box">[X]</div>
+        <div class="check-info">
+          <div class="check-nome">DESMONTAGEM CAMBIO</div>
+          <div class="check-detail">REMOVER CAMBIO P/ ACESSO EMBREAGEM</div>
+        </div>
+        <div class="check-tmt">TMT 0.5H</div>
+        <div class="check-real warn">00:41:26</div>
+      </div>
+
+      <!-- Em andamento (ativa) -->
+      <div class="check-item" style="background:var(--green-dim);border-left:3px solid var(--green-neon);">
+        <div class="check-box" style="color:var(--green-neon);">[▶]</div>
+        <div class="check-info">
+          <div class="check-nome" style="color:var(--green-neon);">TROCA KIT EMBREAGEM</div>
+          <div class="check-detail">DISCO + PLATO + ROLAMENTO</div>
+        </div>
+        <div class="check-tmt">TMT 1.0H</div>
+        <div class="check-real ok" style="color:var(--green-neon);">00:38:12</div>
+      </div>
+
+      <!-- Pendente -->
+      <div class="check-item">
+        <div class="check-box">[ ]</div>
+        <div class="check-info">
+          <div class="check-nome">REMONTAGEM CAMBIO</div>
+          <div class="check-detail">TORQUE ESPECIFICADO + OLEO NOVO</div>
+        </div>
+        <div class="check-tmt">TMT 0.4H</div>
+        <div class="check-real" style="color:var(--w4);">--:--:--</div>
+      </div>
+
+      <!-- ESTOURO — tempo excedido -->
+      <div class="check-item estouro">
+        <div class="check-box">[!]</div>
+        <div class="check-info">
+          <div class="check-nome">SANGRIA EMBREAGEM HIDR.</div>
+          <div class="check-detail">FLUIDO DOT4 + PURGA AR</div>
+        </div>
+        <div class="check-tmt">TMT 0.3H</div>
+        <div class="check-real over">ESTOURO</div>
+      </div>
+    </div>
+
+    <!-- PECAS -->
+    <div class="pecas-panel">
+      <div class="pecas-header">
+        <div class="pecas-title">PECAS UTILIZADAS</div>
+        <button class="pecas-scan">SCAN</button>
+      </div>
+
+      <div class="peca-row peca-head">
+        <div class="peca-cell">CODIGO</div>
+        <div class="peca-cell">DESCRICAO</div>
+        <div class="peca-cell">QTD</div>
+        <div class="peca-cell">VALOR</div>
+      </div>
+
+      <div class="peca-row">
+        <div class="peca-cell"><span class="peca-cod">EMB-3340</span></div>
+        <div class="peca-cell"><span class="peca-nome">KIT EMBREAGEM COMPLETO</span></div>
+        <div class="peca-cell"><span class="peca-qty">1</span></div>
+        <div class="peca-cell"><span class="peca-val">R$ 680</span></div>
+      </div>
+
+      <div class="peca-row">
+        <div class="peca-cell"><span class="peca-cod">ROL-228</span></div>
+        <div class="peca-cell"><span class="peca-nome">ROLAMENTO ATUADOR</span></div>
+        <div class="peca-cell"><span class="peca-qty">1</span></div>
+        <div class="peca-cell"><span class="peca-val">R$ 145</span></div>
+      </div>
+
+      <div class="peca-row">
+        <div class="peca-cell"><span class="peca-cod">DOT4-500</span></div>
+        <div class="peca-cell"><span class="peca-nome">FLUIDO FREIO DOT4 500ML</span></div>
+        <div class="peca-cell"><span class="peca-qty">1</span></div>
+        <div class="peca-cell"><span class="peca-val">R$ 32</span></div>
+      </div>
+
+      <div class="peca-row">
+        <div class="peca-cell"><span class="peca-cod">OLC-75W</span></div>
+        <div class="peca-cell"><span class="peca-nome">OLEO CAMBIO 75W90 1L</span></div>
+        <div class="peca-cell"><span class="peca-qty">2</span></div>
+        <div class="peca-cell"><span class="peca-val">R$ 96</span></div>
+      </div>
+
+      <div class="peca-add">
+        <div class="peca-add-text">+ ADICIONAR PECA</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- TERMINAL LOG -->
+<div style="border:2px solid var(--border2);margin-top:12px;">
+  <div style="padding:6px 14px;border-bottom:2px solid var(--border2);font-family:var(--head);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:var(--w3);">LOG DO TECNICO // OBSERVACOES</div>
+  <div style="padding:10px 14px;background:#000;font-family:var(--mono);font-size:11px;line-height:1.8;color:var(--green-neon);">
+    <div style="color:var(--w3);">[08:36] EVANDRO ></div>
+    <div>EMBREAGEM PATINANDO. DISCO DESGASTADO ABAIXO DO LIMITE.</div>
+    <div>PLATO COM MARCAS DE SUPERAQUECIMENTO. SUBSTITUIR KIT COMPLETO.</div>
+    <div style="color:var(--w3);margin-top:6px;">[09:18] EVANDRO ></div>
+    <div>ROLAMENTO ATUADOR COM FOLGA. TROCANDO PREVENTIVO.</div>
+    <div style="color:var(--w3);margin-top:6px;">[09:55] EVANDRO ></div>
+    <div>CAMBIO REMONTADO. OLEO 75W90 2L. TORQUE 65NM APLICADO.</div>
+    <div style="margin-top:8px;display:flex;align-items:center;gap:4px;">
+      <span style="color:var(--amber);">EVANDRO ></span>
+      <span style="animation:blink 1s step-end infinite;">_</span>
+    </div>
+  </div>
+</div>
+<style>@keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}</style>
+
+<!-- BOTTOM BAR -->
+<div class="bottom-bar">
+  <button class="bottom-btn bottom-btn-obs">
+    <span style="font-family:var(--mono);font-size:14px;">✎</span> OBSERVACAO
+  </button>
+  <button class="bottom-btn bottom-btn-foto">
+    <span style="font-family:var(--mono);font-size:14px;">◉</span> REGISTRAR FOTO
+  </button>
+  <button class="bottom-btn bottom-btn-concluir">
+    <span style="font-family:var(--mono);font-size:14px;">✓</span> CONCLUIR OS
+  </button>
+</div>
+
+<script>
+// Cronômetro real
+let seconds = 6138; // 01:42:18
+setInterval(() => {
+  seconds++;
+  const h = String(Math.floor(seconds/3600)).padStart(2,'0');
+  const m = String(Math.floor((seconds%3600)/60)).padStart(2,'0');
+  const s = String(seconds%60).padStart(2,'0');
+  document.getElementById('crono').textContent = h+':'+m+':'+s;
+}, 1000);
+</script>
+
+</body>
+</html>

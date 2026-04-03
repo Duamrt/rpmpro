@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro V2 — Fila de Espera</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#09090B;--sf:#111114;--sf2:#18181C;--sf3:#1F1F24;--sf4:#27272D;
+  --ln:rgba(255,255,255,0.04);--ln2:rgba(255,255,255,0.08);--ln3:rgba(255,255,255,0.14);
+  --amber:#E8930C;--amber-dim:rgba(232,147,12,0.1);
+  --orange:#EA580C;--orange-dim:rgba(234,88,12,0.1);
+  --red:#FF3B30;--red-dim:rgba(255,59,48,0.08);--red-glow:rgba(255,59,48,0.04);
+  --green:#30D158;--green-dim:rgba(48,209,88,0.08);
+  --blue:#0A84FF;--blue-dim:rgba(10,132,255,0.1);
+  --purple:#7C3AED;--purple-dim:rgba(124,58,237,0.1);
+  --cyan:#00C7BE;--cyan-dim:rgba(0,199,190,0.1);
+  --w:#F0F0F2;--w2:rgba(255,255,255,0.6);--w3:rgba(255,255,255,0.32);--w4:rgba(255,255,255,0.14);
+  --mono:'JetBrains Mono',monospace;--head:'Barlow Condensed',sans-serif;--body:'Space Grotesk',sans-serif;
+  --r:3px;--r2:4px;
+}
+body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100vh;-webkit-font-smoothing:antialiased;overflow:hidden;}
+
+.app{display:flex;height:100vh;overflow:hidden;}
+
+/* ── SIDEBAR ── */
+.sidebar{width:220px;flex-shrink:0;background:var(--sf);border-right:1px solid var(--ln2);display:flex;flex-direction:column;height:100vh;}
+.sidebar-logo{padding:20px 16px 16px;border-bottom:1px solid var(--ln2);}
+.sidebar-logo-brand{font-family:var(--head);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.sidebar-logo-brand span{color:var(--amber);}
+.sidebar-logo-oficina{font-family:var(--body);font-size:11px;color:var(--w3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sidebar-nav{flex:1;overflow-y:auto;padding:12px 0;scrollbar-width:none;}
+.sidebar-nav::-webkit-scrollbar{display:none;}
+.nav-section{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);padding:10px 16px 6px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 16px;font-family:var(--body);font-size:13px;font-weight:500;color:var(--w3);cursor:pointer;transition:all .12s;text-decoration:none;}
+.nav-item:hover{color:var(--w);background:var(--sf2);}
+.nav-item.active{color:var(--amber);background:var(--amber-dim);border-left:2px solid var(--amber);}
+.nav-item .nav-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0;}
+.sidebar-footer{padding:16px;border-top:1px solid var(--ln2);}
+.user-info{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.user-avatar{width:34px;height:34px;border-radius:var(--r);background:var(--amber-dim);border:1px solid rgba(232,147,12,0.3);display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:14px;font-weight:800;color:var(--amber);flex-shrink:0;}
+.user-details{min-width:0;}
+.user-name{font-family:var(--body);font-size:13px;font-weight:600;color:var(--w);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.user-role{font-family:var(--mono);font-size:10px;color:var(--w3);text-transform:uppercase;letter-spacing:.5px;}
+.btn-logout{width:100%;font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--w3);background:none;border:1px solid var(--ln3);padding:7px;border-radius:var(--r);cursor:pointer;transition:all .15s;}
+.btn-logout:hover{color:var(--w);border-color:var(--w3);}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.main-topbar{height:48px;background:var(--sf);border-bottom:1px solid var(--ln2);display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0;}
+.main-title{font-family:var(--head);font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:2px;}
+.main-content{flex:1;overflow-y:auto;padding:20px;scrollbar-width:thin;scrollbar-color:var(--sf3) transparent;}
+.main-content::-webkit-scrollbar{width:4px;}
+.main-content::-webkit-scrollbar-thumb{background:var(--sf3);border-radius:2px;}
+
+/* ── QUICK ADD ── */
+.quick-add{display:flex;gap:8px;align-items:stretch;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:16px 18px;margin-bottom:20px;}
+.quick-add-input{flex:1;background:var(--sf2);border:2px solid var(--ln3);border-radius:var(--r2);padding:14px 18px;font-family:var(--mono);font-size:22px;font-weight:800;color:var(--w);letter-spacing:3px;text-transform:uppercase;outline:none;text-align:center;transition:border-color .15s;}
+.quick-add-input::placeholder{color:var(--w4);font-size:14px;letter-spacing:1px;font-weight:400;}
+.quick-add-input:focus{border-color:var(--amber);}
+.quick-add-btn{padding:14px 24px;background:var(--amber);border:none;border-radius:var(--r2);font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#000;cursor:pointer;transition:all .12s;white-space:nowrap;}
+.quick-add-btn:hover{background:#F5A623;}
+.quick-add-btn:active{transform:scale(.97);}
+.btn-novo-full{padding:14px 24px;background:var(--sf2);border:1px solid var(--ln3);border-radius:var(--r2);font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);cursor:pointer;transition:all .12s;white-space:nowrap;}
+.btn-novo-full:hover{border-color:var(--amber);color:var(--amber);}
+
+/* ── FILTROS ── */
+.filtros{display:flex;gap:4px;margin-bottom:16px;}
+.filtro-btn{font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;padding:8px 18px;border:1px solid var(--ln2);border-radius:var(--r);background:var(--sf);color:var(--w3);cursor:pointer;transition:all .12s;}
+.filtro-btn:hover{border-color:var(--ln3);color:var(--w2);}
+.filtro-btn.on{background:var(--amber);color:#000;border-color:var(--amber);}
+
+/* ── FILA HEADER ── */
+.fila-header{display:grid;grid-template-columns:50px 120px 1fr 120px 160px;gap:12px;align-items:center;padding:8px 18px;margin-bottom:4px;}
+.fila-header span{font-family:var(--head);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:var(--w4);}
+
+/* ── FILA ITEM ── */
+.fila-item{display:grid;grid-template-columns:50px 120px 1fr 120px 160px;gap:12px;align-items:center;padding:16px 18px;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);margin-bottom:4px;transition:all .15s;position:relative;}
+.fila-item:hover{border-color:var(--ln3);background:var(--sf2);}
+.fila-item.sla-green{border-left:3px solid var(--green);}
+.fila-item.sla-yellow{border-left:3px solid var(--amber);}
+.fila-item.sla-red{border-left:3px solid var(--red);background:var(--red-glow);border-color:rgba(255,59,48,0.12);}
+.fila-item.sla-red:hover{background:rgba(255,59,48,0.06);}
+.fila-item.status-cancelado{opacity:.4;}
+.fila-item.status-agendado{border-left:3px solid var(--green);}
+
+.fila-pos{font-family:var(--head);font-size:28px;font-weight:900;color:var(--w4);text-align:center;letter-spacing:-1px;}
+.fila-item.sla-red .fila-pos{color:var(--red);}
+
+.placa-f{display:inline-flex;flex-direction:column;background:#FFFFFF;border-radius:2px;overflow:hidden;border:2px solid #C8C8C8;line-height:1;}
+.placa-f-topo{background:#003399;padding:1px 5px;display:flex;align-items:center;justify-content:center;}
+.placa-f-br{font-family:var(--mono);font-size:5px;font-weight:700;color:#fff;}
+.placa-f-cod{padding:3px 8px 3px;font-family:var(--mono);font-size:16px;font-weight:800;color:#1A1A1A;letter-spacing:2px;text-align:center;line-height:1;}
+
+.fila-info{}
+.fila-veiculo{font-family:var(--head);font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;}
+.fila-cliente{font-family:var(--body);font-size:12px;color:var(--w2);margin-top:1px;}
+.fila-obs{font-family:var(--body);font-size:11px;color:var(--w3);margin-top:2px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:400px;}
+.fila-urgencia{display:inline-block;font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:2px 8px;border-radius:2px;margin-top:4px;}
+.urg-urgente{background:var(--red-dim);color:var(--red);}
+.urg-normal{background:var(--blue-dim);color:var(--blue);}
+.urg-baixa{background:var(--sf3);color:var(--w3);}
+
+.fila-timer{text-align:center;}
+.fila-timer-val{font-family:var(--mono);font-size:22px;font-weight:800;letter-spacing:2px;line-height:1;}
+.fila-timer-val.t-green{color:var(--green);}
+.fila-timer-val.t-yellow{color:var(--amber);}
+.fila-timer-val.t-red{color:var(--red);animation:timerPulse 1.5s infinite;}
+@keyframes timerPulse{0%,100%{opacity:1;}50%{opacity:.6;}}
+.fila-timer-lbl{font-family:var(--head);font-size:9px;font-weight:600;color:var(--w4);text-transform:uppercase;letter-spacing:1px;margin-top:3px;}
+
+.fila-action{text-align:right;display:flex;flex-direction:column;gap:4px;align-items:flex-end;}
+.fila-btn{padding:8px 16px;border:none;border-radius:var(--r2);font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;cursor:pointer;transition:all .12s;white-space:nowrap;}
+.fila-btn:active{transform:scale(.96);}
+.fila-btn-atender{background:var(--amber);color:#000;}
+.fila-btn-atender:hover{background:#F5A623;}
+.fila-btn-urgente{background:var(--red);color:#fff;}
+.fila-btn-urgente:hover{background:#FF5147;}
+.fila-btn-whats{background:var(--green);color:#000;font-size:10px;padding:6px 12px;}
+.fila-btn-whats:hover{filter:brightness(1.1);}
+.fila-btn-sec{background:none;border:1px solid var(--ln2);color:var(--w3);padding:5px 10px;font-size:10px;}
+.fila-btn-sec:hover{border-color:var(--ln3);color:var(--w2);}
+.fila-btn-row{display:flex;gap:4px;}
+
+/* ── EMPTY ── */
+.fila-empty{text-align:center;padding:60px 24px;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);}
+.fila-empty-text{font-family:var(--head);font-size:16px;font-weight:600;color:var(--w3);text-transform:uppercase;letter-spacing:1px;margin-top:12px;}
+.fila-empty-sub{font-family:var(--body);font-size:13px;color:var(--w4);margin-top:6px;}
+
+/* ── SIDE PANEL ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:900;opacity:0;pointer-events:none;transition:opacity .25s;}
+.overlay.open{opacity:1;pointer-events:auto;}
+.side-panel{position:fixed;top:0;right:0;bottom:0;width:520px;max-width:100%;background:#141417;border-left:1px solid var(--ln2);z-index:1000;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden;}
+.side-panel.open{transform:translateX(0);}
+.panel-head{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid var(--ln2);}
+.panel-title{font-family:var(--head);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.panel-title span{color:var(--amber);}
+.panel-close{width:36px;height:36px;background:var(--sf3);border:1px solid var(--ln2);border-radius:var(--r);color:var(--w3);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.panel-close:hover{background:var(--sf4);color:var(--w);}
+.panel-body{flex:1;overflow-y:auto;padding:24px;}
+.panel-field{margin-bottom:18px;}
+.panel-label{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--w4);margin-bottom:6px;}
+.panel-input{width:100%;background:var(--sf2);border:2px solid var(--ln3);border-radius:var(--r2);padding:12px 14px;font-family:var(--mono);font-size:14px;font-weight:600;color:var(--w);outline:none;transition:border-color .15s;}
+.panel-input:focus{border-color:var(--amber);}
+.panel-input::placeholder{color:var(--w4);font-family:var(--body);font-weight:400;}
+.panel-textarea{width:100%;background:var(--sf2);border:2px solid var(--ln3);border-radius:var(--r2);padding:12px 14px;font-family:var(--body);font-size:13px;color:var(--w);outline:none;resize:vertical;min-height:80px;transition:border-color .15s;}
+.panel-textarea:focus{border-color:var(--amber);}
+.panel-textarea::placeholder{color:var(--w4);}
+.panel-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.panel-select{width:100%;background:var(--sf2);border:2px solid var(--ln3);border-radius:var(--r2);padding:12px 14px;font-family:var(--body);font-size:13px;color:var(--w);outline:none;cursor:pointer;transition:border-color .15s;}
+.panel-select:focus{border-color:var(--amber);}
+.panel-btn-submit{width:100%;padding:14px;border:none;border-radius:var(--r2);font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:2px;cursor:pointer;transition:all .12s;margin-top:24px;background:var(--amber);color:#000;}
+.panel-btn-submit:hover{filter:brightness(1.1);}
+.panel-btn-submit:active{transform:scale(.98);}
+.panel-autocomplete{position:absolute;left:0;right:0;top:100%;z-index:100;background:var(--sf);border:1px solid var(--ln2);border-radius:0 0 var(--r2) var(--r2);max-height:200px;overflow-y:auto;display:none;box-shadow:0 4px 16px rgba(0,0,0,0.5);}
+.panel-ac-item{padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--ln);transition:background .1s;}
+.panel-ac-item:hover{background:var(--sf2);}
+.panel-ac-item strong{color:var(--w);}
+.panel-ac-item span{color:var(--w3);font-size:11px;margin-left:6px;}
+
+/* ── LOGIN ── */
+.login-overlay{position:fixed;inset:0;z-index:2000;background:var(--bg);display:flex;align-items:center;justify-content:center;}
+.login-box{width:340px;padding:40px 32px;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);}
+.login-brand{font-family:var(--head);font-size:36px;font-weight:900;text-transform:uppercase;letter-spacing:2px;text-align:center;margin-bottom:4px;}
+.login-brand span{color:var(--amber);}
+.login-sub{font-family:var(--mono);font-size:11px;color:var(--w4);text-align:center;margin-bottom:28px;letter-spacing:2px;}
+.login-label{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--w4);margin-bottom:6px;display:block;}
+.login-input{width:100%;background:var(--sf2);border:2px solid var(--ln3);border-radius:var(--r);padding:12px 14px;font-family:var(--mono);font-size:14px;color:var(--w);outline:none;margin-bottom:14px;transition:border-color .15s;}
+.login-input:focus{border-color:var(--amber);}
+.login-btn{width:100%;padding:14px;border:none;border-radius:var(--r);background:var(--amber);color:#000;font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:2px;cursor:pointer;margin-top:4px;}
+.login-err{display:none;font-family:var(--body);font-size:12px;color:var(--red);text-align:center;margin-top:12px;}
+
+/* ── LOADING ── */
+.loading-screen{position:fixed;inset:0;z-index:1500;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
+.loading-spinner{width:32px;height:32px;border:3px solid var(--ln2);border-top-color:var(--amber);border-radius:50%;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-label{font-family:var(--mono);font-size:12px;color:var(--w4);letter-spacing:2px;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);font-family:var(--body);font-size:13px;font-weight:600;padding:12px 24px;border-radius:var(--r2);z-index:9999;opacity:0;transition:all .3s;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{background:var(--green);color:#000;}
+.toast.err{background:var(--red);color:#fff;}
+
+@media(max-width:768px){
+  .sidebar{display:none;}
+  .fila-header,.fila-item{grid-template-columns:40px 1fr 100px;}
+  .fila-header span:nth-child(2),.fila-item .placa-f-wrap{display:none;}
+  .fila-header span:nth-child(5),.fila-item .fila-action{display:none;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-overlay" id="login-overlay">
+  <div class="login-box">
+    <div class="login-brand">RPM <span>PRO</span></div>
+    <div class="login-sub">V2 · Fila de Espera</div>
+    <label class="login-label">Email</label>
+    <input class="login-input" type="email" id="login-email" placeholder="email@oficina.com" autocomplete="email">
+    <label class="login-label">Senha</label>
+    <input class="login-input" type="password" id="login-senha" placeholder="••••••••" onkeydown="if(event.key==='Enter')fazerLogin()">
+    <button class="login-btn" id="login-btn" onclick="fazerLogin()">Entrar</button>
+    <div class="login-err" id="login-err">Email ou senha incorretos</div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="loading-screen" id="loading" style="display:none;">
+  <div class="loading-spinner"></div>
+  <div class="loading-label">carregando fila...</div>
+</div>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-brand">RPM <span>PRO</span></div>
+      <div class="sidebar-logo-oficina" id="oficina-nome">—</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Oficina</div>
+      <a class="nav-item" href="kanban-v2.html"><span class="nav-icon">⬛</span>Patio</a>
+      <a class="nav-item" href="dashboard-v2.html"><span class="nav-icon">◈</span>Dashboard</a>
+      <div class="nav-section">Atendimento</div>
+      <a class="nav-item active" href="fila-espera-v2.html"><span class="nav-icon">⏳</span>Fila de Espera</a>
+      <a class="nav-item" href="os-list-v2.html"><span class="nav-icon">📋</span>Ordens de Servico</a>
+      <a class="nav-item" href="execucao-os-v2.html"><span class="nav-icon">🔧</span>Execucao OS</a>
+      <a class="nav-item" href="clientes-v2.html"><span class="nav-icon">👥</span>Clientes</a>
+      <a class="nav-item" href="veiculos-v2.html"><span class="nav-icon">🚗</span>Veiculos</a>
+      <a class="nav-item" href="agendamentos-v2.html"><span class="nav-icon">📅</span>Agendamentos</a>
+      <div class="nav-section">Catalogo</div>
+      <a class="nav-item" href="catalogo-v2.html"><span class="nav-icon">🔧</span>Servicos / Pecas</a>
+      <div class="nav-section">Financeiro</div>
+      <a class="nav-item" href="financeiro-v2.html"><span class="nav-icon">💰</span>Caixa</a>
+      <a class="nav-item" href="comissao-v2.html"><span class="nav-icon">📊</span>Comissao</a>
+      <a class="nav-item" href="folha-v2.html"><span class="nav-icon">📄</span>Folha</a>
+      <div class="nav-section">Equipe</div>
+      <a class="nav-item" href="equipe-v2.html"><span class="nav-icon">👤</span>Equipe</a>
+      <a class="nav-item" href="produtividade-v2.html"><span class="nav-icon">⚡</span>Produtividade</a>
+      <a class="nav-item" href="crm-v2.html"><span class="nav-icon">📡</span>CRM / Reativacao</a>
+      <a class="nav-item" href="satisfacao-v2.html"><span class="nav-icon">⭐</span>Satisfacao</a>
+      <a class="nav-item" href="config-v2.html"><span class="nav-icon">⚙️</span>Configuracoes</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="user-avatar">—</div>
+        <div class="user-details">
+          <div class="user-name" id="user-nome">—</div>
+          <div class="user-role" id="user-role">—</div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="sair()">Sair</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="main-topbar">
+      <div class="main-title">Fila de Espera</div>
+      <div style="display:flex;gap:8px;">
+        <span id="fila-stats" style="font-family:var(--mono);font-size:12px;color:var(--w3);display:flex;align-items:center;gap:12px;"></span>
+      </div>
+    </div>
+    <div class="main-content" id="fila-content"></div>
+  </div>
+</div>
+
+<!-- OVERLAY + SIDE PANEL -->
+<div class="overlay" id="overlay" onclick="fecharPanel()"></div>
+<div class="side-panel" id="panel">
+  <div class="panel-head">
+    <div class="panel-title" id="panel-titulo">Novo na <span>Fila</span></div>
+    <button class="panel-close" onclick="fecharPanel()">×</button>
+  </div>
+  <div class="panel-body" id="panel-body"></div>
+</div>
+
+<div class="toast" id="toast-el"></div>
+
+<script>
+const SUPABASE_URL = 'https://roeeyypssutzfzzkypsq.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZWV5eXBzc3V0emZ6emt5cHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MTk0MTgsImV4cCI6MjA5MDM5NTQxOH0.9oCOmABUTXox3FaRViD2zcUaqv94VfOJFMQYz_fcJi4';
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let PERFIL = null, OFICINA_ID = null, OFICINA = null;
+let FILTRO = 'aguardando';
+let CLI_CACHE = [], VEI_CACHE = [];
+let EDIT_ID = null;
+
+function esc(s){ return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmt(v){ return (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+function toast(msg, tipo='ok'){ const el=document.getElementById('toast-el'); el.textContent=msg; el.className='toast '+tipo+' show'; setTimeout(()=>el.classList.remove('show'),3000); }
+
+function tempoTimer(createdAt) {
+  const ms = Date.now() - new Date(createdAt).getTime();
+  const s = Math.floor(ms / 1000);
+  const h = String(Math.floor(s / 3600)).padStart(2,'0');
+  const m = String(Math.floor((s % 3600) / 60)).padStart(2,'0');
+  const ss = String(s % 60).padStart(2,'0');
+  return h + ':' + m + ':' + ss;
+}
+
+function slaInfo(createdAt) {
+  const min = (Date.now() - new Date(createdAt).getTime()) / 60000;
+  if (min >= 30) return { cls: 'sla-red', tcls: 't-red' };
+  if (min >= 15) return { cls: 'sla-yellow', tcls: 't-yellow' };
+  return { cls: 'sla-green', tcls: 't-green' };
+}
+
+function maskFone(el) {
+  let v = el.value.replace(/\D/g, '').slice(0, 11);
+  if (v.length > 10) v = v.replace(/^(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+  else if (v.length > 6) v = v.replace(/^(\d{2})(\d{4,5})(\d{0,4})/, '($1) $2-$3');
+  else if (v.length > 2) v = v.replace(/^(\d{2})(\d{0,5})/, '($1) $2');
+  el.value = v;
+}
+
+// ── CARREGAR ──
+async function carregar() {
+  const el = document.getElementById('fila-content');
+
+  let query = db.from('fila_espera').select('*').eq('oficina_id', OFICINA_ID).order('created_at', {ascending: true});
+  if (FILTRO !== 'todos') query = query.eq('status', FILTRO);
+
+  const { data } = await query;
+  const lista = data || [];
+
+  // Contadores
+  const aguardando = lista.filter(f => f.status === 'aguardando').length;
+  const urgentes = lista.filter(f => f.urgencia === 'urgente' && f.status === 'aguardando').length;
+
+  document.getElementById('fila-stats').innerHTML = `
+    <span style="color:var(--amber);font-weight:700;">${FILTRO === 'todos' ? lista.length : aguardando} na fila</span>
+    ${urgentes ? `<span style="color:var(--red);font-weight:700;">${urgentes} urgente${urgentes>1?'s':''}</span>` : ''}
+  `;
+
+  el.innerHTML = `
+    <!-- QUICK ADD -->
+    <div class="quick-add">
+      <input class="quick-add-input" id="qa-input" placeholder="DIGITAR PLACA" maxlength="7" onkeydown="if(event.key==='Enter')quickAdd()">
+      <button class="quick-add-btn" onclick="quickAdd()">+ FILA</button>
+      <button class="btn-novo-full" onclick="abrirNovoCompleto()">COMPLETO</button>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="filtros">
+      ${['aguardando','contatado','agendado','todos'].map(f => `
+        <button class="filtro-btn ${FILTRO===f?'on':''}" onclick="FILTRO='${f}';carregar();">${f.charAt(0).toUpperCase()+f.slice(1)}</button>
+      `).join('')}
+    </div>
+
+    <!-- HEADER -->
+    <div class="fila-header">
+      <span style="text-align:center;">#</span>
+      <span>Placa</span>
+      <span>Cliente / Veiculo</span>
+      <span style="text-align:center;">Espera</span>
+      <span style="text-align:right;">Acao</span>
+    </div>
+
+    <!-- LISTA -->
+    <div id="fila-lista">
+    ${lista.length ? lista.map((f, i) => {
+      const sla = slaInfo(f.created_at);
+      const statusExtra = f.status === 'cancelado' ? ' status-cancelado' : (f.status === 'agendado' ? ' status-agendado' : '');
+      const isAtivo = f.status === 'aguardando' || f.status === 'contatado';
+      return `
+      <div class="fila-item ${isAtivo ? sla.cls : ''}${statusExtra}" data-created="${f.created_at}">
+        <div class="fila-pos">${i + 1}</div>
+        <div>
+          ${f.placa ? `<div class="placa-f"><div class="placa-f-topo"><div class="placa-f-br">BR</div></div><div class="placa-f-cod">${esc(f.placa)}</div></div>` : '<div style="font-family:var(--mono);font-size:11px;color:var(--w4);">SEM PLACA</div>'}
+        </div>
+        <div class="fila-info">
+          <div class="fila-veiculo">${esc(f.nome)}</div>
+          <div class="fila-cliente">${esc(f.veiculo_info || '')}${f.whatsapp ? ' · '+esc(f.whatsapp) : ''}</div>
+          ${f.sintoma ? `<div class="fila-obs">"${esc(f.sintoma)}"</div>` : ''}
+          <div class="fila-urgencia urg-${f.urgencia}">${f.urgencia === 'urgente' ? 'URGENTE' : f.urgencia === 'baixa' ? 'PODE ESPERAR' : 'NORMAL'}</div>
+        </div>
+        <div class="fila-timer">
+          ${isAtivo ? `
+            <div class="fila-timer-val ${sla.tcls}" data-start="${f.created_at}">${tempoTimer(f.created_at)}</div>
+            <div class="fila-timer-lbl">Esperando</div>
+          ` : `
+            <div style="font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${f.status==='agendado'?'var(--green)':'var(--w4)'};">${f.status}</div>
+          `}
+        </div>
+        <div class="fila-action">
+          ${f.status === 'aguardando' && f.urgencia === 'urgente' ? `
+            <button class="fila-btn fila-btn-urgente" onclick="iniciarAtendimento('${f.id}','${esc(f.placa||'')}')">ATENDER AGORA</button>
+          ` : isAtivo ? `
+            <button class="fila-btn fila-btn-atender" onclick="iniciarAtendimento('${f.id}','${esc(f.placa||'')}')">Iniciar Atendimento</button>
+          ` : ''}
+          <div class="fila-btn-row">
+            ${f.whatsapp && isAtivo ? `<button class="fila-btn fila-btn-whats" onclick="contatar('${f.id}','${esc(f.whatsapp)}','${esc(f.nome)}')">WhatsApp</button>` : ''}
+            ${isAtivo ? `<button class="fila-btn fila-btn-sec" onclick="editarFila('${f.id}')">Editar</button>` : ''}
+            ${isAtivo ? `<button class="fila-btn fila-btn-sec" onclick="mudarStatus('${f.id}','cancelado')">X</button>` : ''}
+          </div>
+        </div>
+      </div>`;
+    }).join('') : `
+      <div class="fila-empty">
+        <div style="font-size:32px;color:var(--w4);">⏳</div>
+        <div class="fila-empty-text">Fila vazia</div>
+        <div class="fila-empty-sub">Quando um cliente ligar ou chegar, registre aqui pra nao perder</div>
+      </div>
+    `}
+    </div>
+  `;
+}
+
+// ── TIMERS ──
+setInterval(() => {
+  document.querySelectorAll('.fila-timer-val[data-start]').forEach(el => {
+    const start = el.getAttribute('data-start');
+    el.textContent = tempoTimer(start);
+    const min = (Date.now() - new Date(start).getTime()) / 60000;
+    const item = el.closest('.fila-item');
+    if (min >= 30) { el.className = 'fila-timer-val t-red'; if(item) item.className = item.className.replace(/sla-\w+/,'sla-red'); }
+    else if (min >= 15) { el.className = 'fila-timer-val t-yellow'; if(item) item.className = item.className.replace(/sla-\w+/,'sla-yellow'); }
+    else { el.className = 'fila-timer-val t-green'; if(item) item.className = item.className.replace(/sla-\w+/,'sla-green'); }
+  });
+}, 1000);
+
+// ── QUICK ADD ──
+async function quickAdd() {
+  const input = document.getElementById('qa-input');
+  const placa = (input.value || '').trim().toUpperCase();
+  if (!placa) return;
+
+  // Busca veiculo existente
+  const { data: vei } = await db.from('veiculos').select('id, placa, marca, modelo, cliente_id, clientes(nome, whatsapp)')
+    .eq('oficina_id', OFICINA_ID).eq('placa', placa).maybeSingle();
+
+  const { error } = await db.from('fila_espera').insert({
+    oficina_id: OFICINA_ID,
+    nome: vei?.clientes?.nome || 'Cliente ' + placa,
+    whatsapp: vei?.clientes?.whatsapp || null,
+    placa: placa,
+    veiculo_info: vei ? [vei.marca, vei.modelo].filter(Boolean).join(' ') : null,
+    sintoma: '',
+    urgencia: 'normal',
+    status: 'aguardando',
+    created_by: PERFIL.id
+  });
+
+  if (error) { toast('Erro ao adicionar', 'err'); return; }
+  input.value = '';
+  toast(vei ? esc(vei.clientes?.nome) + ' adicionado na fila' : 'Placa ' + placa + ' adicionada');
+  carregar();
+}
+
+// ── NOVO COMPLETO ──
+async function abrirNovoCompleto(editData) {
+  EDIT_ID = editData?.id || null;
+  document.getElementById('panel-titulo').innerHTML = EDIT_ID ? 'Editar <span>Fila</span>' : 'Novo na <span>Fila</span>';
+
+  // Carrega autocomplete
+  if (!CLI_CACHE.length) {
+    const [c, v] = await Promise.all([
+      db.from('clientes').select('id, nome, whatsapp').eq('oficina_id', OFICINA_ID).order('nome'),
+      db.from('veiculos').select('id, placa, marca, modelo, cliente_id').eq('oficina_id', OFICINA_ID).order('placa')
+    ]);
+    CLI_CACHE = c.data || [];
+    VEI_CACHE = v.data || [];
+  }
+
+  const d = editData || {};
+  document.getElementById('panel-body').innerHTML = `
+    <form onsubmit="salvarFila(event)">
+      <div class="panel-row">
+        <div class="panel-field" style="position:relative;">
+          <div class="panel-label">Nome do cliente *</div>
+          <input class="panel-input" id="pf-nome" required placeholder="Buscar ou digitar novo" value="${esc(d.nome||'')}" autocomplete="off" oninput="buscarCli(this.value)">
+          <input type="hidden" id="pf-cliente-id" value="">
+          <div class="panel-autocomplete" id="pf-cli-ac"></div>
+        </div>
+        <div class="panel-field">
+          <div class="panel-label">WhatsApp</div>
+          <input class="panel-input" id="pf-whatsapp" placeholder="(00) 00000-0000" maxlength="15" oninput="maskFone(this)" value="${esc(d.whatsapp||'')}">
+        </div>
+      </div>
+      <div class="panel-row">
+        <div class="panel-field">
+          <div class="panel-label">Placa</div>
+          <input class="panel-input" id="pf-placa" placeholder="ABC1D23" style="text-transform:uppercase" maxlength="8" value="${esc(d.placa||'')}">
+        </div>
+        <div class="panel-field">
+          <div class="panel-label">Veiculo</div>
+          <input class="panel-input" id="pf-veiculo" placeholder="Marca Modelo" value="${esc(d.veiculo_info||'')}">
+        </div>
+      </div>
+      <div class="panel-field">
+        <div class="panel-label">O que o cliente disse? *</div>
+        <textarea class="panel-textarea" id="pf-sintoma" required placeholder="Barulho na roda, ar nao gela, luz do painel...">${esc(d.sintoma||'')}</textarea>
+      </div>
+      <div class="panel-row">
+        <div class="panel-field">
+          <div class="panel-label">Urgencia</div>
+          <select class="panel-select" id="pf-urgencia">
+            <option value="normal" ${(d.urgencia||'normal')==='normal'?'selected':''}>Normal</option>
+            <option value="urgente" ${d.urgencia==='urgente'?'selected':''}>Urgente</option>
+            <option value="baixa" ${d.urgencia==='baixa'?'selected':''}>Pode esperar</option>
+          </select>
+        </div>
+        <div class="panel-field"></div>
+      </div>
+      <div class="panel-field">
+        <div class="panel-label">Observacoes internas</div>
+        <textarea class="panel-textarea" id="pf-obs" placeholder="Anotacoes pra equipe (cliente nao ve)" style="min-height:60px;">${esc(d.observacoes||'')}</textarea>
+      </div>
+      <button type="submit" class="panel-btn-submit">${EDIT_ID ? 'Salvar' : 'Adicionar na Fila'}</button>
+    </form>
+  `;
+
+  document.getElementById('panel').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(() => document.getElementById('pf-nome').focus(), 300);
+}
+
+function fecharPanel() {
+  document.getElementById('panel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+  EDIT_ID = null;
+}
+
+// ── AUTOCOMPLETE CLIENTE ──
+function buscarCli(termo) {
+  const ac = document.getElementById('pf-cli-ac');
+  const t = termo.toLowerCase();
+  if (t.length < 2) { ac.style.display = 'none'; document.getElementById('pf-cliente-id').value = ''; return; }
+  const filtrados = CLI_CACHE.filter(c => c.nome.toLowerCase().includes(t)).slice(0, 8);
+  if (!filtrados.length) { ac.style.display = 'none'; return; }
+  ac.style.display = 'block';
+  ac.innerHTML = filtrados.map(c => `
+    <div class="panel-ac-item" onmousedown="selecionarCli('${c.id}','${esc(c.nome)}','${esc(c.whatsapp||'')}')">
+      <strong>${esc(c.nome)}</strong>${c.whatsapp ? `<span>${esc(c.whatsapp)}</span>` : ''}
+    </div>
+  `).join('');
+}
+
+function selecionarCli(id, nome, whats) {
+  document.getElementById('pf-nome').value = nome;
+  document.getElementById('pf-cliente-id').value = id;
+  document.getElementById('pf-cli-ac').style.display = 'none';
+  if (whats && !document.getElementById('pf-whatsapp').value) document.getElementById('pf-whatsapp').value = whats;
+  // Preenche veiculos do cliente
+  const veiculos = VEI_CACHE.filter(v => v.cliente_id === id);
+  if (veiculos.length === 1) {
+    document.getElementById('pf-placa').value = veiculos[0].placa || '';
+    document.getElementById('pf-veiculo').value = [veiculos[0].marca, veiculos[0].modelo].filter(Boolean).join(' ');
+  }
+}
+
+// ── SALVAR ──
+async function salvarFila(e) {
+  e.preventDefault();
+  const payload = {
+    nome: document.getElementById('pf-nome').value.trim(),
+    whatsapp: document.getElementById('pf-whatsapp').value.trim() || null,
+    placa: document.getElementById('pf-placa').value.trim().toUpperCase() || null,
+    veiculo_info: document.getElementById('pf-veiculo').value.trim() || null,
+    sintoma: document.getElementById('pf-sintoma').value.trim(),
+    urgencia: document.getElementById('pf-urgencia').value,
+    observacoes: document.getElementById('pf-obs').value.trim() || null
+  };
+
+  let error;
+  if (EDIT_ID) {
+    ({ error } = await db.from('fila_espera').update(payload).eq('id', EDIT_ID).eq('oficina_id', OFICINA_ID));
+  } else {
+    payload.oficina_id = OFICINA_ID;
+    payload.status = 'aguardando';
+    payload.created_by = PERFIL.id;
+    // Auto-cadastrar cliente se novo
+    const clienteId = document.getElementById('pf-cliente-id').value;
+    if (!clienteId && payload.nome) {
+      const { data: novoCli } = await db.from('clientes').insert({ oficina_id: OFICINA_ID, nome: payload.nome, whatsapp: payload.whatsapp }).select().single();
+      if (novoCli && payload.placa) {
+        await db.from('veiculos').insert({ oficina_id: OFICINA_ID, cliente_id: novoCli.id, placa: payload.placa, modelo: payload.veiculo_info });
+      }
+    }
+    ({ error } = await db.from('fila_espera').insert(payload));
+  }
+
+  if (error) { toast('Erro: ' + error.message, 'err'); return; }
+  fecharPanel();
+  toast(EDIT_ID ? 'Atualizado' : 'Adicionado na fila');
+  carregar();
+}
+
+// ── EDITAR ──
+async function editarFila(id) {
+  const { data } = await db.from('fila_espera').select('*').eq('id', id).single();
+  if (!data) return;
+  abrirNovoCompleto(data);
+}
+
+// ── MUDAR STATUS ──
+async function mudarStatus(id, novoStatus) {
+  if(_busy.mudarStatus)return;
+  _busy.mudarStatus=true;
+  try{
+    const { error } = await db.from('fila_espera').update({ status: novoStatus }).eq('id', id).eq('oficina_id', OFICINA_ID);
+    if (error) { toast('Erro', 'err'); return; }
+
+    // Se marcou como agendado, cria agendamento automaticamente
+    if(novoStatus==='agendado'){
+      const{data:fila}=await db.from('fila_espera').select('*').eq('id',id).eq('oficina_id',OFICINA_ID).single();
+      if(fila&&fila.placa){
+        // Busca veiculo e cliente pela placa
+        const{data:vei}=await db.from('veiculos').select('id, cliente_id').eq('oficina_id',OFICINA_ID).eq('placa',fila.placa).maybeSingle();
+        if(vei&&vei.cliente_id){
+          // Data prevista = proximo dia util (amanha)
+          const amanha=new Date();amanha.setDate(amanha.getDate()+1);
+          const dataStr=amanha.toISOString().split('T')[0];
+          const{error:errAg}=await db.from('agendamentos').insert({
+            oficina_id:OFICINA_ID,
+            cliente_id:vei.cliente_id,
+            veiculo_id:vei.id,
+            tipo:'servico',
+            data_prevista:dataStr,
+            descricao:fila.sintoma||null,
+            created_by:PERFIL.id
+          });
+          if(errAg){
+            // Reverte status da fila se agendamento falhou
+            await db.from('fila_espera').update({status:'contatado'}).eq('id',id).eq('oficina_id',OFICINA_ID);
+            toast('Erro ao criar agendamento — status revertido','err');
+            carregar();
+            return;
+          }
+          toast('Agendado para '+dataStr.split('-').reverse().join('/'));
+        }else{
+          toast('Status atualizado (veiculo sem cadastro — agende manualmente)');
+        }
+      }else{
+        toast('Status atualizado');
+      }
+    }else{
+      toast('Status atualizado');
+    }
+    carregar();
+  }catch(err){console.error('mudarStatus',err);toast('Erro ao mudar status','err');}
+  finally{_busy.mudarStatus=false;}
+}
+
+// ── CONTATAR (WhatsApp) ──
+function contatar(id, fone, nome) {
+  const num = fone.replace(/\D/g, '');
+  const numFull = num.length <= 11 ? '55' + num : num;
+  const msg = `Oi ${nome}! Aqui e da ${OFICINA?.nome || 'oficina'}. Recebemos seu contato e vamos verificar a disponibilidade. Ja te retorno com a data!`;
+  window.open('https://wa.me/' + numFull + '?text=' + encodeURIComponent(msg), '_blank');
+  mudarStatus(id, 'contatado');
+}
+
+// ── INICIAR ATENDIMENTO → Kanban ──
+function iniciarAtendimento(filaId, placa) {
+  // Marca como agendado e redireciona pro kanban com placa
+  mudarStatus(filaId, 'agendado');
+  // Redireciona pro kanban — la ele pode criar a OS
+  setTimeout(() => {
+    window.location.href = 'kanban-v2.html';
+  }, 500);
+}
+
+// ── LOGIN ──
+async function fazerLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const senha = document.getElementById('login-senha').value;
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('login-err');
+  if (!email || !senha) return;
+  btn.disabled = true; btn.textContent = 'Entrando...'; err.style.display = 'none';
+  const { error } = await db.auth.signInWithPassword({email, password:senha});
+  if (error) { err.style.display='block'; btn.disabled=false; btn.textContent='Entrar'; return; }
+  await init();
+}
+
+function sair() { db.auth.signOut(); location.reload(); }
+const _busy = {};
+
+async function init() {
+  db.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_OUT') window.location.href = 'login.html'; });
+  const { data:{session} } = await db.auth.getSession();
+  if (!session) { document.getElementById('login-overlay').style.display='flex'; return; }
+  document.getElementById('login-overlay').style.display = 'none';
+  document.getElementById('loading').style.display = 'flex';
+
+  const { data: perfil } = await db.from('profiles').select('*, oficinas(*)').eq('user_id', session.user.id).single();
+  if (!perfil) { toast('Perfil nao encontrado','err'); return; }
+
+  PERFIL = perfil;
+  OFICINA_ID = perfil.oficina_id;
+  OFICINA = perfil.oficinas;
+
+  const nomeDisplay = perfil.nome || session.user.email;
+  document.getElementById('user-nome').textContent = nomeDisplay;
+  document.getElementById('user-role').textContent = perfil.role || '';
+  document.getElementById('user-avatar').textContent = nomeDisplay.charAt(0).toUpperCase();
+  document.getElementById('oficina-nome').textContent = perfil.oficinas?.nome || '';
+
+  await carregar();
+
+  // Realtime
+  db.channel('fila-v2-'+OFICINA_ID)
+    .on('postgres_changes',{event:'*',schema:'public',table:'fila_espera',filter:'oficina_id=eq.'+OFICINA_ID},()=>carregar())
+    .subscribe();
+
+  document.getElementById('loading').style.display = 'none';
+}
+
+init();
+</script>
+</body>
+</html>

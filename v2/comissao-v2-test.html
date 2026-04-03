@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro V2 — Comissao</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#09090B;--sf:#111114;--sf2:#18181C;--sf3:#1F1F24;--sf4:#27272D;
+  --ln:rgba(255,255,255,0.04);--ln2:rgba(255,255,255,0.08);--ln3:rgba(255,255,255,0.14);
+  --amber:#E8930C;--amber-dim:rgba(232,147,12,0.1);
+  --orange:#EA580C;--orange-dim:rgba(234,88,12,0.12);
+  --red:#FF3B30;--red-dim:rgba(255,59,48,0.08);
+  --green:#30D158;--green-dim:rgba(48,209,88,0.08);
+  --blue:#0A84FF;--blue-dim:rgba(10,132,255,0.1);
+  --cyan:#00C7BE;
+  --w:#F0F0F2;--w2:rgba(255,255,255,0.6);--w3:rgba(255,255,255,0.32);--w4:rgba(255,255,255,0.14);
+  --mono:'JetBrains Mono',monospace;--head:'Barlow Condensed',sans-serif;--body:'Space Grotesk',sans-serif;
+  --r:3px;--r2:4px;
+}
+body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100vh;-webkit-font-smoothing:antialiased;padding:32px 40px;max-width:1000px;margin:0 auto;}
+
+/* HEADER */
+.page-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
+.page-title{font-family:var(--head);font-size:32px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.page-title span{color:var(--amber);}
+.page-actions{display:flex;gap:8px;}
+.btn-pdf{
+  padding:12px 24px;background:var(--sf2);border:2px solid var(--ln3);border-radius:var(--r2);
+  font-family:var(--head);font-size:13px;font-weight:800;text-transform:uppercase;
+  letter-spacing:2px;color:var(--w);cursor:pointer;transition:all .12s;
+  display:flex;align-items:center;gap:8px;
+}
+.btn-pdf:hover{border-color:var(--amber);background:var(--amber-dim);color:var(--amber);}
+.btn-pdf:active{transform:scale(.97);}
+.btn-pdf svg{width:16px;height:16px;stroke:currentColor;stroke-width:2;}
+
+/* PERIOD NAV */
+.period-nav{
+  display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;
+}
+.period-selector{display:flex;align-items:center;gap:12px;}
+.period-btn{
+  width:40px;height:40px;background:var(--sf2);border:1px solid var(--ln3);border-radius:var(--r2);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .12s;
+}
+.period-btn:hover{border-color:var(--amber);background:var(--amber-dim);}
+.period-btn:active{transform:scale(.94);}
+.period-btn svg{width:16px;height:16px;stroke:var(--w);stroke-width:2.5;}
+.period-btn:hover svg{stroke:var(--amber);}
+.period-label{font-family:var(--head);font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:2px;min-width:180px;text-align:center;}
+.period-label span{color:var(--amber);}
+.period-config{display:flex;align-items:center;gap:10px;}
+.period-taxa{
+  font-family:var(--mono);font-size:13px;color:var(--w2);
+  background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);
+  padding:8px 14px;display:flex;align-items:center;gap:6px;
+}
+.period-taxa-val{color:var(--amber);font-weight:700;}
+
+/* SUMMARY */
+.summary{display:flex;gap:6px;margin-bottom:24px;}
+.summary-item{
+  flex:1;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);
+  padding:14px;text-align:center;
+}
+.summary-val{font-family:var(--mono);font-size:22px;font-weight:800;letter-spacing:-1px;}
+.summary-lbl{font-family:var(--head);font-size:10px;font-weight:600;color:var(--w3);text-transform:uppercase;letter-spacing:1.5px;margin-top:2px;}
+
+/* RANKING HEADER */
+.ranking-head{
+  display:grid;grid-template-columns:40px 1fr 100px 80px 140px;
+  gap:12px;align-items:center;padding:8px 18px;margin-bottom:4px;
+}
+.ranking-head span{font-family:var(--head);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:var(--w4);}
+.ranking-head .rh-right{text-align:right;}
+
+/* PERFORMANCE CARD */
+.perf-card{
+  display:grid;grid-template-columns:40px 1fr 100px 80px 140px;
+  gap:12px;align-items:center;
+  background:var(--sf);border:2px solid var(--ln2);border-radius:var(--r2);
+  padding:16px 18px;margin-bottom:6px;transition:all .12s;
+  position:relative;
+}
+.perf-card:hover{border-color:var(--ln3);background:var(--sf2);}
+
+/* Podio highlight */
+.perf-card.gold{border-color:rgba(232,147,12,0.25);background:linear-gradient(135deg,var(--sf) 0%,rgba(232,147,12,0.04) 100%);}
+.perf-card.silver{border-color:rgba(255,255,255,0.1);}
+.perf-card.bronze{border-color:rgba(234,88,12,0.15);}
+
+/* Inativo */
+.perf-card.inativo{opacity:.5;}
+.perf-card.inativo:hover{opacity:.7;}
+
+/* Posicao */
+.perf-pos{
+  font-family:var(--head);font-size:28px;font-weight:900;
+  text-align:center;letter-spacing:-1px;
+}
+.perf-card.gold .perf-pos{color:var(--amber);}
+.perf-card.silver .perf-pos{color:var(--w2);}
+.perf-card.bronze .perf-pos{color:var(--orange);}
+.perf-card:not(.gold):not(.silver):not(.bronze) .perf-pos{color:var(--w4);}
+
+/* Mecânico info */
+.perf-info{display:flex;align-items:center;gap:12px;}
+.perf-avatar{
+  width:42px;height:42px;border-radius:var(--r2);
+  background:var(--sf3);border:1px solid var(--ln2);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  font-family:var(--mono);font-size:14px;font-weight:700;color:var(--w3);
+  text-transform:uppercase;letter-spacing:2px;
+}
+.perf-card.gold .perf-avatar{background:var(--amber-dim);color:var(--amber);border-color:rgba(232,147,12,0.2);}
+.perf-details{flex:1;min-width:0;}
+.perf-nome{font-family:var(--head);font-size:18px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.perf-cargo{font-family:var(--body);font-size:11px;color:var(--w3);margin-top:1px;}
+
+/* Faturamento produzido */
+.perf-faturamento{
+  display:flex;flex-direction:column;align-items:center;
+}
+.perf-fat-val{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--w2);}
+.perf-fat-lbl{font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--w4);margin-top:2px;}
+
+/* OS badge */
+.perf-os{
+  display:flex;align-items:center;justify-content:center;
+}
+.perf-os-badge{
+  font-family:var(--mono);font-size:13px;font-weight:800;
+  background:var(--sf3);border:1px solid var(--ln2);border-radius:var(--r2);
+  padding:6px 12px;display:flex;align-items:center;gap:4px;
+}
+.perf-os-num{color:var(--w);}
+.perf-os-lbl{font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--w3);}
+
+/* COMISSAO (destaque maximo) */
+.perf-comissao{
+  text-align:right;
+}
+.perf-comissao-val{
+  font-family:var(--mono);font-size:22px;font-weight:800;
+  letter-spacing:-1px;
+}
+.perf-card.gold .perf-comissao-val{color:var(--green);text-shadow:0 0 20px rgba(48,209,88,0.2);}
+.perf-card.silver .perf-comissao-val{color:var(--green);text-shadow:0 0 15px rgba(48,209,88,0.12);}
+.perf-card.bronze .perf-comissao-val{color:var(--amber);text-shadow:0 0 15px rgba(232,147,12,0.12);}
+.perf-card:not(.gold):not(.silver):not(.bronze) .perf-comissao-val{color:var(--amber);}
+.perf-card.inativo .perf-comissao-val{color:var(--w4);text-shadow:none;}
+.perf-comissao-pct{font-family:var(--mono);font-size:10px;color:var(--w3);margin-top:2px;}
+
+/* TOTALIZADOR */
+.total-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--sf);border:2px solid var(--amber);border-radius:var(--r2);
+  padding:18px 24px;margin-top:16px;
+}
+.total-label{font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--w2);}
+.total-val{font-family:var(--mono);font-size:28px;font-weight:800;color:var(--amber);text-shadow:0 0 25px rgba(232,147,12,0.15);}
+.total-detail{font-family:var(--body);font-size:12px;color:var(--w3);}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="page-head">
+  <div class="page-title"><span>Comissoes</span></div>
+  <div class="page-actions">
+    <button class="btn-pdf">
+      <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Imprimir Relatório
+    </button>
+  </div>
+</div>
+
+<!-- PERIOD NAV -->
+<div class="period-nav">
+  <div class="period-selector">
+    <div class="period-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </div>
+    <div class="period-label">Abril <span>2026</span></div>
+    <div class="period-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+  </div>
+  <div class="period-config">
+    <div class="period-taxa">Taxa: <span class="period-taxa-val">10%</span> sobre MO</div>
+  </div>
+</div>
+
+<!-- SUMMARY -->
+<div class="summary">
+  <div class="summary-item">
+    <div class="summary-val" style="color:var(--w);">7</div>
+    <div class="summary-lbl">Mecânicos</div>
+  </div>
+  <div class="summary-item">
+    <div class="summary-val" style="color:var(--green);">28</div>
+    <div class="summary-lbl">OS Entregues</div>
+  </div>
+  <div class="summary-item">
+    <div class="summary-val" style="color:var(--w2);">R$ 11.6k</div>
+    <div class="summary-lbl">Faturamento MO</div>
+  </div>
+  <div class="summary-item">
+    <div class="summary-val" style="color:var(--amber);">R$ 1.164</div>
+    <div class="summary-lbl">Total Comissao</div>
+  </div>
+</div>
+
+<!-- RANKING HEADER -->
+<div class="ranking-head">
+  <span style="text-align:center;">#</span>
+  <span>Mecânico</span>
+  <span style="text-align:center;">Faturamento</span>
+  <span style="text-align:center;">OS</span>
+  <span class="rh-right">Comissao</span>
+</div>
+
+<!-- 1. OURO — Daniel -->
+<div class="perf-card gold">
+  <div class="perf-pos">1</div>
+  <div class="perf-info">
+    <div class="perf-avatar">DA</div>
+    <div class="perf-details">
+      <div class="perf-nome">Daniel</div>
+      <div class="perf-cargo">Mecânico Senior</div>
+    </div>
+  </div>
+  <div class="perf-faturamento">
+    <div class="perf-fat-val">R$ 3.480</div>
+    <div class="perf-fat-lbl">Faturado</div>
+  </div>
+  <div class="perf-os">
+    <div class="perf-os-badge"><span class="perf-os-num">8</span><span class="perf-os-lbl">OS</span></div>
+  </div>
+  <div class="perf-comissao">
+    <div class="perf-comissao-val">R$ 348,00</div>
+    <div class="perf-comissao-pct">10% s/ MO</div>
+  </div>
+</div>
+
+<!-- 2. PRATA — Evandro -->
+<div class="perf-card silver">
+  <div class="perf-pos">2</div>
+  <div class="perf-info">
+    <div class="perf-avatar">EV</div>
+    <div class="perf-details">
+      <div class="perf-nome">Evandro</div>
+      <div class="perf-cargo">Mecânico Senior</div>
+    </div>
+  </div>
+  <div class="perf-faturamento">
+    <div class="perf-fat-val">R$ 2.860</div>
+    <div class="perf-fat-lbl">Faturado</div>
+  </div>
+  <div class="perf-os">
+    <div class="perf-os-badge"><span class="perf-os-num">6</span><span class="perf-os-lbl">OS</span></div>
+  </div>
+  <div class="perf-comissao">
+    <div class="perf-comissao-val">R$ 286,00</div>
+    <div class="perf-comissao-pct">10% s/ MO</div>
+  </div>
+</div>
+
+<!-- 3. BRONZE — Juninho -->
+<div class="perf-card bronze">
+  <div class="perf-pos">3</div>
+  <div class="perf-info">
+    <div class="perf-avatar">JU</div>
+    <div class="perf-details">
+      <div class="perf-nome">Juninho</div>
+      <div class="perf-cargo">Mecânico</div>
+    </div>
+  </div>
+  <div class="perf-faturamento">
+    <div class="perf-fat-val">R$ 2.140</div>
+    <div class="perf-fat-lbl">Faturado</div>
+  </div>
+  <div class="perf-os">
+    <div class="perf-os-badge"><span class="perf-os-num">5</span><span class="perf-os-lbl">OS</span></div>
+  </div>
+  <div class="perf-comissao">
+    <div class="perf-comissao-val">R$ 214,00</div>
+    <div class="perf-comissao-pct">10% s/ MO</div>
+  </div>
+</div>
+
+<!-- 4. Regular — Marcos -->
+<div class="perf-card">
+  <div class="perf-pos">4</div>
+  <div class="perf-info">
+    <div class="perf-avatar">MA</div>
+    <div class="perf-details">
+      <div class="perf-nome">Marcos</div>
+      <div class="perf-cargo">Mecânico</div>
+    </div>
+  </div>
+  <div class="perf-faturamento">
+    <div class="perf-fat-val">R$ 1.680</div>
+    <div class="perf-fat-lbl">Faturado</div>
+  </div>
+  <div class="perf-os">
+    <div class="perf-os-badge"><span class="perf-os-num">4</span><span class="perf-os-lbl">OS</span></div>
+  </div>
+  <div class="perf-comissao">
+    <div class="perf-comissao-val">R$ 168,00</div>
+    <div class="perf-comissao-pct">10% s/ MO</div>
+  </div>
+</div>
+
+<!-- 5. Regular — Leandro -->
+<div class="perf-card">
+  <div class="perf-pos">5</div>
+  <div class="perf-info">
+    <div class="perf-avatar">LE</div>
+    <div class="perf-details">
+      <div class="perf-nome">Leandro</div>
+      <div class="perf-cargo">Mecânico</div>
+    </div>
+  </div>
+  <div class="perf-faturamento">
+    <div class="perf-fat-val">R$ 1.240</div>
+    <div class="perf-fat-lbl">Faturado</div>
+  </div>
+  <div class="perf-os">
+    <div class="perf-os-badge"><span class="perf-os-num">3</span><span class="perf-os-lbl">OS</span></div>
+  </div>
+  <div class="perf-comissao">
+    <div class="perf-comissao-val">R$ 124,00</div>
+    <div class="perf-comissao-pct">10% s/ MO</div>
+  </div>
+</div>
+
+<!-- 6. Regular — Wellington -->
+<div class="perf-card">
+  <div class="perf-pos">6</div>
+  <div class="perf-info">
+    <div class="perf-avatar">WE</div>
+    <div class="perf-details">
+      <div class="perf-nome">Wellington</div>
+      <div class="perf-cargo">Aux. Mecânico</div>
+    </div>
+  </div>
+  <div class="perf-faturamento">
+    <div class="perf-fat-val">R$ 240</div>
+    <div class="perf-fat-lbl">Faturado</div>
+  </div>
+  <div class="perf-os">
+    <div class="perf-os-badge"><span class="perf-os-num">2</span><span class="perf-os-lbl">OS</span></div>
+  </div>
+  <div class="perf-comissao">
+    <div class="perf-comissao-val">R$ 24,00</div>
+    <div class="perf-comissao-pct">10% s/ MO</div>
+  </div>
+</div>
+
+<!-- 7. INATIVO — Sergio -->
+<div class="perf-card inativo">
+  <div class="perf-pos">7</div>
+  <div class="perf-info">
+    <div class="perf-avatar">SE</div>
+    <div class="perf-details">
+      <div class="perf-nome">Sergio</div>
+      <div class="perf-cargo">Mecânico</div>
+    </div>
+  </div>
+  <div class="perf-faturamento">
+    <div class="perf-fat-val">R$ 0</div>
+    <div class="perf-fat-lbl">Faturado</div>
+  </div>
+  <div class="perf-os">
+    <div class="perf-os-badge"><span class="perf-os-num">0</span><span class="perf-os-lbl">OS</span></div>
+  </div>
+  <div class="perf-comissao">
+    <div class="perf-comissao-val">R$ 0,00</div>
+    <div class="perf-comissao-pct">Sem produção</div>
+  </div>
+</div>
+
+<!-- TOTALIZADOR -->
+<div class="total-bar">
+  <div>
+    <div class="total-label">Total Comissoes — Abril 2026</div>
+    <div class="total-detail">7 mecanicos · 28 OS · R$ 11.640 faturado MO</div>
+  </div>
+  <div class="total-val">R$ 1.164,00</div>
+</div>
+
+</body>
+</html>

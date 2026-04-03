@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro V2 — Clientes</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#09090B;--sf:#111114;--sf2:#18181C;--sf3:#1F1F24;--sf4:#27272D;
+  --ln:rgba(255,255,255,0.04);--ln2:rgba(255,255,255,0.08);--ln3:rgba(255,255,255,0.14);
+  --amber:#E8930C;--amber-dim:rgba(232,147,12,0.1);
+  --orange:#EA580C;--orange-dim:rgba(234,88,12,0.12);
+  --red:#FF3B30;--red-dim:rgba(255,59,48,0.08);--red-glow:rgba(255,59,48,0.04);
+  --green:#30D158;--green-dim:rgba(48,209,88,0.08);
+  --blue:#0A84FF;--blue-dim:rgba(10,132,255,0.1);
+  --purple:#7C3AED;--purple-dim:rgba(124,58,237,0.1);
+  --cyan:#00C7BE;--cyan-dim:rgba(0,199,190,0.1);
+  --w:#F0F0F2;--w2:rgba(255,255,255,0.6);--w3:rgba(255,255,255,0.32);--w4:rgba(255,255,255,0.14);
+  --mono:'JetBrains Mono',monospace;--head:'Barlow Condensed',sans-serif;--body:'Space Grotesk',sans-serif;
+  --r:3px;--r2:4px;
+}
+body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100vh;-webkit-font-smoothing:antialiased;padding:32px 40px;max-width:1000px;margin:0 auto;}
+
+/* HEADER */
+.page-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
+.page-title{font-family:var(--head);font-size:32px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.page-title span{color:var(--amber);}
+.page-actions{display:flex;gap:8px;align-items:center;}
+.btn-novo{
+  padding:10px 22px;background:var(--amber);border:none;border-radius:var(--r2);
+  font-family:var(--head);font-size:13px;font-weight:800;text-transform:uppercase;
+  letter-spacing:1.5px;color:#000;cursor:pointer;transition:all .12s;
+  display:flex;align-items:center;gap:6px;
+}
+.btn-novo:hover{background:#F5A623;}
+.btn-novo:active{transform:scale(.97);}
+.btn-novo svg{width:16px;height:16px;stroke:currentColor;stroke-width:2.5;}
+
+/* SEARCH */
+.search-bar{
+  display:flex;align-items:center;gap:12px;
+  background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);
+  padding:14px 18px;margin-bottom:16px;transition:border-color .15s;
+}
+.search-bar:focus-within{border-color:var(--amber);}
+.search-bar svg{width:18px;height:18px;stroke:var(--w3);flex-shrink:0;}
+.search-bar input{flex:1;background:none;border:none;color:var(--w);font-family:var(--mono);font-size:15px;outline:none;letter-spacing:.5px;}
+.search-bar input::placeholder{color:var(--w3);font-family:var(--body);letter-spacing:0;}
+
+/* SUMMARY */
+.summary{display:flex;gap:6px;margin-bottom:20px;}
+.summary-item{
+  flex:1;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);
+  padding:12px 14px;text-align:center;
+}
+.summary-val{font-family:var(--mono);font-size:22px;font-weight:800;letter-spacing:-1px;}
+.summary-lbl{font-family:var(--head);font-size:10px;font-weight:600;color:var(--w3);text-transform:uppercase;letter-spacing:1.5px;margin-top:2px;}
+
+/* FILTERS */
+.filters{display:flex;gap:4px;margin-bottom:24px;overflow-x:auto;padding-bottom:4px;}
+.f-btn{
+  font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;
+  padding:8px 16px;border:1px solid var(--ln2);border-radius:var(--r);
+  background:var(--sf);color:var(--w3);cursor:pointer;white-space:nowrap;transition:all .12s;
+}
+.f-btn:hover{border-color:var(--ln3);color:var(--w2);}
+.f-btn.on{background:var(--amber);color:#000;border-color:var(--amber);}
+.f-btn .f-count{
+  font-family:var(--mono);font-size:11px;margin-left:6px;
+  padding:1px 5px;border-radius:2px;background:rgba(0,0,0,0.2);
+}
+.f-btn:not(.on) .f-count{background:var(--w4);}
+
+/* ALERT BAR — inadimplencia */
+.alert-bar{
+  display:flex;align-items:center;gap:14px;
+  background:var(--red-dim);border:1px solid rgba(255,59,48,0.15);border-radius:var(--r2);
+  padding:12px 16px;margin-bottom:20px;cursor:pointer;transition:background .12s;
+}
+.alert-bar:hover{background:rgba(255,59,48,0.14);}
+.alert-pill{font-family:var(--mono);font-size:18px;font-weight:800;color:var(--red);min-width:28px;text-align:center;}
+.alert-text{flex:1;font-size:13px;color:var(--w2);}
+.alert-text strong{color:var(--w);font-weight:600;}
+.alert-val{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--red);}
+
+/* CLIENT ROW */
+.cli-row{
+  display:flex;align-items:center;gap:16px;
+  background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);
+  padding:14px 16px;margin-bottom:6px;cursor:pointer;
+  transition:all .12s;position:relative;overflow:hidden;
+}
+.cli-row:hover{border-color:var(--ln3);background:var(--sf2);}
+.cli-row:active{background:var(--sf3);}
+
+/* Indicador lateral (tipo da conta) */
+.cli-row-indicator{position:absolute;left:0;top:0;bottom:0;width:3px;}
+.cli-row-indicator.cli-vip{background:var(--amber);}
+.cli-row-indicator.cli-devedor{background:var(--red);animation:slaPulse 1s infinite;}
+.cli-row-indicator.cli-novo{background:var(--green);}
+.cli-row-indicator.cli-inativo{background:var(--w4);}
+@keyframes slaPulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+/* Avatar */
+.cli-avatar{
+  width:44px;height:44px;border-radius:var(--r2);
+  background:var(--sf3);border:1px solid var(--ln2);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  font-family:var(--mono);font-size:16px;font-weight:700;color:var(--w3);
+  text-transform:uppercase;letter-spacing:2px;
+}
+.cli-row.cli-corporativo .cli-avatar{background:var(--blue-dim);color:var(--blue);border-color:rgba(10,132,255,0.2);}
+
+/* Info */
+.cli-body{flex:1;min-width:0;}
+.cli-top{display:flex;align-items:baseline;gap:10px;margin-bottom:2px;}
+.cli-nome{font-family:var(--head);font-size:17px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cli-tag{
+  font-family:var(--head);font-size:9px;font-weight:700;text-transform:uppercase;
+  letter-spacing:1px;padding:2px 7px;border-radius:2px;flex-shrink:0;
+}
+.cli-tag-vip{background:var(--amber-dim);color:var(--amber);}
+.cli-tag-corporativo{background:var(--blue-dim);color:var(--blue);}
+.cli-tag-novo{background:var(--green-dim);color:var(--green);}
+.cli-tag-inativo{background:var(--w4);color:var(--w3);}
+.cli-meta{display:flex;align-items:center;gap:12px;margin-top:3px;flex-wrap:wrap;}
+.cli-meta-item{font-family:var(--body);font-size:12px;color:var(--w2);display:flex;align-items:center;gap:4px;}
+.cli-meta-item svg{width:12px;height:12px;stroke:var(--w3);flex-shrink:0;}
+.cli-meta-item.cli-devedor-text{color:var(--red);}
+
+/* Veiculos inline (mini placas empilhadas) */
+.cli-veiculos{display:flex;flex-direction:column;gap:3px;flex-shrink:0;min-width:100px;}
+.cli-veiculo-row{display:flex;align-items:center;gap:6px;}
+.placa-micro{
+  display:inline-flex;flex-direction:column;
+  background:#FFFFFF;border-radius:1px;overflow:hidden;
+  border:1.5px solid #C8C8C8;line-height:1;flex-shrink:0;
+}
+.placa-micro-topo{background:#003399;padding:0px 3px;display:flex;align-items:center;justify-content:center;}
+.placa-micro-br{font-family:var(--mono);font-size:4px;font-weight:700;color:#fff;}
+.placa-micro-cod{padding:1px 4px 2px;font-family:var(--mono);font-size:10px;font-weight:800;color:#1A1A1A;letter-spacing:1px;text-align:center;line-height:1;}
+.cli-veiculo-nome{font-family:var(--body);font-size:10px;color:var(--w2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px;}
+.cli-veiculos-more{font-family:var(--mono);font-size:9px;color:var(--w4);}
+
+/* Right side */
+.cli-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;min-width:120px;}
+.cli-total{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--amber);}
+.cli-total-lbl{font-family:var(--head);font-size:9px;font-weight:600;color:var(--w4);text-transform:uppercase;letter-spacing:1px;}
+.cli-ultima{font-family:var(--mono);font-size:10px;color:var(--w3);}
+.cli-divida{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--red);}
+.cli-divida-lbl{font-family:var(--head);font-size:8px;font-weight:600;color:var(--red);text-transform:uppercase;letter-spacing:.8px;opacity:.7;}
+
+/* Quick actions (hover) */
+.cli-actions{
+  display:flex;gap:4px;flex-shrink:0;opacity:0;transition:opacity .15s;
+}
+.cli-row:hover .cli-actions{opacity:1;}
+.cli-act{
+  width:32px;height:32px;border-radius:var(--r);
+  background:var(--sf3);border:1px solid var(--ln2);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .12s;
+}
+.cli-act:hover{border-color:var(--amber);background:var(--amber-dim);}
+.cli-act svg{width:14px;height:14px;stroke:var(--w2);}
+.cli-act:hover svg{stroke:var(--amber);}
+
+/* DETAIL PANEL (slide right) */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:900;opacity:0;pointer-events:none;transition:opacity .25s;}
+.overlay.open{opacity:1;pointer-events:auto;}
+.side-panel{
+  position:fixed;top:0;right:0;bottom:0;width:520px;max-width:100%;
+  background:#141417;border-left:1px solid var(--ln2);z-index:1000;
+  transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.side-panel.open{transform:translateX(0);}
+.panel-head{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid var(--ln2);}
+.panel-title{font-family:var(--head);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.panel-title span{color:var(--amber);}
+.panel-close{width:36px;height:36px;background:var(--sf3);border:1px solid var(--ln2);border-radius:var(--r);color:var(--w3);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.panel-close:hover{background:var(--sf4);color:var(--w);}
+.panel-body{flex:1;overflow-y:auto;padding:24px;}
+
+/* Panel sections */
+.panel-section{margin-bottom:24px;}
+.panel-section-title{
+  font-family:var(--head);font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:2px;color:var(--w4);
+  margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--ln);
+}
+
+/* Panel — info principal */
+.panel-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.panel-info-item{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px;}
+.panel-info-label{font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--w4);margin-bottom:4px;}
+.panel-info-value{font-family:var(--mono);font-size:14px;font-weight:600;letter-spacing:.5px;}
+.panel-info-value.small{font-family:var(--body);font-size:13px;font-weight:400;color:var(--w2);}
+
+/* Panel — KPIs do cliente */
+.panel-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.panel-kpi{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:14px;text-align:center;}
+.panel-kpi-val{font-family:var(--mono);font-size:20px;font-weight:800;letter-spacing:-1px;}
+.panel-kpi-lbl{font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);margin-top:3px;}
+
+/* Panel — veiculos */
+.panel-veiculo{
+  display:flex;align-items:center;gap:12px;
+  background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);
+  padding:12px 14px;margin-bottom:6px;
+}
+.panel-veiculo-info{flex:1;min-width:0;}
+.panel-veiculo-nome{font-family:var(--head);font-size:14px;font-weight:700;text-transform:uppercase;}
+.panel-veiculo-detail{font-family:var(--body);font-size:11px;color:var(--w3);margin-top:2px;}
+.panel-veiculo-os{font-family:var(--mono);font-size:11px;color:var(--w2);}
+
+/* Placa no painel (maior) */
+.placa-panel{
+  display:inline-flex;flex-direction:column;
+  background:#FFFFFF;border-radius:2px;overflow:hidden;
+  border:2px solid #C8C8C8;line-height:1;flex-shrink:0;
+}
+.placa-panel-topo{
+  background:#003399;padding:1px 6px;
+  display:flex;align-items:center;justify-content:space-between;gap:4px;
+}
+.placa-panel-br{font-family:var(--mono);font-size:5.5px;font-weight:700;color:#fff;letter-spacing:.3px;}
+.placa-panel-flag{display:flex;gap:1px;}
+.placa-panel-flag span{display:block;width:2px;height:4px;border-radius:1px;}
+.placa-panel-cod{padding:3px 8px 4px;font-family:var(--mono);font-size:16px;font-weight:800;color:#1A1A1A;letter-spacing:2px;text-align:center;line-height:1;}
+
+/* Panel — historico OS */
+.panel-os-row{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 0;border-bottom:1px solid var(--ln);
+}
+.panel-os-num{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--w3);min-width:36px;}
+.panel-os-desc{flex:1;font-family:var(--body);font-size:13px;color:var(--w2);}
+.panel-os-val{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--amber);}
+.panel-os-date{font-family:var(--mono);font-size:10px;color:var(--w4);min-width:50px;text-align:right;}
+.panel-os-tag{
+  font-family:var(--head);font-size:9px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.8px;padding:2px 6px;border-radius:2px;
+}
+
+/* Panel actions */
+.panel-actions{display:flex;gap:8px;margin-top:20px;}
+.panel-btn{
+  flex:1;padding:12px;border:none;border-radius:var(--r2);
+  font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;
+  letter-spacing:1.5px;cursor:pointer;transition:all .12s;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.panel-btn:active{transform:scale(.97);}
+.panel-btn-primary{background:var(--amber);color:#000;}
+.panel-btn-primary:hover{background:#F5A623;}
+.panel-btn-secondary{background:var(--sf2);border:1px solid var(--ln2);color:var(--w2);}
+.panel-btn-secondary:hover{border-color:var(--ln3);color:var(--w);}
+.panel-btn-whatsapp{background:#25D366;color:#fff;}
+.panel-btn-whatsapp:hover{background:#2BE272;}
+.panel-btn svg{width:14px;height:14px;stroke:currentColor;stroke-width:2;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="page-head">
+  <div class="page-title"><span>Clientes</span></div>
+  <div class="page-actions">
+    <button class="btn-novo" onclick="abrirNovoCliente()">
+      <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Novo Cliente
+    </button>
+  </div>
+</div>
+
+<!-- SEARCH -->
+<div class="search-bar">
+  <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+  <input placeholder="Buscar por nome, telefone, placa ou CPF/CNPJ..." value="">
+</div>
+
+<!-- SUMMARY -->
+<div class="summary">
+  <div class="summary-item">
+    <div class="summary-val" style="color:var(--w);">26</div>
+    <div class="summary-lbl">Total</div>
+  </div>
+  <div class="summary-item">
+    <div class="summary-val" style="color:var(--green);">8</div>
+    <div class="summary-lbl">Ativos Mes</div>
+  </div>
+  <div class="summary-item">
+    <div class="summary-val" style="color:var(--red);">3</div>
+    <div class="summary-lbl">Inadimplentes</div>
+  </div>
+  <div class="summary-item">
+    <div class="summary-val" style="color:var(--blue);">4</div>
+    <div class="summary-lbl">Frota / PJ</div>
+  </div>
+  <div class="summary-item">
+    <div class="summary-val">R$ 42k</div>
+    <div class="summary-lbl">Faturado Total</div>
+  </div>
+</div>
+
+<!-- FILTERS -->
+<div class="filters">
+  <div class="f-btn on">Todos <span class="f-count">26</span></div>
+  <div class="f-btn">Ativos <span class="f-count">8</span></div>
+  <div class="f-btn">VIP <span class="f-count">5</span></div>
+  <div class="f-btn">Frota / PJ <span class="f-count">4</span></div>
+  <div class="f-btn">Inadimplentes <span class="f-count">3</span></div>
+  <div class="f-btn">Inativos <span class="f-count">6</span></div>
+</div>
+
+<!-- ALERT — Inadimplencia -->
+<div class="alert-bar">
+  <div class="alert-pill">3</div>
+  <div class="alert-text"><strong>Clientes com pagamento pendente</strong> — total em aberto</div>
+  <div class="alert-val">R$ 2.890,00</div>
+</div>
+
+<!-- CLIENT LIST -->
+
+<!-- 1. CLIENTE VIP (corporativo, frota) -->
+<div class="cli-row cli-corporativo" onclick="abrirDetalhe('dolphin')">
+  <div class="cli-row-indicator cli-vip"></div>
+  <div class="cli-avatar">DV</div>
+  <div class="cli-body">
+    <div class="cli-top">
+      <span class="cli-nome">Dolphin Veiculos</span>
+      <span class="cli-tag cli-tag-corporativo">PJ</span>
+      <span class="cli-tag cli-tag-vip">VIP</span>
+    </div>
+    <div class="cli-meta">
+      <span class="cli-meta-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72"/></svg>
+        (87) 99123-4567
+      </span>
+      <span class="cli-meta-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/></svg>
+        7 veiculos
+      </span>
+      <span class="cli-meta-item">12 OS total</span>
+    </div>
+  </div>
+  <div class="cli-veiculos">
+    <div class="cli-veiculo-row">
+      <div class="placa-micro"><div class="placa-micro-topo"><div class="placa-micro-br">BR</div></div><div class="placa-micro-cod">PCJ2843</div></div>
+      <span class="cli-veiculo-nome">Kwid 2021</span>
+    </div>
+    <div class="cli-veiculo-row">
+      <div class="placa-micro"><div class="placa-micro-topo"><div class="placa-micro-br">BR</div></div><div class="placa-micro-cod">QWE3R45</div></div>
+      <span class="cli-veiculo-nome">Onix 2022</span>
+    </div>
+    <div class="cli-veiculos-more">+5 veiculos</div>
+  </div>
+  <div class="cli-right">
+    <div class="cli-total">R$ 8.450</div>
+    <div class="cli-total-lbl">Faturado</div>
+    <div class="cli-ultima">Ultima: 01/04</div>
+  </div>
+  <div class="cli-actions">
+    <div class="cli-act" title="WhatsApp">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+    </div>
+    <div class="cli-act" title="Nova OS">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </div>
+  </div>
+</div>
+
+<!-- 2. CLIENTE DEVEDOR -->
+<div class="cli-row" onclick="abrirDetalhe('michael')">
+  <div class="cli-row-indicator cli-devedor"></div>
+  <div class="cli-avatar">MF</div>
+  <div class="cli-body">
+    <div class="cli-top">
+      <span class="cli-nome">Michael Freitas</span>
+    </div>
+    <div class="cli-meta">
+      <span class="cli-meta-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72"/></svg>
+        (87) 98765-4321
+      </span>
+      <span class="cli-meta-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/></svg>
+        2 veiculos
+      </span>
+      <span class="cli-meta-item">3 OS total</span>
+      <span class="cli-meta-item cli-devedor-text">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke="var(--red)"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Devendo R$ 1.340,00
+      </span>
+    </div>
+  </div>
+  <div class="cli-veiculos">
+    <div class="cli-veiculo-row">
+      <div class="placa-micro"><div class="placa-micro-topo"><div class="placa-micro-br">BR</div></div><div class="placa-micro-cod">OFF6D14</div></div>
+      <span class="cli-veiculo-nome">Civic 1.8</span>
+    </div>
+    <div class="cli-veiculo-row">
+      <div class="placa-micro"><div class="placa-micro-topo"><div class="placa-micro-br">BR</div></div><div class="placa-micro-cod">JKL8M90</div></div>
+      <span class="cli-veiculo-nome">Corolla 2019</span>
+    </div>
+  </div>
+  <div class="cli-right">
+    <div class="cli-divida">-R$ 1.340</div>
+    <div class="cli-divida-lbl">Em Aberto</div>
+    <div class="cli-total" style="font-size:12px;color:var(--w3);">R$ 2.180</div>
+    <div class="cli-total-lbl">Faturado</div>
+  </div>
+  <div class="cli-actions">
+    <div class="cli-act" title="WhatsApp">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+    </div>
+    <div class="cli-act" title="Nova OS">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </div>
+  </div>
+</div>
+
+<!-- 3. CLIENTE REGULAR (ativo) -->
+<div class="cli-row" onclick="abrirDetalhe('romario')">
+  <div class="cli-row-indicator cli-novo"></div>
+  <div class="cli-avatar">RS</div>
+  <div class="cli-body">
+    <div class="cli-top">
+      <span class="cli-nome">Romario da Silva</span>
+      <span class="cli-tag cli-tag-novo">Novo</span>
+    </div>
+    <div class="cli-meta">
+      <span class="cli-meta-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72"/></svg>
+        (87) 99888-7766
+      </span>
+      <span class="cli-meta-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/></svg>
+        1 veiculo
+      </span>
+      <span class="cli-meta-item">1 OS total</span>
+    </div>
+  </div>
+  <div class="cli-veiculos">
+    <div class="cli-veiculo-row">
+      <div class="placa-micro"><div class="placa-micro-topo"><div class="placa-micro-br">BR</div></div><div class="placa-micro-cod">PGA2J53</div></div>
+      <span class="cli-veiculo-nome">HB20 2020</span>
+    </div>
+  </div>
+  <div class="cli-right">
+    <div class="cli-total" style="color:var(--w3);">—</div>
+    <div class="cli-total-lbl">Faturado</div>
+    <div class="cli-ultima">Ultima: 01/04</div>
+  </div>
+  <div class="cli-actions">
+    <div class="cli-act" title="WhatsApp">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+    </div>
+    <div class="cli-act" title="Nova OS">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </div>
+  </div>
+</div>
+
+<!-- 4. CLIENTE DEVEDOR (faturado) -->
+<div class="cli-row" onclick="abrirDetalhe('carlos')">
+  <div class="cli-row-indicator cli-devedor"></div>
+  <div class="cli-avatar">CE</div>
+  <div class="cli-body">
+    <div class="cli-top">
+      <span class="cli-nome">Carlos Eduardo Silva</span>
+    </div>
+    <div class="cli-meta">
+      <span class="cli-meta-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72"/></svg>
+        (81) 98765-1234
+      </span>
+      <span class="cli-meta-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/></svg>
+        1 veiculo
+      </span>
+      <span class="cli-meta-item">2 OS total</span>
+      <span class="cli-meta-item cli-devedor-text">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke="var(--red)"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Faturado — vence 15/04
+      </span>
+    </div>
+  </div>
+  <div class="cli-veiculos">
+    <div class="cli-veiculo-row">
+      <div class="placa-micro"><div class="placa-micro-topo"><div class="placa-micro-br">BR</div></div><div class="placa-micro-cod">ABC1D23</div></div>
+      <span class="cli-veiculo-nome">Toro 2022</span>
+    </div>
+  </div>
+  <div class="cli-right">
+    <div class="cli-divida">-R$ 850</div>
+    <div class="cli-divida-lbl">Faturado</div>
+    <div class="cli-total" style="font-size:12px;">R$ 3.200</div>
+    <div class="cli-total-lbl">Faturado</div>
+  </div>
+  <div class="cli-actions">
+    <div class="cli-act" title="WhatsApp">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+    </div>
+    <div class="cli-act" title="Nova OS">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </div>
+  </div>
+</div>
+
+<!-- 5. CLIENTE VIP (regular ativo) -->
+<div class="cli-row" onclick="abrirDetalhe('mercio')">
+  <div class="cli-row-indicator cli-vip"></div>
+  <div class="cli-avatar">MR</div>
+  <div class="cli-body">
+    <div class="cli-top">
+      <span class="cli-nome">Mercio Ramos</span>
+      <span class="cli-tag cli-tag-vip">VIP</span>
+    </div>
+    <div class="cli-meta">
+      <span class="cli-meta-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72"/></svg>
+        (87) 99111-2233
+      </span>
+      <span class="cli-meta-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/></svg>
+        3 veiculos
+      </span>
+      <span class="cli-meta-item">8 OS total</span>
+    </div>
+  </div>
+  <div class="cli-veiculos">
+    <div class="cli-veiculo-row">
+      <div class="placa-micro"><div class="placa-micro-topo"><div class="placa-micro-br">BR</div></div><div class="placa-micro-cod">RZM8H30</div></div>
+      <span class="cli-veiculo-nome">Sandero 2020</span>
+    </div>
+    <div class="cli-veiculo-row">
+      <div class="placa-micro"><div class="placa-micro-topo"><div class="placa-micro-br">BR</div></div><div class="placa-micro-cod">TUV9W01</div></div>
+      <span class="cli-veiculo-nome">Tracker 2023</span>
+    </div>
+    <div class="cli-veiculos-more">+1 veiculo</div>
+  </div>
+  <div class="cli-right">
+    <div class="cli-total">R$ 6.780</div>
+    <div class="cli-total-lbl">Faturado</div>
+    <div class="cli-ultima">Ultima: 31/03</div>
+  </div>
+  <div class="cli-actions">
+    <div class="cli-act" title="WhatsApp">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+    </div>
+    <div class="cli-act" title="Nova OS">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </div>
+  </div>
+</div>
+
+<!-- 6. CLIENTE INATIVO -->
+<div class="cli-row" onclick="abrirDetalhe('fernanda')">
+  <div class="cli-row-indicator cli-inativo"></div>
+  <div class="cli-avatar" style="opacity:.5;">FO</div>
+  <div class="cli-body" style="opacity:.6;">
+    <div class="cli-top">
+      <span class="cli-nome">Fernanda Oliveira</span>
+      <span class="cli-tag cli-tag-inativo">Inativo</span>
+    </div>
+    <div class="cli-meta">
+      <span class="cli-meta-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72"/></svg>
+        (87) 99444-5566
+      </span>
+      <span class="cli-meta-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/></svg>
+        1 veiculo
+      </span>
+      <span class="cli-meta-item">1 OS total</span>
+      <span class="cli-meta-item">Ultima visita: 14/02</span>
+    </div>
+  </div>
+  <div class="cli-veiculos" style="opacity:.5;">
+    <div class="cli-veiculo-row">
+      <div class="placa-micro"><div class="placa-micro-topo"><div class="placa-micro-br">BR</div></div><div class="placa-micro-cod">QRS4F56</div></div>
+      <span class="cli-veiculo-nome">Polo TSI 2023</span>
+    </div>
+  </div>
+  <div class="cli-right" style="opacity:.5;">
+    <div class="cli-total" style="color:var(--w3);">R$ 380</div>
+    <div class="cli-total-lbl">Faturado</div>
+    <div class="cli-ultima">Ultima: 14/02</div>
+  </div>
+  <div class="cli-actions">
+    <div class="cli-act" title="WhatsApp">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+    </div>
+    <div class="cli-act" title="Nova OS">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </div>
+  </div>
+</div>
+
+<!-- OVERLAY + SIDE PANEL (detalhe do cliente) -->
+<div class="overlay" id="overlay" onclick="fecharPanel()"></div>
+<div class="side-panel" id="panel">
+  <div class="panel-head">
+    <div class="panel-title">Dolphin <span>Veiculos</span></div>
+    <button class="panel-close" onclick="fecharPanel()">&times;</button>
+  </div>
+  <div class="panel-body">
+
+    <!-- KPIs do cliente -->
+    <div class="panel-section">
+      <div class="panel-section-title">Resumo</div>
+      <div class="panel-kpis">
+        <div class="panel-kpi">
+          <div class="panel-kpi-val" style="color:var(--amber);">12</div>
+          <div class="panel-kpi-lbl">OS Total</div>
+        </div>
+        <div class="panel-kpi">
+          <div class="panel-kpi-val" style="color:var(--green);">R$ 8.4k</div>
+          <div class="panel-kpi-lbl">Faturado</div>
+        </div>
+        <div class="panel-kpi">
+          <div class="panel-kpi-val">7</div>
+          <div class="panel-kpi-lbl">Veiculos</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dados -->
+    <div class="panel-section">
+      <div class="panel-section-title">Dados</div>
+      <div class="panel-info-grid">
+        <div class="panel-info-item">
+          <div class="panel-info-label">Telefone</div>
+          <div class="panel-info-value">(87) 99123-4567</div>
+        </div>
+        <div class="panel-info-item">
+          <div class="panel-info-label">CNPJ</div>
+          <div class="panel-info-value">12.345.678/0001-90</div>
+        </div>
+        <div class="panel-info-item">
+          <div class="panel-info-label">Email</div>
+          <div class="panel-info-value small">contato@dolphinveiculos.com</div>
+        </div>
+        <div class="panel-info-item">
+          <div class="panel-info-label">Cliente Desde</div>
+          <div class="panel-info-value">15/01/2026</div>
+        </div>
+        <div class="panel-info-item">
+          <div class="panel-info-label">Pagamento</div>
+          <div class="panel-info-value" style="color:var(--amber);">Faturado 15d</div>
+        </div>
+        <div class="panel-info-item">
+          <div class="panel-info-label">Ultima Visita</div>
+          <div class="panel-info-value">01/04/2026</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Veiculos -->
+    <div class="panel-section">
+      <div class="panel-section-title">Veiculos (7)</div>
+      <div class="panel-veiculo">
+        <div class="placa-panel">
+          <div class="placa-panel-topo">
+            <div class="placa-panel-flag"><span style="background:#009739;"></span><span style="background:#FEDD00;"></span><span style="background:#012169;"></span></div>
+            <div class="placa-panel-br">BRASIL</div>
+          </div>
+          <div class="placa-panel-cod">PCJ2843</div>
+        </div>
+        <div class="panel-veiculo-info">
+          <div class="panel-veiculo-nome">Renault Kwid 2021</div>
+          <div class="panel-veiculo-detail">Branco | 42.000 km</div>
+        </div>
+        <div class="panel-veiculo-os">3 OS</div>
+      </div>
+      <div class="panel-veiculo">
+        <div class="placa-panel">
+          <div class="placa-panel-topo">
+            <div class="placa-panel-flag"><span style="background:#009739;"></span><span style="background:#FEDD00;"></span><span style="background:#012169;"></span></div>
+            <div class="placa-panel-br">BRASIL</div>
+          </div>
+          <div class="placa-panel-cod">QWE3R45</div>
+        </div>
+        <div class="panel-veiculo-info">
+          <div class="panel-veiculo-nome">Chevrolet Onix 2022</div>
+          <div class="panel-veiculo-detail">Prata | 28.500 km</div>
+        </div>
+        <div class="panel-veiculo-os">2 OS</div>
+      </div>
+      <div class="panel-veiculo">
+        <div class="placa-panel">
+          <div class="placa-panel-topo">
+            <div class="placa-panel-flag"><span style="background:#009739;"></span><span style="background:#FEDD00;"></span><span style="background:#012169;"></span></div>
+            <div class="placa-panel-br">BRASIL</div>
+          </div>
+          <div class="placa-panel-cod">XYZ5A67</div>
+        </div>
+        <div class="panel-veiculo-info">
+          <div class="panel-veiculo-nome">Fiat Strada 2023</div>
+          <div class="panel-veiculo-detail">Vermelho | 15.200 km</div>
+        </div>
+        <div class="panel-veiculo-os">1 OS</div>
+      </div>
+    </div>
+
+    <!-- Historico OS -->
+    <div class="panel-section">
+      <div class="panel-section-title">Ultimas OS</div>
+      <div class="panel-os-row">
+        <div class="panel-os-num">#11</div>
+        <div class="panel-os-desc">Diagnostico eletronico — Kwid</div>
+        <div class="panel-os-tag tag-diagnostico" style="background:rgba(124,58,237,0.2);color:#A78BFA;">DIAG</div>
+        <div class="panel-os-val" style="color:var(--w3);">—</div>
+        <div class="panel-os-date">01/04</div>
+      </div>
+      <div class="panel-os-row">
+        <div class="panel-os-num">#08</div>
+        <div class="panel-os-desc">Troca de oleo + filtros — Onix</div>
+        <div class="panel-os-tag" style="background:var(--w4);color:var(--w3);">ENTREGUE</div>
+        <div class="panel-os-val">R$ 320</div>
+        <div class="panel-os-date">28/03</div>
+      </div>
+      <div class="panel-os-row">
+        <div class="panel-os-num">#05</div>
+        <div class="panel-os-desc">Revisao completa 30k — Kwid</div>
+        <div class="panel-os-tag" style="background:var(--w4);color:var(--w3);">ENTREGUE</div>
+        <div class="panel-os-val">R$ 1.240</div>
+        <div class="panel-os-date">15/03</div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="panel-actions">
+      <button class="panel-btn panel-btn-whatsapp">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        WhatsApp
+      </button>
+      <button class="panel-btn panel-btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nova OS
+      </button>
+      <button class="panel-btn panel-btn-secondary">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Editar
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+function abrirDetalhe(id) {
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('panel').classList.add('open');
+}
+function fecharPanel() {
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('panel').classList.remove('open');
+}
+function abrirNovoCliente() {
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('panel').classList.add('open');
+}
+// Keyboard
+document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharPanel(); });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro V2 — Equipe</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#09090B;--sf:#1A1A1E;--sf2:#202024;--sf3:#28282E;
+  --ln:rgba(255,255,255,0.04);--ln2:rgba(255,255,255,0.07);--ln3:rgba(255,255,255,0.12);
+  --amber:#E8930C;--amber-dim:rgba(232,147,12,0.08);
+  --red:#FF3B30;--red-dim:rgba(255,59,48,0.06);
+  --green-neon:#30D158;--green-dim:rgba(48,209,88,0.06);--green-dark:#0B2E12;
+  --blue:#0A84FF;--blue-dim:rgba(10,132,255,0.08);
+  --w:#EAEAEC;--w2:rgba(255,255,255,0.55);--w3:rgba(255,255,255,0.28);--w4:rgba(255,255,255,0.12);
+  --mono:'JetBrains Mono',monospace;--head:'Barlow Condensed',sans-serif;--body:'Space Grotesk',sans-serif;
+  --r:4px;
+}
+body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100vh;-webkit-font-smoothing:antialiased;padding:32px 40px;max-width:1060px;margin:0 auto;}
+
+/* HEADER */
+.page-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
+.page-head-left{display:flex;align-items:baseline;gap:16px;}
+.page-title{font-family:var(--head);font-size:32px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.page-title span{color:var(--amber);}
+.page-stats{font-family:var(--mono);font-size:12px;color:var(--w3);display:flex;gap:12px;}
+.page-stats .stat-val{color:var(--w2);font-weight:700;}
+.btn-novo{
+  padding:10px 22px;background:var(--amber);border:none;border-radius:2px;
+  font-family:var(--head);font-size:13px;font-weight:800;text-transform:uppercase;
+  letter-spacing:2px;color:#000;cursor:pointer;transition:all .12s;
+  display:flex;align-items:center;gap:6px;
+}
+.btn-novo:hover{background:#FFC933;}
+.btn-novo:active{transform:scale(.97);}
+
+/* FILTERS */
+.filters{display:flex;gap:4px;margin-bottom:20px;}
+.f-btn{
+  font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;
+  padding:7px 14px;border:1px solid var(--ln2);border-radius:var(--r);
+  background:var(--sf);color:var(--w3);cursor:pointer;transition:all .12s;
+}
+.f-btn:hover{border-color:var(--ln3);color:var(--w2);}
+.f-btn.on{background:var(--amber);color:#000;border-color:var(--amber);}
+
+/* OPERATOR CARD */
+.op-card{
+  display:flex;align-items:center;gap:14px;
+  background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r);
+  padding:14px 16px;margin-bottom:6px;transition:all .12s;
+}
+.op-card:hover{border-color:var(--ln3);background:var(--sf2);}
+
+/* Avatar */
+.op-avatar{
+  width:44px;height:44px;border-radius:2px;
+  background:var(--sf3);border:1px solid var(--ln3);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  font-family:var(--mono);font-size:15px;font-weight:700;color:var(--w3);
+  text-transform:uppercase;letter-spacing:2px;
+}
+
+/* Info -->
+.op-info{flex:1;min-width:0;}
+.op-nome{font-family:var(--head);font-size:17px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;}
+.op-cargo{font-family:var(--body);font-size:11px;color:var(--w3);margin-top:1px;}
+
+/* Perfil/Role tag */
+.op-role{
+  font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:1px;padding:4px 10px;border-radius:2px;flex-shrink:0;
+}
+.role-mecanico{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(232,147,12,0.12);}
+.role-senior{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(232,147,12,0.12);}
+.role-aux{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(10,132,255,0.12);}
+.role-atendente{background:rgba(0,199,190,0.08);color:#00C7BE;border:1px solid rgba(0,199,190,0.12);}
+.role-gerente{background:rgba(124,58,237,0.08);color:#A78BFA;border:1px solid rgba(124,58,237,0.12);}
+.role-dono{background:rgba(232,147,12,0.12);color:var(--amber);border:1px solid rgba(232,147,12,0.2);}
+
+/* Comissão */
+.op-comissao{
+  font-family:var(--mono);font-size:13px;font-weight:700;color:var(--w2);
+  min-width:65px;text-align:center;flex-shrink:0;
+}
+.op-comissao-zero{color:var(--w4);}
+
+/* Status */
+.op-status{display:flex;align-items:center;gap:6px;flex-shrink:0;min-width:70px;}
+.op-status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.op-status-dot.ativo{background:var(--green-neon);box-shadow:0 0 6px rgba(48,209,88,0.3);}
+.op-status-dot.inativo{background:var(--red);}
+.op-status-tag{
+  font-family:var(--mono);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;
+}
+.op-status-tag.ativo{color:var(--green-neon);}
+.op-status-tag.inativo{color:var(--red);}
+
+/* Login indicator */
+.op-login{
+  font-family:var(--mono);font-size:9px;font-weight:600;color:var(--w4);
+  flex-shrink:0;min-width:60px;text-align:center;
+}
+.op-login.com-acesso{color:var(--w3);}
+.op-login.sem-acesso{color:var(--w4);font-style:italic;}
+
+/* Actions — discretas */
+.op-actions{display:flex;gap:4px;flex-shrink:0;}
+.op-act{
+  padding:6px 10px;border:1px solid var(--ln2);border-radius:var(--r);
+  background:transparent;font-family:var(--head);font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:1px;color:var(--w3);
+  cursor:pointer;transition:all .12s;
+}
+.op-act:hover{border-color:var(--ln3);color:var(--w);background:var(--sf2);}
+.op-act:active{transform:scale(.96);}
+
+/* Trash — só fica vermelho no hover */
+.op-trash{
+  width:32px;height:32px;border:1px solid var(--ln2);border-radius:var(--r);
+  background:transparent;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .12s;
+}
+.op-trash svg{width:14px;height:14px;stroke:var(--w4);stroke-width:2;}
+.op-trash:hover{border-color:rgba(255,59,48,0.3);background:var(--red-dim);}
+.op-trash:hover svg{stroke:var(--red);}
+
+/* SIDE PANEL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:900;opacity:0;pointer-events:none;transition:opacity .25s;}
+.overlay.open{opacity:1;pointer-events:auto;}
+.side-panel{
+  position:fixed;top:0;right:0;bottom:0;width:480px;max-width:100%;
+  background:#161618;border-left:1px solid var(--ln2);z-index:1000;
+  transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.side-panel.open{transform:translateX(0);}
+.panel-head{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid var(--ln2);}
+.panel-title{font-family:var(--head);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.panel-title span{color:var(--amber);}
+.panel-close{width:36px;height:36px;background:var(--sf2);border:1px solid var(--ln2);border-radius:var(--r);color:var(--w3);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.panel-close:hover{background:var(--sf3);color:var(--w);}
+.panel-body{flex:1;overflow-y:auto;padding:24px;}
+
+.panel-section{margin-bottom:24px;}
+.panel-section-title{
+  font-family:var(--head);font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:2px;color:var(--w4);
+  margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--ln);
+}
+.panel-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.panel-info-item{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r);padding:12px;}
+.panel-info-label{font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--w4);margin-bottom:4px;}
+.panel-info-value{font-family:var(--mono);font-size:14px;font-weight:600;}
+.panel-info-value.small{font-family:var(--body);font-size:13px;font-weight:400;color:var(--w2);}
+
+.panel-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.panel-kpi{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r);padding:14px;text-align:center;}
+.panel-kpi-val{font-family:var(--mono);font-size:20px;font-weight:800;letter-spacing:-1px;}
+.panel-kpi-lbl{font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);margin-top:3px;}
+
+/* Panel permissions */
+.perm-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 0;border-bottom:1px solid var(--ln);
+}
+.perm-name{font-family:var(--body);font-size:12px;color:var(--w2);}
+.perm-toggle{
+  width:36px;height:20px;border-radius:10px;
+  background:var(--sf3);border:1px solid var(--ln2);
+  position:relative;cursor:pointer;transition:all .12s;
+}
+.perm-toggle.on{background:var(--green-dark);border-color:rgba(48,209,88,0.2);}
+.perm-toggle::after{
+  content:'';position:absolute;top:2px;left:2px;
+  width:14px;height:14px;border-radius:50%;
+  background:var(--w3);transition:all .12s;
+}
+.perm-toggle.on::after{left:18px;background:var(--green-neon);}
+
+.panel-actions{display:flex;gap:8px;margin-top:20px;}
+.panel-btn{
+  flex:1;padding:12px;border:none;border-radius:2px;
+  font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;
+  letter-spacing:1.5px;cursor:pointer;transition:all .12s;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.panel-btn:active{transform:scale(.97);}
+.panel-btn-primary{background:var(--amber);color:#000;}
+.panel-btn-primary:hover{background:#FFC933;}
+.panel-btn-secondary{background:var(--sf2);color:var(--w2);border:1px solid var(--ln2);}
+.panel-btn-secondary:hover{border-color:var(--ln3);color:var(--w);}
+.panel-btn-danger{background:transparent;color:var(--w4);border:1px solid var(--ln2);}
+.panel-btn-danger:hover{color:var(--red);border-color:rgba(255,59,48,0.3);background:var(--red-dim);}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="page-head">
+  <div class="page-head-left">
+    <div class="page-title"><span>Equipe</span></div>
+    <div class="page-stats">
+      <span><span class="stat-val">7</span> membros</span>
+      <span><span class="stat-val">6</span> ativos</span>
+      <span><span class="stat-val">4</span> com login</span>
+    </div>
+  </div>
+  <button class="btn-novo">+ Novo Membro</button>
+</div>
+
+<!-- FILTERS -->
+<div class="filters">
+  <div class="f-btn on">Todos</div>
+  <div class="f-btn">Mecânicos</div>
+  <div class="f-btn">Atendimento</div>
+  <div class="f-btn">Gestão</div>
+  <div class="f-btn">Inativos</div>
+</div>
+
+<!-- OPERATORS -->
+
+<!-- 1. Marcondes — Dono -->
+<div class="op-card">
+  <div class="op-avatar" style="background:var(--amber-dim);color:var(--amber);border-color:rgba(232,147,12,0.2);">MJ</div>
+  <div class="op-info">
+    <div class="op-nome">Marcondes Jr</div>
+    <div class="op-cargo">Gestor / Proprietário</div>
+  </div>
+  <div class="op-role role-dono">Dono</div>
+  <div class="op-comissao op-comissao-zero">—</div>
+  <div class="op-status">
+    <div class="op-status-dot ativo"></div>
+    <div class="op-status-tag ativo">Ativo</div>
+  </div>
+  <div class="op-login com-acesso">carbon@...</div>
+  <div class="op-actions">
+    <button class="op-act" onclick="abrirDetalhe()">Editar</button>
+    <button class="op-act" onclick="abrirDetalhe()">Acessos</button>
+  </div>
+</div>
+
+<!-- 2. Daniel — Mecânico Senior -->
+<div class="op-card">
+  <div class="op-avatar">DA</div>
+  <div class="op-info">
+    <div class="op-nome">Daniel</div>
+    <div class="op-cargo">Mecânico Senior</div>
+  </div>
+  <div class="op-role role-senior">Mecânico</div>
+  <div class="op-comissao">10% COM</div>
+  <div class="op-status">
+    <div class="op-status-dot ativo"></div>
+    <div class="op-status-tag ativo">Ativo</div>
+  </div>
+  <div class="op-login com-acesso">daniel@...</div>
+  <div class="op-actions">
+    <button class="op-act" onclick="abrirDetalhe()">Editar</button>
+    <button class="op-act" onclick="abrirDetalhe()">Acessos</button>
+    <div class="op-trash"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div>
+  </div>
+</div>
+
+<!-- 3. Evandro — Mecânico Senior -->
+<div class="op-card">
+  <div class="op-avatar">EV</div>
+  <div class="op-info">
+    <div class="op-nome">Evandro</div>
+    <div class="op-cargo">Mecânico Senior</div>
+  </div>
+  <div class="op-role role-senior">Mecânico</div>
+  <div class="op-comissao">10% COM</div>
+  <div class="op-status">
+    <div class="op-status-dot ativo"></div>
+    <div class="op-status-tag ativo">Ativo</div>
+  </div>
+  <div class="op-login com-acesso">evandro@...</div>
+  <div class="op-actions">
+    <button class="op-act" onclick="abrirDetalhe()">Editar</button>
+    <button class="op-act" onclick="abrirDetalhe()">Acessos</button>
+    <div class="op-trash"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div>
+  </div>
+</div>
+
+<!-- 4. Juninho — Mecânico -->
+<div class="op-card">
+  <div class="op-avatar">JU</div>
+  <div class="op-info">
+    <div class="op-nome">Juninho</div>
+    <div class="op-cargo">Mecânico</div>
+  </div>
+  <div class="op-role role-mecanico">Mecânico</div>
+  <div class="op-comissao">5% COM</div>
+  <div class="op-status">
+    <div class="op-status-dot ativo"></div>
+    <div class="op-status-tag ativo">Ativo</div>
+  </div>
+  <div class="op-login sem-acesso">sem login</div>
+  <div class="op-actions">
+    <button class="op-act" onclick="abrirDetalhe()">Editar</button>
+    <button class="op-act" onclick="abrirDetalhe()">Acessos</button>
+    <div class="op-trash"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div>
+  </div>
+</div>
+
+<!-- 5. Marcos — Mecânico -->
+<div class="op-card">
+  <div class="op-avatar">MA</div>
+  <div class="op-info">
+    <div class="op-nome">Marcos</div>
+    <div class="op-cargo">Mecânico</div>
+  </div>
+  <div class="op-role role-mecanico">Mecânico</div>
+  <div class="op-comissao">5% COM</div>
+  <div class="op-status">
+    <div class="op-status-dot ativo"></div>
+    <div class="op-status-tag ativo">Ativo</div>
+  </div>
+  <div class="op-login sem-acesso">sem login</div>
+  <div class="op-actions">
+    <button class="op-act" onclick="abrirDetalhe()">Editar</button>
+    <button class="op-act" onclick="abrirDetalhe()">Acessos</button>
+    <div class="op-trash"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div>
+  </div>
+</div>
+
+<!-- 6. Wellington — Aux. Mecânico -->
+<div class="op-card">
+  <div class="op-avatar">WE</div>
+  <div class="op-info">
+    <div class="op-nome">Wellington</div>
+    <div class="op-cargo">Auxiliar Mecânico</div>
+  </div>
+  <div class="op-role role-aux">Aux</div>
+  <div class="op-comissao">3% COM</div>
+  <div class="op-status">
+    <div class="op-status-dot ativo"></div>
+    <div class="op-status-tag ativo">Ativo</div>
+  </div>
+  <div class="op-login sem-acesso">sem login</div>
+  <div class="op-actions">
+    <button class="op-act" onclick="abrirDetalhe()">Editar</button>
+    <button class="op-act" onclick="abrirDetalhe()">Acessos</button>
+    <div class="op-trash"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div>
+  </div>
+</div>
+
+<!-- 7. Rafael — Atendente -->
+<div class="op-card">
+  <div class="op-avatar">RA</div>
+  <div class="op-info">
+    <div class="op-nome">Rafael</div>
+    <div class="op-cargo">Atendente / Aux. Admin</div>
+  </div>
+  <div class="op-role role-atendente">Atendente</div>
+  <div class="op-comissao op-comissao-zero">—</div>
+  <div class="op-status">
+    <div class="op-status-dot ativo"></div>
+    <div class="op-status-tag ativo">Ativo</div>
+  </div>
+  <div class="op-login com-acesso">rafael@...</div>
+  <div class="op-actions">
+    <button class="op-act" onclick="abrirDetalhe()">Editar</button>
+    <button class="op-act" onclick="abrirDetalhe()">Acessos</button>
+    <div class="op-trash"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div>
+  </div>
+</div>
+
+<!-- 8. Sergio — INATIVO -->
+<div class="op-card" style="opacity:.5;">
+  <div class="op-avatar">SE</div>
+  <div class="op-info">
+    <div class="op-nome">Sergio</div>
+    <div class="op-cargo">Mecânico</div>
+  </div>
+  <div class="op-role role-mecanico" style="opacity:.5;">Mecânico</div>
+  <div class="op-comissao op-comissao-zero">—</div>
+  <div class="op-status">
+    <div class="op-status-dot inativo"></div>
+    <div class="op-status-tag inativo">Inativo</div>
+  </div>
+  <div class="op-login sem-acesso">sem login</div>
+  <div class="op-actions">
+    <button class="op-act" onclick="abrirDetalhe()">Editar</button>
+    <div class="op-trash"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div>
+  </div>
+</div>
+
+<!-- OVERLAY + SIDE PANEL -->
+<div class="overlay" id="overlay" onclick="fecharPanel()"></div>
+<div class="side-panel" id="panel">
+  <div class="panel-head">
+    <div class="panel-title">Daniel — <span>Perfil</span></div>
+    <button class="panel-close" onclick="fecharPanel()">&times;</button>
+  </div>
+  <div class="panel-body">
+
+    <!-- KPIs -->
+    <div class="panel-section">
+      <div class="panel-section-title">Performance</div>
+      <div class="panel-kpis">
+        <div class="panel-kpi">
+          <div class="panel-kpi-val">8</div>
+          <div class="panel-kpi-lbl">OS Mês</div>
+        </div>
+        <div class="panel-kpi">
+          <div class="panel-kpi-val" style="color:var(--amber);">R$ 3.4k</div>
+          <div class="panel-kpi-lbl">Faturado</div>
+        </div>
+        <div class="panel-kpi">
+          <div class="panel-kpi-val" style="color:var(--green-neon);">R$ 348</div>
+          <div class="panel-kpi-lbl">Comissão</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dados -->
+    <div class="panel-section">
+      <div class="panel-section-title">Dados</div>
+      <div class="panel-info-grid">
+        <div class="panel-info-item">
+          <div class="panel-info-label">Função</div>
+          <div class="panel-info-value small">Mecânico Senior</div>
+        </div>
+        <div class="panel-info-item">
+          <div class="panel-info-label">Comissão</div>
+          <div class="panel-info-value">10%</div>
+        </div>
+        <div class="panel-info-item">
+          <div class="panel-info-label">Salário Base</div>
+          <div class="panel-info-value">R$ 2.800</div>
+        </div>
+        <div class="panel-info-item">
+          <div class="panel-info-label">Desde</div>
+          <div class="panel-info-value">Jan/2024</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Permissões -->
+    <div class="panel-section">
+      <div class="panel-section-title">Permissões</div>
+      <div class="perm-row"><span class="perm-name">Ver Dashboard</span><div class="perm-toggle on"></div></div>
+      <div class="perm-row"><span class="perm-name">Criar / Editar OS</span><div class="perm-toggle on"></div></div>
+      <div class="perm-row"><span class="perm-name">Financeiro</span><div class="perm-toggle"></div></div>
+      <div class="perm-row"><span class="perm-name">Estoque</span><div class="perm-toggle on"></div></div>
+      <div class="perm-row"><span class="perm-name">Clientes</span><div class="perm-toggle on"></div></div>
+      <div class="perm-row"><span class="perm-name">Configurações</span><div class="perm-toggle"></div></div>
+    </div>
+
+    <!-- Actions -->
+    <div class="panel-actions">
+      <button class="panel-btn panel-btn-primary">Salvar</button>
+      <button class="panel-btn panel-btn-secondary">Resetar Senha</button>
+      <button class="panel-btn panel-btn-danger">Desativar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function abrirDetalhe() {
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('panel').classList.add('open');
+}
+function fecharPanel() {
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('panel').classList.remove('open');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharPanel(); });
+</script>
+
+</body>
+</html>

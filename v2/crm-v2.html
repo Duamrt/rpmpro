@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro V2 — CRM Reativacao</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#09090B;--sf:#111114;--sf2:#18181C;--sf3:#1F1F24;--sf4:#27272D;
+  --ln:rgba(255,255,255,0.04);--ln2:rgba(255,255,255,0.08);--ln3:rgba(255,255,255,0.14);
+  --amber:#E8930C;--amber-dim:rgba(232,147,12,0.1);
+  --orange:#EA580C;--orange-dim:rgba(234,88,12,0.12);
+  --red:#FF3B30;--red-dim:rgba(255,59,48,0.08);
+  --green:#30D158;--green-dim:rgba(48,209,88,0.08);
+  --blue:#0A84FF;--blue-dim:rgba(10,132,255,0.1);
+  --cyan:#00C7BE;
+  --w:#F0F0F2;--w2:rgba(255,255,255,0.6);--w3:rgba(255,255,255,0.32);--w4:rgba(255,255,255,0.14);
+  --mono:'JetBrains Mono',monospace;--head:'Barlow Condensed',sans-serif;--body:'Space Grotesk',sans-serif;
+  --r:3px;--r2:4px;
+}
+body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100vh;-webkit-font-smoothing:antialiased;overflow:hidden;}
+.app{display:flex;height:100vh;overflow:hidden;}
+
+/* SIDEBAR */
+.sidebar{width:220px;flex-shrink:0;background:var(--sf);border-right:1px solid var(--ln2);display:flex;flex-direction:column;height:100vh;}
+.sidebar-logo{padding:20px 16px 16px;border-bottom:1px solid var(--ln2);}
+.sidebar-logo-brand{font-family:var(--head);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.sidebar-logo-brand span{color:var(--amber);}
+.sidebar-logo-oficina{font-family:var(--body);font-size:11px;color:var(--w3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sidebar-nav{flex:1;overflow-y:auto;padding:12px 0;scrollbar-width:none;}
+.sidebar-nav::-webkit-scrollbar{display:none;}
+.nav-section{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);padding:10px 16px 6px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 16px;font-family:var(--body);font-size:13px;font-weight:500;color:var(--w3);cursor:pointer;transition:all .12s;text-decoration:none;}
+.nav-item:hover{color:var(--w);background:var(--sf2);}
+.nav-item.active{color:var(--amber);background:var(--amber-dim);border-left:2px solid var(--amber);}
+.nav-item .nav-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0;}
+.sidebar-footer{padding:16px;border-top:1px solid var(--ln2);}
+.user-info{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.user-avatar{width:34px;height:34px;border-radius:var(--r);background:var(--amber-dim);border:1px solid rgba(232,147,12,0.3);display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:14px;font-weight:800;color:var(--amber);flex-shrink:0;}
+.user-details{min-width:0;}
+.user-name{font-family:var(--body);font-size:13px;font-weight:600;color:var(--w);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.user-role{font-family:var(--mono);font-size:10px;color:var(--w3);text-transform:uppercase;letter-spacing:.5px;}
+.btn-logout{width:100%;font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--w3);background:none;border:1px solid var(--ln3);padding:7px;border-radius:var(--r);cursor:pointer;transition:all .15s;}
+.btn-logout:hover{color:var(--w);border-color:var(--w3);}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.main-topbar{height:48px;background:var(--sf);border-bottom:1px solid var(--ln2);display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0;}
+.main-title{font-family:var(--head);font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:2px;}
+.main-content{flex:1;overflow-y:auto;padding:20px;scrollbar-width:thin;scrollbar-color:var(--sf3) transparent;}
+.main-content::-webkit-scrollbar{width:4px;}
+.main-content::-webkit-scrollbar-thumb{background:var(--sf3);border-radius:2px;}
+
+/* KPIs */
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:24px;}
+.kpi{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:16px;text-align:center;cursor:pointer;transition:all .12s;}
+.kpi:hover{border-color:var(--ln3);background:var(--sf2);}
+.kpi.active{border-color:var(--amber);background:var(--amber-dim);}
+.kpi-val{font-family:var(--mono);font-size:26px;font-weight:800;letter-spacing:-1px;line-height:1;}
+.kpi-lbl{font-family:var(--head);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);margin-top:6px;}
+.kpi-sub{font-family:var(--mono);font-size:10px;color:var(--w4);margin-top:3px;}
+
+/* SECTION */
+.section-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;cursor:pointer;padding:10px 0;border-bottom:1px solid var(--ln2);}
+.section-title{font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:2px;display:flex;align-items:center;gap:8px;}
+.section-badge{font-family:var(--mono);font-size:11px;font-weight:700;padding:2px 8px;border-radius:2px;}
+.section-arrow{font-size:14px;color:var(--w3);transition:transform .2s;}
+.section-arrow.open{transform:rotate(180deg);}
+
+/* TABLE */
+.data-table{width:100%;border-collapse:collapse;margin-bottom:24px;}
+.data-table th{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);text-align:left;padding:8px 12px;border-bottom:1px solid var(--ln2);}
+.data-table td{padding:10px 12px;border-bottom:1px solid var(--ln);font-size:13px;color:var(--w2);}
+.data-table tr:hover td{background:var(--sf);}
+.data-table .td-nome{font-family:var(--body);font-weight:600;color:var(--w);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.data-table .td-dias{font-family:var(--mono);font-size:12px;font-weight:700;}
+.data-table .td-os{font-family:var(--mono);font-size:13px;font-weight:700;text-align:center;}
+.data-table .td-actions{display:flex;gap:4px;justify-content:flex-end;}
+
+/* BTNS */
+.btn-wpp{padding:5px 10px;background:rgba(37,211,102,0.1);border:1px solid rgba(37,211,102,0.2);border-radius:var(--r);font-family:var(--mono);font-size:10px;font-weight:700;color:#25D366;cursor:pointer;transition:all .12s;text-transform:uppercase;letter-spacing:.5px;}
+.btn-wpp:hover{background:rgba(37,211,102,0.2);border-color:#25D366;}
+.btn-agendar{padding:5px 10px;background:var(--blue-dim);border:1px solid rgba(10,132,255,0.2);border-radius:var(--r);font-family:var(--mono);font-size:10px;font-weight:700;color:var(--blue);cursor:pointer;transition:all .12s;text-transform:uppercase;letter-spacing:.5px;}
+.btn-agendar:hover{background:rgba(10,132,255,0.2);border-color:var(--blue);}
+.btn-save-wpp{padding:4px 8px;background:var(--green-dim);border:1px solid rgba(48,209,88,0.2);border-radius:var(--r);font-family:var(--mono);font-size:10px;font-weight:700;color:var(--green);cursor:pointer;}
+.input-wpp{background:var(--sf2);border:1px solid var(--ln2);border-radius:var(--r);padding:4px 8px;color:var(--w);font-family:var(--mono);font-size:11px;width:130px;outline:none;}
+.input-wpp:focus{border-color:var(--amber);}
+
+/* SIDE PANEL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:900;opacity:0;pointer-events:none;transition:opacity .25s;}
+.overlay.open{opacity:1;pointer-events:auto;}
+.side-panel{position:fixed;top:0;right:0;bottom:0;width:420px;max-width:100%;background:#141417;border-left:1px solid var(--ln2);z-index:1000;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden;}
+.side-panel.open{transform:translateX(0);}
+.panel-head{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--ln2);}
+.panel-title{font-family:var(--head);font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.panel-title span{color:var(--amber);}
+.panel-close{width:34px;height:34px;background:var(--sf3);border:1px solid var(--ln2);border-radius:var(--r);color:var(--w3);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.panel-close:hover{background:var(--sf4);color:var(--w);}
+.panel-body{flex:1;overflow-y:auto;padding:22px;}
+.panel-section{margin-bottom:20px;}
+.panel-section-title{font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid var(--ln);}
+.panel-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--ln);}
+.panel-row-label{font-size:12px;color:var(--w3);}
+.panel-row-val{font-family:var(--mono);font-size:13px;font-weight:600;}
+
+/* LOGIN */
+.login-overlay{position:fixed;inset:0;z-index:2000;background:var(--bg);display:none;align-items:center;justify-content:center;}
+.login-box{width:360px;padding:40px;text-align:center;}
+.login-brand{font-family:var(--head);font-size:36px;font-weight:900;text-transform:uppercase;margin-bottom:28px;}
+.login-brand span{color:var(--amber);}
+.login-input{width:100%;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px 16px;color:var(--w);font-family:var(--body);font-size:14px;margin-bottom:12px;outline:none;transition:border-color .15s;}
+.login-input:focus{border-color:var(--amber);}
+.login-input::placeholder{color:var(--w4);}
+.login-btn{width:100%;padding:14px;background:var(--amber);border:none;border-radius:var(--r2);font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#000;cursor:pointer;}
+.login-err{color:var(--red);font-size:12px;margin-top:8px;display:none;}
+.loading-overlay{position:fixed;inset:0;z-index:1500;background:var(--bg);display:none;align-items:center;justify-content:center;}
+.loading-overlay span{font-family:var(--head);font-size:20px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:var(--amber);animation:pulse 1.2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+.toast-container{position:fixed;top:16px;right:16px;z-index:3000;display:flex;flex-direction:column;gap:6px;}
+.toast{padding:10px 18px;border-radius:var(--r2);font-family:var(--body);font-size:13px;font-weight:500;color:#000;background:var(--green);animation:toastIn .3s;max-width:340px;}
+.toast.err{background:var(--red);color:#fff;}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:none;}}
+.empty-state{text-align:center;padding:40px 20px;color:var(--w3);}
+.empty-state .icon{font-size:40px;margin-bottom:10px;}
+.empty-state h3{font-family:var(--head);font-size:18px;font-weight:700;text-transform:uppercase;color:var(--w2);margin-bottom:4px;}
+.empty-state p{font-size:12px;color:var(--w4);}
+
+@media(max-width:768px){
+  .sidebar{display:none;}
+  .kpis{grid-template-columns:repeat(3,1fr);}
+  .data-table th:nth-child(3),.data-table td:nth-child(3){display:none;}
+  .side-panel{width:100%;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-overlay" id="login-overlay">
+  <div class="login-box">
+    <div class="login-brand">RPM <span>PRO</span></div>
+    <input class="login-input" type="email" id="login-email" placeholder="email@oficina.com">
+    <input class="login-input" type="password" id="login-senha" placeholder="••••••••" onkeydown="if(event.key==='Enter')fazerLogin()">
+    <button class="login-btn" id="login-btn" onclick="fazerLogin()">Entrar</button>
+    <div class="login-err" id="login-err">Email ou senha incorretos</div>
+  </div>
+</div>
+<div class="loading-overlay" id="loading" style="display:flex;"><span>Carregando...</span></div>
+<div class="toast-container" id="toasts"></div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-brand">RPM <span>PRO</span></div>
+      <div class="sidebar-logo-oficina" id="oficina-nome"></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Operacao</div>
+      <a class="nav-item" href="kanban-v2.html"><span class="nav-icon">⬛</span>Patio</a>
+      <a class="nav-item" href="dashboard-v2.html"><span class="nav-icon">◈</span>Dashboard</a>
+      <div class="nav-section">Atendimento</div>
+      <a class="nav-item" href="fila-espera-v2.html"><span class="nav-icon">⏳</span>Fila de Espera</a>
+      <a class="nav-item" href="os-list-v2.html"><span class="nav-icon">📋</span>Ordens de Servico</a>
+      <a class="nav-item" href="execucao-os-v2.html"><span class="nav-icon">🔧</span>Execucao OS</a>
+      <a class="nav-item" href="clientes-v2.html"><span class="nav-icon">👥</span>Clientes</a>
+      <a class="nav-item" href="veiculos-v2.html"><span class="nav-icon">🚗</span>Veiculos</a>
+      <a class="nav-item" href="agendamentos-v2.html"><span class="nav-icon">📅</span>Agendamentos</a>
+      <div class="nav-section">Catalogo</div>
+      <a class="nav-item" href="catalogo-v2.html"><span class="nav-icon">🔧</span>Servicos / Pecas</a>
+      <div class="nav-section">Financeiro</div>
+      <a class="nav-item" href="financeiro-v2.html"><span class="nav-icon">💰</span>Caixa</a>
+      <a class="nav-item" href="comissao-v2.html"><span class="nav-icon">📊</span>Comissao</a>
+      <a class="nav-item" href="folha-v2.html"><span class="nav-icon">📄</span>Folha</a>
+      <div class="nav-section">Gestao</div>
+      <a class="nav-item" href="equipe-v2.html"><span class="nav-icon">👤</span>Equipe</a>
+      <a class="nav-item" href="produtividade-v2.html"><span class="nav-icon">⚡</span>Produtividade</a>
+      <a class="nav-item active" href="crm-v2.html"><span class="nav-icon">📡</span>CRM / Reativacao</a>
+      <a class="nav-item" href="satisfacao-v2.html"><span class="nav-icon">⭐</span>Satisfacao</a>
+      <a class="nav-item" href="config-v2.html"><span class="nav-icon">⚙️</span>Configuracoes</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="user-avatar">?</div>
+        <div class="user-details">
+          <div class="user-name" id="user-nome">...</div>
+          <div class="user-role" id="user-role">...</div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="sair()">Sair</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="main-topbar">
+      <div class="main-title">CRM / Reativacao</div>
+    </div>
+    <div class="main-content">
+      <!-- KPIs -->
+      <div class="kpis" id="kpis"></div>
+      <!-- GROUPS -->
+      <div id="grupos"></div>
+    </div>
+  </div>
+</div>
+
+<!-- OVERLAY + SIDE PANEL -->
+<div class="overlay" id="overlay" onclick="fecharPanel()"></div>
+<div class="side-panel" id="panel">
+  <div class="panel-head">
+    <div class="panel-title" id="panel-title">Cliente</div>
+    <button class="panel-close" onclick="fecharPanel()">&times;</button>
+  </div>
+  <div class="panel-body" id="panel-body"></div>
+</div>
+
+<script>
+const SUPABASE_URL='https://roeeyypssutzfzzkypsq.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZWV5eXBzc3V0emZ6emt5cHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MTk0MTgsImV4cCI6MjA5MDM5NTQxOH0.9oCOmABUTXox3FaRViD2zcUaqv94VfOJFMQYz_fcJi4';
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+let PERFIL=null,OFICINA_ID=null;
+let _dados=null,_filtroGrupo='';
+
+function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function escAttr(s){return esc(s).replace(/'/g,'&#39;');}
+function toast(msg,tipo){const d=document.createElement('div');d.className='toast'+(tipo==='err'?' err':'');d.textContent=msg;document.getElementById('toasts').appendChild(d);setTimeout(()=>d.remove(),3500);}
+
+const GRUPOS=[
+  {key:'atencao',titulo:'Atencao',cor:'amber',range:'30-60 dias',min:30,max:60,dica:'Agenda uma revisao preventiva'},
+  {key:'risco',titulo:'Risco',cor:'orange',range:'60-90 dias',min:60,max:90,dica:'Oferecer desconto ou cortesia'},
+  {key:'inativo',titulo:'Inativo',cor:'red',range:'90-180 dias',min:90,max:180,dica:'Campanha de reativacao'},
+  {key:'perdido',titulo:'Perdido',cor:'red',range:'180+ dias',min:180,max:99999,dica:'Ultima tentativa — oferta agressiva'},
+  {key:'semOS',titulo:'Sem OS',cor:'blue',range:'Nunca trouxe',min:0,max:0,dica:'Primeiro contato pos-cadastro'}
+];
+
+async function carregar(){
+  const[cliRes,osRes]=await Promise.all([
+    db.from('clientes').select('id, nome, whatsapp, telefone, created_at').eq('oficina_id',OFICINA_ID).order('nome'),
+    db.from('ordens_servico').select('cliente_id, created_at, status').eq('oficina_id',OFICINA_ID).order('created_at',{ascending:false})
+  ]);
+
+  const clientes=cliRes.data||[];
+  const ordens=osRes.data||[];
+
+  // Mapa: cliente -> ultima OS + total
+  const ultimaOS={},totalOS={};
+  ordens.forEach(o=>{
+    if(!ultimaOS[o.cliente_id])ultimaOS[o.cliente_id]=o.created_at;
+    totalOS[o.cliente_id]=(totalOS[o.cliente_id]||0)+1;
+  });
+
+  const hoje=new Date();
+  const diasEntre=d=>Math.floor((hoje-new Date(d))/86400000);
+
+  // Classifica
+  const grupos={atencao:[],risco:[],inativo:[],perdido:[],semOS:[]};
+  clientes.forEach(c=>{
+    const ult=ultimaOS[c.id];
+    const tot=totalOS[c.id]||0;
+    const dias=ult?diasEntre(ult):null;
+    const obj={...c,dias,totalOS:tot,ultimaOS:ult};
+
+    if(!ult){grupos.semOS.push(obj);}
+    else if(dias>=180){grupos.perdido.push(obj);}
+    else if(dias>=90){grupos.inativo.push(obj);}
+    else if(dias>=60){grupos.risco.push(obj);}
+    else if(dias>=30){grupos.atencao.push(obj);}
+    // <30 dias = ativo, nao aparece
+  });
+
+  _dados=grupos;
+
+  const totalInativos=grupos.atencao.length+grupos.risco.length+grupos.inativo.length+grupos.perdido.length;
+
+  // KPIs
+  const corMap={amber:'var(--amber)',orange:'var(--orange)',red:'var(--red)',blue:'var(--blue)'};
+  document.getElementById('kpis').innerHTML=`
+    <div class="kpi ${!_filtroGrupo?'active':''}" onclick="filtrarGrupo('')">
+      <div class="kpi-val" style="color:var(--w);">${totalInativos+grupos.semOS.length}</div>
+      <div class="kpi-lbl">Total</div>
+      <div class="kpi-sub">a reativar</div>
+    </div>
+    ${GRUPOS.map(g=>`
+      <div class="kpi ${_filtroGrupo===g.key?'active':''}" onclick="filtrarGrupo('${g.key}')">
+        <div class="kpi-val" style="color:${corMap[g.cor]};">${grupos[g.key].length}</div>
+        <div class="kpi-lbl">${g.titulo}</div>
+        <div class="kpi-sub">${g.range}</div>
+      </div>
+    `).join('')}`;
+
+  // Renderiza grupos
+  const gruposVisiveis=_filtroGrupo?GRUPOS.filter(g=>g.key===_filtroGrupo):GRUPOS;
+  document.getElementById('grupos').innerHTML=gruposVisiveis.map(g=>{
+    const lista=grupos[g.key];
+    if(!lista.length)return`
+      <div style="margin-bottom:20px;">
+        <div class="section-bar"><div class="section-title">${g.titulo} <span class="section-badge" style="background:${corMap[g.cor]}22;color:${corMap[g.cor]};">0</span></div></div>
+        <div class="empty-state"><p>Nenhum cliente nesta faixa</p></div>
+      </div>`;
+
+    return`
+      <div style="margin-bottom:20px;">
+        <div class="section-bar" onclick="toggleSection(this)">
+          <div class="section-title">${g.titulo} <span class="section-badge" style="background:${corMap[g.cor]}22;color:${corMap[g.cor]};">${lista.length}</span></div>
+          <span class="section-arrow open">▼</span>
+        </div>
+        <div class="section-body">
+          <table class="data-table">
+            <thead><tr>
+              <th>Cliente</th>
+              <th>WhatsApp</th>
+              <th>OS</th>
+              <th>Dias</th>
+              <th style="text-align:right;">Acoes</th>
+            </tr></thead>
+            <tbody>
+              ${lista.map(c=>{
+                const fone=c.whatsapp||c.telefone||'';
+                const diasTxt=c.dias!==null?c.dias+'d':'Nunca';
+                const diasCor=c.dias===null?'var(--blue)':c.dias>=180?'var(--red)':c.dias>=90?'var(--red)':c.dias>=60?'var(--orange)':'var(--amber)';
+                return`<tr>
+                  <td class="td-nome" style="cursor:pointer;" onclick="abrirCliente('${c.id}')">${esc(c.nome)}</td>
+                  <td>${fone?`<span style="font-family:var(--mono);font-size:12px;">${esc(fone)}</span>`:`<span style="display:flex;gap:4px;align-items:center;"><input class="input-wpp" id="wpp-${c.id}" placeholder="(XX) XXXXX-XXXX" oninput="maskFone(this)"><button class="btn-save-wpp" onclick="salvarWhatsApp('${c.id}')">OK</button></span>`}</td>
+                  <td class="td-os">${c.totalOS}</td>
+                  <td class="td-dias" style="color:${diasCor};">${diasTxt}</td>
+                  <td><div class="td-actions">
+                    ${fone?`<button class="btn-wpp" onclick="enviarWhatsApp('${escAttr(fone)}','${escAttr(c.nome)}',${c.dias||0})">WhatsApp</button>`:''}
+                    <button class="btn-agendar" onclick="window.open('agendamentos-v2.html','_blank')">Agendar</button>
+                  </div></td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function filtrarGrupo(key){_filtroGrupo=_filtroGrupo===key?'':key;carregar();}
+
+function toggleSection(el){
+  const body=el.nextElementSibling;
+  const arrow=el.querySelector('.section-arrow');
+  if(body.style.display==='none'){body.style.display='';arrow.classList.add('open');}
+  else{body.style.display='none';arrow.classList.remove('open');}
+}
+
+function maskFone(el){
+  let v=el.value.replace(/\D/g,'').substring(0,11);
+  if(v.length>=7)v=v.replace(/^(\d{2})(\d{5})(\d{0,4})/,'($1) $2-$3');
+  else if(v.length>=3)v=v.replace(/^(\d{2})(\d{0,5})/,'($1) $2');
+  else if(v.length>=1)v=v.replace(/^(\d{0,2})/,'($1');
+  el.value=v;
+}
+
+async function salvarWhatsApp(id){
+  const el=document.getElementById('wpp-'+id);
+  if(!el||!el.value.trim()){toast('Informe o WhatsApp','err');return;}
+  const{error}=await db.from('clientes').update({whatsapp:el.value.trim()}).eq('id',id);
+  if(error){toast('Erro ao salvar','err');return;}
+  toast('WhatsApp salvo');
+  carregar();
+}
+
+function enviarWhatsApp(fone,nome,dias){
+  let num=fone.replace(/\D/g,'');
+  if(num.length<=11)num='55'+num;
+  let msg;
+  if(dias===0)msg=`Ola ${nome}! Aqui e da oficina. Voce cadastrou seu veiculo mas ainda nao trouxe pra gente. Tem algum servico que possamos ajudar?`;
+  else if(dias<60)msg=`Ola ${nome}! Ja faz ${dias} dias desde sua ultima visita. Que tal agendar uma revisao preventiva? Estamos a disposicao!`;
+  else if(dias<120)msg=`Ola ${nome}! Sentimos sua falta! Ja faz ${dias} dias. Temos condicoes especiais pra clientes que retornam. Vamos agendar?`;
+  else msg=`Ola ${nome}! Faz tempo que nao nos vemos (${dias} dias). Queremos voce de volta! Temos ofertas exclusivas pra voce. Posso agendar?`;
+  window.open('https://wa.me/'+num+'?text='+encodeURIComponent(msg),'_blank');
+}
+
+async function abrirCliente(id){
+  if(!_dados)return;
+  // Busca em todos os grupos
+  let cli=null;
+  for(const g of Object.values(_dados)){
+    cli=g.find(c=>c.id===id);
+    if(cli)break;
+  }
+  if(!cli)return;
+
+  // Busca OS do cliente
+  const{data:ordens}=await db.from('ordens_servico')
+    .select('numero, status, valor_total, created_at, data_entrega')
+    .eq('oficina_id',OFICINA_ID).eq('cliente_id',id)
+    .order('created_at',{ascending:false}).limit(10);
+
+  const lista=ordens||[];
+  const statusCor={entrada:'var(--blue)',diagnostico:'var(--blue)',orcamento:'var(--amber)',aprovada:'var(--green)',aguardando_peca:'var(--red)',execucao:'var(--amber)',pronto:'var(--green)',entregue:'var(--green)',cancelada:'var(--red)'};
+
+  document.getElementById('panel-title').innerHTML='<span>'+esc(cli.nome)+'</span>';
+  document.getElementById('panel-body').innerHTML=`
+    <div class="panel-section">
+      <div class="panel-section-title">Dados</div>
+      <div class="panel-row"><span class="panel-row-label">WhatsApp</span><span class="panel-row-val">${esc(cli.whatsapp||cli.telefone||'Nao informado')}</span></div>
+      <div class="panel-row"><span class="panel-row-label">Total OS</span><span class="panel-row-val">${cli.totalOS}</span></div>
+      <div class="panel-row"><span class="panel-row-label">Ultima visita</span><span class="panel-row-val" style="color:${cli.dias!==null?(cli.dias>=90?'var(--red)':cli.dias>=60?'var(--orange)':'var(--amber)'):'var(--blue)'};">${cli.dias!==null?cli.dias+' dias atras':'Nunca'}</span></div>
+      <div class="panel-row"><span class="panel-row-label">Cadastro</span><span class="panel-row-val">${new Date(cli.created_at).toLocaleDateString('pt-BR')}</span></div>
+    </div>
+    <div class="panel-section">
+      <div class="panel-section-title">Ultimas OS</div>
+      ${lista.length?lista.map(o=>{
+        const dt=o.created_at?new Date(o.created_at).toLocaleDateString('pt-BR'):'—';
+        return`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--ln);">
+          <span style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--amber);background:var(--amber-dim);padding:3px 8px;border-radius:2px;min-width:50px;text-align:center;">#${o.numero||'—'}</span>
+          <span style="font-family:var(--mono);font-size:10px;padding:2px 6px;border-radius:2px;background:${(statusCor[o.status]||'var(--w3)')}22;color:${statusCor[o.status]||'var(--w3)'};text-transform:uppercase;font-weight:700;">${o.status}</span>
+          <span style="flex:1;"></span>
+          <span style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--green);">R$ ${(o.valor_total||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
+          <span style="font-family:var(--mono);font-size:10px;color:var(--w4);">${dt}</span>
+        </div>`;
+      }).join(''):`<div class="empty-state" style="padding:20px;"><p>Nenhuma OS registrada</p></div>`}
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      ${(cli.whatsapp||cli.telefone)?`<button class="btn-wpp" style="flex:1;padding:10px;" onclick="enviarWhatsApp('${escAttr(cli.whatsapp||cli.telefone)}','${escAttr(cli.nome)}',${cli.dias||0})">Enviar WhatsApp</button>`:''}
+      <button class="btn-agendar" style="flex:1;padding:10px;" onclick="window.open('agendamentos-v2.html','_blank')">Agendar Retorno</button>
+    </div>`;
+
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('panel').classList.add('open');
+}
+
+function fecharPanel(){document.getElementById('panel').classList.remove('open');document.getElementById('overlay').classList.remove('open');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')fecharPanel();});
+
+// AUTH
+async function fazerLogin(){
+  const email=document.getElementById('login-email').value.trim();
+  const senha=document.getElementById('login-senha').value;
+  const btn=document.getElementById('login-btn');
+  const err=document.getElementById('login-err');
+  if(!email||!senha)return;
+  btn.disabled=true;btn.textContent='Entrando...';err.style.display='none';
+  const{error}=await db.auth.signInWithPassword({email,password:senha});
+  if(error){err.style.display='block';btn.disabled=false;btn.textContent='Entrar';return;}
+  await init();
+}
+function sair(){db.auth.signOut();location.reload();}
+
+async function init(){
+  const{data:{session}}=await db.auth.getSession();
+  if(!session){document.getElementById('login-overlay').style.display='flex';return;}
+  document.getElementById('login-overlay').style.display='none';
+  document.getElementById('loading').style.display='flex';
+
+  const{data:perfil}=await db.from('profiles').select('*, oficinas(*)').eq('user_id',session.user.id).single();
+  if(!perfil){toast('Perfil nao encontrado','err');document.getElementById('loading').style.display='none';document.getElementById('login-overlay').style.display='flex';return;}
+
+  PERFIL=perfil;OFICINA_ID=perfil.oficina_id;
+  const nome=perfil.nome||session.user.email;
+  document.getElementById('user-nome').textContent=nome;
+  document.getElementById('user-role').textContent=perfil.role||'';
+  document.getElementById('user-avatar').textContent=nome.charAt(0).toUpperCase();
+  document.getElementById('oficina-nome').textContent=perfil.oficinas?.nome||'';
+
+  await carregar();
+  document.getElementById('loading').style.display='none';
+}
+
+init();
+</script>
+</body>
+</html>

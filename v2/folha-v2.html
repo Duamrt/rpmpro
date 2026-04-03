@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro V2 — Folha de Pagamento</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#09090B;--sf:#111114;--sf2:#18181C;--sf3:#1F1F24;--sf4:#27272D;
+  --ln:rgba(255,255,255,0.04);--ln2:rgba(255,255,255,0.08);--ln3:rgba(255,255,255,0.14);
+  --amber:#E8930C;--amber-dim:rgba(232,147,12,0.1);
+  --orange:#EA580C;--orange-dim:rgba(234,88,12,0.12);
+  --red:#FF3B30;--red-dim:rgba(255,59,48,0.08);
+  --green:#30D158;--green-dim:rgba(48,209,88,0.08);
+  --blue:#0A84FF;--blue-dim:rgba(10,132,255,0.1);
+  --cyan:#00C7BE;
+  --w:#F0F0F2;--w2:rgba(255,255,255,0.6);--w3:rgba(255,255,255,0.32);--w4:rgba(255,255,255,0.14);
+  --mono:'JetBrains Mono',monospace;--head:'Barlow Condensed',sans-serif;--body:'Space Grotesk',sans-serif;
+  --r:3px;--r2:4px;
+}
+body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100vh;-webkit-font-smoothing:antialiased;overflow:hidden;}
+.app{display:flex;height:100vh;overflow:hidden;}
+
+/* ── SIDEBAR ── */
+.sidebar{width:220px;flex-shrink:0;background:var(--sf);border-right:1px solid var(--ln2);display:flex;flex-direction:column;height:100vh;}
+.sidebar-logo{padding:20px 16px 16px;border-bottom:1px solid var(--ln2);}
+.sidebar-logo-brand{font-family:var(--head);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.sidebar-logo-brand span{color:var(--amber);}
+.sidebar-logo-oficina{font-family:var(--body);font-size:11px;color:var(--w3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sidebar-nav{flex:1;overflow-y:auto;padding:12px 0;scrollbar-width:none;}
+.sidebar-nav::-webkit-scrollbar{display:none;}
+.nav-section{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);padding:10px 16px 6px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 16px;font-family:var(--body);font-size:13px;font-weight:500;color:var(--w3);cursor:pointer;transition:all .12s;text-decoration:none;}
+.nav-item:hover{color:var(--w);background:var(--sf2);}
+.nav-item.active{color:var(--amber);background:var(--amber-dim);border-left:2px solid var(--amber);}
+.nav-item .nav-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0;}
+.sidebar-footer{padding:16px;border-top:1px solid var(--ln2);}
+.user-info{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.user-avatar{width:34px;height:34px;border-radius:var(--r);background:var(--amber-dim);border:1px solid rgba(232,147,12,0.3);display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:14px;font-weight:800;color:var(--amber);flex-shrink:0;}
+.user-details{min-width:0;}
+.user-name{font-family:var(--body);font-size:13px;font-weight:600;color:var(--w);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.user-role{font-family:var(--mono);font-size:10px;color:var(--w3);text-transform:uppercase;letter-spacing:.5px;}
+.btn-logout{width:100%;font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--w3);background:none;border:1px solid var(--ln3);padding:7px;border-radius:var(--r);cursor:pointer;transition:all .15s;}
+.btn-logout:hover{color:var(--w);border-color:var(--w3);}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.main-topbar{height:48px;background:var(--sf);border-bottom:1px solid var(--ln2);display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0;}
+.main-title{font-family:var(--head);font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:2px;}
+.main-content{flex:1;overflow-y:auto;padding:20px;scrollbar-width:thin;scrollbar-color:var(--sf3) transparent;}
+.main-content::-webkit-scrollbar{width:4px;}
+.main-content::-webkit-scrollbar-thumb{background:var(--sf3);border-radius:2px;}
+
+/* ── BTN PDF ── */
+.btn-pdf{padding:8px 18px;background:var(--sf2);border:2px solid var(--ln3);border-radius:var(--r2);font-family:var(--head);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:var(--w);cursor:pointer;transition:all .12s;display:flex;align-items:center;gap:6px;}
+.btn-pdf:hover{border-color:var(--amber);background:var(--amber-dim);color:var(--amber);}
+.btn-pdf:active{transform:scale(.97);}
+
+/* ── PERIOD NAV ── */
+.period-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;}
+.period-selector{display:flex;align-items:center;gap:10px;}
+.period-btn{width:38px;height:38px;background:var(--sf2);border:1px solid var(--ln3);border-radius:var(--r2);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .12s;}
+.period-btn:hover{border-color:var(--amber);background:var(--amber-dim);}
+.period-btn:active{transform:scale(.94);}
+.period-btn svg{width:14px;height:14px;stroke:var(--w);stroke-width:2.5;}
+.period-btn:hover svg{stroke:var(--amber);}
+.period-label{font-family:var(--head);font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:2px;min-width:160px;text-align:center;}
+.period-label span{color:var(--amber);}
+.period-info{font-family:var(--mono);font-size:12px;color:var(--w2);background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:7px 12px;display:flex;align-items:center;gap:5px;}
+.period-info-val{color:var(--amber);font-weight:700;}
+
+/* ── SUMMARY KPIs ── */
+.summary{display:flex;gap:6px;margin-bottom:20px;}
+.summary-item{flex:1;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:14px;text-align:center;}
+.summary-val{font-family:var(--mono);font-size:18px;font-weight:800;letter-spacing:-1px;}
+.summary-lbl{font-family:var(--head);font-size:10px;font-weight:600;color:var(--w3);text-transform:uppercase;letter-spacing:1.5px;margin-top:2px;}
+
+/* ── EMPLOYEE CARDS ── */
+.emp-card{background:var(--sf);border:2px solid var(--ln2);border-radius:var(--r2);padding:16px 18px;margin-bottom:5px;transition:all .12s;cursor:pointer;}
+.emp-card:hover{border-color:var(--ln3);background:var(--sf2);}
+.emp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.emp-info{display:flex;align-items:center;gap:10px;}
+.emp-avatar{width:40px;height:40px;border-radius:var(--r2);background:var(--sf3);border:1px solid var(--ln2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--mono);font-size:13px;font-weight:700;color:var(--w3);text-transform:uppercase;letter-spacing:2px;}
+.emp-details{flex:1;min-width:0;}
+.emp-nome{font-family:var(--head);font-size:17px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.emp-cargo{font-family:var(--body);font-size:11px;color:var(--w3);margin-top:1px;}
+.emp-liquido{text-align:right;}
+.emp-liquido-lbl{font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--w3);}
+.emp-liquido-val{font-family:var(--mono);font-size:22px;font-weight:800;letter-spacing:-1px;}
+
+.emp-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
+.emp-cell{background:var(--sf2);border:1px solid var(--ln);border-radius:var(--r);padding:10px;text-align:center;}
+.emp-cell-val{font-family:var(--mono);font-size:14px;font-weight:700;}
+.emp-cell-lbl{font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--w4);margin-top:2px;}
+
+.emp-vales{margin-top:10px;border-left:2px solid var(--red);padding-left:12px;}
+.vale-item{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:12px;}
+.vale-item-info{color:var(--w2);}
+.vale-item-date{font-family:var(--mono);font-size:10px;color:var(--w4);margin-right:8px;}
+.vale-item-val{font-family:var(--mono);font-weight:700;color:var(--red);}
+
+/* ── TOTAL BAR ── */
+.total-bar{display:flex;align-items:center;justify-content:space-between;background:var(--sf);border:2px solid var(--amber);border-radius:var(--r2);padding:16px 22px;margin-top:14px;}
+.total-label{font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--w2);}
+.total-val{font-family:var(--mono);font-size:26px;font-weight:800;color:var(--amber);text-shadow:0 0 25px rgba(232,147,12,0.15);}
+.total-detail{font-family:var(--body);font-size:12px;color:var(--w3);}
+
+/* ── SIDE PANEL ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:900;opacity:0;pointer-events:none;transition:opacity .25s;}
+.overlay.open{opacity:1;pointer-events:auto;}
+.side-panel{position:fixed;top:0;right:0;bottom:0;width:480px;max-width:100%;background:#141417;border-left:1px solid var(--ln2);z-index:1000;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden;}
+.side-panel.open{transform:translateX(0);}
+.panel-head{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--ln2);}
+.panel-title{font-family:var(--head);font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.panel-title span{color:var(--amber);}
+.panel-close{width:34px;height:34px;background:var(--sf3);border:1px solid var(--ln2);border-radius:var(--r);color:var(--w3);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.panel-close:hover{background:var(--sf4);color:var(--w);}
+.panel-body{flex:1;overflow-y:auto;padding:22px;}
+.panel-section{margin-bottom:20px;}
+.panel-section-title{font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid var(--ln);}
+
+/* ── LOGIN ── */
+.login-overlay{position:fixed;inset:0;z-index:2000;background:var(--bg);display:none;align-items:center;justify-content:center;}
+.login-box{width:360px;padding:40px;text-align:center;}
+.login-brand{font-family:var(--head);font-size:36px;font-weight:900;text-transform:uppercase;margin-bottom:28px;}
+.login-brand span{color:var(--amber);}
+.login-input{width:100%;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px 16px;color:var(--w);font-family:var(--body);font-size:14px;margin-bottom:12px;outline:none;transition:border-color .15s;}
+.login-input:focus{border-color:var(--amber);}
+.login-input::placeholder{color:var(--w4);}
+.login-btn{width:100%;padding:14px;background:var(--amber);border:none;border-radius:var(--r2);font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#000;cursor:pointer;}
+.login-err{color:var(--red);font-size:12px;margin-top:8px;display:none;}
+
+/* ── LOADING ── */
+.loading-overlay{position:fixed;inset:0;z-index:1500;background:var(--bg);display:none;align-items:center;justify-content:center;}
+.loading-overlay span{font-family:var(--head);font-size:20px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:var(--amber);animation:pulse 1.2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+/* ── TOAST ── */
+.toast-container{position:fixed;top:16px;right:16px;z-index:3000;display:flex;flex-direction:column;gap:6px;}
+.toast{padding:10px 18px;border-radius:var(--r2);font-family:var(--body);font-size:13px;font-weight:500;color:#000;background:var(--green);animation:toastIn .3s;max-width:340px;}
+.toast.err{background:var(--red);color:#fff;}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:none;}}
+
+.empty-state{text-align:center;padding:60px 20px;color:var(--w3);}
+.empty-state .icon{font-size:48px;margin-bottom:12px;}
+.empty-state h3{font-family:var(--head);font-size:20px;font-weight:700;text-transform:uppercase;color:var(--w2);margin-bottom:6px;}
+.empty-state p{font-size:13px;color:var(--w4);}
+
+@media(max-width:768px){
+  .sidebar{display:none;}
+  .summary{flex-wrap:wrap;}
+  .summary-item{flex:1 1 45%;min-width:0;}
+  .emp-grid{grid-template-columns:repeat(2,1fr);}
+  .side-panel{width:100%;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-overlay" id="login-overlay">
+  <div class="login-box">
+    <div class="login-brand">RPM <span>PRO</span></div>
+    <input class="login-input" type="email" id="login-email" placeholder="email@oficina.com">
+    <input class="login-input" type="password" id="login-senha" placeholder="••••••••" onkeydown="if(event.key==='Enter')fazerLogin()">
+    <button class="login-btn" id="login-btn" onclick="fazerLogin()">Entrar</button>
+    <div class="login-err" id="login-err">Email ou senha incorretos</div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loading" style="display:flex;"><span>Carregando...</span></div>
+
+<!-- TOAST -->
+<div class="toast-container" id="toasts"></div>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-brand">RPM <span>PRO</span></div>
+      <div class="sidebar-logo-oficina" id="oficina-nome"></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Operacao</div>
+      <a class="nav-item" href="kanban-v2.html"><span class="nav-icon">⬛</span>Patio</a>
+      <a class="nav-item" href="dashboard-v2.html"><span class="nav-icon">◈</span>Dashboard</a>
+      <div class="nav-section">Atendimento</div>
+      <a class="nav-item" href="fila-espera-v2.html"><span class="nav-icon">⏳</span>Fila de Espera</a>
+      <a class="nav-item" href="os-list-v2.html"><span class="nav-icon">📋</span>Ordens de Servico</a>
+      <a class="nav-item" href="execucao-os-v2.html"><span class="nav-icon">🔧</span>Execucao OS</a>
+      <a class="nav-item" href="clientes-v2.html"><span class="nav-icon">👥</span>Clientes</a>
+      <a class="nav-item" href="veiculos-v2.html"><span class="nav-icon">🚗</span>Veiculos</a>
+      <a class="nav-item" href="agendamentos-v2.html"><span class="nav-icon">📅</span>Agendamentos</a>
+      <div class="nav-section">Catalogo</div>
+      <a class="nav-item" href="catalogo-v2.html"><span class="nav-icon">🔧</span>Servicos / Pecas</a>
+      <div class="nav-section">Financeiro</div>
+      <a class="nav-item" href="financeiro-v2.html"><span class="nav-icon">💰</span>Caixa</a>
+      <a class="nav-item" href="comissao-v2.html"><span class="nav-icon">📊</span>Comissao</a>
+      <a class="nav-item active" href="folha-v2.html"><span class="nav-icon">📄</span>Folha</a>
+      <div class="nav-section">Gestao</div>
+      <a class="nav-item" href="equipe-v2.html"><span class="nav-icon">👤</span>Equipe</a>
+      <a class="nav-item" href="produtividade-v2.html"><span class="nav-icon">⚡</span>Produtividade</a>
+      <a class="nav-item" href="crm-v2.html"><span class="nav-icon">📡</span>CRM / Reativacao</a>
+      <a class="nav-item" href="satisfacao-v2.html"><span class="nav-icon">⭐</span>Satisfacao</a>
+      <a class="nav-item" href="config-v2.html"><span class="nav-icon">⚙️</span>Configuracoes</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="user-avatar">?</div>
+        <div class="user-details">
+          <div class="user-name" id="user-nome">...</div>
+          <div class="user-role" id="user-role">...</div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="sair()">Sair</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="main-topbar">
+      <div class="main-title">Folha de Pagamento</div>
+      <button class="btn-pdf" onclick="gerarPDF()">Gerar PDF Folha</button>
+    </div>
+    <div class="main-content">
+      <!-- PERIOD NAV -->
+      <div class="period-nav">
+        <div class="period-selector">
+          <div class="period-btn" onclick="mesAnterior()"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></div>
+          <div class="period-label" id="period-label">...</div>
+          <div class="period-btn" onclick="mesProximo()"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+        </div>
+        <div class="period-info" id="period-info"><span class="period-info-val">0</span>&nbsp;funcionarios ativos</div>
+        <div id="lock-actions" style="display:flex;gap:8px;margin-left:auto;"></div>
+      </div>
+
+      <!-- SUMMARY KPIs -->
+      <div class="summary" id="summary"></div>
+
+      <!-- EMPLOYEE LIST -->
+      <div id="emp-lista"></div>
+
+      <!-- TOTAL -->
+      <div id="total-bar"></div>
+    </div>
+  </div>
+</div>
+
+<!-- OVERLAY + SIDE PANEL -->
+<div class="overlay" id="overlay" onclick="fecharPanel()"></div>
+<div class="side-panel" id="panel">
+  <div class="panel-head">
+    <div class="panel-title" id="panel-title">Detalhe</div>
+    <button class="panel-close" onclick="fecharPanel()">&times;</button>
+  </div>
+  <div class="panel-body" id="panel-body"></div>
+</div>
+
+<script>
+const SUPABASE_URL='https://roeeyypssutzfzzkypsq.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZWV5eXBzc3V0emZ6emt5cHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MTk0MTgsImV4cCI6MjA5MDM5NTQxOH0.9oCOmABUTXox3FaRViD2zcUaqv94VfOJFMQYz_fcJi4';
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+let PERFIL=null, OFICINA_ID=null, OFICINA=null;
+let MES=null, ANO=null;
+let _dadosFolha=null;
+
+function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function toast(msg,tipo){const d=document.createElement('div');d.className='toast'+(tipo==='err'?' err':'');d.textContent=msg;document.getElementById('toasts').appendChild(d);setTimeout(()=>d.remove(),3500);}
+function fmt(v){return(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+
+const MESES=['Janeiro','Fevereiro','Marco','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const ROLES_LABEL={'dono':'Proprietario','gerente':'Gerente','mecanico':'Mecanico','aux_mecanico':'Aux. Mecanico','atendente':'Atendente','aux_admin':'Aux. Admin'};
+
+function mesAnterior(){MES--;if(MES<1){MES=12;ANO--;}carregar();}
+function mesProximo(){MES++;if(MES>12){MES=1;ANO++;}carregar();}
+
+async function carregar(){
+  const inicio=new Date(ANO,MES-1,1).toISOString();
+  const fim=new Date(ANO,MES,0,23,59,59).toISOString();
+  const comp=ANO+'-'+String(MES).padStart(2,'0');
+
+  document.getElementById('period-label').innerHTML=MESES[MES-1]+' <span>'+ANO+'</span>';
+
+  // Verifica se mês está fechado (lock)
+  const{data:fechamento}=await db.from('folha_fechamento').select('id, dados, created_at').eq('oficina_id',OFICINA_ID).eq('competencia',comp).eq('tipo','folha').maybeSingle();
+
+  const mesFechado=!!fechamento;
+
+  // Botões fechar/reabrir
+  const lockEl=document.getElementById('lock-actions');
+  if(mesFechado){
+    const dtFech=new Date(fechamento.created_at);
+    const dtStr=String(dtFech.getDate()).padStart(2,'0')+'/'+String(dtFech.getMonth()+1).padStart(2,'0')+'/'+dtFech.getFullYear();
+    lockEl.innerHTML=`<span style="font-family:var(--mono);font-size:11px;color:var(--green);display:flex;align-items:center;gap:6px;">🔒 Fechado em ${dtStr}</span>`
+      +((PERFIL?.role==='dono'||PERFIL?.role==='gerente')?`<button onclick="reabrirMes()" style="padding:6px 14px;background:var(--red-dim);color:var(--red);border:1px solid rgba(255,59,48,0.2);border-radius:var(--r);font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;cursor:pointer;">Reabrir</button>`:'');
+  }else{
+    lockEl.innerHTML=((PERFIL?.role==='dono'||PERFIL?.role==='gerente')?`<button onclick="fecharMes()" style="padding:6px 14px;background:var(--green-dim);color:var(--green);border:1px solid rgba(48,209,88,0.2);border-radius:var(--r);font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;cursor:pointer;">Fechar Mes</button>`:'');
+  }
+
+  let folha, totalSalarios=0, totalVR=0, totalComissoes=0, totalVales=0, totalLiquido=0;
+
+  if(mesFechado&&fechamento.dados){
+    // Usa snapshot congelado — não recalcula
+    folha=(fechamento.dados||[]).map(f=>{
+      f.meusVales=f.meusVales||[];
+      f.totalVale=f.vales||0;
+      f.chave_pix=f.chave_pix||'';
+      totalSalarios+=f.salario||0;
+      totalVR+=f.vr||0;
+      totalComissoes+=f.comissao||0;
+      totalVales+=f.totalVale;
+      totalLiquido+=f.liquido||0;
+      return f;
+    });
+  }else{
+    // Calcula ao vivo
+    const[resFunc, resOS, resVales]=await Promise.all([
+      db.from('profiles')
+        .select('id, nome, role, salario_base, comissao_percent, vale_refeicao, chave_pix')
+        .eq('oficina_id',OFICINA_ID)
+        .eq('ativo',true)
+        .in('role',['mecanico','aux_mecanico','gerente','atendente','aux_admin'])
+        .order('nome'),
+      db.from('ordens_servico')
+        .select('id, valor_total, mecanico_id')
+        .eq('oficina_id',OFICINA_ID)
+        .eq('status','entregue')
+        .gte('data_entrega',inicio)
+        .lte('data_entrega',fim),
+      db.from('caixa')
+        .select('id, membro_id, valor, descricao, created_at')
+        .eq('oficina_id',OFICINA_ID)
+        .eq('tipo','saida')
+        .eq('categoria','vale')
+        .gte('created_at',inicio)
+        .lte('created_at',fim)
+    ]);
+
+    if(resFunc.error){toast('Erro funcionarios: '+resFunc.error.message,'err');return;}
+    if(resOS.error){toast('Erro OS: '+resOS.error.message,'err');return;}
+
+    const funcionarios=resFunc.data||[];
+    const ordens=resOS.data||[];
+    const vales=resVales.data||[];
+
+    const faturadoPor={};
+    ordens.forEach(os=>{
+      if(!os.mecanico_id)return;
+      faturadoPor[os.mecanico_id]=(faturadoPor[os.mecanico_id]||0)+(os.valor_total||0);
+    });
+
+    const valesPor={};
+    vales.forEach(v=>{
+      if(!v.membro_id)return;
+      if(!valesPor[v.membro_id])valesPor[v.membro_id]=[];
+      valesPor[v.membro_id].push(v);
+    });
+
+    folha=funcionarios.map(f=>{
+      const salario=f.salario_base||0;
+      const vr=f.vale_refeicao||0;
+      const faturado=faturadoPor[f.id]||0;
+      const comissao=faturado*(f.comissao_percent||0)/100;
+      const meusVales=valesPor[f.id]||[];
+      const totalVale=meusVales.reduce((s,v)=>s+(v.valor||0),0);
+      const liquido=salario+vr+comissao-totalVale;
+
+      totalSalarios+=salario;
+      totalVR+=vr;
+      totalComissoes+=comissao;
+      totalVales+=totalVale;
+      totalLiquido+=liquido;
+
+      return{...f, salario, vr, faturado, comissao, meusVales, totalVale, liquido, chave_pix:f.chave_pix||''};
+    });
+  }
+
+  // Ordena por liquido desc
+  folha.sort((a,b)=>b.liquido-a.liquido);
+
+  // Period info
+  document.getElementById('period-info').innerHTML='<span class="period-info-val">'+funcionarios.length+'</span>&nbsp;funcionarios ativos &middot; <span class="period-info-val">'+ordens.length+'</span>&nbsp;OS entregues';
+
+  // Summary KPIs
+  document.getElementById('summary').innerHTML=`
+    <div class="summary-item"><div class="summary-val" style="color:var(--w);">R$ ${fmt(totalSalarios)}</div><div class="summary-lbl">Salarios</div></div>
+    <div class="summary-item"><div class="summary-val" style="color:var(--blue);">R$ ${fmt(totalVR)}</div><div class="summary-lbl">Vale Refeicao</div></div>
+    <div class="summary-item"><div class="summary-val" style="color:var(--green);">R$ ${fmt(totalComissoes)}</div><div class="summary-lbl">Comissoes</div></div>
+    <div class="summary-item"><div class="summary-val" style="color:var(--red);">R$ ${fmt(totalVales)}</div><div class="summary-lbl">Vales / Adiant.</div></div>
+    <div class="summary-item"><div class="summary-val" style="color:var(--amber);">R$ ${fmt(totalLiquido)}</div><div class="summary-lbl">Liquido a Pagar</div></div>`;
+
+  // Employee cards
+  if(!folha.length){
+    document.getElementById('emp-lista').innerHTML=`<div class="empty-state"><div class="icon">👤</div><h3>Nenhum funcionario ativo</h3><p>Cadastre membros na aba Equipe</p></div>`;
+    document.getElementById('total-bar').innerHTML='';
+    _dadosFolha=null;
+    return;
+  }
+
+  document.getElementById('emp-lista').innerHTML=folha.map(f=>{
+    const iniciais=(f.nome||'??').split(' ').map(p=>p[0]).join('').substring(0,2).toUpperCase();
+    const roleTxt=ROLES_LABEL[f.role]||f.role;
+    const liqColor=f.liquido>=0?'var(--green)':'var(--red)';
+
+    let valesHtml='';
+    if(f.meusVales.length){
+      valesHtml='<div class="emp-vales">'+f.meusVales.map(v=>{
+        const dt=new Date(v.created_at);
+        const dtStr=String(dt.getDate()).padStart(2,'0')+'/'+String(dt.getMonth()+1).padStart(2,'0');
+        return`<div class="vale-item"><span class="vale-item-info"><span class="vale-item-date">${dtStr}</span>${esc(v.descricao||'Vale')}</span><span class="vale-item-val">-R$ ${fmt(v.valor)}</span></div>`;
+      }).join('')+'</div>';
+    }
+
+    return`<div class="emp-card" onclick="abrirDetalhe('${f.id}')">
+      <div class="emp-head">
+        <div class="emp-info">
+          <div class="emp-avatar">${iniciais}</div>
+          <div class="emp-details">
+            <div class="emp-nome">${esc(f.nome)}</div>
+            <div class="emp-cargo">${roleTxt}</div>
+            ${f.chave_pix?`<div style="font-family:var(--mono);font-size:10px;color:var(--w3);margin-top:3px;display:flex;align-items:center;gap:4px;">PIX: <span style="color:var(--w2);user-select:all;">${esc(f.chave_pix)}</span></div>`:''}
+          </div>
+        </div>
+        <div class="emp-liquido">
+          <div class="emp-liquido-lbl">A pagar</div>
+          <div class="emp-liquido-val" style="color:${liqColor}">R$ ${fmt(f.liquido)}</div>
+        </div>
+      </div>
+      <div class="emp-grid">
+        <div class="emp-cell"><div class="emp-cell-val" style="color:var(--w);">R$ ${fmt(f.salario)}</div><div class="emp-cell-lbl">Salario</div></div>
+        <div class="emp-cell"><div class="emp-cell-val" style="color:var(--blue);">R$ ${fmt(f.vr)}</div><div class="emp-cell-lbl">VR</div></div>
+        <div class="emp-cell"><div class="emp-cell-val" style="color:var(--green);">R$ ${fmt(f.comissao)}</div><div class="emp-cell-lbl">Comissao</div></div>
+        <div class="emp-cell"><div class="emp-cell-val" style="color:var(--red);">R$ ${fmt(f.totalVale)}</div><div class="emp-cell-lbl">Vales</div></div>
+        <div class="emp-cell"><div class="emp-cell-val" style="color:${liqColor}">R$ ${fmt(f.liquido)}</div><div class="emp-cell-lbl">Liquido</div></div>
+      </div>
+      ${valesHtml}
+    </div>`;
+  }).join('');
+
+  // Total bar
+  document.getElementById('total-bar').innerHTML=`
+    <div class="total-bar">
+      <div>
+        <div class="total-label">Total Folha — ${MESES[MES-1]} ${ANO}</div>
+        <div class="total-detail">${folha.length} funcionarios &middot; R$ ${fmt(totalSalarios)} salarios + R$ ${fmt(totalComissoes)} comissoes - R$ ${fmt(totalVales)} vales</div>
+      </div>
+      <div class="total-val">R$ ${fmt(totalLiquido)}</div>
+    </div>`;
+
+  _dadosFolha={folha,totalSalarios,totalVR,totalComissoes,totalVales,totalLiquido,mesNome:MESES[MES-1],ano:ANO};
+}
+
+// ── DETALHE FUNCIONARIO (side panel) ──
+function abrirDetalhe(funcId){
+  if(!_dadosFolha)return;
+  const f=_dadosFolha.folha.find(x=>x.id===funcId);
+  if(!f)return;
+
+  const roleTxt=ROLES_LABEL[f.role]||f.role;
+
+  document.getElementById('panel-title').innerHTML='<span>'+esc(f.nome)+'</span>';
+  document.getElementById('panel-body').innerHTML=`
+    <div class="panel-section">
+      <div class="panel-section-title">Dados do Funcionario</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
+        <div style="background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px;">
+          <div style="font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);margin-bottom:4px;">Cargo</div>
+          <div style="font-family:var(--body);font-size:14px;font-weight:600;">${roleTxt}</div>
+        </div>
+        <div style="background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px;">
+          <div style="font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);margin-bottom:4px;">Taxa Comissao</div>
+          <div style="font-family:var(--body);font-size:14px;font-weight:600;color:var(--green);">${f.comissao_percent||0}%</div>
+        </div>
+      </div>
+      ${f.chave_pix?`<div style="background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px;margin-top:8px;">
+        <div style="font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);margin-bottom:4px;">Chave PIX</div>
+        <div style="font-family:var(--mono);font-size:14px;font-weight:600;color:var(--green);user-select:all;">${esc(f.chave_pix)}</div>
+      </div>`:''}
+    </div>
+    <div class="panel-section">
+      <div class="panel-section-title">Composicao — ${_dadosFolha.mesNome} ${_dadosFolha.ano}</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;justify-content:space-between;padding:8px 12px;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r);">
+          <span style="font-size:13px;color:var(--w2);">Salario Base</span>
+          <span style="font-family:var(--mono);font-size:13px;font-weight:700;">R$ ${fmt(f.salario)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 12px;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r);">
+          <span style="font-size:13px;color:var(--w2);">Vale Refeicao</span>
+          <span style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--blue);">R$ ${fmt(f.vr)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 12px;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r);">
+          <span style="font-size:13px;color:var(--w2);">Faturamento MO</span>
+          <span style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--w3);">R$ ${fmt(f.faturado)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 12px;background:var(--green-dim,rgba(48,209,88,0.08));border:1px solid rgba(48,209,88,0.15);border-radius:var(--r);">
+          <span style="font-size:13px;color:var(--green);">Comissao (${f.comissao_percent||0}%)</span>
+          <span style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--green);">+ R$ ${fmt(f.comissao)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 12px;background:var(--red-dim);border:1px solid rgba(255,59,48,0.15);border-radius:var(--r);">
+          <span style="font-size:13px;color:var(--red);">Vales / Adiantamentos</span>
+          <span style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--red);">- R$ ${fmt(f.totalVale)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:10px 12px;background:var(--amber-dim);border:2px solid rgba(232,147,12,0.3);border-radius:var(--r2);margin-top:4px;">
+          <span style="font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--amber);">Liquido</span>
+          <span style="font-family:var(--mono);font-size:18px;font-weight:800;color:var(--amber);">R$ ${fmt(f.liquido)}</span>
+        </div>
+      </div>
+    </div>
+    ${f.meusVales.length?`
+    <div class="panel-section">
+      <div class="panel-section-title">Vales / Adiantamentos (${f.meusVales.length})</div>
+      ${f.meusVales.map(v=>{
+        const dt=new Date(v.created_at);
+        const dtStr=String(dt.getDate()).padStart(2,'0')+'/'+String(dt.getMonth()+1).padStart(2,'0')+'/'+dt.getFullYear();
+        return`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--ln);">
+          <div>
+            <div style="font-size:13px;color:var(--w);">${esc(v.descricao||'Vale')}</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--w4);margin-top:2px;">${dtStr}</div>
+          </div>
+          <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--red);">-R$ ${fmt(v.valor)}</div>
+        </div>`;
+      }).join('')}
+    </div>`:''}`;
+
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('panel').classList.add('open');
+}
+
+// ── PDF ──
+async function gerarPDF(){
+  if(!_dadosFolha||!_dadosFolha.folha.length){toast('Sem dados pra gerar PDF','err');return;}
+
+  if(!window.pdfMake){
+    toast('Carregando PDF...');
+    await new Promise((resolve,reject)=>{
+      const s=document.createElement('script');
+      s.src='https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js';
+      s.onload=()=>{
+        const v=document.createElement('script');
+        v.src='https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js';
+        v.onload=resolve;v.onerror=reject;
+        document.head.appendChild(v);
+      };
+      s.onerror=reject;
+      document.head.appendChild(s);
+    });
+  }
+
+  const{folha,totalSalarios,totalVR,totalComissoes,totalVales,totalLiquido,mesNome,ano}=_dadosFolha;
+  const oficina=OFICINA||{};
+
+  const rows=folha.map(f=>[
+    {text:f.nome||'',fontSize:9,bold:true},
+    {text:ROLES_LABEL[f.role]||f.role||'',fontSize:8,color:'#666666',alignment:'center'},
+    {text:'R$ '+fmt(f.salario),fontSize:9,alignment:'right'},
+    {text:'R$ '+fmt(f.vr),fontSize:9,alignment:'right'},
+    {text:'R$ '+fmt(f.comissao),fontSize:9,alignment:'right',color:'#2e7d32'},
+    {text:'R$ '+fmt(f.totalVale),fontSize:9,alignment:'right',color:f.totalVale>0?'#c62828':'#333333'},
+    {text:'R$ '+fmt(f.liquido),fontSize:10,bold:true,alignment:'right'},
+    {text:f.chave_pix||'—',fontSize:8,color:'#555555'}
+  ]);
+
+  const docDef={
+    pageSize:'A4',pageOrientation:'landscape',pageMargins:[30,25,30,45],
+    content:[
+      {columns:[
+        {text:[{text:'RPM ',bold:true,color:'#D97706',fontSize:22},{text:'PRO',bold:true,fontSize:22}],width:'auto'},
+        {stack:[
+          {text:oficina.nome||'Oficina',fontSize:14,bold:true,alignment:'right'},
+          oficina.cnpj?{text:'CNPJ: '+oficina.cnpj,fontSize:9,color:'#666666',alignment:'right'}:{}
+        ],alignment:'right'}
+      ],margin:[0,0,0,8]},
+      {canvas:[{type:'line',x1:0,y1:0,x2:782,y2:0,lineWidth:1,lineColor:'#D97706'}],margin:[0,0,0,12]},
+      {text:'FOLHA DE PAGAMENTO',fontSize:16,bold:true,alignment:'center',margin:[0,0,0,4]},
+      {text:mesNome+' / '+ano,fontSize:12,alignment:'center',color:'#666666',margin:[0,0,0,12]},
+      {table:{
+        headerRows:1,widths:['*',50,70,55,70,55,80,95],
+        body:[
+          [{text:'Funcionario',bold:true,fontSize:9,fillColor:'#f5f5f5'},{text:'Cargo',bold:true,fontSize:9,alignment:'center',fillColor:'#f5f5f5'},{text:'Salario',bold:true,fontSize:9,alignment:'right',fillColor:'#f5f5f5'},{text:'VR',bold:true,fontSize:9,alignment:'right',fillColor:'#f5f5f5'},{text:'Comissao',bold:true,fontSize:9,alignment:'right',fillColor:'#f5f5f5'},{text:'Vales',bold:true,fontSize:9,alignment:'right',fillColor:'#f5f5f5'},{text:'Liquido',bold:true,fontSize:9,alignment:'right',fillColor:'#f5f5f5'},{text:'Chave PIX',bold:true,fontSize:9,fillColor:'#f5f5f5'}],
+          ...rows,
+          [{text:'TOTAL',bold:true,fontSize:10,fillColor:'#f0f0f0'},{text:'',fillColor:'#f0f0f0'},{text:'R$ '+fmt(totalSalarios),bold:true,fontSize:10,alignment:'right',fillColor:'#f0f0f0'},{text:'R$ '+fmt(totalVR),bold:true,fontSize:10,alignment:'right',fillColor:'#f0f0f0'},{text:'R$ '+fmt(totalComissoes),bold:true,fontSize:10,alignment:'right',color:'#2e7d32',fillColor:'#f0f0f0'},{text:'R$ '+fmt(totalVales),bold:true,fontSize:10,alignment:'right',color:'#c62828',fillColor:'#f0f0f0'},{text:'R$ '+fmt(totalLiquido),bold:true,fontSize:12,alignment:'right',color:'#D97706',fillColor:'#f0f0f0'},{text:'',fillColor:'#f0f0f0'}]
+        ]
+      },layout:{hLineWidth:(i,n)=>(i===0||i===1||i===n.table.body.length)?0.5:0.3,vLineWidth:()=>0.5,hLineColor:()=>'#cccccc',vLineColor:()=>'#cccccc',paddingLeft:()=>6,paddingRight:()=>6,paddingTop:()=>4,paddingBottom:()=>4}},
+      {text:' ',margin:[0,25,0,0]},
+      {columns:[
+        {stack:[{canvas:[{type:'line',x1:0,y1:0,x2:200,y2:0,lineWidth:0.5,lineColor:'#999',dash:{length:3}}]},{text:'Responsavel',fontSize:9,color:'#999999',alignment:'center',margin:[0,4,0,0]}],width:'*',alignment:'center'},
+        {stack:[{canvas:[{type:'line',x1:0,y1:0,x2:200,y2:0,lineWidth:0.5,lineColor:'#999',dash:{length:3}}]},{text:'Contador',fontSize:9,color:'#999999',alignment:'center',margin:[0,4,0,0]}],width:'*',alignment:'center'}
+      ]}
+    ],
+    footer:{text:'Documento gerado pelo RPM Pro — rpmpro.com.br',alignment:'center',fontSize:8,color:'#999999',margin:[30,10,30,0]}
+  };
+
+  pdfMake.createPdf(docDef).open();
+}
+
+// ── PANEL ──
+function fecharPanel(){
+  document.getElementById('panel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')fecharPanel();});
+
+// ── AUTH ──
+async function fazerLogin(){
+  const email=document.getElementById('login-email').value.trim();
+  const senha=document.getElementById('login-senha').value;
+  const btn=document.getElementById('login-btn');
+  const err=document.getElementById('login-err');
+  if(!email||!senha)return;
+  btn.disabled=true;btn.textContent='Entrando...';err.style.display='none';
+  const{error}=await db.auth.signInWithPassword({email,password:senha});
+  if(error){err.style.display='block';btn.disabled=false;btn.textContent='Entrar';return;}
+  await init();
+}
+function sair(){db.auth.signOut();location.reload();}
+const _busy={};
+
+async function fecharMes(){
+  if(_busy.fecharMes)return;
+  _busy.fecharMes=true;
+  try{
+    const comp=ANO+'-'+String(MES).padStart(2,'0');
+    // Verifica se ja ta fechado
+    const{data:existe}=await db.from('folha_fechamento').select('id').eq('oficina_id',OFICINA_ID).eq('competencia',comp).eq('tipo','folha').maybeSingle();
+    if(existe){toast('Mês já está fechado','err');return;}
+
+    // Captura dados atuais da tela (recalcula pra garantir)
+    const inicio=new Date(ANO,MES-1,1).toISOString();
+    const fim=new Date(ANO,MES,0,23,59,59).toISOString();
+    const[resFunc,resOS,resVales]=await Promise.all([
+      db.from('profiles').select('id, nome, role, salario_base, comissao_percent, vale_refeicao, chave_pix').eq('oficina_id',OFICINA_ID).eq('ativo',true).in('role',['mecanico','aux_mecanico','gerente','atendente','aux_admin']).order('nome'),
+      db.from('ordens_servico').select('id, valor_total, mecanico_id').eq('oficina_id',OFICINA_ID).eq('status','entregue').gte('data_entrega',inicio).lte('data_entrega',fim),
+      db.from('caixa').select('id, membro_id, valor, descricao, created_at').eq('oficina_id',OFICINA_ID).eq('tipo','saida').eq('categoria','vale').gte('created_at',inicio).lte('created_at',fim)
+    ]);
+    const funcionarios=resFunc.data||[];
+    const ordens=resOS.data||[];
+    const vales=resVales.data||[];
+    const faturadoPor={};
+    ordens.forEach(os=>{if(os.mecanico_id)faturadoPor[os.mecanico_id]=(faturadoPor[os.mecanico_id]||0)+(os.valor_total||0);});
+    const valesPor={};
+    vales.forEach(v=>{if(v.membro_id){if(!valesPor[v.membro_id])valesPor[v.membro_id]=[];valesPor[v.membro_id].push(v);}});
+    const snapshot=funcionarios.map(f=>{
+      const faturado=faturadoPor[f.id]||0;
+      const comissao=faturado*(f.comissao_percent||0)/100;
+      const meusVales=valesPor[f.id]||[];
+      const totalVale=meusVales.reduce((s,v)=>s+(v.valor||0),0);
+      return{id:f.id,nome:f.nome,role:f.role,salario:f.salario_base||0,vr:f.vale_refeicao||0,faturado,comissao_percent:f.comissao_percent||0,comissao,vales:totalVale,liquido:(f.salario_base||0)+(f.vale_refeicao||0)+comissao-totalVale,chave_pix:f.chave_pix||''};
+    });
+    const{error}=await db.from('folha_fechamento').insert({oficina_id:OFICINA_ID,competencia:comp,tipo:'folha',dados:snapshot,created_by:PERFIL.id});
+    if(error){toast('Erro ao fechar: '+error.message,'err');return;}
+    toast('Mês '+MESES[MES-1]+'/'+ANO+' FECHADO com sucesso');
+    await carregar();
+  }catch(err){console.error('fecharMes',err);toast('Erro ao fechar mês','err');}
+  finally{_busy.fecharMes=false;}
+}
+
+async function reabrirMes(){
+  if(_busy.reabrirMes)return;
+  _busy.reabrirMes=true;
+  try{
+    const comp=ANO+'-'+String(MES).padStart(2,'0');
+    await db.from('folha_fechamento').delete().eq('oficina_id',OFICINA_ID).eq('competencia',comp).eq('tipo','folha');
+    toast('Mês reaberto');
+    await carregar();
+  }catch(err){console.error('reabrirMes',err);toast('Erro','err');}
+  finally{_busy.reabrirMes=false;}
+}
+
+async function init(){
+  db.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_OUT') window.location.href = 'login.html'; });
+  const{data:{session}}=await db.auth.getSession();
+  if(!session){document.getElementById('loading').style.display='none';document.getElementById('login-overlay').style.display='flex';return;}
+  document.getElementById('login-overlay').style.display='none';
+  document.getElementById('loading').style.display='flex';
+
+  const{data:perfil}=await db.from('profiles').select('*, oficinas(*)').eq('user_id',session.user.id).single();
+  if(!perfil){toast('Perfil nao encontrado','err');document.getElementById('loading').style.display='none';document.getElementById('login-overlay').style.display='flex';return;}
+
+  PERFIL=perfil;
+  OFICINA_ID=perfil.oficina_id;
+  OFICINA=perfil.oficinas;
+
+  const nome=perfil.nome||session.user.email;
+  document.getElementById('user-nome').textContent=nome;
+  document.getElementById('user-role').textContent=perfil.role||'';
+  document.getElementById('user-avatar').textContent=nome.charAt(0).toUpperCase();
+  document.getElementById('oficina-nome').textContent=perfil.oficinas?.nome||'';
+
+  const agora=new Date();
+  MES=agora.getMonth()+1;
+  ANO=agora.getFullYear();
+
+  await carregar();
+  document.getElementById('loading').style.display='none';
+}
+
+init();
+</script>
+</body>
+</html>

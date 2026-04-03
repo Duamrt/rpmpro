@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro V2 — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#09090B;--sf:#111114;--sf2:#18181C;--sf3:#1F1F24;--sf4:#27272D;
+  --ln:rgba(255,255,255,0.04);--ln2:rgba(255,255,255,0.08);--ln3:rgba(255,255,255,0.14);
+  --amber:#E8930C;--amber-dim:rgba(232,147,12,0.1);
+  --orange:#EA580C;--orange-dim:rgba(234,88,12,0.1);
+  --red:#FF3B30;--red-dim:rgba(255,59,48,0.08);--red-glow:rgba(255,59,48,0.04);
+  --green:#30D158;--green-dim:rgba(48,209,88,0.08);
+  --blue:#0A84FF;--blue-dim:rgba(10,132,255,0.1);
+  --purple:#7C3AED;--purple-dim:rgba(124,58,237,0.1);
+  --cyan:#00C7BE;--cyan-dim:rgba(0,199,190,0.1);
+  --w:#F0F0F2;--w2:rgba(255,255,255,0.6);--w3:rgba(255,255,255,0.32);--w4:rgba(255,255,255,0.14);
+  --mono:'JetBrains Mono',monospace;--head:'Barlow Condensed',sans-serif;--body:'Space Grotesk',sans-serif;
+  --r:3px;--r2:4px;
+}
+body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100vh;-webkit-font-smoothing:antialiased;overflow:hidden;}
+
+/* ── LAYOUT ── */
+.app{display:flex;height:100vh;overflow:hidden;}
+
+/* ── SIDEBAR ── */
+.sidebar{width:220px;flex-shrink:0;background:var(--sf);border-right:1px solid var(--ln2);display:flex;flex-direction:column;height:100vh;}
+.sidebar-logo{padding:20px 16px 16px;border-bottom:1px solid var(--ln2);}
+.sidebar-logo-brand{font-family:var(--head);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.sidebar-logo-brand span{color:var(--amber);}
+.sidebar-logo-oficina{font-family:var(--body);font-size:11px;color:var(--w3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sidebar-nav{flex:1;overflow-y:auto;padding:12px 0;scrollbar-width:none;}
+.sidebar-nav::-webkit-scrollbar{display:none;}
+.nav-section{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);padding:10px 16px 6px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 16px;font-family:var(--body);font-size:13px;font-weight:500;color:var(--w3);cursor:pointer;transition:all .12s;text-decoration:none;}
+.nav-item:hover{color:var(--w);background:var(--sf2);}
+.nav-item.active{color:var(--amber);background:var(--amber-dim);border-left:2px solid var(--amber);}
+.nav-item .nav-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0;}
+.sidebar-footer{padding:16px;border-top:1px solid var(--ln2);}
+.user-info{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.user-avatar{width:34px;height:34px;border-radius:var(--r);background:var(--amber-dim);border:1px solid rgba(232,147,12,0.3);display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:14px;font-weight:800;color:var(--amber);flex-shrink:0;}
+.user-details{min-width:0;}
+.user-name{font-family:var(--body);font-size:13px;font-weight:600;color:var(--w);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.user-role{font-family:var(--mono);font-size:10px;color:var(--w3);text-transform:uppercase;letter-spacing:.5px;}
+.btn-logout{width:100%;font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--w3);background:none;border:1px solid var(--ln3);padding:7px;border-radius:var(--r);cursor:pointer;transition:all .15s;}
+.btn-logout:hover{color:var(--w);border-color:var(--w3);}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.main-topbar{height:48px;background:var(--sf);border-bottom:1px solid var(--ln2);display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0;}
+.main-title{font-family:var(--head);font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:2px;}
+.main-content{flex:1;overflow-y:auto;padding:20px;scrollbar-width:thin;scrollbar-color:var(--sf3) transparent;}
+.main-content::-webkit-scrollbar{width:4px;}
+.main-content::-webkit-scrollbar-thumb{background:var(--sf3);border-radius:2px;}
+
+/* ── KPI ROW ── */
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:20px;}
+.kpi{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:18px 16px;}
+.kpi-val{font-family:var(--mono);font-size:28px;font-weight:800;letter-spacing:-1px;line-height:1;}
+.kpi-lbl{font-family:var(--head);font-size:10px;font-weight:600;color:var(--w3);text-transform:uppercase;letter-spacing:1.5px;margin-top:6px;}
+.kpi-sub{font-family:var(--mono);font-size:11px;color:var(--w3);margin-top:2px;}
+.kpi-alert{border-left:3px solid var(--red);}
+
+/* ── ALERT BAR ── */
+.alert-critico{display:flex;align-items:center;gap:14px;background:var(--red-glow);border:1px solid rgba(255,59,48,0.15);border-radius:var(--r2);padding:14px 18px;margin-bottom:20px;cursor:pointer;transition:background .12s;border-left:4px solid var(--red);animation:alertGlow 2s infinite;}
+@keyframes alertGlow{0%,100%{box-shadow:0 0 0 rgba(255,59,48,0);}50%{box-shadow:0 0 20px rgba(255,59,48,0.08);}}
+.alert-critico:hover{background:rgba(255,59,48,0.06);}
+.alert-critico-icon{font-family:var(--mono);font-size:20px;font-weight:800;color:var(--red);}
+.alert-critico-text{flex:1;}
+.alert-critico-title{font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--w);}
+.alert-critico-sub{font-family:var(--body);font-size:12px;color:var(--w2);margin-top:2px;}
+.alert-critico-val{font-family:var(--mono);font-size:22px;font-weight:800;color:var(--red);}
+
+/* ── GRID ── */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
+.grid-2-wide{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:20px;}
+
+/* ── CARD ── */
+.card{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);overflow:hidden;}
+.card-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--ln);}
+.card-title{font-family:var(--head);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w3);}
+.card-badge{font-family:var(--mono);font-size:12px;color:var(--w3);}
+.card-body{padding:16px 18px;}
+
+/* ── PATIO GRID ── */
+.patio-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+.patio-col{background:var(--sf2);border-radius:var(--r2);padding:12px;text-align:center;border-top:3px solid var(--w4);}
+.patio-col-num{font-family:var(--head);font-size:28px;font-weight:900;letter-spacing:-1px;}
+.patio-col-lbl{font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--w3);margin-top:2px;}
+
+/* ── BAR CHART ── */
+.chart{display:flex;align-items:flex-end;gap:6px;height:120px;padding-top:8px;}
+.chart-bar{flex:1;background:var(--sf3);border-radius:2px 2px 0 0;position:relative;transition:height .3s;min-height:4px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;}
+.chart-bar.today{background:var(--amber);}
+.chart-bar-val{font-family:var(--mono);font-size:9px;font-weight:600;color:var(--w3);position:absolute;top:-16px;white-space:nowrap;}
+.chart-bar.today .chart-bar-val{color:var(--amber);}
+.chart-labels{display:flex;gap:6px;margin-top:6px;}
+.chart-label{flex:1;text-align:center;font-family:var(--head);font-size:10px;font-weight:600;color:var(--w4);text-transform:uppercase;letter-spacing:.5px;}
+.chart-label.today{color:var(--amber);}
+
+/* ── RANKING MECANICO ── */
+.mec-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--ln);}
+.mec-row:last-child{border-bottom:none;}
+.mec-pos{font-family:var(--mono);font-size:14px;font-weight:700;width:24px;text-align:center;color:var(--w3);}
+.mec-pos.top{color:var(--amber);}
+.mec-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;}
+.mec-name{font-family:var(--head);font-size:15px;font-weight:700;text-transform:uppercase;flex:1;}
+.mec-stats{display:flex;gap:16px;align-items:center;}
+.mec-os{font-family:var(--mono);font-size:13px;font-weight:600;}
+.mec-val{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--amber);}
+
+/* ── RESUMO MES ── */
+.resumo-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--ln);}
+.resumo-row:last-child{border-bottom:none;}
+.resumo-label{font-family:var(--body);font-size:13px;color:var(--w2);}
+.resumo-val{font-family:var(--mono);font-size:14px;font-weight:700;}
+
+/* ── FILA DE HOJE ── */
+.fila-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--ln);cursor:pointer;transition:background .1s;margin:0 -18px;padding-left:18px;padding-right:18px;}
+.fila-row:hover{background:var(--sf2);}
+.fila-row:last-child{border-bottom:none;}
+.fila-sla{width:3px;height:36px;border-radius:2px;flex-shrink:0;}
+.sla-ok{background:var(--green);}
+.sla-warn{background:var(--amber);}
+.sla-danger{background:var(--red);}
+.sla-critical{background:var(--red);animation:slaPulse 1s infinite;}
+@keyframes slaPulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+.placa-mini{display:inline-flex;flex-direction:column;background:#FFFFFF;border-radius:2px;overflow:hidden;border:1.5px solid #C8C8C8;flex-shrink:0;line-height:1;}
+.placa-mini-topo{background:#003399;padding:1px 4px;display:flex;align-items:center;justify-content:center;}
+.placa-mini-br{font-family:var(--mono);font-size:4px;font-weight:700;color:#fff;letter-spacing:.2px;}
+.placa-mini-cod{padding:2px 6px 2px;font-family:var(--mono);font-size:13px;font-weight:800;color:#1A1A1A;letter-spacing:1.5px;text-align:center;line-height:1;}
+
+.fila-info{flex:1;min-width:0;}
+.fila-veiculo{font-family:var(--head);font-size:14px;font-weight:700;text-transform:uppercase;}
+.fila-cliente{font-family:var(--body);font-size:11px;color:var(--w2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.fila-right{display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0;}
+.fila-val{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--amber);}
+.fila-tag{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:2px 8px;border-radius:2px;}
+.fila-mec{font-family:var(--body);font-size:10px;color:#B0B0B0;}
+
+.tag-entrada{background:rgba(10,132,255,0.18);color:var(--blue);}
+.tag-diagnostico{background:rgba(124,58,237,0.2);color:#A78BFA;}
+.tag-orcamento{background:var(--amber-dim);color:var(--amber);}
+.tag-aprovada{background:var(--cyan-dim);color:var(--cyan);}
+.tag-execucao{background:rgba(234,88,12,0.18);color:#FB923C;}
+.tag-aguardando_peca{background:rgba(255,59,48,0.18);color:var(--red);}
+.tag-pronto{background:rgba(48,209,88,0.18);color:var(--green);}
+
+/* ── LOGIN ── */
+.login-overlay{position:fixed;inset:0;z-index:2000;background:var(--bg);display:flex;align-items:center;justify-content:center;}
+.login-box{width:340px;padding:40px 32px;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);}
+.login-brand{font-family:var(--head);font-size:36px;font-weight:900;text-transform:uppercase;letter-spacing:2px;text-align:center;margin-bottom:4px;}
+.login-brand span{color:var(--amber);}
+.login-sub{font-family:var(--mono);font-size:11px;color:var(--w4);text-align:center;margin-bottom:28px;letter-spacing:2px;}
+.login-label{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--w4);margin-bottom:6px;display:block;}
+.login-input{width:100%;background:var(--sf2);border:2px solid var(--ln3);border-radius:var(--r);padding:12px 14px;font-family:var(--mono);font-size:14px;color:var(--w);outline:none;margin-bottom:14px;transition:border-color .15s;}
+.login-input:focus{border-color:var(--amber);}
+.login-btn{width:100%;padding:14px;border:none;border-radius:var(--r);background:var(--amber);color:#000;font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:2px;cursor:pointer;margin-top:4px;}
+.login-err{display:none;font-family:var(--body);font-size:12px;color:var(--red);text-align:center;margin-top:12px;}
+
+/* ── LOADING ── */
+.loading-screen{position:fixed;inset:0;z-index:1500;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
+.loading-spinner{width:32px;height:32px;border:3px solid var(--ln2);border-top-color:var(--amber);border-radius:50%;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-label{font-family:var(--mono);font-size:12px;color:var(--w4);letter-spacing:2px;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);font-family:var(--body);font-size:13px;font-weight:600;padding:12px 24px;border-radius:var(--r2);z-index:9999;opacity:0;transition:all .3s;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{background:var(--green);color:#000;}
+.toast.err{background:var(--red);color:#fff;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .sidebar{display:none;}
+  .kpis{grid-template-columns:repeat(3,1fr);}
+  .grid-2,.grid-2-wide{grid-template-columns:1fr;}
+  .patio-grid{grid-template-columns:repeat(2,1fr);}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN OVERLAY -->
+<div class="login-overlay" id="login-overlay">
+  <div class="login-box">
+    <div class="login-brand">RPM <span>PRO</span></div>
+    <div class="login-sub">V2 · Dashboard</div>
+    <label class="login-label">Email</label>
+    <input class="login-input" type="email" id="login-email" placeholder="email@oficina.com" autocomplete="email">
+    <label class="login-label">Senha</label>
+    <input class="login-input" type="password" id="login-senha" placeholder="••••••••" onkeydown="if(event.key==='Enter')fazerLogin()">
+    <button class="login-btn" id="login-btn" onclick="fazerLogin()">Entrar</button>
+    <div class="login-err" id="login-err">Email ou senha incorretos</div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="loading-screen" id="loading" style="display:none;">
+  <div class="loading-spinner"></div>
+  <div class="loading-label">carregando dashboard...</div>
+</div>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-brand">RPM <span>PRO</span></div>
+      <div class="sidebar-logo-oficina" id="oficina-nome">—</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Oficina</div>
+      <a class="nav-item" href="kanban-v2.html"><span class="nav-icon">⬛</span>Patio</a>
+      <a class="nav-item active" href="dashboard-v2.html"><span class="nav-icon">◈</span>Dashboard</a>
+      <div class="nav-section">Atendimento</div>
+      <a class="nav-item" href="fila-espera-v2.html"><span class="nav-icon">⏳</span>Fila de Espera</a>
+      <a class="nav-item" href="os-list-v2.html"><span class="nav-icon">📋</span>Ordens de Servico</a>
+      <a class="nav-item" href="execucao-os-v2.html"><span class="nav-icon">🔧</span>Execucao OS</a>
+      <a class="nav-item" href="clientes-v2.html"><span class="nav-icon">👥</span>Clientes</a>
+      <a class="nav-item" href="veiculos-v2.html"><span class="nav-icon">🚗</span>Veiculos</a>
+      <a class="nav-item" href="agendamentos-v2.html"><span class="nav-icon">📅</span>Agendamentos</a>
+      <div class="nav-section">Catalogo</div>
+      <a class="nav-item" href="catalogo-v2.html"><span class="nav-icon">🔧</span>Servicos / Pecas</a>
+      <div class="nav-section">Financeiro</div>
+      <a class="nav-item" href="financeiro-v2.html"><span class="nav-icon">💰</span>Caixa</a>
+      <a class="nav-item" href="comissao-v2.html"><span class="nav-icon">📊</span>Comissao</a>
+      <a class="nav-item" href="folha-v2.html"><span class="nav-icon">📄</span>Folha</a>
+      <div class="nav-section">Equipe</div>
+      <a class="nav-item" href="equipe-v2.html"><span class="nav-icon">👤</span>Equipe</a>
+      <a class="nav-item" href="produtividade-v2.html"><span class="nav-icon">⚡</span>Produtividade</a>
+      <a class="nav-item" href="crm-v2.html"><span class="nav-icon">📡</span>CRM / Reativacao</a>
+      <a class="nav-item" href="satisfacao-v2.html"><span class="nav-icon">⭐</span>Satisfacao</a>
+      <a class="nav-item" href="config-v2.html"><span class="nav-icon">⚙️</span>Configuracoes</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="user-avatar">—</div>
+        <div class="user-details">
+          <div class="user-name" id="user-nome">—</div>
+          <div class="user-role" id="user-role">—</div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="sair()">Sair</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="main-topbar">
+      <div class="main-title">Dashboard</div>
+      <div style="font-family:var(--mono);font-size:12px;color:var(--w3);" id="topbar-date"></div>
+    </div>
+    <div class="main-content" id="dash-content"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast-el"></div>
+
+<script>
+const SUPABASE_URL = 'https://roeeyypssutzfzzkypsq.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZWV5eXBzc3V0emZ6emt5cHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MTk0MTgsImV4cCI6MjA5MDM5NTQxOH0.9oCOmABUTXox3FaRViD2zcUaqv94VfOJFMQYz_fcJi4';
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let PERFIL = null, OFICINA_ID = null, OFICINA = null;
+
+function esc(s){ return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmt(v){ return (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+function fmtK(v){ return v >= 1000 ? (v/1000).toFixed(1).replace('.0','')+'k' : Math.round(v).toString(); }
+
+function toast(msg, tipo='ok') {
+  const el = document.getElementById('toast-el');
+  el.textContent = msg; el.className = 'toast ' + tipo + ' show';
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+const STATUS_LABEL = {
+  entrada:'Entrada', diagnostico:'Diagnostico', orcamento:'Orcamento',
+  aprovada:'Aprovada', execucao:'Execucao', aguardando_peca:'Ag. Peca', pronto:'Pronto'
+};
+const STATUS_COLOR = {
+  entrada:'var(--blue)', diagnostico:'var(--purple)', orcamento:'var(--amber)',
+  aprovada:'var(--cyan)', execucao:'var(--orange)', aguardando_peca:'var(--red)', pronto:'var(--green)'
+};
+
+function tempoHumano(ms) {
+  if (ms < 0) ms = 0;
+  const h = Math.floor(ms / 3600000);
+  if (h < 24) return h + 'h';
+  const d = Math.floor(h / 24);
+  const rh = h % 24;
+  return d + 'd' + (rh ? ' ' + rh + 'h' : '');
+}
+
+function slaClass(horasNoPatioMs) {
+  const h = horasNoPatioMs / 3600000;
+  if (h < 24) return 'sla-ok';
+  if (h < 48) return 'sla-warn';
+  if (h < 72) return 'sla-danger';
+  return 'sla-critical';
+}
+
+// ── CARREGAR DASHBOARD ──
+async function carregar() {
+  const el = document.getElementById('dash-content');
+  const agora = new Date();
+  const hoje = agora.toISOString().split('T')[0];
+  const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString().split('T')[0];
+  const fimMes = new Date(agora.getFullYear(), agora.getMonth() + 1, 0, 23, 59, 59).toISOString();
+
+  // Queries paralelas
+  const [osAbertasRes, osEntreguesMesRes, semPagRes, caixaRes, membrosRes] = await Promise.all([
+    db.from('ordens_servico')
+      .select('id, numero, status, valor_total, valor_mao_obra, created_at, mecanico_id, veiculos(placa, marca, modelo), clientes(nome)')
+      .eq('oficina_id', OFICINA_ID)
+      .not('status', 'in', '(entregue,cancelada)')
+      .order('created_at', {ascending: true}),
+    db.from('ordens_servico')
+      .select('id, numero, valor_total, valor_mao_obra, valor_pecas, forma_pagamento, taxa_cartao, data_entrega, mecanico_id, created_at')
+      .eq('oficina_id', OFICINA_ID).eq('status', 'entregue').eq('pago', true)
+      .gte('data_entrega', inicioMes).lte('data_entrega', fimMes)
+      .order('data_entrega', {ascending: false}),
+    db.from('ordens_servico')
+      .select('id, numero, valor_total, forma_pagamento, veiculos(placa), clientes(nome)')
+      .eq('oficina_id', OFICINA_ID).eq('status', 'entregue').eq('pago', false)
+      .neq('forma_pagamento', 'faturado'),
+    db.from('caixa').select('tipo, valor')
+      .eq('oficina_id', OFICINA_ID).gte('created_at', inicioMes).lte('created_at', fimMes),
+    db.from('profiles').select('id, nome')
+      .eq('oficina_id', OFICINA_ID).in('role', ['mecanico','aux_mecanico'])
+  ]);
+
+  const osAbertas = osAbertasRes.data || [];
+  const osEntreguesMes = osEntreguesMesRes.data || [];
+  const semPag = semPagRes.data || [];
+  const movsMes = caixaRes.data || [];
+  const membros = membrosRes.data || [];
+
+  // Faturamento 7 dias
+  const fat7dias = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(agora);
+    d.setDate(d.getDate() - i);
+    const ds = d.toISOString().split('T')[0];
+    const label = d.toLocaleDateString('pt-BR', {weekday: 'short'}).replace('.','').toUpperCase();
+    const total = osEntreguesMes.filter(o => (o.data_entrega||'').startsWith(ds)).reduce((s,o) => s + (o.valor_total||0), 0);
+    fat7dias.push({ label, total, isToday: i === 0 });
+  }
+  const maxFat = Math.max(...fat7dias.map(d => d.total), 1);
+
+  // KPIs
+  const totalAbertas = osAbertas.length;
+  const prontas = osAbertas.filter(o => o.status === 'pronto').length;
+  const fatMes = osEntreguesMes.reduce((s,o) => s + (o.valor_total||0), 0);
+  const ticketMedio = osEntreguesMes.length ? fatMes / osEntreguesMes.length : 0;
+  const totalSemPag = semPag.reduce((s,o) => s + (o.valor_total||0), 0);
+
+  // Tempo medio (OS entregues no mês)
+  let tempoMedioMs = 0;
+  if (osEntreguesMes.length) {
+    const tempos = osEntreguesMes.map(o => {
+      const c = new Date(o.created_at).getTime();
+      const e = new Date(o.data_entrega).getTime();
+      return e - c;
+    }).filter(t => t > 0);
+    if (tempos.length) tempoMedioMs = tempos.reduce((a,b) => a+b, 0) / tempos.length;
+  }
+
+  // Status patio
+  const porStatus = {};
+  osAbertas.forEach(o => { porStatus[o.status] = (porStatus[o.status]||0) + 1; });
+
+  // Ranking mecanicos
+  const mecMap = {};
+  membros.forEach(m => { mecMap[m.id] = { nome: m.nome || 'Sem nome', os: 0, valor: 0 }; });
+  osEntreguesMes.forEach(o => {
+    if (o.mecanico_id && mecMap[o.mecanico_id]) {
+      mecMap[o.mecanico_id].os++;
+      mecMap[o.mecanico_id].valor += o.valor_total || 0;
+    }
+  });
+  const ranking = Object.values(mecMap).sort((a,b) => b.valor - a.valor);
+
+  // Despesas mes
+  const despesasMes = movsMes.filter(m => m.tipo === 'saida').reduce((s,m) => s + (m.valor||0), 0);
+  const entradasAvulsas = movsMes.filter(m => m.tipo === 'entrada').reduce((s,m) => s + (m.valor||0), 0);
+  const taxasMes = osEntreguesMes.reduce((s,o) => s + (o.valor_total||0) * ((o.taxa_cartao||0)/100), 0);
+  const lucroMes = fatMes + entradasAvulsas - despesasMes - taxasMes;
+
+  // Nome mês
+  const nomeMes = agora.toLocaleDateString('pt-BR', {month:'long'});
+
+  // Alerta sem pagamento
+  const alertaHtml = semPag.length > 0 ? `
+    <div class="alert-critico">
+      <div class="alert-critico-icon">!</div>
+      <div class="alert-critico-text">
+        <div class="alert-critico-title">${semPag.length} OS Entregues Sem Pagamento</div>
+        <div class="alert-critico-sub">Cobrar antes de fechar o dia</div>
+      </div>
+      <div class="alert-critico-val">${fmt(totalSemPag)}</div>
+    </div>` : '';
+
+  // Topbar date
+  document.getElementById('topbar-date').textContent =
+    agora.toLocaleDateString('pt-BR', {weekday:'short', day:'numeric', month:'short', year:'numeric'}).toUpperCase() +
+    ' · ' + agora.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+
+  el.innerHTML = `
+    <!-- ALERTA -->
+    ${alertaHtml}
+
+    <!-- KPIs -->
+    <div class="kpis">
+      <div class="kpi">
+        <div class="kpi-val" style="color:var(--amber);">${totalAbertas}</div>
+        <div class="kpi-lbl">OS Abertas</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-val" style="color:var(--green);">${prontas}</div>
+        <div class="kpi-lbl">Prontas</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-val">${ticketMedio >= 1000 ? 'R$ '+fmtK(ticketMedio) : fmt(ticketMedio).replace('R$\u00a0','R$ ')}</div>
+        <div class="kpi-lbl">Ticket Medio</div>
+        <div class="kpi-sub">${osEntreguesMes.length} entregas</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-val" style="color:var(--green);">R$ ${fmtK(fatMes)}</div>
+        <div class="kpi-lbl">Faturado Mes</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-val">${tempoMedioMs > 0 ? tempoHumano(tempoMedioMs) : '—'}</div>
+        <div class="kpi-lbl">Tempo Medio</div>
+        <div class="kpi-sub">permanencia</div>
+      </div>
+      ${semPag.length ? `
+      <div class="kpi kpi-alert">
+        <div class="kpi-val" style="color:var(--red);">${semPag.length}</div>
+        <div class="kpi-lbl">Sem Pagamento</div>
+        <div class="kpi-sub" style="color:var(--red);">${fmt(totalSemPag)}</div>
+      </div>` : `
+      <div class="kpi">
+        <div class="kpi-val" style="color:var(--green);">R$ ${fmtK(lucroMes)}</div>
+        <div class="kpi-lbl">Lucro Mes</div>
+        <div class="kpi-sub">estimado</div>
+      </div>`}
+    </div>
+
+    <!-- PATIO + FATURAMENTO 7 DIAS -->
+    <div class="grid-2">
+      <!-- Status do Patio -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Status do Patio</div>
+          <div class="card-badge">${totalAbertas} veiculo${totalAbertas!==1?'s':''}</div>
+        </div>
+        <div class="card-body">
+          <div class="patio-grid">
+            ${['entrada','diagnostico','execucao','aguardando_peca'].map(s => `
+              <div class="patio-col" style="border-top-color:${STATUS_COLOR[s]};">
+                <div class="patio-col-num" style="${(porStatus[s]||0)>0&&(s==='aguardando_peca')?'color:var(--red);':''}">${porStatus[s]||0}</div>
+                <div class="patio-col-lbl">${STATUS_LABEL[s]}</div>
+              </div>
+            `).join('')}
+          </div>
+          <div style="margin-top:10px;">
+            <div class="patio-grid" style="grid-template-columns:1fr 1fr 1fr;">
+              <div class="patio-col" style="border-top-color:var(--cyan);">
+                <div class="patio-col-num">${(porStatus['orcamento']||0)+(porStatus['aprovada']||0)}</div>
+                <div class="patio-col-lbl">Orc/Aprov</div>
+              </div>
+              <div class="patio-col" style="border-top-color:var(--green);">
+                <div class="patio-col-num" style="color:var(--green);">${prontas}</div>
+                <div class="patio-col-lbl">Prontas</div>
+              </div>
+              <div class="patio-col" style="border-top-color:var(--w4);">
+                <div class="patio-col-num">${osEntreguesMes.length}</div>
+                <div class="patio-col-lbl">Entregues (mes)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Faturamento 7 dias -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Faturamento 7 Dias</div>
+          <div class="card-badge">${fmt(fat7dias.reduce((s,d)=>s+d.total,0))}</div>
+        </div>
+        <div class="card-body">
+          <div class="chart">
+            ${fat7dias.map(d => {
+              const pct = maxFat > 0 ? Math.max((d.total / maxFat) * 100, 3) : 3;
+              return `<div class="chart-bar${d.isToday?' today':''}" style="height:${pct}%;"><span class="chart-bar-val">${d.total > 0 ? fmtK(d.total) : '0'}</span></div>`;
+            }).join('')}
+          </div>
+          <div class="chart-labels">
+            ${fat7dias.map(d => `<div class="chart-label${d.isToday?' today':''}">${d.isToday ? 'HOJE' : d.label}</div>`).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RANKING + RESUMO -->
+    <div class="grid-2-wide">
+      <!-- Ranking Mecanicos -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Ranking Mecanicos</div>
+          <div class="card-badge">${nomeMes}</div>
+        </div>
+        <div class="card-body">
+          ${ranking.length ? ranking.map((m, i) => `
+            <div class="mec-row">
+              <div class="mec-pos ${i<2?'top':''}">${m.os > 0 ? (i+1) : '—'}</div>
+              <div class="mec-dot" style="background:${m.os > 0 ? 'var(--green)' : 'var(--w4)'};"></div>
+              <div class="mec-name" ${m.os===0?'style="color:var(--w3);"':''}>${esc(m.nome)}</div>
+              <div class="mec-stats">
+                <div class="mec-os" ${m.os===0?'style="color:var(--w4);"':''}>${m.os} OS</div>
+                <div class="mec-val" ${m.os===0?'style="color:var(--w4);"':''}>${fmt(m.valor)}</div>
+              </div>
+            </div>
+          `).join('') : '<div style="padding:20px;text-align:center;font-family:var(--mono);font-size:12px;color:var(--w4);">Nenhum mecanico cadastrado</div>'}
+        </div>
+      </div>
+
+      <!-- Resumo do Mes -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Resumo do Mes</div>
+          <div class="card-badge">${nomeMes}</div>
+        </div>
+        <div class="card-body">
+          <div class="resumo-row">
+            <div class="resumo-label">Faturamento</div>
+            <div class="resumo-val" style="color:var(--amber);">${fmt(fatMes)}</div>
+          </div>
+          <div class="resumo-row">
+            <div class="resumo-label">Lucro Estimado</div>
+            <div class="resumo-val" style="color:${lucroMes>=0?'var(--green)':'var(--red)'};">${fmt(lucroMes)}</div>
+          </div>
+          <div class="resumo-row">
+            <div class="resumo-label">Ticket Medio</div>
+            <div class="resumo-val">${fmt(ticketMedio)}</div>
+          </div>
+          <div class="resumo-row">
+            <div class="resumo-label">OS Abertas</div>
+            <div class="resumo-val">${totalAbertas}</div>
+          </div>
+          <div class="resumo-row">
+            <div class="resumo-label">OS Entregues</div>
+            <div class="resumo-val">${osEntreguesMes.length}</div>
+          </div>
+          <div class="resumo-row">
+            <div class="resumo-label">Tempo Medio</div>
+            <div class="resumo-val">${tempoMedioMs > 0 ? tempoHumano(tempoMedioMs) : '—'}</div>
+          </div>
+          <div class="resumo-row">
+            <div class="resumo-label">Despesas</div>
+            <div class="resumo-val" style="color:var(--red);">${fmt(despesasMes)}</div>
+          </div>
+          <div class="resumo-row">
+            <div class="resumo-label">Taxas Cartao</div>
+            <div class="resumo-val" style="color:var(--red);">${fmt(taxasMes)}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FILA DE HOJE -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Veiculos no Patio</div>
+        <div class="card-badge">${totalAbertas} veiculo${totalAbertas!==1?'s':''}</div>
+      </div>
+      <div class="card-body">
+        ${osAbertas.length ? osAbertas.map(o => {
+          const agMs = agora.getTime() - new Date(o.created_at).getTime();
+          const placa = o.veiculos?.placa || '---';
+          const veiculo = [o.veiculos?.marca, o.veiculos?.modelo].filter(Boolean).join(' ') || 'Veiculo';
+          const cliente = o.clientes?.nome || '—';
+          const mec = membros.find(m => m.id === o.mecanico_id);
+          const semPagOS = o.status === 'pronto' && !o.valor_total;
+          return `
+            <div class="fila-row" onclick="window.location.href='kanban-v2.html'">
+              <div class="fila-sla ${slaClass(agMs)}"></div>
+              <div class="placa-mini">
+                <div class="placa-mini-topo"><div class="placa-mini-br">BR</div></div>
+                <div class="placa-mini-cod">${esc(placa)}</div>
+              </div>
+              <div class="fila-info">
+                <div class="fila-veiculo">${esc(veiculo)}</div>
+                <div class="fila-cliente">${esc(cliente)}</div>
+              </div>
+              <div class="fila-right">
+                <div class="fila-val" ${o.valor_total?'':'style="color:var(--w3);"'}>${o.valor_total ? fmt(o.valor_total) : '—'}</div>
+                <div class="fila-tag tag-${o.status}">${STATUS_LABEL[o.status]||o.status}</div>
+                <div class="fila-mec">${mec ? esc(mec.nome) + ' · ' : ''}${tempoHumano(agMs)}</div>
+              </div>
+            </div>`;
+        }).join('') : '<div style="padding:20px;text-align:center;font-family:var(--mono);font-size:12px;color:var(--w4);">Nenhum veiculo no patio</div>'}
+      </div>
+    </div>
+  `;
+}
+
+// ── LOGIN ──
+async function fazerLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const senha = document.getElementById('login-senha').value;
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('login-err');
+  if (!email || !senha) return;
+  btn.disabled = true; btn.textContent = 'Entrando...'; err.style.display = 'none';
+  const { error } = await db.auth.signInWithPassword({email, password:senha});
+  if (error) { err.style.display='block'; btn.disabled=false; btn.textContent='Entrar'; return; }
+  await init();
+}
+
+function sair() {
+  db.auth.signOut();
+  location.reload();
+}
+
+// ── INIT ──
+async function init() {
+  const { data:{session} } = await db.auth.getSession();
+  if (!session) { document.getElementById('login-overlay').style.display='flex'; return; }
+  document.getElementById('login-overlay').style.display = 'none';
+  document.getElementById('loading').style.display = 'flex';
+
+  const { data: perfil } = await db.from('profiles')
+    .select('*, oficinas(*)')
+    .eq('user_id', session.user.id).single();
+
+  if (!perfil) { toast('Perfil nao encontrado','err'); return; }
+
+  PERFIL = perfil;
+  OFICINA_ID = perfil.oficina_id;
+  OFICINA = perfil.oficinas;
+
+  const nomeDisplay = perfil.nome || session.user.email;
+  document.getElementById('user-nome').textContent = nomeDisplay;
+  document.getElementById('user-role').textContent = perfil.role || '';
+  document.getElementById('user-avatar').textContent = nomeDisplay.charAt(0).toUpperCase();
+  document.getElementById('oficina-nome').textContent = perfil.oficinas?.nome || '';
+
+  await carregar();
+
+  // Realtime — atualiza quando OS muda
+  db.channel('dash-v2-'+OFICINA_ID)
+    .on('postgres_changes',{event:'*',schema:'public',table:'ordens_servico',filter:'oficina_id=eq.'+OFICINA_ID},()=>carregar())
+    .on('postgres_changes',{event:'*',schema:'public',table:'caixa',filter:'oficina_id=eq.'+OFICINA_ID},()=>carregar())
+    .subscribe();
+
+  document.getElementById('loading').style.display = 'none';
+}
+
+init();
+</script>
+</body>
+</html>

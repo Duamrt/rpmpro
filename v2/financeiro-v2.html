@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro V2 — Financeiro</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#09090B;--sf:#111114;--sf2:#18181C;--sf3:#1F1F24;--sf4:#27272D;
+  --ln:rgba(255,255,255,0.04);--ln2:rgba(255,255,255,0.08);--ln3:rgba(255,255,255,0.14);
+  --amber:#E8930C;--amber-dim:rgba(232,147,12,0.1);
+  --orange:#EA580C;--orange-dim:rgba(234,88,12,0.1);
+  --red:#FF3B30;--red-dim:rgba(255,59,48,0.08);--red-glow:rgba(255,59,48,0.04);
+  --green:#30D158;--green-dim:rgba(48,209,88,0.08);
+  --blue:#0A84FF;--blue-dim:rgba(10,132,255,0.1);
+  --purple:#7C3AED;--purple-dim:rgba(124,58,237,0.1);
+  --cyan:#00C7BE;--cyan-dim:rgba(0,199,190,0.1);
+  --w:#F0F0F2;--w2:rgba(255,255,255,0.6);--w3:rgba(255,255,255,0.32);--w4:rgba(255,255,255,0.14);
+  --mono:'JetBrains Mono',monospace;--head:'Barlow Condensed',sans-serif;--body:'Space Grotesk',sans-serif;
+  --r:3px;--r2:4px;
+}
+body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100vh;-webkit-font-smoothing:antialiased;overflow:hidden;}
+
+/* ── LAYOUT ── */
+.app{display:flex;height:100vh;overflow:hidden;}
+
+/* ── SIDEBAR ── */
+.sidebar{width:220px;flex-shrink:0;background:var(--sf);border-right:1px solid var(--ln2);display:flex;flex-direction:column;height:100vh;}
+.sidebar-logo{padding:20px 16px 16px;border-bottom:1px solid var(--ln2);}
+.sidebar-logo-brand{font-family:var(--head);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.sidebar-logo-brand span{color:var(--amber);}
+.sidebar-logo-oficina{font-family:var(--body);font-size:11px;color:var(--w3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sidebar-nav{flex:1;overflow-y:auto;padding:12px 0;scrollbar-width:none;}
+.sidebar-nav::-webkit-scrollbar{display:none;}
+.nav-section{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);padding:10px 16px 6px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 16px;font-family:var(--body);font-size:13px;font-weight:500;color:var(--w3);cursor:pointer;transition:all .12s;text-decoration:none;}
+.nav-item:hover{color:var(--w);background:var(--sf2);}
+.nav-item.active{color:var(--amber);background:var(--amber-dim);border-left:2px solid var(--amber);}
+.nav-item .nav-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0;}
+.sidebar-footer{padding:16px;border-top:1px solid var(--ln2);}
+.user-info{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.user-avatar{width:34px;height:34px;border-radius:var(--r);background:var(--amber-dim);border:1px solid rgba(232,147,12,0.3);display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:14px;font-weight:800;color:var(--amber);flex-shrink:0;}
+.user-details{min-width:0;}
+.user-name{font-family:var(--body);font-size:13px;font-weight:600;color:var(--w);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.user-role{font-family:var(--mono);font-size:10px;color:var(--w3);text-transform:uppercase;letter-spacing:.5px;}
+.btn-logout{width:100%;font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--w3);background:none;border:1px solid var(--ln3);padding:7px;border-radius:var(--r);cursor:pointer;transition:all .15s;}
+.btn-logout:hover{color:var(--w);border-color:var(--w3);}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.main-topbar{height:48px;background:var(--sf);border-bottom:1px solid var(--ln2);display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0;}
+.main-title{font-family:var(--head);font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:2px;}
+.main-content{flex:1;overflow-y:auto;padding:20px;scrollbar-width:thin;scrollbar-color:var(--sf3) transparent;}
+.main-content::-webkit-scrollbar{width:4px;}
+.main-content::-webkit-scrollbar-thumb{background:var(--sf3);border-radius:2px;}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--ln2);}
+.tab{font-family:var(--head);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;padding:12px 24px;cursor:pointer;color:var(--w3);position:relative;transition:color .12s;}
+.tab:hover{color:var(--w2);}
+.tab.on{color:var(--amber);}
+.tab.on::after{content:'';position:absolute;left:0;right:0;bottom:-2px;height:2px;background:var(--amber);}
+.tab .tab-count{font-family:var(--mono);font-size:11px;margin-left:6px;opacity:.6;}
+
+/* ── PERIOD FILTER ── */
+.period-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
+.period-filters{display:flex;gap:4px;}
+.p-btn{font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;padding:8px 18px;border:1px solid var(--ln2);border-radius:var(--r);background:var(--sf);color:var(--w3);cursor:pointer;transition:all .12s;}
+.p-btn:hover{border-color:var(--ln3);color:var(--w2);}
+.p-btn.on{background:var(--amber);color:#000;border-color:var(--amber);}
+
+/* ── SALDO HERO ── */
+.saldo-hero{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:28px 24px;margin-bottom:16px;text-align:center;position:relative;overflow:hidden;}
+.saldo-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(48,209,88,0.04) 0%,transparent 70%);pointer-events:none;}
+.saldo-hero.negativo::before{background:radial-gradient(ellipse at center,rgba(255,59,48,0.04) 0%,transparent 70%);}
+.saldo-label{font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:var(--w3);margin-bottom:8px;}
+.saldo-val{font-family:var(--mono);font-size:48px;font-weight:800;letter-spacing:-2px;line-height:1;text-shadow:0 0 40px rgba(48,209,88,0.15);}
+.saldo-val.pos{color:var(--green);}.saldo-val.neg{color:var(--red);text-shadow:0 0 40px rgba(255,59,48,0.15);}
+.saldo-sub{font-family:var(--body);font-size:12px;color:var(--w3);margin-top:8px;}
+
+/* ── COMP GRID ── */
+.comp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px;}
+.comp-block{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:16px;position:relative;}
+.comp-block-label{font-family:var(--head);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--w4);margin-bottom:6px;}
+.comp-block-val{font-family:var(--mono);font-size:20px;font-weight:800;letter-spacing:-1px;}
+.comp-block-sub{font-family:var(--body);font-size:10px;color:var(--w3);margin-top:4px;}
+
+/* ── METODO GRID ── */
+.metodo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px;}
+.metodo-card{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px;display:flex;align-items:center;gap:10px;}
+.metodo-icon{font-family:var(--mono);font-size:18px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:var(--sf3);border-radius:var(--r2);flex-shrink:0;}
+.metodo-info{flex:1;}
+.metodo-name{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--w3);}
+.metodo-val{font-family:var(--mono);font-size:14px;font-weight:700;margin-top:2px;}
+
+/* ── ALERT CRITICO ── */
+.alert-critico{display:flex;align-items:center;gap:14px;background:var(--red-glow);border:1px solid rgba(255,59,48,0.15);border-radius:var(--r2);padding:14px 18px;margin-bottom:20px;cursor:pointer;transition:background .12s;border-left:4px solid var(--red);animation:alertGlow 2s infinite;}
+@keyframes alertGlow{0%,100%{box-shadow:0 0 0 rgba(255,59,48,0);}50%{box-shadow:0 0 20px rgba(255,59,48,0.08);}}
+.alert-critico:hover{background:rgba(255,59,48,0.06);}
+.alert-critico-icon{font-family:var(--mono);font-size:20px;font-weight:800;color:var(--red);}
+.alert-critico-text{flex:1;}
+.alert-critico-title{font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--w);}
+.alert-critico-sub{font-family:var(--body);font-size:12px;color:var(--w2);margin-top:2px;}
+.alert-critico-val{font-family:var(--mono);font-size:22px;font-weight:800;color:var(--red);}
+
+/* ── EXTRATO ── */
+.ext-row{display:grid;grid-template-columns:70px 1fr 90px 80px 110px;gap:10px;align-items:center;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px 16px;margin-bottom:4px;transition:all .12s;}
+.ext-row:hover{border-color:var(--ln3);background:var(--sf2);}
+.ext-hora{font-family:var(--mono);font-size:11px;color:var(--w3);}
+.ext-desc-text{font-family:var(--body);font-size:13px;color:var(--w);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ext-desc-sub{font-family:var(--mono);font-size:10px;color:var(--w3);margin-top:2px;}
+.ext-cat{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:4px 8px;border-radius:2px;text-align:center;white-space:nowrap;}
+.cat-servico{background:var(--amber-dim);color:var(--amber);}
+.cat-peca{background:var(--cyan-dim);color:var(--cyan);}
+.cat-despesa{background:var(--red-dim);color:var(--red);}
+.cat-prolabore{background:var(--blue-dim);color:var(--blue);}
+.cat-fixo{background:var(--purple-dim);color:#A78BFA;}
+.ext-metodo{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--w2);display:flex;align-items:center;gap:4px;}
+.ext-valor{font-family:var(--mono);font-size:15px;font-weight:700;text-align:right;}
+.ext-valor.entrada{color:var(--green);}.ext-valor.saida{color:var(--red);}
+
+/* ── RANKING ── */
+.rank-row{display:grid;grid-template-columns:32px 1fr 80px 80px 100px 60px;gap:10px;align-items:center;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px 16px;margin-bottom:4px;transition:all .12s;}
+.rank-row:hover{border-color:var(--ln3);background:var(--sf2);}
+.rank-pos{font-family:var(--head);font-size:20px;font-weight:900;color:var(--w4);text-align:center;}
+
+/* ── DESPESAS ── */
+.desp-row{display:flex;align-items:center;gap:14px;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:14px 16px;margin-bottom:4px;transition:all .12s;}
+.desp-row:hover{border-color:var(--ln3);background:var(--sf2);}
+.desp-cat-tag{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:5px 10px;border-radius:2px;min-width:70px;text-align:center;flex-shrink:0;}
+.desp-fixo{background:var(--purple-dim);color:#A78BFA;border:1px solid rgba(124,58,237,0.15);}
+.desp-variavel{background:var(--orange-dim);color:var(--orange);border:1px solid rgba(234,88,12,0.15);}
+.desp-pessoal{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(10,132,255,0.15);}
+.desp-body{flex:1;min-width:0;}
+.desp-nome{font-family:var(--head);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;}
+.desp-detail{font-family:var(--body);font-size:11px;color:var(--w3);margin-top:2px;}
+.desp-val{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--red);flex-shrink:0;}
+
+/* ── CONTAS A RECEBER ── */
+.cr-card{background:var(--sf);border:1px solid var(--ln2);border-left:3px solid var(--amber);border-radius:var(--r2);padding:20px;margin-bottom:12px;}
+.cr-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.cr-cliente{font-family:var(--head);font-size:18px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;}
+.cr-total{font-family:var(--mono);font-size:22px;font-weight:800;color:var(--amber);}
+.cr-os-line{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:var(--r);margin-top:6px;}
+.cr-os-line.vencida{background:rgba(255,59,48,0.06);border-left:3px solid var(--red);}
+.cr-os-line.normal{background:var(--sf2);border-left:3px solid var(--ln3);}
+.cr-btn{font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:8px 20px;border:none;border-radius:var(--r);cursor:pointer;transition:all .12s;background:var(--green);color:#000;}
+.cr-btn:hover{filter:brightness(1.1);}
+.cr-btn:active{transform:scale(.97);}
+
+/* ── SIDE PANEL ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:900;opacity:0;pointer-events:none;transition:opacity .25s;}
+.overlay.open{opacity:1;pointer-events:auto;}
+.side-panel{position:fixed;top:0;right:0;bottom:0;width:480px;max-width:100%;background:#141417;border-left:1px solid var(--ln2);z-index:1000;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden;}
+.side-panel.open{transform:translateX(0);}
+.panel-head{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid var(--ln2);}
+.panel-title{font-family:var(--head);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.panel-title span{color:var(--amber);}
+.panel-close{width:36px;height:36px;background:var(--sf3);border:1px solid var(--ln2);border-radius:var(--r);color:var(--w3);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.panel-close:hover{background:var(--sf4);color:var(--w);}
+.panel-body{flex:1;overflow-y:auto;padding:24px;}
+.panel-field{margin-bottom:18px;}
+.panel-label{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--w4);margin-bottom:6px;}
+.panel-input{width:100%;background:var(--sf2);border:2px solid var(--ln3);border-radius:var(--r2);padding:12px 14px;font-family:var(--mono);font-size:14px;font-weight:600;color:var(--w);outline:none;transition:border-color .15s;}
+.panel-input:focus{border-color:var(--amber);}
+.panel-input::placeholder{color:var(--w4);font-family:var(--body);font-weight:400;}
+.panel-input-valor{font-size:24px;font-weight:800;letter-spacing:1px;text-align:center;}
+.panel-metodos{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+.panel-metodo{padding:10px;text-align:center;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--w3);cursor:pointer;transition:all .12s;}
+.panel-metodo:hover{border-color:var(--ln3);color:var(--w2);}
+.panel-metodo.selected{background:var(--amber);color:#000;border-color:var(--amber);}
+.panel-metodo-icon{font-size:16px;margin-bottom:3px;}
+.panel-cats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+.panel-cat{padding:8px;text-align:center;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--w3);cursor:pointer;transition:all .12s;}
+.panel-cat:hover{border-color:var(--ln3);color:var(--w2);}
+.panel-cat.selected{background:var(--amber);color:#000;border-color:var(--amber);}
+.panel-btn-submit{width:100%;padding:14px;border:none;border-radius:var(--r2);font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:2px;cursor:pointer;transition:all .12s;margin-top:24px;}
+.panel-btn-submit:hover{filter:brightness(1.1);}
+.panel-btn-submit:active{transform:scale(.98);}
+.panel-btn-entrada{background:var(--green);color:#000;}
+.panel-btn-saida{background:var(--red);color:#fff;}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1100;display:none;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);width:480px;max-width:95vw;max-height:85vh;overflow-y:auto;padding:24px;}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+.modal-header h3{font-family:var(--head);font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+
+/* ── TOPBAR ACTIONS ── */
+.topbar-actions{display:flex;gap:8px;}
+.btn-cmd{padding:8px 16px;border:none;border-radius:var(--r2);font-family:var(--head);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;cursor:pointer;transition:all .12s;display:flex;align-items:center;gap:5px;}
+.btn-cmd:active{transform:scale(.97);}
+.btn-entrada{background:var(--green);color:#000;}.btn-entrada:hover{background:#3DE066;}
+.btn-saida{background:var(--sf2);border:1px solid var(--ln3);color:var(--red);}.btn-saida:hover{background:var(--red-dim);border-color:rgba(255,59,48,0.3);}
+
+/* ── BUSCA ── */
+.busca-input{background:var(--sf2);border:1px solid var(--ln3);border-radius:var(--r2);padding:8px 14px;font-family:var(--body);font-size:13px;color:var(--w);outline:none;width:280px;transition:border-color .15s;}
+.busca-input:focus{border-color:var(--amber);}
+.busca-input::placeholder{color:var(--w4);}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);font-family:var(--body);font-size:13px;font-weight:600;padding:12px 24px;border-radius:var(--r2);z-index:9999;opacity:0;transition:all .3s;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{background:var(--green);color:#000;}
+.toast.err{background:var(--red);color:#fff;}
+
+/* ── LOGIN ── */
+.login-overlay{position:fixed;inset:0;z-index:2000;background:var(--bg);display:flex;align-items:center;justify-content:center;}
+.login-box{width:340px;padding:40px 32px;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);}
+.login-brand{font-family:var(--head);font-size:36px;font-weight:900;text-transform:uppercase;letter-spacing:2px;text-align:center;margin-bottom:4px;}
+.login-brand span{color:var(--amber);}
+.login-sub{font-family:var(--mono);font-size:11px;color:var(--w4);text-align:center;margin-bottom:28px;letter-spacing:2px;}
+.login-label{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--w4);margin-bottom:6px;display:block;}
+.login-input{width:100%;background:var(--sf2);border:2px solid var(--ln3);border-radius:var(--r);padding:12px 14px;font-family:var(--mono);font-size:14px;color:var(--w);outline:none;margin-bottom:14px;transition:border-color .15s;}
+.login-input:focus{border-color:var(--amber);}
+.login-btn{width:100%;padding:14px;border:none;border-radius:var(--r);background:var(--amber);color:#000;font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:2px;cursor:pointer;margin-top:4px;}
+.login-err{display:none;font-family:var(--body);font-size:12px;color:var(--red);text-align:center;margin-top:12px;}
+
+/* ── LOADING ── */
+.loading-screen{position:fixed;inset:0;z-index:1500;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
+.loading-spinner{width:32px;height:32px;border:3px solid var(--ln2);border-top-color:var(--amber);border-radius:50%;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-label{font-family:var(--mono);font-size:12px;color:var(--w4);letter-spacing:2px;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .sidebar{display:none;}
+  .comp-grid,.metodo-grid{grid-template-columns:repeat(2,1fr);}
+  .ext-row{grid-template-columns:50px 1fr 70px 80px;}
+  .ext-row .ext-cat{display:none;}
+  .rank-row{grid-template-columns:28px 1fr 70px 70px 80px;}
+  .rank-row>div:last-child{display:none;}
+  .busca-input{width:100%;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN OVERLAY -->
+<div class="login-overlay" id="login-overlay">
+  <div class="login-box">
+    <div class="login-brand">RPM <span>PRO</span></div>
+    <div class="login-sub">V2 · Financeiro</div>
+    <label class="login-label">Email</label>
+    <input class="login-input" type="email" id="login-email" placeholder="email@oficina.com" autocomplete="email">
+    <label class="login-label">Senha</label>
+    <input class="login-input" type="password" id="login-senha" placeholder="••••••••" onkeydown="if(event.key==='Enter')fazerLogin()">
+    <button class="login-btn" id="login-btn" onclick="fazerLogin()">Entrar</button>
+    <div class="login-err" id="login-err">Email ou senha incorretos</div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="loading-screen" id="loading" style="display:none;">
+  <div class="loading-spinner"></div>
+  <div class="loading-label">carregando financeiro...</div>
+</div>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-brand">RPM <span>PRO</span></div>
+      <div class="sidebar-logo-oficina" id="oficina-nome">—</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Oficina</div>
+      <a class="nav-item" href="kanban-v2.html"><span class="nav-icon">⬛</span>Pátio</a>
+      <a class="nav-item" href="dashboard-v2.html"><span class="nav-icon">◈</span>Dashboard</a>
+      <div class="nav-section">Atendimento</div>
+      <a class="nav-item" href="fila-espera-v2.html"><span class="nav-icon">⏳</span>Fila de Espera</a>
+      <a class="nav-item" href="os-list-v2.html"><span class="nav-icon">📋</span>Ordens de Servico</a>
+      <a class="nav-item" href="execucao-os-v2.html"><span class="nav-icon">🔧</span>Execucao OS</a>
+      <a class="nav-item" href="clientes-v2.html"><span class="nav-icon">👥</span>Clientes</a>
+      <a class="nav-item" href="veiculos-v2.html"><span class="nav-icon">🚗</span>Veículos</a>
+      <a class="nav-item" href="agendamentos-v2.html"><span class="nav-icon">📅</span>Agendamentos</a>
+      <div class="nav-section">Catálogo</div>
+      <a class="nav-item" href="catalogo-v2.html"><span class="nav-icon">🔧</span>Servicos / Pecas</a>
+      <div class="nav-section">Financeiro</div>
+      <a class="nav-item active"><span class="nav-icon">💰</span>Caixa</a>
+      <a class="nav-item" href="comissao-v2.html"><span class="nav-icon">📊</span>Comissão</a>
+      <a class="nav-item" href="folha-v2.html"><span class="nav-icon">📄</span>Folha</a>
+      <div class="nav-section">Equipe</div>
+      <a class="nav-item" href="equipe-v2.html"><span class="nav-icon">👤</span>Equipe</a>
+      <a class="nav-item" href="produtividade-v2.html"><span class="nav-icon">⚡</span>Produtividade</a>
+      <a class="nav-item" href="crm-v2.html"><span class="nav-icon">📡</span>CRM / Reativacao</a>
+      <a class="nav-item" href="satisfacao-v2.html"><span class="nav-icon">⭐</span>Satisfacao</a>
+      <a class="nav-item" href="config-v2.html"><span class="nav-icon">⚙️</span>Configurações</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="user-avatar">—</div>
+        <div class="user-details">
+          <div class="user-name" id="user-nome">—</div>
+          <div class="user-role" id="user-role">—</div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="sair()">Sair</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="main-topbar">
+      <div class="main-title">Financeiro</div>
+      <div class="topbar-actions">
+        <button class="btn-cmd btn-entrada" onclick="abrirLanc('entrada')"><span style="font-family:var(--mono);font-size:16px;font-weight:800;">+</span> Entrada</button>
+        <button class="btn-cmd btn-saida" onclick="abrirLanc('saida')"><span style="font-family:var(--mono);font-size:16px;font-weight:800;">−</span> Saida</button>
+      </div>
+    </div>
+    <div class="main-content" id="fin-content"></div>
+  </div>
+</div>
+
+<!-- OVERLAY + SIDE PANEL -->
+<div class="overlay" id="overlay" onclick="fecharPanel()"></div>
+<div class="side-panel" id="panel">
+  <div class="panel-head">
+    <div class="panel-title" id="panel-titulo">Lançar <span>Entrada</span></div>
+    <button class="panel-close" onclick="fecharPanel()">×</button>
+  </div>
+  <div class="panel-body" id="panel-body"></div>
+</div>
+
+<!-- MODAL (receber pagamento, nova despesa) -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal-box" id="modal-box"></div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast-el"></div>
+
+<script>
+// ── CONFIG ──
+const SUPABASE_URL = 'https://roeeyypssutzfzzkypsq.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZWV5eXBzc3V0emZ6emt5cHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MTk0MTgsImV4cCI6MjA5MDM5NTQxOH0.9oCOmABUTXox3FaRViD2zcUaqv94VfOJFMQYz_fcJi4';
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let PERFIL = null;
+let OFICINA_ID = null;
+let OFICINA = null;
+
+// ── ESTADO FINANCEIRO ──
+let MAQUININHAS = [];
+let ABA = 'fechamento';
+let PERIODO = 'mes';
+let CAIXA_MES = new Date().getMonth();
+let CAIXA_ANO = new Date().getFullYear();
+let DESP_MES = new Date().getMonth();
+let DESP_ANO = new Date().getFullYear();
+let PECAS_MES = new Date().getMonth();
+let PECAS_ANO = new Date().getFullYear();
+let PECAS_PERIODO = 'mes';
+
+// ── UTILS ──
+function esc(s){ return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmt(v){ return (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+
+const CAT_LABEL = {
+  servico:'Serviço', peca:'Peça', despesa:'Despesa', retirada:'Retirada',
+  aporte:'Aporte', outro:'Outro', aluguel:'Aluguel', conta_luz:'Conta de Luz',
+  conta_agua:'Conta de Água', internet:'Internet', fornecedor:'Fornecedor',
+  boleto:'Boleto', material:'Material', combustivel:'Combustível', manutencao:'Manutenção',
+  vale:'Vale funcionário'
+};
+const FORMA_LABEL = { dinheiro:'Dinheiro', pix:'Pix', debito:'Débito', credito:'Crédito', boleto:'Boleto', transferencia:'Transferência', faturado:'Faturado', fiado:'Fiado' };
+const FORMA_ICON = { pix:'◈', debito:'◇', credito:'◇', dinheiro:'$', boleto:'◇', faturado:'⊘', fiado:'⊘' };
+
+function catClass(cat) {
+  if (['servico'].includes(cat)) return 'cat-servico';
+  if (['peca'].includes(cat)) return 'cat-peca';
+  if (['aluguel','conta_luz','conta_agua','internet'].includes(cat)) return 'cat-fixo';
+  if (['retirada'].includes(cat)) return 'cat-prolabore';
+  return 'cat-despesa';
+}
+
+function toast(msg, tipo='ok') {
+  const el = document.getElementById('toast-el');
+  el.textContent = msg; el.className = 'toast ' + tipo + ' show';
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ── TABS ──
+function switchTab(tab) {
+  ABA = tab;
+  carregar();
+}
+
+// ── CARREGAR ──
+async function carregar() {
+  const el = document.getElementById('fin-content');
+  el.innerHTML = `
+    <div class="tabs">
+      ${['fechamento','caixa','despesas','pecas','receber'].map(t => {
+        const label = {fechamento:'Fechamento',caixa:'Caixa',despesas:'Despesas',pecas:'Lucro Peças',receber:'A Receber'}[t];
+        return `<div class="tab ${ABA===t?'on':''}" onclick="switchTab('${t}')">${label}</div>`;
+      }).join('')}
+    </div>
+    <div id="fin-tab-content"><div style="text-align:center;padding:40px;font-family:var(--mono);font-size:12px;color:var(--w4);">carregando...</div></div>
+  `;
+  if (ABA === 'fechamento') await carregarFechamento();
+  else if (ABA === 'caixa') await carregarCaixa();
+  else if (ABA === 'despesas') await carregarDespesas();
+  else if (ABA === 'pecas') await carregarLucroPecas();
+  else if (ABA === 'receber') await carregarContasReceber();
+}
+
+// ==================== FECHAMENTO ====================
+async function carregarFechamento() {
+  const el = document.getElementById('fin-tab-content');
+  const hoje = new Date().toISOString().split('T')[0];
+
+  const [osRes, fiadosRes, canceladasRes, caixaRes] = await Promise.all([
+    db.from('ordens_servico')
+      .select('id, numero, valor_total, valor_mao_obra, valor_pecas, forma_pagamento, taxa_cartao, maquininha_id, desconto, data_entrega, veiculos(placa), clientes(nome)')
+      .eq('oficina_id', OFICINA_ID).eq('status','entregue').eq('pago',true)
+      .gte('data_entrega', hoje).order('data_entrega',{ascending:false}),
+    db.from('ordens_servico')
+      .select('id, numero, valor_total, forma_pagamento, data_entrega, veiculos(placa), clientes(nome)')
+      .eq('oficina_id', OFICINA_ID).eq('status','entregue').eq('pago',false)
+      .order('data_entrega',{ascending:false}),
+    db.from('ordens_servico')
+      .select('id, numero, valor_total, updated_at')
+      .eq('oficina_id', OFICINA_ID).eq('status','cancelada').gte('updated_at', hoje),
+    db.from('caixa').select('*')
+      .eq('oficina_id', OFICINA_ID).gte('created_at', hoje).order('created_at',{ascending:false})
+  ]);
+
+  const osDia = osRes.data || [];
+  const fiados = fiadosRes.data || [];
+  const canceladas = canceladasRes.data || [];
+  const movDia = caixaRes.data || [];
+
+  // Maquininhas da oficina
+  const { data: maquininhas } = await db.from('maquininhas').select('id, nome').eq('oficina_id', OFICINA_ID).eq('ativo', true);
+  const maqMap = {};
+  (maquininhas||[]).forEach(m => maqMap[m.id] = m.nome);
+
+  // Peças do dia
+  const osIds = osDia.map(o => o.id);
+  let itensPeca = [];
+  if (osIds.length) {
+    const { data } = await db.from('itens_os')
+      .select('os_id, descricao, quantidade, valor_unitario, valor_total, peca_id, pecas(nome, custo)')
+      .in('os_id', osIds).eq('tipo','peca');
+    itensPeca = data || [];
+  }
+
+  // Taxas por maquininha
+  const taxasPorMaq = {};
+  osDia.filter(o => o.taxa_cartao > 0 && o.maquininha_id).forEach(o => {
+    const nome = maqMap[o.maquininha_id] || 'Outra';
+    const fp = o.forma_pagamento;
+    const key = nome;
+    if (!taxasPorMaq[key]) taxasPorMaq[key] = { debito: 0, credito: 0, debitoTaxa: 0, creditoTaxa: 0 };
+    const taxa = o.valor_total * (o.taxa_cartao / 100);
+    if (fp === 'debito') { taxasPorMaq[key].debito += o.valor_total; taxasPorMaq[key].debitoTaxa += taxa; }
+    else { taxasPorMaq[key].credito += o.valor_total; taxasPorMaq[key].creditoTaxa += taxa; }
+  });
+
+  const faturamentoBruto = osDia.reduce((s,o) => s+(o.valor_total||0), 0);
+  const totalMO = osDia.reduce((s,o) => s+(o.valor_mao_obra||0), 0);
+  const totalPecas = osDia.reduce((s,o) => s+(o.valor_pecas||0), 0);
+  const totalTaxas = osDia.reduce((s,o) => s+(o.valor_total*(o.taxa_cartao||0)/100), 0);
+  const saidasCaixa = movDia.filter(m=>m.tipo==='saida').reduce((s,m)=>s+(m.valor||0),0);
+  const entradasCaixa = movDia.filter(m=>m.tipo==='entrada'&&!m.os_id).reduce((s,m)=>s+(m.valor||0),0);
+  const lucroLiquido = faturamentoBruto + entradasCaixa - totalTaxas - saidasCaixa;
+  const totalDescontos = osDia.reduce((s,o)=>s+(o.desconto||0),0);
+
+  // Faturado vs fiado puro (GOTCHA: pago=false em faturado é CORRETO)
+  const fiadosPuros = fiados.filter(f => f.forma_pagamento !== 'faturado');
+  const faturados = fiados.filter(f => f.forma_pagamento === 'faturado');
+  const totalFiadoPuro = fiadosPuros.reduce((s,o) => s+(o.valor_total||0), 0);
+  const totalFaturado = faturados.reduce((s,o) => s+(o.valor_total||0), 0);
+  const totalCanceladas = canceladas.reduce((s,o) => s+(o.valor_total||0), 0);
+
+  // Por forma
+  const porForma = {};
+  osDia.forEach(o => { const f=o.forma_pagamento||'outros'; porForma[f]=(porForma[f]||0)+(o.valor_total||0); });
+
+  // Peças lucro
+  let vendaPecas=0, custoPecas=0;
+  itensPeca.forEach(p => {
+    vendaPecas += p.valor_total||0;
+    if (p.peca_id && p.pecas?.custo) custoPecas += p.pecas.custo * (p.quantidade||1);
+  });
+
+  // Alerta inadimplência
+  const totalInadim = totalFiadoPuro + totalFaturado;
+  const alertaHtml = totalInadim > 0 ? `
+    <div class="alert-critico" onclick="switchTab('receber')">
+      <div class="alert-critico-icon">!</div>
+      <div class="alert-critico-text">
+        <div class="alert-critico-title">${fiadosPuros.length + faturados.length} OS Sem Pagamento Confirmado</div>
+        <div class="alert-critico-sub">${faturados.length ? faturados.length+' faturada(s)' : ''}${faturados.length&&fiadosPuros.length?' · ':''}${fiadosPuros.length ? fiadosPuros.length+' fiada(s)' : ''}</div>
+      </div>
+      <div class="alert-critico-val">${fmt(totalInadim)}</div>
+    </div>` : '';
+
+  el.innerHTML = `
+    ${alertaHtml}
+    <div style="text-align:center;margin-bottom:16px;">
+      <div style="font-family:var(--body);font-size:12px;color:var(--w3);text-transform:uppercase;letter-spacing:1px;">Fechamento de</div>
+      <div style="font-family:var(--head);font-size:22px;font-weight:800;">${new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})}</div>
+    </div>
+
+    <!-- SALDO HERO -->
+    <div class="saldo-hero ${lucroLiquido<0?'negativo':''}">
+      <div class="saldo-label">Lucro Líquido do Dia</div>
+      <div class="saldo-val ${lucroLiquido>=0?'pos':'neg'}">${fmt(lucroLiquido)}</div>
+      <div class="saldo-sub">Faturou ${fmt(faturamentoBruto)}${(totalTaxas+saidasCaixa)>0?' · Descontos '+fmt(totalTaxas + saidasCaixa):''}${entradasCaixa?' · Avulsas +'+fmt(entradasCaixa):''}</div>
+    </div>
+
+    <!-- COMPOSIÇÃO -->
+    <div class="comp-grid">
+      <div class="comp-block">
+        <div class="comp-block-label">Faturamento</div>
+        <div class="comp-block-val" style="color:var(--green);">${fmt(faturamentoBruto)}</div>
+        <div class="comp-block-sub">${osDia.length} OS · MO ${fmt(totalMO)}</div>
+      </div>
+      <div class="comp-block">
+        <div class="comp-block-label">${custoPecas>0?'Lucro Peças':'Peças'}</div>
+        <div class="comp-block-val" style="color:var(--cyan);">${custoPecas>0?fmt(vendaPecas - custoPecas):fmt(totalPecas)}</div>
+        <div class="comp-block-sub">${itensPeca.length} itens${custoPecas>0?' · Custo '+fmt(custoPecas):''}</div>
+      </div>
+      <div class="comp-block">
+        <div class="comp-block-label">Taxas Cartão</div>
+        <div class="comp-block-val" style="color:var(--red);">${fmt(totalTaxas)}</div>
+        <div class="comp-block-sub">${osDia.filter(o=>o.taxa_cartao>0).length} OS c/ taxa</div>
+      </div>
+      <div class="comp-block">
+        <div class="comp-block-label">${saidasCaixa>0?'Saídas':'OS Entregues'}</div>
+        <div class="comp-block-val" style="color:${saidasCaixa>0?'var(--orange)':'var(--w)'};">${saidasCaixa>0?fmt(saidasCaixa):osDia.length}</div>
+        <div class="comp-block-sub">${saidasCaixa>0?'Despesas do dia':osDia.length+' veículos'}</div>
+      </div>
+    </div>
+
+    <!-- POR MÉTODO -->
+    <div style="font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);margin-bottom:10px;">Por Método</div>
+    <div class="metodo-grid">
+      ${['pix','debito','credito','dinheiro'].map(f => `
+        <div class="metodo-card" style="${!(porForma[f]>0)?'opacity:.3;':''}">
+          <div class="metodo-icon">${FORMA_ICON[f]||'◇'}</div>
+          <div class="metodo-info">
+            <div class="metodo-name">${FORMA_LABEL[f]||f}</div>
+            <div class="metodo-val" style="color:var(--green);">${fmt(porForma[f]||0)}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+
+    <!-- TAXAS POR MAQUININHA -->
+    ${Object.keys(taxasPorMaq).length ? `
+    <div style="font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);margin-bottom:10px;">Taxas por Maquininha</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
+      ${Object.entries(taxasPorMaq).map(([nome, d]) => `
+        <div style="flex:1;min-width:140px;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:14px 12px;">
+          <div style="font-family:var(--head);font-size:13px;font-weight:700;color:var(--w);margin-bottom:10px;">${nome}</div>
+          ${d.debitoTaxa>0?`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span style="font-size:11px;color:var(--w3);">Débito</span>
+            <span style="font-size:12px;font-weight:600;color:var(--red);">-${fmt(d.debitoTaxa)}</span>
+          </div>
+          <div style="font-size:10px;color:var(--w4);margin-bottom:8px;">sobre ${fmt(d.debito)}</div>`:''}
+          ${d.creditoTaxa>0?`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span style="font-size:11px;color:var(--w3);">Crédito</span>
+            <span style="font-size:12px;font-weight:600;color:var(--red);">-${fmt(d.creditoTaxa)}</span>
+          </div>
+          <div style="font-size:10px;color:var(--w4);">sobre ${fmt(d.credito)}</div>`:''}
+        </div>
+      `).join('')}
+    </div>` : ''}
+
+    <!-- ALERTAS: Fiado + Faturado + Canceladas -->
+    ${totalFiadoPuro>0||totalFaturado>0||totalCanceladas>0 ? `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;">
+      ${totalFiadoPuro>0?`<div class="comp-block" style="border-left:3px solid var(--red);">
+        <div class="comp-block-label">Fiado (sem pagamento)</div>
+        <div class="comp-block-val" style="color:var(--red);">${fmt(totalFiadoPuro)}</div>
+        <div class="comp-block-sub">${fiadosPuros.length} OS</div>
+      </div>`:''}
+      ${totalFaturado>0?`<div class="comp-block" style="border-left:3px solid var(--amber);cursor:pointer;" onclick="switchTab('receber')">
+        <div class="comp-block-label">Faturado (prazo)</div>
+        <div class="comp-block-val" style="color:var(--amber);">${fmt(totalFaturado)}</div>
+        <div class="comp-block-sub">${faturados.length} OS → ver</div>
+      </div>`:''}
+      ${totalCanceladas>0?`<div class="comp-block" style="border-left:3px solid var(--w4);">
+        <div class="comp-block-label">Canceladas hoje</div>
+        <div class="comp-block-val">${fmt(totalCanceladas)}</div>
+        <div class="comp-block-sub">${canceladas.length} OS</div>
+      </div>`:''}
+    </div>` : ''}
+
+    <!-- LISTA DE OS DO DIA -->
+    ${osDia.length ? `
+    <div style="font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);margin-bottom:8px;">OS Entregues Hoje (${osDia.length})</div>
+    ${osDia.map(o => `
+      <div class="ext-row">
+        <div><div style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--amber);">#${esc(o.numero||'-')}</div></div>
+        <div><div class="ext-desc-text">${esc(o.veiculos?.placa||'-')} · ${esc(o.clientes?.nome||'-')}</div></div>
+        <div class="ext-cat ${catClass('servico')}">${esc(FORMA_LABEL[o.forma_pagamento]||o.forma_pagamento||'-')}</div>
+        <div class="ext-metodo"><span>${FORMA_ICON[o.forma_pagamento]||'◇'}</span> ${esc(FORMA_LABEL[o.forma_pagamento]||'-')}</div>
+        <div class="ext-valor entrada">${fmt(o.valor_total)}</div>
+      </div>
+    `).join('')}` : '<div style="text-align:center;padding:24px;font-family:var(--mono);font-size:12px;color:var(--w4);">Nenhuma OS entregue hoje</div>'}
+  `;
+}
+
+// ==================== CAIXA ====================
+async function carregarCaixa() {
+  const el = document.getElementById('fin-tab-content');
+  const agora = new Date();
+  const dataInicio = new Date(CAIXA_ANO, CAIXA_MES, 1).toISOString().split('T')[0];
+  const dataFim = new Date(CAIXA_ANO, CAIXA_MES+1, 0, 23, 59, 59).toISOString();
+  const hoje = agora.toISOString().split('T')[0];
+  const inicioSemana = new Date(agora); inicioSemana.setDate(agora.getDate()-agora.getDay());
+  let filtroInicio = dataInicio;
+  if (PERIODO==='hoje') filtroInicio = hoje;
+  else if (PERIODO==='semana') filtroInicio = inicioSemana.toISOString().split('T')[0];
+
+  const [caixaRes, osRes] = await Promise.all([
+    db.from('caixa').select('*').eq('oficina_id',OFICINA_ID)
+      .gte('created_at',filtroInicio).lte('created_at',dataFim).order('created_at',{ascending:false}),
+    db.from('ordens_servico')
+      .select('id, numero, valor_total, forma_pagamento, data_entrega, veiculos(placa), clientes(nome)')
+      .eq('oficina_id',OFICINA_ID).eq('pago',true)
+      .gte('data_entrega',filtroInicio).lte('data_entrega',dataFim).order('data_entrega',{ascending:false})
+  ]);
+
+  const movs = caixaRes.data || [];
+  const osPagas = osRes.data || [];
+  const totalEntradas = movs.filter(m=>m.tipo==='entrada').reduce((s,m)=>s+(m.valor||0),0);
+  const totalSaidas = movs.filter(m=>m.tipo==='saida').reduce((s,m)=>s+(m.valor||0),0);
+  const totalOS = osPagas.reduce((s,o)=>s+(o.valor_total||0),0);
+  const saldo = totalEntradas + totalOS - totalSaidas;
+
+  const porForma = {};
+  osPagas.forEach(o => { const f=o.forma_pagamento||'outros'; porForma[f]=(porForma[f]||0)+(o.valor_total||0); });
+  movs.filter(m=>m.tipo==='entrada').forEach(m => { const f=m.forma_pagamento||'outros'; porForma[f]=(porForma[f]||0)+(m.valor||0); });
+
+  const nomeMes = new Date(CAIXA_ANO, CAIXA_MES).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  const periodoLabel = {hoje:'Hoje',semana:'Semana',mes:'Mês'};
+
+  el.innerHTML = `
+    <!-- Nav mês -->
+    <div class="period-bar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="p-btn" onclick="navCaixa(-1)">◀</div>
+        <div style="font-family:var(--head);font-size:18px;font-weight:800;text-transform:capitalize;">${nomeMes}</div>
+        <div class="p-btn" onclick="navCaixa(1)">▶</div>
+      </div>
+      <div class="period-filters">
+        ${['mes','semana','hoje'].map(p => `<div class="p-btn ${PERIODO===p?'on':''}" onclick="PERIODO='${p}';carregar();">${periodoLabel[p]}</div>`).join('')}
+      </div>
+    </div>
+
+    <!-- SALDO -->
+    <div class="saldo-hero ${saldo<0?'negativo':''}">
+      <div class="saldo-label">Saldo do Período</div>
+      <div class="saldo-val ${saldo>=0?'pos':'neg'}">${fmt(saldo)}</div>
+      <div class="saldo-sub">Entradas ${fmt(totalEntradas+totalOS)} — Saídas ${fmt(totalSaidas)} — ${osPagas.length} OS pagas</div>
+    </div>
+
+    <!-- POR FORMA -->
+    <div class="metodo-grid">
+      ${Object.entries(porForma).sort((a,b)=>b[1]-a[1]).map(([f,v]) => `
+        <div class="metodo-card">
+          <div class="metodo-icon">${FORMA_ICON[f]||'◇'}</div>
+          <div class="metodo-info">
+            <div class="metodo-name">${FORMA_LABEL[f]||f}</div>
+            <div class="metodo-val" style="color:var(--green);">${fmt(v)}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+
+    <!-- OS PAGAS -->
+    ${osPagas.length ? `
+    <div style="font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);margin-bottom:8px;">OS Pagas (${osPagas.length})</div>
+    ${osPagas.map(o => `
+      <div class="ext-row">
+        <div><div style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--amber);">#${esc(o.numero||'-')}</div></div>
+        <div><div class="ext-desc-text">${esc(o.veiculos?.placa||'-')} · ${esc(o.clientes?.nome||'-')}</div></div>
+        <div class="ext-cat cat-servico">${esc(FORMA_LABEL[o.forma_pagamento]||'-')}</div>
+        <div class="ext-metodo"><span>${FORMA_ICON[o.forma_pagamento]||'◇'}</span></div>
+        <div class="ext-valor entrada">${fmt(o.valor_total)}</div>
+      </div>
+    `).join('')}` : ''}
+
+    <!-- MOVIMENTAÇÕES -->
+    ${movs.length ? `
+    <div style="font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);margin:20px 0 8px;">Movimentações (${movs.length})</div>
+    ${movs.map(m => {
+      const hora = new Date(m.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+      return `<div class="ext-row">
+        <div><div class="ext-hora">${hora}</div></div>
+        <div><div class="ext-desc-text">${esc(m.descricao||'-')}</div><div class="ext-desc-sub">${esc(CAT_LABEL[m.categoria]||m.categoria||'')}</div></div>
+        <div class="ext-cat ${catClass(m.categoria)}">${esc(CAT_LABEL[m.categoria]||m.categoria||'-')}</div>
+        <div class="ext-metodo"><span>${FORMA_ICON[m.forma_pagamento]||'◇'}</span> ${esc(FORMA_LABEL[m.forma_pagamento]||'-')}</div>
+        <div class="ext-valor ${m.tipo}" style="display:flex;align-items:center;gap:6px;justify-content:flex-end;">
+          ${m.tipo==='saida'?'-':''}${fmt(m.valor)}
+          <span style="font-size:12px;cursor:pointer;opacity:.4;" onclick="excluirMov('${m.id}')" title="Excluir">✕</span>
+        </div>
+      </div>`;
+    }).join('')}` : '<div style="text-align:center;padding:24px;font-family:var(--mono);font-size:12px;color:var(--w4);">Nenhuma movimentação</div>'}
+  `;
+}
+
+function navCaixa(d) {
+  CAIXA_MES += d;
+  if (CAIXA_MES>11){CAIXA_MES=0;CAIXA_ANO++;}
+  if (CAIXA_MES<0){CAIXA_MES=11;CAIXA_ANO--;}
+  carregar();
+}
+
+// ==================== DESPESAS ====================
+async function carregarDespesas() {
+  const el = document.getElementById('fin-tab-content');
+  const inicioMes = new Date(DESP_ANO, DESP_MES, 1).toISOString().split('T')[0];
+  const fimMes = new Date(DESP_ANO, DESP_MES+1, 0, 23, 59, 59).toISOString();
+
+  const { data: despesas } = await db.from('caixa').select('*')
+    .eq('oficina_id',OFICINA_ID).eq('tipo','saida')
+    .gte('created_at',inicioMes).lte('created_at',fimMes)
+    .order('created_at',{ascending:false});
+
+  const lista = despesas || [];
+  const totalMes = lista.reduce((s,d)=>s+(d.valor||0),0);
+  const porCat = {};
+  lista.forEach(d => { const c=d.categoria||'outro'; porCat[c]=(porCat[c]||0)+(d.valor||0); });
+
+  const nomeMes = new Date(DESP_ANO, DESP_MES).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+
+  const catType = cat => {
+    if (['aluguel','conta_luz','conta_agua','internet'].includes(cat)) return 'fixo';
+    if (['retirada','vale'].includes(cat)) return 'pessoal';
+    return 'variavel';
+  };
+
+  el.innerHTML = `
+    <div class="period-bar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="p-btn" onclick="navDesp(-1)">◀</div>
+        <div style="font-family:var(--head);font-size:18px;font-weight:800;text-transform:capitalize;">${nomeMes}</div>
+        <div class="p-btn" onclick="navDesp(1)">▶</div>
+        <span style="font-family:var(--mono);font-size:12px;color:var(--w3);">${lista.length} lançamentos</span>
+      </div>
+      <button class="btn-cmd btn-saida" onclick="novaDespesa()"><span style="font-family:var(--mono);font-size:16px;font-weight:800;">+</span> Nova Despesa</button>
+    </div>
+
+    <!-- TOTAL -->
+    <div class="saldo-hero negativo">
+      <div class="saldo-label">Total de Despesas</div>
+      <div class="saldo-val neg">${fmt(totalMes)}</div>
+    </div>
+
+    <!-- POR CATEGORIA -->
+    ${Object.keys(porCat).length ? `
+    <div class="comp-grid" style="margin-bottom:20px;">
+      ${Object.entries(porCat).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([c,v]) => `
+        <div class="comp-block">
+          <div class="comp-block-label">${esc(CAT_LABEL[c]||c)}</div>
+          <div class="comp-block-val" style="color:var(--red);">${fmt(v)}</div>
+        </div>
+      `).join('')}
+    </div>` : ''}
+
+    <!-- LISTA -->
+    ${lista.map(d => {
+      const t = catType(d.categoria);
+      const dt = new Date(d.created_at).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+      return `<div class="desp-row">
+        <div class="desp-cat-tag desp-${t}">${t==='fixo'?'Fixo':t==='pessoal'?'Pessoal':'Variável'}</div>
+        <div class="desp-body">
+          <div class="desp-nome">${esc(d.descricao)}</div>
+          <div class="desp-detail">${esc(CAT_LABEL[d.categoria]||d.categoria||'')} · ${esc(FORMA_LABEL[d.forma_pagamento]||d.forma_pagamento||'')}</div>
+        </div>
+        <div class="desp-val">-${fmt(d.valor)}</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--w4);flex-shrink:0;">${dt}</div>
+        <span style="font-size:14px;cursor:pointer;opacity:.3;flex-shrink:0;" onclick="excluirMov('${d.id}')" title="Excluir">✕</span>
+      </div>`;
+    }).join('')}
+    ${!lista.length ? '<div style="text-align:center;padding:40px;font-family:var(--mono);font-size:12px;color:var(--w4);">Nenhuma despesa neste mês</div>' : ''}
+  `;
+}
+
+function navDesp(d) {
+  DESP_MES+=d;
+  if(DESP_MES>11){DESP_MES=0;DESP_ANO++;}
+  if(DESP_MES<0){DESP_MES=11;DESP_ANO--;}
+  carregar();
+}
+
+// ==================== LUCRO PEÇAS ====================
+async function carregarLucroPecas() {
+  const el = document.getElementById('fin-tab-content');
+  const agora = new Date();
+  const dataInicio = new Date(PECAS_ANO, PECAS_MES, 1).toISOString().split('T')[0];
+  const dataFim = new Date(PECAS_ANO, PECAS_MES+1, 0).toISOString().split('T')[0];
+  const hoje = agora.toISOString().split('T')[0];
+  const inicioSemana = new Date(agora); inicioSemana.setDate(agora.getDate()-agora.getDay());
+  let inicio = dataInicio, fim = dataFim;
+  if (PECAS_PERIODO==='hoje') inicio = hoje;
+  else if (PECAS_PERIODO==='semana') inicio = inicioSemana.toISOString().split('T')[0];
+
+  const { data: osMes } = await db.from('ordens_servico')
+    .select('id, valor_total, valor_pecas, forma_pagamento, taxa_cartao')
+    .eq('oficina_id',OFICINA_ID).eq('status','entregue')
+    .gte('data_entrega',inicio).lte('data_entrega',fim);
+
+  const ordens = osMes || [];
+  const osIds = ordens.map(o => o.id);
+  let itensPeca = [];
+  if (osIds.length) {
+    const { data } = await db.from('itens_os')
+      .select('os_id, descricao, quantidade, valor_unitario, valor_total, peca_id, pecas(nome, custo)')
+      .in('os_id', osIds).eq('tipo','peca');
+    itensPeca = data || [];
+  }
+
+  let totalVenda=0, totalCusto=0;
+  const faturamentoTotal = ordens.reduce((s,o)=>s+(o.valor_total||0),0);
+  const totalTaxasMes = ordens.reduce((s,o)=>s+((o.valor_total||0)*(o.taxa_cartao||0)/100),0);
+
+  const ranking = {};
+  itensPeca.forEach(item => {
+    const nome = item.pecas?.nome || item.descricao || 'Sem nome';
+    const venda = item.valor_total || 0;
+    const custo = item.peca_id && item.pecas?.custo ? item.pecas.custo*(item.quantidade||1) : 0;
+    totalVenda += venda; totalCusto += custo;
+    if (!ranking[nome]) ranking[nome] = {qtd:0,venda:0,custo:0};
+    ranking[nome].qtd += item.quantidade||1;
+    ranking[nome].venda += venda;
+    ranking[nome].custo += custo;
+  });
+
+  const lucroBruto = totalVenda - totalCusto;
+  const taxaProp = faturamentoTotal > 0 ? totalTaxasMes*(totalVenda/faturamentoTotal) : 0;
+  const lucroLiq = lucroBruto - taxaProp;
+  const margem = totalVenda > 0 ? (lucroBruto/totalVenda*100) : 0;
+
+  const rankList = Object.entries(ranking)
+    .map(([nome,d]) => ({nome,...d,lucro:d.venda-d.custo}))
+    .sort((a,b) => b.lucro-a.lucro);
+
+  const nomeMes = new Date(PECAS_ANO,PECAS_MES).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  const periodoLabel = {hoje:'Hoje',semana:'Semana',mes:'Mês'};
+
+  el.innerHTML = `
+    <div class="period-bar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="p-btn" onclick="navPecas(-1)">◀</div>
+        <div style="font-family:var(--head);font-size:18px;font-weight:800;text-transform:capitalize;">${nomeMes}</div>
+        <div class="p-btn" onclick="navPecas(1)">▶</div>
+        <span style="font-family:var(--mono);font-size:12px;color:var(--w3);">${itensPeca.length} peças vendidas</span>
+      </div>
+      <div class="period-filters">
+        ${['mes','semana','hoje'].map(p => `<div class="p-btn ${PECAS_PERIODO===p?'on':''}" onclick="PECAS_PERIODO='${p}';carregar();">${periodoLabel[p]}</div>`).join('')}
+      </div>
+    </div>
+
+    <!-- LUCRO HERO -->
+    <div class="saldo-hero ${lucroLiq<0?'negativo':''}">
+      <div class="saldo-label">Lucro em Peças</div>
+      <div class="saldo-val ${lucroLiq>=0?'pos':'neg'}">${fmt(lucroLiq)}</div>
+      <div class="saldo-sub">Margem ${margem.toFixed(1)}% · Custo ${fmt(totalCusto)} · Venda ${fmt(totalVenda)} · Taxas ${fmt(taxaProp)}</div>
+    </div>
+
+    <!-- RANKING -->
+    ${rankList.length ? `
+    <div style="font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);margin-bottom:8px;">Ranking de Peças</div>
+    <div style="display:grid;grid-template-columns:32px 1fr 100px 60px 80px 80px;gap:10px;align-items:center;padding:8px 16px;margin-bottom:4px;">
+      <span style="font-family:var(--head);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:var(--w4);">#</span>
+      <span style="font-family:var(--head);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:var(--w4);">Peça</span>
+      <span style="font-family:var(--head);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:var(--w4);text-align:right;">Lucro</span>
+      <span style="font-family:var(--head);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:var(--w4);">Markup</span>
+      <span style="font-family:var(--head);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:var(--w3);">Venda</span>
+      <span style="font-family:var(--head);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:var(--w4);">Custo</span>
+    </div>
+    ${rankList.slice(0,20).map((p,i) => {
+      const markup = p.custo > 0 ? Math.round((p.lucro/p.custo)*100) : 0;
+      const mClass = markup>=60?'var(--green)':markup>=30?'var(--amber)':'var(--red)';
+      return `<div class="rank-row">
+        <div class="rank-pos" style="${i===0?'color:var(--amber);':i===1?'color:var(--w2);':i===2?'color:var(--orange);':''}">${i+1}</div>
+        <div style="min-width:0;"><div style="font-family:var(--head);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(p.nome)}</div><div style="font-family:var(--mono);font-size:10px;color:var(--w3);margin-top:2px;">${p.qtd}x vendida(s)</div></div>
+        <div style="font-family:var(--mono);font-size:16px;font-weight:800;color:var(--amber);text-align:right;">${fmt(p.lucro)}</div>
+        <div style="min-width:0;"><div style="font-family:var(--mono);font-size:13px;font-weight:800;color:${mClass};">+${markup}%</div><div style="height:4px;background:var(--sf3);border-radius:2px;margin-top:3px;overflow:hidden;"><div style="height:100%;border-radius:2px;background:${mClass};width:${Math.min(markup,100)}%;"></div></div></div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--w3);">${fmt(p.venda)}</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--w4);">${fmt(p.custo)}</div>
+      </div>`;
+    }).join('')}` : '<div style="text-align:center;padding:40px;font-family:var(--mono);font-size:12px;color:var(--w4);">Nenhuma peça vendida nesse período</div>'}
+  `;
+}
+
+function navPecas(d) {
+  PECAS_MES+=d;
+  if(PECAS_MES>11){PECAS_MES=0;PECAS_ANO++;}
+  if(PECAS_MES<0){PECAS_MES=11;PECAS_ANO--;}
+  carregar();
+}
+
+// ==================== CONTAS A RECEBER ====================
+async function carregarContasReceber() {
+  const el = document.getElementById('fin-tab-content');
+
+  const { data: contas } = await db.from('contas_receber')
+    .select('*, clientes(nome, whatsapp), ordens_servico(numero, veiculos(placa, marca, modelo))')
+    .eq('oficina_id', OFICINA_ID).eq('pago', false)
+    .order('vencimento', {ascending:true});
+
+  const lista = contas || [];
+  const totalPendente = lista.reduce((s,c)=>s+(c.valor||0),0);
+  const hoje = new Date().toISOString().split('T')[0];
+  const vencidas = lista.filter(c => c.vencimento < hoje).length;
+
+  // Agrupa por cliente
+  const porCliente = {};
+  lista.forEach(c => {
+    const cid = c.cliente_id;
+    if (!porCliente[cid]) porCliente[cid] = {nome:c.clientes?.nome||'-', whatsapp:c.clientes?.whatsapp||'', contas:[], total:0};
+    porCliente[cid].contas.push(c);
+    porCliente[cid].total += c.valor||0;
+  });
+
+  el.innerHTML = `
+    <!-- HERO -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:16px;">
+      <div style="display:flex;gap:28px;flex-wrap:wrap;">
+        <div>
+          <div style="font-family:var(--body);font-size:12px;color:var(--w3);margin-bottom:2px;">OS Faturadas</div>
+          <div style="font-family:var(--mono);font-size:22px;font-weight:800;">${lista.length}</div>
+        </div>
+        <div>
+          <div style="font-family:var(--body);font-size:12px;color:var(--w3);margin-bottom:2px;">Clientes</div>
+          <div style="font-family:var(--mono);font-size:22px;font-weight:800;">${Object.keys(porCliente).length}</div>
+        </div>
+        <div>
+          <div style="font-family:var(--body);font-size:12px;color:var(--w3);margin-bottom:2px;">Vencidas</div>
+          <div style="font-family:var(--mono);font-size:22px;font-weight:800;${vencidas?'color:var(--red);':''}">${vencidas}</div>
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);margin-bottom:4px;">Total a Receber</div>
+        <div style="font-family:var(--mono);font-size:36px;font-weight:800;color:var(--amber);">${fmt(totalPendente)}</div>
+      </div>
+    </div>
+
+    ${Object.keys(porCliente).length ? `
+    <input class="busca-input" placeholder="Buscar cliente..." oninput="filtrarReceber(this.value)" style="margin-bottom:16px;">` : ''}
+
+    <div id="cr-lista">
+    ${Object.keys(porCliente).length === 0 ? `
+      <div style="text-align:center;padding:50px;">
+        <div style="font-family:var(--head);font-size:18px;font-weight:800;color:var(--w3);margin-bottom:8px;">Nenhuma conta a receber</div>
+        <div style="font-family:var(--body);font-size:13px;color:var(--w4);">Quando entregar uma OS como "Faturado", ela aparece aqui.</div>
+      </div>` : ''}
+
+    ${Object.entries(porCliente).map(([cid, cli]) => `
+      <div class="cr-card" data-cliente="${esc(cli.nome)}">
+        <div class="cr-card-head">
+          <div>
+            <div class="cr-cliente">${esc(cli.nome)}</div>
+            <div style="font-family:var(--body);font-size:12px;color:var(--w3);">${cli.contas.length} OS faturada(s)</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="cr-total">${fmt(cli.total)}</div>
+            <button class="cr-btn" style="margin-top:6px;" onclick="receberPagamento('${cid}')">Receber</button>
+          </div>
+        </div>
+        ${cli.contas.map(c => {
+          const vencida = c.vencimento < hoje;
+          const vencDt = new Date(c.vencimento+'T12:00:00').toLocaleDateString('pt-BR');
+          const osNum = c.ordens_servico?.numero || '-';
+          const placa = c.ordens_servico?.veiculos?.placa || '';
+          const veiculo = [c.ordens_servico?.veiculos?.marca, c.ordens_servico?.veiculos?.modelo].filter(Boolean).join(' ');
+          return `<div class="cr-os-line ${vencida?'vencida':'normal'}">
+            <div>
+              <span style="font-family:var(--mono);font-size:13px;font-weight:700;">OS #${esc(osNum)}</span>
+              <span style="font-family:var(--body);font-size:12px;color:var(--w3);margin-left:8px;">${esc(placa)} ${esc(veiculo)}</span>
+            </div>
+            <div style="text-align:right;">
+              <span style="font-family:var(--mono);font-size:14px;font-weight:700;">${fmt(c.valor)}</span>
+              <span style="font-family:var(--mono);font-size:11px;margin-left:8px;color:${vencida?'var(--red)':'var(--w3)'};">${vencida?'Vencida ':'Vence '}${vencDt}</span>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    `).join('')}
+    </div>
+  `;
+}
+
+function filtrarReceber(busca) {
+  const termo = (busca||'').toLowerCase();
+  document.querySelectorAll('#cr-lista .cr-card').forEach(el => {
+    el.style.display = !termo || el.dataset.cliente.toLowerCase().includes(termo) ? '' : 'none';
+  });
+}
+
+// ==================== RECEBER PAGAMENTO (MODAL) ====================
+async function receberPagamento(clienteId) {
+  const { data: contas } = await db.from('contas_receber')
+    .select('*, ordens_servico(numero, valor_total)')
+    .eq('oficina_id', OFICINA_ID).eq('cliente_id', clienteId).eq('pago', false)
+    .order('vencimento');
+
+  if (!contas || !contas.length) { toast('Nenhuma conta pendente','err'); return; }
+  const total = contas.reduce((s,c)=>s+(c.valor||0),0);
+
+  document.getElementById('modal-box').innerHTML = `
+    <div class="modal-header">
+      <h3>Receber Pagamento</h3>
+      <button class="panel-close" onclick="fecharModal()">×</button>
+    </div>
+    <div style="font-family:var(--body);font-size:14px;margin-bottom:16px;">Total pendente: <strong style="font-family:var(--mono);font-size:18px;color:var(--amber);">${fmt(total)}</strong></div>
+
+    <div style="margin-bottom:16px;">
+      <div style="font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--w4);margin-bottom:8px;">Selecione as OS para quitar:</div>
+      ${contas.map(c => `
+        <label style="display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid var(--ln2);cursor:pointer;">
+          <input type="checkbox" class="cr-check" data-id="${c.id}" data-valor="${c.valor}" checked
+            onchange="atualizarTotalReceber()" style="width:20px;height:20px;accent-color:var(--green);">
+          <span style="flex:1;font-family:var(--body);font-size:13px;">OS #${c.ordens_servico?.numero||'-'}</span>
+          <span style="font-family:var(--mono);font-size:14px;font-weight:700;">${fmt(c.valor)}</span>
+        </label>
+      `).join('')}
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--sf2);border-radius:var(--r);margin-bottom:16px;">
+      <span style="font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Total selecionado:</span>
+      <span id="cr-total-sel" style="font-family:var(--mono);font-size:20px;font-weight:800;color:var(--green);">${fmt(total)}</span>
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <div style="font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--w4);margin-bottom:6px;">Forma de pagamento</div>
+      <div class="panel-metodos" id="cr-forma-grid">
+        <div class="panel-metodo selected" onclick="selForma(this,'pix')"><div class="panel-metodo-icon">◈</div>PIX</div>
+        <div class="panel-metodo" onclick="selForma(this,'dinheiro')"><div class="panel-metodo-icon">$</div>Dinheiro</div>
+        <div class="panel-metodo" onclick="selForma(this,'debito')"><div class="panel-metodo-icon">◇</div>Débito</div>
+        <div class="panel-metodo" onclick="selForma(this,'credito')"><div class="panel-metodo-icon">◇</div>Crédito</div>
+      </div>
+    </div>
+    <input type="hidden" id="cr-forma-val" value="pix">
+
+    ${MAQUININHAS.length ? `<div id="cr-maq-area" style="display:none;padding:12px;background:var(--sf2);border-radius:var(--r);margin-bottom:16px;">
+      <div style="font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--amber);margin-bottom:8px;">Maquininha</div>
+      <select class="panel-select" id="cr-maq-sel" style="width:100%;margin-bottom:8px;">
+        <option value="">Selecionar maquininha...</option>
+        ${MAQUININHAS.map(m=>`<option value="${m.id}">${esc(m.nome)}</option>`).join('')}
+      </select>
+      <div id="cr-parcelas-wrap" style="display:none;">
+        <div style="font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--w4);margin-bottom:4px;">Parcelas</div>
+        <select class="panel-select" id="cr-parcelas-sel" style="width:100%;">
+          ${[1,2,3,4,5,6,7,8,9,10,11,12].map(n=>`<option value="${n}">${n}x</option>`).join('')}
+        </select>
+      </div>
+    </div>` : ''}
+
+    <button class="panel-btn-submit panel-btn-entrada" onclick="confirmarRecebimento('${clienteId}')">Confirmar Recebimento</button>
+  `;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function selForma(el, forma) {
+  el.parentElement.querySelectorAll('.panel-metodo').forEach(m => m.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('cr-forma-val').value = forma;
+  // Mostra/esconde maquininha
+  const maqArea = document.getElementById('cr-maq-area');
+  const parcelasWrap = document.getElementById('cr-parcelas-wrap');
+  if (maqArea) {
+    const isCartao = ['debito','credito'].includes(forma);
+    maqArea.style.display = isCartao ? '' : 'none';
+    if (!isCartao) { const sel = document.getElementById('cr-maq-sel'); if(sel) sel.value=''; }
+  }
+  if (parcelasWrap) parcelasWrap.style.display = forma === 'credito' ? '' : 'none';
+}
+
+function _getTaxaCartaoFin(maq, forma, parcelas) {
+  if (!maq) return 0;
+  if (forma === 'debito') return maq.taxa_debito || 0;
+  const p = parcelas || 1;
+  if (p === 1) return maq.taxa_credito || 0;
+  if (p <= 6) return maq.taxa_parcelado_6 || maq.taxa_credito || 0;
+  return maq.taxa_parcelado_12 || maq.taxa_parcelado_6 || maq.taxa_credito || 0;
+}
+
+function atualizarTotalReceber() {
+  const checks = document.querySelectorAll('.cr-check:checked');
+  const total = Array.from(checks).reduce((s,c)=>s+parseFloat(c.dataset.valor),0);
+  const el = document.getElementById('cr-total-sel');
+  if (el) el.textContent = fmt(total);
+}
+
+async function confirmarRecebimento(clienteId) {
+  const checks = document.querySelectorAll('.cr-check:checked');
+  if (!checks.length) { toast('Selecione pelo menos uma OS','err'); return; }
+  const forma = document.getElementById('cr-forma-val').value;
+
+  // Valida maquininha obrigatória pra cartão
+  let maqId = null, taxa = 0, parcelas = 1;
+  if (['debito','credito'].includes(forma) && MAQUININHAS.length) {
+    maqId = document.getElementById('cr-maq-sel')?.value;
+    if (!maqId) { toast('Selecione a maquininha','err'); return; }
+    parcelas = parseInt(document.getElementById('cr-parcelas-sel')?.value) || 1;
+    const maq = MAQUININHAS.find(m => m.id === maqId);
+    taxa = _getTaxaCartaoFin(maq, forma, parcelas);
+  }
+
+  if (_busy.confReceb) return;
+  _busy.confReceb = true;
+  try {
+  const agora = new Date().toISOString();
+
+  for (const chk of checks) {
+    const contaId = chk.dataset.id;
+    await db.from('contas_receber').update({pago:true, data_pagamento:agora, forma_pagamento:forma}).eq('id', contaId).eq('oficina_id', OFICINA_ID);
+    const { data: conta } = await db.from('contas_receber').select('os_id, valor').eq('id', contaId).eq('oficina_id', OFICINA_ID).single();
+    if (!conta) continue;
+    const osUpdate = { pago:true, forma_pagamento:forma, taxa_cartao:taxa };
+    if (maqId) { osUpdate.maquininha_id = maqId; osUpdate.parcelas = parcelas; }
+    await db.from('ordens_servico').update(osUpdate).eq('id', conta.os_id).eq('oficina_id', OFICINA_ID);
+    await db.from('caixa').insert({
+      oficina_id: OFICINA_ID, os_id: conta.os_id, tipo:'entrada', categoria:'servico',
+      descricao:'Recebimento faturado — OS', valor:conta.valor, forma_pagamento:forma, created_by:PERFIL.id
+    });
+  }
+
+  fecharModal();
+  toast('Pagamento recebido!');
+  carregar();
+  } catch(e) { toast('Erro inesperado','err'); console.error('[confirmarRecebimento]',e); }
+  finally { _busy.confReceb = false; }
+}
+
+// ==================== NOVA DESPESA (MODAL) ====================
+async function novaDespesa() {
+  const { data: membros } = await db.from('profiles')
+    .select('id, nome, role')
+    .eq('oficina_id', OFICINA_ID).eq('ativo', true)
+    .in('role', ['mecanico','aux_mecanico','gerente','atendente','aux_admin'])
+    .order('nome');
+  const lista = membros || [];
+
+  document.getElementById('modal-box').innerHTML = `
+    <div class="modal-header">
+      <h3>Nova Despesa</h3>
+      <button class="panel-close" onclick="fecharModal()">×</button>
+    </div>
+    <div class="panel-field">
+      <div class="panel-label">Categoria</div>
+      <select class="panel-input" id="desp-cat" onchange="toggleMembro()" style="font-family:var(--body);">
+        <option value="aluguel">Aluguel</option>
+        <option value="conta_luz">Conta de Luz</option>
+        <option value="conta_agua">Conta de Água</option>
+        <option value="internet">Internet / Telefone</option>
+        <option value="fornecedor">Fornecedor</option>
+        <option value="boleto">Boleto</option>
+        <option value="material">Material de uso</option>
+        <option value="combustivel">Combustível</option>
+        <option value="manutencao">Manutenção</option>
+        <option value="retirada">Retirada / Pró-labore</option>
+        <option value="vale">Vale / Adiantamento funcionário</option>
+        <option value="outro">Outro</option>
+      </select>
+    </div>
+    <div class="panel-field" id="desp-membro-wrap" style="display:none;">
+      <div class="panel-label">Funcionário</div>
+      <select class="panel-input" id="desp-membro" style="font-family:var(--body);">
+        <option value="">Selecione...</option>
+        ${lista.map(m => `<option value="${m.id}">${esc(m.nome)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="panel-field">
+      <div class="panel-label">Descrição</div>
+      <input class="panel-input" id="desp-desc" placeholder="Ex: Aluguel abril, Conta Equatorial...">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="panel-field">
+        <div class="panel-label">Valor (R$)</div>
+        <input class="panel-input" id="desp-valor" type="number" min="0.01" step="0.01" placeholder="0,00">
+      </div>
+      <div class="panel-field">
+        <div class="panel-label">Forma de pagamento</div>
+        <select class="panel-input" id="desp-forma" style="font-family:var(--body);">
+          <option value="dinheiro">Dinheiro</option>
+          <option value="pix">Pix</option>
+          <option value="boleto">Boleto</option>
+          <option value="debito">Débito</option>
+          <option value="credito">Crédito</option>
+          <option value="transferencia">Transferência</option>
+        </select>
+      </div>
+    </div>
+    <div class="panel-field">
+      <div class="panel-label">Data</div>
+      <input class="panel-input" id="desp-data" type="date" value="${new Date().toISOString().split('T')[0]}">
+    </div>
+    <button class="panel-btn-submit panel-btn-saida" onclick="salvarDespesa()">Registrar Despesa</button>
+  `;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function toggleMembro() {
+  const wrap = document.getElementById('desp-membro-wrap');
+  wrap.style.display = document.getElementById('desp-cat').value === 'vale' ? '' : 'none';
+}
+
+async function salvarDespesa() {
+  const cat = document.getElementById('desp-cat').value;
+  const membroId = document.getElementById('desp-membro')?.value || null;
+  const desc = document.getElementById('desp-desc').value.trim();
+  const valor = parseFloat(document.getElementById('desp-valor').value) || 0;
+  const data = document.getElementById('desp-data').value;
+
+  if (!desc || valor <= 0) { toast('Preencha descrição e valor','err'); return; }
+  if (cat === 'vale' && !membroId) { toast('Selecione o funcionário','err'); return; }
+
+  if (_busy.salvarDesp) return;
+  _busy.salvarDesp = true;
+  try {
+  const { error } = await db.from('caixa').insert({
+    oficina_id: OFICINA_ID, tipo:'saida', categoria:cat,
+    descricao:desc, valor, forma_pagamento:document.getElementById('desp-forma').value,
+    membro_id: cat==='vale' ? membroId : null, created_by: PERFIL.id,
+    created_at: data ? new Date(data+'T12:00:00').toISOString() : new Date().toISOString()
+  });
+
+  if (error) { toast('Erro: '+error.message,'err'); return; }
+  fecharModal();
+  toast('Despesa registrada');
+  carregar();
+  } catch(e) { toast('Erro inesperado','err'); console.error('[salvarDespesa]',e); }
+  finally { _busy.salvarDesp = false; }
+}
+
+// ==================== LANÇAMENTO (SIDE PANEL) ====================
+let LANC_TIPO = 'entrada';
+let LANC_FORMA = 'pix';
+let LANC_CAT = 'aporte';
+
+function abrirLanc(tipo) {
+  LANC_TIPO = tipo;
+  LANC_FORMA = 'pix';
+  LANC_CAT = tipo==='entrada' ? 'aporte' : 'despesa';
+
+  const t = document.getElementById('panel-titulo');
+  t.innerHTML = tipo==='entrada' ? 'Lançar <span style="color:var(--green);">Entrada</span>' : 'Lançar <span style="color:var(--red);">Saída</span>';
+
+  const cats = tipo==='entrada'
+    ? [['aporte','Aporte'],['outro','Outro']]
+    : [['despesa','Despesa'],['retirada','Pró-labore'],['outro','Outro']];
+
+  document.getElementById('panel-body').innerHTML = `
+    <div class="panel-field">
+      <div class="panel-label">Valor</div>
+      <input class="panel-input panel-input-valor" id="lanc-valor" placeholder="0,00" type="number" min="0.01" step="0.01">
+    </div>
+    <div class="panel-field">
+      <div class="panel-label">Descrição</div>
+      <input class="panel-input" id="lanc-desc" placeholder="Ex: Recebimento, Compra peças...">
+    </div>
+    <div class="panel-field">
+      <div class="panel-label">Método</div>
+      <div class="panel-metodos">
+        ${['pix','dinheiro','debito','credito','boleto'].map(f => `
+          <div class="panel-metodo ${f===LANC_FORMA?'selected':''}" onclick="selLancForma(this,'${f}')">
+            <div class="panel-metodo-icon">${FORMA_ICON[f]||'◇'}</div>${FORMA_LABEL[f]||f}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+    <div class="panel-field">
+      <div class="panel-label">Categoria</div>
+      <div class="panel-cats">
+        ${cats.map(([v,l]) => `<div class="panel-cat ${v===LANC_CAT?'selected':''}" onclick="selLancCat(this,'${v}')">${l}</div>`).join('')}
+      </div>
+    </div>
+    <button class="panel-btn-submit ${tipo==='entrada'?'panel-btn-entrada':'panel-btn-saida'}" onclick="salvarLanc()">Confirmar ${tipo==='entrada'?'Entrada':'Saída'}</button>
+  `;
+
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('panel').classList.add('open');
+  setTimeout(() => document.getElementById('lanc-valor')?.focus(), 300);
+}
+
+function selLancForma(el, forma) {
+  el.parentElement.querySelectorAll('.panel-metodo').forEach(m=>m.classList.remove('selected'));
+  el.classList.add('selected');
+  LANC_FORMA = forma;
+}
+function selLancCat(el, cat) {
+  el.parentElement.querySelectorAll('.panel-cat').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  LANC_CAT = cat;
+}
+
+async function salvarLanc() {
+  const valor = parseFloat(document.getElementById('lanc-valor').value) || 0;
+  const desc = document.getElementById('lanc-desc').value.trim();
+  if (!desc || valor <= 0) { toast('Preencha valor e descrição','err'); return; }
+
+  if (_busy.salvarLanc) return;
+  _busy.salvarLanc = true;
+  try {
+  const { error } = await db.from('caixa').insert({
+    oficina_id: OFICINA_ID, tipo: LANC_TIPO, categoria: LANC_CAT,
+    descricao: desc, valor, forma_pagamento: LANC_FORMA, created_by: PERFIL.id
+  });
+
+  if (error) { toast('Erro: '+error.message,'err'); return; }
+  fecharPanel();
+  toast('Lançamento registrado');
+  carregar();
+  } catch(e) { toast('Erro inesperado','err'); console.error('[salvarLanc]',e); }
+  finally { _busy.salvarLanc = false; }
+}
+
+// ==================== EXCLUIR MOVIMENTAÇÃO ====================
+async function excluirMov(id) {
+  // Confirmação inline
+  if (!confirm('Excluir este lançamento?')) return;
+
+  if (_busy.exclMov) return;
+  _busy.exclMov = true;
+  try {
+  const { error } = await db.from('caixa').delete().eq('id', id).eq('oficina_id', OFICINA_ID);
+  if (error) { toast('Erro: '+error.message,'err'); return; }
+  toast('Lançamento excluído');
+  carregar();
+  } catch(e) { toast('Erro inesperado','err'); console.error('[excluirMov]',e); }
+  finally { _busy.exclMov = false; }
+}
+
+// ── PANEL / MODAL ──
+function fecharPanel() {
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('panel').classList.remove('open');
+}
+function fecharModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { fecharPanel(); fecharModal(); }
+});
+
+// ── LOGIN ──
+async function fazerLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const senha = document.getElementById('login-senha').value;
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('login-err');
+  if (!email || !senha) return;
+  btn.disabled = true; btn.textContent = 'Entrando...'; err.style.display = 'none';
+  const { error } = await db.auth.signInWithPassword({email, password:senha});
+  if (error) { err.style.display='block'; btn.disabled=false; btn.textContent='Entrar'; return; }
+  await init();
+}
+
+function sair() {
+  db.auth.signOut();
+  location.reload();
+}
+
+const _busy = {};
+
+// ── INIT ──
+async function init() {
+  db.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_OUT') window.location.href = 'login.html'; });
+  const { data:{session} } = await db.auth.getSession();
+  if (!session) { document.getElementById('login-overlay').style.display='flex'; return; }
+  document.getElementById('login-overlay').style.display = 'none';
+  document.getElementById('loading').style.display = 'flex';
+
+  const { data: perfil } = await db.from('profiles')
+    .select('*, oficinas(*)')
+    .eq('user_id', session.user.id).single();
+
+  if (!perfil) { toast('Perfil não encontrado','err'); return; }
+
+  PERFIL = perfil;
+  OFICINA_ID = perfil.oficina_id;
+  OFICINA = perfil.oficinas;
+
+  const nomeDisplay = perfil.nome || session.user.email;
+  document.getElementById('user-nome').textContent = nomeDisplay;
+  document.getElementById('user-role').textContent = perfil.role || '';
+  document.getElementById('user-avatar').textContent = nomeDisplay.charAt(0).toUpperCase();
+  document.getElementById('oficina-nome').textContent = perfil.oficinas?.nome || '';
+
+  // Carrega maquininhas
+  db.from('maquininhas').select('id,nome,taxa_debito,taxa_credito,taxa_parcelado_6,taxa_parcelado_12')
+    .eq('oficina_id', OFICINA_ID).eq('ativo', true).order('nome')
+    .then(r => { MAQUININHAS = r.data || []; });
+
+  await carregar();
+
+  // Realtime
+  db.channel('fin-v2-'+OFICINA_ID)
+    .on('postgres_changes',{event:'*',schema:'public',table:'caixa',filter:'oficina_id=eq.'+OFICINA_ID},()=>carregar())
+    .on('postgres_changes',{event:'*',schema:'public',table:'contas_receber',filter:'oficina_id=eq.'+OFICINA_ID},()=>{if(ABA==='receber')carregar();})
+    .subscribe();
+
+  document.getElementById('loading').style.display = 'none';
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro V2 — Kanban Card Test</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+
+/* ═══════════════════════════════════════
+   RPM PRO V2 — DESIGN TOKENS
+   ═══════════════════════════════════════ */
+:root{
+  /* Surfaces */
+  --bg:#09090B;
+  --sf:#111114;
+  --sf2:#18181C;
+  --sf3:#1F1F24;
+  --sf4:#27272D;
+
+  /* Borders */
+  --ln:rgba(255,255,255,0.04);
+  --ln2:rgba(255,255,255,0.08);
+  --ln3:rgba(255,255,255,0.14);
+
+  /* Industrial Colors */
+  --amber:#E8930C;
+  --amber-dim:rgba(232,147,12,0.1);
+  --orange:#EA580C;
+  --orange-dim:rgba(234,88,12,0.1);
+  --red:#FF3B30;
+  --red-dim:rgba(255,59,48,0.1);
+  --green:#30D158;
+  --green-dim:rgba(48,209,88,0.1);
+  --blue:#0A84FF;
+  --blue-dim:rgba(10,132,255,0.1);
+  --purple:#7C3AED;
+  --purple-dim:rgba(124,58,237,0.1);
+  --cyan:#00C7BE;
+
+  /* Text */
+  --w:#F0F0F2;
+  --w2:rgba(255,255,255,0.6);
+  --w3:rgba(255,255,255,0.32);
+  --w4:rgba(255,255,255,0.14);
+
+  /* Fonts */
+  --mono:'JetBrains Mono',monospace;
+  --head:'Barlow Condensed',sans-serif;
+  --body:'Space Grotesk',sans-serif;
+
+  /* Radius (industrial — minimo) */
+  --r:3px;
+  --r2:4px;
+}
+
+body{
+  background:var(--bg);
+  color:var(--w);
+  font-family:var(--body);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  padding:40px;
+}
+
+/* ═══════════════════════════════════════
+   KANBAN BOARD
+   ═══════════════════════════════════════ */
+.kanban-board{
+  display:flex;
+  gap:8px;
+  overflow-x:auto;
+  padding-bottom:20px;
+  scrollbar-width:thin;
+  scrollbar-color:var(--sf3) transparent;
+}
+.kanban-board::-webkit-scrollbar{height:4px;}
+.kanban-board::-webkit-scrollbar-thumb{background:var(--sf3);border-radius:2px;}
+
+.kanban-col{
+  min-width:280px;
+  max-width:320px;
+  flex-shrink:0;
+  background:var(--sf);
+  border:1px solid var(--ln2);
+  border-radius:var(--r2);
+}
+
+.kanban-col-header{
+  padding:12px 14px;
+  border-bottom:1px solid var(--ln2);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.kanban-col-title{
+  font-family:var(--head);
+  font-size:13px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:2px;
+  color:var(--w3);
+}
+.kanban-col-count{
+  font-family:var(--mono);
+  font-size:14px;
+  font-weight:700;
+  min-width:24px;
+  height:24px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:var(--w4);
+  border-radius:var(--r);
+}
+
+.kanban-col-body{
+  padding:8px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  min-height:100px;
+}
+
+/* Status indicator bar on column header */
+.kanban-col[data-status="entrada"] .kanban-col-header{border-top:3px solid var(--blue);}
+.kanban-col[data-status="diagnostico"] .kanban-col-header{border-top:3px solid var(--purple);}
+.kanban-col[data-status="orcamento"] .kanban-col-header{border-top:3px solid var(--amber);}
+.kanban-col[data-status="aprovada"] .kanban-col-header{border-top:3px solid var(--cyan);}
+.kanban-col[data-status="aguardando_peca"] .kanban-col-header{border-top:3px solid var(--red);}
+.kanban-col[data-status="execucao"] .kanban-col-header{border-top:3px solid var(--orange);}
+.kanban-col[data-status="pronto"] .kanban-col-header{border-top:3px solid var(--green);}
+
+/* ═══════════════════════════════════════
+   VEHICLE CARD — O CORAÇÃO DO SISTEMA
+   ═══════════════════════════════════════ */
+.v-card{
+  background:var(--sf2);
+  border:1px solid var(--ln2);
+  border-radius:var(--r2);
+  overflow:hidden;
+  cursor:pointer;
+  transition:border-color .12s;
+  position:relative;
+}
+.v-card:hover{border-color:var(--ln3);}
+.v-card:active{background:var(--sf3);}
+
+/* SLA BAR — barra fina no topo que muda de cor com o tempo */
+.v-card-sla{
+  height:3px;
+  width:100%;
+  background:var(--sf3);
+}
+.v-card-sla-fill{
+  height:100%;
+  transition:width .3s;
+}
+.sla-ok{background:var(--green);}
+.sla-warn{background:var(--amber);}
+.sla-danger{background:var(--red);}
+.sla-critical{background:var(--red);animation:slaPulse 1s infinite;}
+@keyframes slaPulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+/* DRAG HANDLE — 6 pontinhos classico */
+.v-card-grip{
+  position:absolute;
+  top:10px;
+  right:10px;
+  width:18px;
+  height:22px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:3px;
+  align-content:center;
+  justify-items:center;
+  opacity:.25;
+  transition:opacity .15s;
+  cursor:grab;
+}
+.v-card:hover .v-card-grip{opacity:.5;}
+.v-card-grip:active{cursor:grabbing;opacity:.7;}
+.v-card-grip span{display:block;width:4px;height:4px;background:var(--w2);border-radius:50%;}
+
+.v-card-body{
+  padding:10px 12px 12px;
+}
+
+/* ═══════════════════════════════════════
+   PLACA MERCOSUL — Componente Visual
+   ═══════════════════════════════════════ */
+.placa{
+  display:inline-flex;
+  flex-direction:column;
+  background:#FFFFFF;
+  border-radius:3px;
+  overflow:hidden;
+  border:2px solid #C8C8C8;
+  margin-bottom:8px;
+  line-height:1;
+}
+.placa-topo{
+  background:#003399;
+  padding:2px 8px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:6px;
+}
+.placa-topo-br{
+  font-family:var(--mono);
+  font-size:7px;
+  font-weight:700;
+  color:#fff;
+  letter-spacing:.5px;
+}
+.placa-topo-flag{
+  display:flex;
+  gap:1px;
+}
+.placa-topo-flag span{
+  display:block;
+  width:3px;
+  height:6px;
+  border-radius:1px;
+}
+.placa-codigo{
+  padding:4px 10px 5px;
+  font-family:var(--mono);
+  font-size:22px;
+  font-weight:800;
+  color:#1A1A1A;
+  letter-spacing:3px;
+  text-align:center;
+  line-height:1;
+}
+
+/* Variante compacta para listas */
+.placa.sm .placa-topo{padding:1px 6px;}
+.placa.sm .placa-topo-br{font-size:6px;}
+.placa.sm .placa-codigo{font-size:16px;padding:3px 8px 4px;letter-spacing:2px;}
+
+/* ═══════════════════════════════════════
+   CARD CONTENT
+   ═══════════════════════════════════════ */
+.v-card-veiculo{
+  font-family:var(--head);
+  font-size:15px;
+  font-weight:700;
+  color:var(--w);
+  text-transform:uppercase;
+  letter-spacing:.3px;
+  margin-bottom:4px;
+}
+.v-card-cliente{
+  font-family:var(--body);
+  font-size:12px;
+  color:var(--w2);
+  margin-bottom:8px;
+}
+.v-card-footer{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:6px;
+}
+.v-card-valor{
+  font-family:var(--mono);
+  font-size:14px;
+  font-weight:700;
+  color:var(--amber);
+}
+.v-card-mecanico{
+  font-family:var(--body);
+  font-size:11px;
+  color:#B0B0B0;
+  display:flex;
+  align-items:center;
+  gap:4px;
+}
+.v-card-mecanico::before{
+  content:'';
+  width:6px;
+  height:6px;
+  background:var(--green);
+  border-radius:50%;
+  flex-shrink:0;
+}
+
+/* TAGS */
+.v-card-tags{
+  display:flex;
+  gap:4px;
+  margin-top:8px;
+  flex-wrap:wrap;
+}
+.v-tag{
+  font-family:var(--head);
+  font-size:10px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.8px;
+  padding:2px 6px;
+  border-radius:2px;
+}
+.v-tag-danger{background:var(--red-dim);color:var(--red);}
+.v-tag-warn{background:var(--amber-dim);color:var(--amber);}
+.v-tag-info{background:var(--blue-dim);color:var(--blue);}
+.v-tag-os{
+  font-family:var(--mono);
+  font-size:11px;
+  font-weight:600;
+  color:var(--w3);
+}
+
+/* ═══════════════════════════════════════
+   DEMO HEADER
+   ═══════════════════════════════════════ */
+.demo-header{
+  margin-bottom:32px;
+  padding-bottom:20px;
+  border-bottom:1px solid var(--ln2);
+}
+.demo-title{
+  font-family:var(--head);
+  font-size:28px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:1px;
+}
+.demo-title span{color:var(--amber);}
+.demo-sub{
+  font-family:var(--body);
+  font-size:13px;
+  color:var(--w3);
+  margin-top:4px;
+}
+.demo-section{
+  margin-top:40px;
+  margin-bottom:16px;
+  font-family:var(--head);
+  font-size:14px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:2px;
+  color:var(--w3);
+  padding-bottom:8px;
+  border-bottom:1px solid var(--ln);
+}
+</style>
+</head>
+<body>
+
+<div class="demo-header">
+  <div class="demo-title">RPM <span>PRO</span> V2</div>
+  <div class="demo-sub">Kanban Card Component — Placa Mercosul + SLA + Tipografia Industrial</div>
+</div>
+
+<!-- ═══════════ COMPONENTE: PLACA MERCOSUL ═══════════ -->
+<div class="demo-section">Componente: Placa Mercosul</div>
+<div style="display:flex;gap:20px;align-items:flex-end;margin-bottom:40px;">
+  <!-- Normal -->
+  <div>
+    <div style="font-size:11px;color:var(--w3);margin-bottom:8px;font-family:var(--body);">Normal</div>
+    <div class="placa">
+      <div class="placa-topo">
+        <div class="placa-topo-flag">
+          <span style="background:#009739;"></span>
+          <span style="background:#FEDD00;"></span>
+          <span style="background:#012169;"></span>
+        </div>
+        <div class="placa-topo-br">BRASIL</div>
+      </div>
+      <div class="placa-codigo">KGS3171</div>
+    </div>
+  </div>
+  <!-- Compacta -->
+  <div>
+    <div style="font-size:11px;color:var(--w3);margin-bottom:8px;font-family:var(--body);">Compacta (listas)</div>
+    <div class="placa sm">
+      <div class="placa-topo">
+        <div class="placa-topo-flag">
+          <span style="background:#009739;"></span>
+          <span style="background:#FEDD00;"></span>
+          <span style="background:#012169;"></span>
+        </div>
+        <div class="placa-topo-br">BRASIL</div>
+      </div>
+      <div class="placa-codigo">PGA2J53</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLA BARS ═══════════ -->
+<div class="demo-section">Barra de SLA (tempo na etapa)</div>
+<div style="display:flex;gap:20px;margin-bottom:40px;">
+  <div style="width:280px;">
+    <div style="font-size:11px;color:var(--w3);margin-bottom:6px;font-family:var(--body);">OK (&lt;24h)</div>
+    <div style="height:3px;background:var(--sf3);border-radius:2px;overflow:hidden;"><div class="sla-ok" style="width:30%;height:100%;"></div></div>
+  </div>
+  <div style="width:280px;">
+    <div style="font-size:11px;color:var(--w3);margin-bottom:6px;font-family:var(--body);">Atenção (24-48h)</div>
+    <div style="height:3px;background:var(--sf3);border-radius:2px;overflow:hidden;"><div class="sla-warn" style="width:65%;height:100%;"></div></div>
+  </div>
+  <div style="width:280px;">
+    <div style="font-size:11px;color:var(--w3);margin-bottom:6px;font-family:var(--body);">Critico (&gt;48h)</div>
+    <div style="height:3px;background:var(--sf3);border-radius:2px;overflow:hidden;"><div class="sla-critical" style="width:95%;height:100%;"></div></div>
+  </div>
+</div>
+
+<!-- ═══════════ KANBAN BOARD COMPLETO ═══════════ -->
+<div class="demo-section">Kanban — Patio (Desktop)</div>
+
+<div class="kanban-board">
+
+  <!-- ENTRADA -->
+  <div class="kanban-col" data-status="entrada">
+    <div class="kanban-col-header">
+      <div class="kanban-col-title">Entrada</div>
+      <div class="kanban-col-count">1</div>
+    </div>
+    <div class="kanban-col-body">
+      <div class="v-card">
+        <div class="v-card-sla"><div class="v-card-sla-fill sla-ok" style="width:15%;"></div></div>
+        <div class="v-card-grip"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="v-card-body">
+          <div class="placa">
+            <div class="placa-topo">
+              <div class="placa-topo-flag"><span style="background:#009739;"></span><span style="background:#FEDD00;"></span><span style="background:#012169;"></span></div>
+              <div class="placa-topo-br">BRASIL</div>
+            </div>
+            <div class="placa-codigo">ABC1D23</div>
+          </div>
+          <div class="v-card-veiculo">Fiat Toro 2022</div>
+          <div class="v-card-cliente">Carlos Eduardo Silva</div>
+          <div class="v-card-footer">
+            <span class="v-tag-os">#14</span>
+            <span class="v-card-valor">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DIAGNOSTICO -->
+  <div class="kanban-col" data-status="diagnostico">
+    <div class="kanban-col-header">
+      <div class="kanban-col-title">Diagnóstico</div>
+      <div class="kanban-col-count">2</div>
+    </div>
+    <div class="kanban-col-body">
+      <div class="v-card">
+        <div class="v-card-sla"><div class="v-card-sla-fill sla-warn" style="width:55%;"></div></div>
+        <div class="v-card-grip"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="v-card-body">
+          <div class="placa">
+            <div class="placa-topo">
+              <div class="placa-topo-flag"><span style="background:#009739;"></span><span style="background:#FEDD00;"></span><span style="background:#012169;"></span></div>
+              <div class="placa-topo-br">BRASIL</div>
+            </div>
+            <div class="placa-codigo">PGA2J53</div>
+          </div>
+          <div class="v-card-veiculo">Hyundai HB20 2020</div>
+          <div class="v-card-cliente">Romario da Silva</div>
+          <div class="v-card-footer">
+            <span class="v-tag-os">#12</span>
+            <span class="v-card-valor">—</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="v-card">
+        <div class="v-card-sla"><div class="v-card-sla-fill sla-ok" style="width:20%;"></div></div>
+        <div class="v-card-grip"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="v-card-body">
+          <div class="placa">
+            <div class="placa-topo">
+              <div class="placa-topo-flag"><span style="background:#009739;"></span><span style="background:#FEDD00;"></span><span style="background:#012169;"></span></div>
+              <div class="placa-topo-br">BRASIL</div>
+            </div>
+            <div class="placa-codigo">PCJ2843</div>
+          </div>
+          <div class="v-card-veiculo">Renault Kwid 2021</div>
+          <div class="v-card-cliente">Dolphin Veiculos</div>
+          <div class="v-card-footer">
+            <span class="v-tag-os">#11</span>
+            <span class="v-card-valor">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ORÇAMENTO -->
+  <div class="kanban-col" data-status="orcamento">
+    <div class="kanban-col-header">
+      <div class="kanban-col-title">Orçamento</div>
+      <div class="kanban-col-count">2</div>
+    </div>
+    <div class="kanban-col-body">
+      <div class="v-card">
+        <div class="v-card-sla"><div class="v-card-sla-fill sla-warn" style="width:50%;"></div></div>
+        <div class="v-card-grip"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="v-card-body">
+          <div class="placa">
+            <div class="placa-topo">
+              <div class="placa-topo-flag"><span style="background:#009739;"></span><span style="background:#FEDD00;"></span><span style="background:#012169;"></span></div>
+              <div class="placa-topo-br">BRASIL</div>
+            </div>
+            <div class="placa-codigo">RZM8H30</div>
+          </div>
+          <div class="v-card-veiculo">Renault Sandero 2020</div>
+          <div class="v-card-cliente">Mercio Ramos</div>
+          <div class="v-card-footer">
+            <span class="v-tag-os">#15</span>
+            <span class="v-card-valor">R$ 1.740,00</span>
+          </div>
+          <div class="v-card-tags">
+            <span class="v-tag" style="background:var(--amber-dim);color:var(--amber);">AGUARDANDO RESPOSTA</span>
+          </div>
+          <span class="v-card-mecanico" style="margin-top:6px;">Marcondes Jr</span>
+        </div>
+      </div>
+
+      <div class="v-card">
+        <div class="v-card-sla"><div class="v-card-sla-fill sla-critical" style="width:85%;"></div></div>
+        <div class="v-card-grip"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="v-card-body">
+          <div class="placa">
+            <div class="placa-topo">
+              <div class="placa-topo-flag"><span style="background:#009739;"></span><span style="background:#FEDD00;"></span><span style="background:#012169;"></span></div>
+              <div class="placa-topo-br">BRASIL</div>
+            </div>
+            <div class="placa-codigo">QUT8G42</div>
+          </div>
+          <div class="v-card-veiculo">VW Gol G5 2014</div>
+          <div class="v-card-cliente">Marcio Lopes</div>
+          <div class="v-card-footer">
+            <span class="v-tag-os">#10</span>
+            <span class="v-card-valor">R$ 487,00</span>
+          </div>
+          <div class="v-card-tags">
+            <span class="v-tag v-tag-danger">3 DIAS SEM RESPOSTA</span>
+          </div>
+          <span class="v-card-mecanico" style="margin-top:6px;">Evandro</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- APROVADA -->
+  <div class="kanban-col" data-status="aprovada">
+    <div class="kanban-col-header">
+      <div class="kanban-col-title">Aprovada</div>
+      <div class="kanban-col-count">1</div>
+    </div>
+    <div class="kanban-col-body">
+      <div class="v-card">
+        <div class="v-card-sla"><div class="v-card-sla-fill sla-ok" style="width:10%;"></div></div>
+        <div class="v-card-grip"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="v-card-body">
+          <div class="placa">
+            <div class="placa-topo">
+              <div class="placa-topo-flag"><span style="background:#009739;"></span><span style="background:#FEDD00;"></span><span style="background:#012169;"></span></div>
+              <div class="placa-topo-br">BRASIL</div>
+            </div>
+            <div class="placa-codigo">PGK0E94</div>
+          </div>
+          <div class="v-card-veiculo">Peugeot 208 2022</div>
+          <div class="v-card-cliente">Sandra Oliveira</div>
+          <div class="v-card-footer">
+            <span class="v-tag-os">#16</span>
+            <span class="v-card-valor">R$ 595,00</span>
+          </div>
+          <div class="v-card-tags">
+            <span class="v-tag" style="background:var(--green-dim);color:var(--green);">CLIENTE APROVOU</span>
+          </div>
+          <span class="v-card-mecanico" style="margin-top:6px;">Sergio</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXECUÇÃO -->
+  <div class="kanban-col" data-status="execucao">
+    <div class="kanban-col-header">
+      <div class="kanban-col-title">Execução</div>
+      <div class="kanban-col-count">1</div>
+    </div>
+    <div class="kanban-col-body">
+      <div class="v-card">
+        <div class="v-card-sla"><div class="v-card-sla-fill sla-danger" style="width:80%;"></div></div>
+        <div class="v-card-grip"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="v-card-body">
+          <div class="placa">
+            <div class="placa-topo">
+              <div class="placa-topo-flag"><span style="background:#009739;"></span><span style="background:#FEDD00;"></span><span style="background:#012169;"></span></div>
+              <div class="placa-topo-br">BRASIL</div>
+            </div>
+            <div class="placa-codigo">KGS3171</div>
+          </div>
+          <div class="v-card-veiculo">Fiat Strada 2019</div>
+          <div class="v-card-cliente">Antonio Rilke de Almeida Matos</div>
+          <div class="v-card-footer">
+            <span class="v-tag-os">#7</span>
+            <span class="v-card-valor">R$ 600,00</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
+            <span class="v-card-mecanico">Daniel</span>
+            <span style="font-family:var(--mono);font-size:10px;color:var(--w3);">3d 14h</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AG. PEÇA -->
+  <div class="kanban-col" data-status="aguardando_peca">
+    <div class="kanban-col-header">
+      <div class="kanban-col-title">Ag. Peça</div>
+      <div class="kanban-col-count">1</div>
+    </div>
+    <div class="kanban-col-body">
+      <div class="v-card">
+        <div class="v-card-sla"><div class="v-card-sla-fill sla-critical" style="width:95%;"></div></div>
+        <div class="v-card-grip"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="v-card-body">
+          <div class="placa">
+            <div class="placa-topo">
+              <div class="placa-topo-flag"><span style="background:#009739;"></span><span style="background:#FEDD00;"></span><span style="background:#012169;"></span></div>
+              <div class="placa-topo-br">BRASIL</div>
+            </div>
+            <div class="placa-codigo">OFF6D14</div>
+          </div>
+          <div class="v-card-veiculo">Honda Civic 1.8</div>
+          <div class="v-card-cliente">Michael Freitas</div>
+          <div class="v-card-footer">
+            <span class="v-tag-os">#13</span>
+            <span class="v-card-valor">R$ 450,00</span>
+          </div>
+          <div class="v-card-tags">
+            <span class="v-tag v-tag-danger">2 DIAS PARADO</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
+            <span class="v-card-mecanico">Evandro</span>
+            <span style="font-family:var(--mono);font-size:10px;color:var(--red);">52h</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRONTO -->
+  <div class="kanban-col" data-status="pronto">
+    <div class="kanban-col-header">
+      <div class="kanban-col-title">Pronto</div>
+      <div class="kanban-col-count">2</div>
+    </div>
+    <div class="kanban-col-body">
+      <div class="v-card">
+        <div class="v-card-sla"><div class="v-card-sla-fill sla-warn" style="width:60%;"></div></div>
+        <div class="v-card-grip"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="v-card-body">
+          <div class="placa">
+            <div class="placa-topo">
+              <div class="placa-topo-flag"><span style="background:#009739;"></span><span style="background:#FEDD00;"></span><span style="background:#012169;"></span></div>
+              <div class="placa-topo-br">BRASIL</div>
+            </div>
+            <div class="placa-codigo">PGW3H28</div>
+          </div>
+          <div class="v-card-veiculo">Toyota Corolla 2021</div>
+          <div class="v-card-cliente">Adilson Ramos</div>
+          <div class="v-card-footer">
+            <span class="v-tag-os">#9</span>
+            <span class="v-card-valor">R$ 821,80</span>
+          </div>
+          <div class="v-card-tags">
+            <span class="v-tag v-tag-danger">SEM PAGAMENTO</span>
+          </div>
+          <span class="v-card-mecanico" style="margin-top:6px;">Evandro</span>
+        </div>
+      </div>
+
+      <div class="v-card">
+        <div class="v-card-sla"><div class="v-card-sla-fill sla-ok" style="width:25%;"></div></div>
+        <div class="v-card-grip"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="v-card-body">
+          <div class="placa">
+            <div class="placa-topo">
+              <div class="placa-topo-flag"><span style="background:#009739;"></span><span style="background:#FEDD00;"></span><span style="background:#012169;"></span></div>
+              <div class="placa-topo-br">BRASIL</div>
+            </div>
+            <div class="placa-codigo">KFY1I71</div>
+          </div>
+          <div class="v-card-veiculo">Fiat Toro Ranch</div>
+          <div class="v-card-cliente">PrintJet</div>
+          <div class="v-card-footer">
+            <span class="v-tag-os">#6</span>
+            <span class="v-card-valor">R$ 147,80</span>
+          </div>
+          <div class="v-card-tags">
+            <span class="v-tag v-tag-danger">SEM PAGAMENTO</span>
+          </div>
+          <span class="v-card-mecanico" style="margin-top:6px;">Clodoaldo</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════ TIPOGRAFIA ═══════════ -->
+<div class="demo-section" style="margin-top:48px;">Hierarquia Tipografica</div>
+<div style="display:flex;gap:40px;flex-wrap:wrap;margin-bottom:40px;">
+  <div>
+    <div style="font-size:11px;color:var(--w3);margin-bottom:8px;font-family:var(--body);">JetBrains Mono — Dados Criticos</div>
+    <div style="font-family:var(--mono);font-size:28px;font-weight:700;color:var(--amber);">R$ 12.450,00</div>
+    <div style="font-family:var(--mono);font-size:20px;font-weight:600;margin-top:4px;">OS #0247</div>
+    <div style="font-family:var(--mono);font-size:16px;color:var(--w2);margin-top:4px;">KGS-3171</div>
+  </div>
+  <div>
+    <div style="font-size:11px;color:var(--w3);margin-bottom:8px;font-family:var(--body);">Barlow Condensed — Titulos e Status</div>
+    <div style="font-family:var(--head);font-size:28px;font-weight:900;text-transform:uppercase;letter-spacing:1px;">EXECUÇÃO</div>
+    <div style="font-family:var(--head);font-size:20px;font-weight:700;text-transform:uppercase;margin-top:4px;">FIAT STRADA 2019</div>
+    <div style="font-family:var(--head);font-size:14px;font-weight:600;color:var(--w3);text-transform:uppercase;letter-spacing:2px;margin-top:4px;">AGUARDANDO PEÇA</div>
+  </div>
+  <div>
+    <div style="font-size:11px;color:var(--w3);margin-bottom:8px;font-family:var(--body);">Space Grotesk — Textos e Nomes</div>
+    <div style="font-family:var(--body);font-size:16px;font-weight:500;">Antonio Rilke de Almeida Matos</div>
+    <div style="font-family:var(--body);font-size:14px;color:var(--w2);margin-top:4px;">Troca de oleo + filtro + alinhamento</div>
+    <div style="font-family:var(--body);font-size:12px;color:var(--w3);margin-top:4px;">Entrada: 28/03/2026 — Mecanico: Daniel</div>
+  </div>
+</div>
+
+</body>
+</html>

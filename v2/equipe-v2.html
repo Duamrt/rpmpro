@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro V2 — Equipe</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#09090B;--sf:#111114;--sf2:#18181C;--sf3:#1F1F24;--sf4:#27272D;
+  --ln:rgba(255,255,255,0.04);--ln2:rgba(255,255,255,0.08);--ln3:rgba(255,255,255,0.14);
+  --amber:#E8930C;--amber-dim:rgba(232,147,12,0.1);
+  --orange:#EA580C;--orange-dim:rgba(234,88,12,0.12);
+  --red:#FF3B30;--red-dim:rgba(255,59,48,0.08);
+  --green:#30D158;--green-dim:rgba(48,209,88,0.08);
+  --blue:#0A84FF;--blue-dim:rgba(10,132,255,0.1);
+  --cyan:#00C7BE;
+  --w:#F0F0F2;--w2:rgba(255,255,255,0.6);--w3:rgba(255,255,255,0.32);--w4:rgba(255,255,255,0.14);
+  --mono:'JetBrains Mono',monospace;--head:'Barlow Condensed',sans-serif;--body:'Space Grotesk',sans-serif;
+  --r:3px;--r2:4px;
+}
+body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100vh;-webkit-font-smoothing:antialiased;overflow:hidden;}
+.app{display:flex;height:100vh;overflow:hidden;}
+
+/* ── SIDEBAR ── */
+.sidebar{width:220px;flex-shrink:0;background:var(--sf);border-right:1px solid var(--ln2);display:flex;flex-direction:column;height:100vh;}
+.sidebar-logo{padding:20px 16px 16px;border-bottom:1px solid var(--ln2);}
+.sidebar-logo-brand{font-family:var(--head);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.sidebar-logo-brand span{color:var(--amber);}
+.sidebar-logo-oficina{font-family:var(--body);font-size:11px;color:var(--w3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sidebar-nav{flex:1;overflow-y:auto;padding:12px 0;scrollbar-width:none;}
+.sidebar-nav::-webkit-scrollbar{display:none;}
+.nav-section{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);padding:10px 16px 6px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 16px;font-family:var(--body);font-size:13px;font-weight:500;color:var(--w3);cursor:pointer;transition:all .12s;text-decoration:none;}
+.nav-item:hover{color:var(--w);background:var(--sf2);}
+.nav-item.active{color:var(--amber);background:var(--amber-dim);border-left:2px solid var(--amber);}
+.nav-item .nav-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0;}
+.sidebar-footer{padding:16px;border-top:1px solid var(--ln2);}
+.user-info{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.user-avatar{width:34px;height:34px;border-radius:var(--r);background:var(--amber-dim);border:1px solid rgba(232,147,12,0.3);display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:14px;font-weight:800;color:var(--amber);flex-shrink:0;}
+.user-details{min-width:0;}
+.user-name{font-family:var(--body);font-size:13px;font-weight:600;color:var(--w);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.user-role{font-family:var(--mono);font-size:10px;color:var(--w3);text-transform:uppercase;letter-spacing:.5px;}
+.btn-logout{width:100%;font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--w3);background:none;border:1px solid var(--ln3);padding:7px;border-radius:var(--r);cursor:pointer;transition:all .15s;}
+.btn-logout:hover{color:var(--w);border-color:var(--w3);}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.main-topbar{height:48px;background:var(--sf);border-bottom:1px solid var(--ln2);display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0;}
+.main-title{font-family:var(--head);font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:2px;}
+.main-content{flex:1;overflow-y:auto;padding:20px;scrollbar-width:thin;scrollbar-color:var(--sf3) transparent;}
+.main-content::-webkit-scrollbar{width:4px;}
+.main-content::-webkit-scrollbar-thumb{background:var(--sf3);border-radius:2px;}
+
+/* ── BTN ── */
+.btn-add{padding:8px 18px;background:var(--amber);border:none;border-radius:var(--r2);font-family:var(--head);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#000;cursor:pointer;transition:all .12s;display:flex;align-items:center;gap:6px;}
+.btn-add:hover{background:#F5A623;}
+.btn-add:active{transform:scale(.97);}
+
+/* ── SUMMARY ── */
+.summary{display:flex;gap:6px;margin-bottom:20px;}
+.summary-item{flex:1;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:14px;text-align:center;}
+.summary-val{font-family:var(--mono);font-size:22px;font-weight:800;letter-spacing:-1px;}
+.summary-lbl{font-family:var(--head);font-size:10px;font-weight:600;color:var(--w3);text-transform:uppercase;letter-spacing:1.5px;margin-top:2px;}
+
+/* ── MEMBER CARDS ── */
+.member-card{display:grid;grid-template-columns:50px 1fr 100px 80px 70px 140px;gap:10px;align-items:center;background:var(--sf);border:2px solid var(--ln2);border-radius:var(--r2);padding:14px 16px;margin-bottom:5px;transition:all .12s;cursor:pointer;}
+.member-card:hover{border-color:var(--ln3);background:var(--sf2);}
+.member-avatar{width:44px;height:44px;border-radius:var(--r2);background:var(--sf3);border:1px solid var(--ln2);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:14px;font-weight:700;color:var(--w3);text-transform:uppercase;letter-spacing:2px;}
+.member-info{min-width:0;}
+.member-nome{font-family:var(--head);font-size:17px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.member-email{font-family:var(--body);font-size:11px;color:var(--w3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.member-tel{font-family:var(--mono);font-size:10px;color:var(--w4);margin-top:1px;}
+.member-role{font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--w2);text-align:center;}
+.member-comissao{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--green);text-align:center;}
+.member-status{text-align:center;}
+.badge-ativo{font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:4px 10px;border-radius:2px;}
+.badge-ativo.on{background:var(--green-dim);color:var(--green);border:1px solid rgba(48,209,88,0.2);}
+.badge-ativo.off{background:var(--orange-dim);color:var(--orange);border:1px solid rgba(234,88,12,0.2);}
+.member-actions{display:flex;gap:4px;justify-content:flex-end;flex-wrap:wrap;}
+.btn-sm{padding:5px 10px;font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;border-radius:2px;border:1px solid var(--ln3);background:var(--sf2);color:var(--w3);cursor:pointer;transition:all .12s;white-space:nowrap;}
+.btn-sm:hover{color:var(--w);border-color:var(--w3);}
+.btn-sm.primary{background:var(--amber-dim);color:var(--amber);border-color:rgba(232,147,12,0.3);}
+.btn-sm.primary:hover{background:var(--amber);color:#000;}
+.btn-sm.danger{color:var(--red);border-color:rgba(255,59,48,0.2);}
+.btn-sm.danger:hover{background:var(--red-dim);border-color:var(--red);}
+
+.member-head{display:none;}
+
+/* ── SIDE PANEL ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:900;opacity:0;pointer-events:none;transition:opacity .25s;}
+.overlay.open{opacity:1;pointer-events:auto;}
+.side-panel{position:fixed;top:0;right:0;bottom:0;width:480px;max-width:100%;background:#141417;border-left:1px solid var(--ln2);z-index:1000;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden;}
+.side-panel.open{transform:translateX(0);}
+.panel-head{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--ln2);}
+.panel-title{font-family:var(--head);font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.panel-title span{color:var(--amber);}
+.panel-close{width:34px;height:34px;background:var(--sf3);border:1px solid var(--ln2);border-radius:var(--r);color:var(--w3);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.panel-close:hover{background:var(--sf4);color:var(--w);}
+.panel-body{flex:1;overflow-y:auto;padding:22px;}
+.panel-section{margin-bottom:20px;}
+.panel-section-title{font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid var(--ln);}
+
+/* ── FORM FIELDS ── */
+.field{margin-bottom:14px;}
+.field label{display:block;font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);margin-bottom:5px;}
+.field input,.field select{width:100%;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:10px 14px;color:var(--w);font-family:var(--body);font-size:14px;outline:none;transition:border-color .15s;}
+.field input:focus,.field select:focus{border-color:var(--amber);}
+.field input::placeholder{color:var(--w4);}
+.field select{cursor:pointer;}
+.field select option{background:var(--sf);color:var(--w);}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.field-hint{font-family:var(--body);font-size:11px;color:var(--w4);margin-top:4px;}
+
+.panel-footer{padding:16px 22px;border-top:1px solid var(--ln2);display:flex;gap:8px;justify-content:flex-end;}
+.btn-panel{padding:10px 22px;font-family:var(--head);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;border-radius:var(--r2);border:none;cursor:pointer;transition:all .12s;}
+.btn-panel.cancel{background:var(--sf2);border:1px solid var(--ln3);color:var(--w3);}
+.btn-panel.cancel:hover{color:var(--w);border-color:var(--w3);}
+.btn-panel.save{background:var(--amber);color:#000;}
+.btn-panel.save:hover{background:#F5A623;}
+.btn-panel.delete{background:var(--red-dim);border:1px solid rgba(255,59,48,0.3);color:var(--red);}
+.btn-panel.delete:hover{background:var(--red);color:#fff;}
+
+/* ── LOGIN ── */
+.login-overlay{position:fixed;inset:0;z-index:2000;background:var(--bg);display:none;align-items:center;justify-content:center;}
+.login-box{width:360px;padding:40px;text-align:center;}
+.login-brand{font-family:var(--head);font-size:36px;font-weight:900;text-transform:uppercase;margin-bottom:28px;}
+.login-brand span{color:var(--amber);}
+.login-input{width:100%;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px 16px;color:var(--w);font-family:var(--body);font-size:14px;margin-bottom:12px;outline:none;transition:border-color .15s;}
+.login-input:focus{border-color:var(--amber);}
+.login-input::placeholder{color:var(--w4);}
+.login-btn{width:100%;padding:14px;background:var(--amber);border:none;border-radius:var(--r2);font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#000;cursor:pointer;}
+.login-err{color:var(--red);font-size:12px;margin-top:8px;display:none;}
+
+/* ── LOADING ── */
+.loading-overlay{position:fixed;inset:0;z-index:1500;background:var(--bg);display:none;align-items:center;justify-content:center;}
+.loading-overlay span{font-family:var(--head);font-size:20px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:var(--amber);animation:pulse 1.2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+/* ── TOAST ── */
+.toast-container{position:fixed;top:16px;right:16px;z-index:3000;display:flex;flex-direction:column;gap:6px;}
+.toast{padding:10px 18px;border-radius:var(--r2);font-family:var(--body);font-size:13px;font-weight:500;color:#000;background:var(--green);animation:toastIn .3s;max-width:340px;}
+.toast.err{background:var(--red);color:#fff;}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:none;}}
+
+.empty-state{text-align:center;padding:60px 20px;color:var(--w3);}
+.empty-state .icon{font-size:48px;margin-bottom:12px;}
+.empty-state h3{font-family:var(--head);font-size:20px;font-weight:700;text-transform:uppercase;color:var(--w2);margin-bottom:6px;}
+.empty-state p{font-size:13px;color:var(--w4);}
+
+@media(max-width:768px){
+  .sidebar{display:none;}
+  .summary{flex-wrap:wrap;}
+  .summary-item{flex:1 1 45%;min-width:0;}
+  .member-card{grid-template-columns:1fr;gap:8px;padding:14px;}
+  .member-head{display:flex;align-items:center;gap:10px;}
+  .member-avatar.desktop{display:none;}
+  .member-role,.member-comissao,.member-status{text-align:left;}
+  .member-actions{justify-content:flex-start;margin-top:6px;}
+  .side-panel{width:100%;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-overlay" id="login-overlay">
+  <div class="login-box">
+    <div class="login-brand">RPM <span>PRO</span></div>
+    <input class="login-input" type="email" id="login-email" placeholder="email@oficina.com">
+    <input class="login-input" type="password" id="login-senha" placeholder="••••••••" onkeydown="if(event.key==='Enter')fazerLogin()">
+    <button class="login-btn" id="login-btn" onclick="fazerLogin()">Entrar</button>
+    <div class="login-err" id="login-err">Email ou senha incorretos</div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loading" style="display:flex;"><span>Carregando...</span></div>
+
+<!-- TOAST -->
+<div class="toast-container" id="toasts"></div>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-brand">RPM <span>PRO</span></div>
+      <div class="sidebar-logo-oficina" id="oficina-nome"></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Operacao</div>
+      <a class="nav-item" href="kanban-v2.html"><span class="nav-icon">⬛</span>Patio</a>
+      <a class="nav-item" href="dashboard-v2.html"><span class="nav-icon">◈</span>Dashboard</a>
+      <div class="nav-section">Atendimento</div>
+      <a class="nav-item" href="fila-espera-v2.html"><span class="nav-icon">⏳</span>Fila de Espera</a>
+      <a class="nav-item" href="os-list-v2.html"><span class="nav-icon">📋</span>Ordens de Servico</a>
+      <a class="nav-item" href="execucao-os-v2.html"><span class="nav-icon">🔧</span>Execucao OS</a>
+      <a class="nav-item" href="clientes-v2.html"><span class="nav-icon">👥</span>Clientes</a>
+      <a class="nav-item" href="veiculos-v2.html"><span class="nav-icon">🚗</span>Veiculos</a>
+      <a class="nav-item" href="agendamentos-v2.html"><span class="nav-icon">📅</span>Agendamentos</a>
+      <div class="nav-section">Catalogo</div>
+      <a class="nav-item" href="catalogo-v2.html"><span class="nav-icon">🔧</span>Servicos / Pecas</a>
+      <div class="nav-section">Financeiro</div>
+      <a class="nav-item" href="financeiro-v2.html"><span class="nav-icon">💰</span>Caixa</a>
+      <a class="nav-item" href="comissao-v2.html"><span class="nav-icon">📊</span>Comissao</a>
+      <a class="nav-item" href="folha-v2.html"><span class="nav-icon">📄</span>Folha</a>
+      <div class="nav-section">Gestao</div>
+      <a class="nav-item active" href="equipe-v2.html"><span class="nav-icon">👤</span>Equipe</a>
+      <a class="nav-item" href="produtividade-v2.html"><span class="nav-icon">⚡</span>Produtividade</a>
+      <a class="nav-item" href="crm-v2.html"><span class="nav-icon">📡</span>CRM / Reativacao</a>
+      <a class="nav-item" href="satisfacao-v2.html"><span class="nav-icon">⭐</span>Satisfacao</a>
+      <a class="nav-item" href="config-v2.html"><span class="nav-icon">⚙️</span>Configuracoes</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="user-avatar">?</div>
+        <div class="user-details">
+          <div class="user-name" id="user-nome">...</div>
+          <div class="user-role" id="user-role">...</div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="sair()">Sair</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="main-topbar">
+      <div class="main-title">Equipe</div>
+      <button class="btn-add" id="btn-novo" onclick="abrirFormNovo()" style="display:none;">+ Novo Membro</button>
+    </div>
+    <div class="main-content">
+      <!-- SUMMARY -->
+      <div class="summary" id="summary"></div>
+
+      <!-- MEMBER LIST -->
+      <div id="lista"></div>
+    </div>
+  </div>
+</div>
+
+<!-- OVERLAY + SIDE PANEL -->
+<div class="overlay" id="overlay" onclick="fecharPanel()"></div>
+<div class="side-panel" id="panel">
+  <div class="panel-head">
+    <div class="panel-title" id="panel-title">Membro</div>
+    <button class="panel-close" onclick="fecharPanel()">&times;</button>
+  </div>
+  <div class="panel-body" id="panel-body"></div>
+  <div class="panel-footer" id="panel-footer"></div>
+</div>
+
+<script>
+const SUPABASE_URL='https://roeeyypssutzfzzkypsq.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZWV5eXBzc3V0emZ6emt5cHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MTk0MTgsImV4cCI6MjA5MDM5NTQxOH0.9oCOmABUTXox3FaRViD2zcUaqv94VfOJFMQYz_fcJi4';
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+let PERFIL=null, OFICINA_ID=null, OFICINA=null;
+let _membros=[];
+
+function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function toast(msg,tipo){const d=document.createElement('div');d.className='toast'+(tipo==='err'?' err':'');d.textContent=msg;document.getElementById('toasts').appendChild(d);setTimeout(()=>d.remove(),3500);}
+
+const ROLES_LABEL={dono:'Dono',gerente:'Gerente',mecanico:'Mecanico',aux_mecanico:'Aux. Mecanico',atendente:'Atendente',aux_admin:'Aux. Admin'};
+const isAdmin=()=>['dono','gerente'].includes(PERFIL?.role);
+
+async function carregar(){
+  const{data,error}=await db.from('profiles')
+    .select('id, nome, email, telefone, role, comissao_percent, salario_base, vale_refeicao, chave_pix, ativo, user_id')
+    .eq('oficina_id',OFICINA_ID)
+    .order('nome');
+
+  if(error){toast('Erro: '+error.message,'err');return;}
+  _membros=data||[];
+  render();
+}
+
+function render(){
+  const lista=_membros;
+  const ativos=lista.filter(m=>m.ativo);
+  const mecanicos=lista.filter(m=>['mecanico','aux_mecanico'].includes(m.role)&&m.ativo);
+  const comLogin=lista.filter(m=>m.user_id);
+
+  document.getElementById('summary').innerHTML=`
+    <div class="summary-item"><div class="summary-val" style="color:var(--amber);">${lista.length}</div><div class="summary-lbl">Total</div></div>
+    <div class="summary-item"><div class="summary-val" style="color:var(--green);">${ativos.length}</div><div class="summary-lbl">Ativos</div></div>
+    <div class="summary-item"><div class="summary-val" style="color:var(--w2);">${mecanicos.length}</div><div class="summary-lbl">Mecanicos</div></div>
+    <div class="summary-item"><div class="summary-val" style="color:var(--blue);">${comLogin.length}</div><div class="summary-lbl">Com Login</div></div>`;
+
+  if(!lista.length){
+    document.getElementById('lista').innerHTML=`<div class="empty-state"><div class="icon">👥</div><h3>Nenhum membro na equipe</h3><p>Clique em "+ Novo Membro" para comecar</p></div>`;
+    return;
+  }
+
+  const admin=isAdmin();
+
+  document.getElementById('lista').innerHTML=lista.map(m=>{
+    const iniciais=(m.nome||'??').split(' ').map(p=>p[0]).join('').substring(0,2).toUpperCase();
+    const roleTxt=ROLES_LABEL[m.role]||m.role;
+    const statusCls=m.ativo?'on':'off';
+    const statusTxt=m.ativo?'Ativo':'Inativo';
+    const canDelete=admin&&m.id!==PERFIL.id&&m.role!=='dono';
+
+    return`<div class="member-card" onclick="abrirDetalhe('${m.id}')">
+      <div class="member-head">
+        <div class="member-avatar">${iniciais}</div>
+        <div class="member-info">
+          <div class="member-nome">${esc(m.nome)}</div>
+          <div class="member-email">${esc(m.email||'')}</div>
+        </div>
+      </div>
+      <div class="member-avatar desktop">${iniciais}</div>
+      <div class="member-info">
+        <div class="member-nome">${esc(m.nome)}</div>
+        <div class="member-email">${esc(m.email||'')}</div>
+        ${m.telefone?`<div class="member-tel">${esc(m.telefone)}</div>`:''}
+      </div>
+      <div class="member-role">${roleTxt}</div>
+      <div class="member-comissao">${m.comissao_percent?m.comissao_percent+'%':'—'}</div>
+      <div class="member-status"><span class="badge-ativo ${statusCls}">${statusTxt}</span></div>
+      <div class="member-actions">
+        ${admin?`<button class="btn-sm" onclick="event.stopPropagation();abrirEditar('${m.id}')">Editar</button>`:''}
+        ${admin&&!m.user_id?`<button class="btn-sm primary" onclick="event.stopPropagation();abrirCriarLogin('${m.id}')">Criar Login</button>`:''}
+        ${admin&&m.user_id?`<button class="btn-sm" onclick="event.stopPropagation();abrirGerenciarLogin('${m.id}')">Login</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── DETALHE (side panel) ──
+function abrirDetalhe(id){
+  const m=_membros.find(x=>x.id===id);
+  if(!m)return;
+  const roleTxt=ROLES_LABEL[m.role]||m.role;
+  const admin=isAdmin();
+
+  document.getElementById('panel-title').innerHTML='<span>'+esc(m.nome)+'</span>';
+  document.getElementById('panel-body').innerHTML=`
+    <div class="panel-section">
+      <div class="panel-section-title">Informacoes</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+        <div style="background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px;">
+          <div style="font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);margin-bottom:4px;">Funcao</div>
+          <div style="font-size:14px;font-weight:600;">${roleTxt}</div>
+        </div>
+        <div style="background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px;">
+          <div style="font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);margin-bottom:4px;">Comissao</div>
+          <div style="font-family:var(--mono);font-size:14px;font-weight:600;color:var(--green);">${m.comissao_percent||0}%</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+        <div style="background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px;">
+          <div style="font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);margin-bottom:4px;">Salario Base</div>
+          <div style="font-family:var(--mono);font-size:14px;font-weight:600;">R$ ${(m.salario_base||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+        </div>
+        <div style="background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px;">
+          <div style="font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);margin-bottom:4px;">Vale Refeicao</div>
+          <div style="font-family:var(--mono);font-size:14px;font-weight:600;color:var(--blue);">R$ ${(m.vale_refeicao||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+        </div>
+      </div>
+      ${m.email?`<div style="background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px;margin-bottom:8px;">
+        <div style="font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);margin-bottom:4px;">Email</div>
+        <div style="font-size:14px;">${esc(m.email)}</div>
+      </div>`:''}
+      ${m.telefone?`<div style="background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px;margin-bottom:8px;">
+        <div style="font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);margin-bottom:4px;">Telefone</div>
+        <div style="font-family:var(--mono);font-size:14px;">${esc(m.telefone)}</div>
+      </div>`:''}
+      ${m.chave_pix?`<div style="background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px;margin-bottom:8px;">
+        <div style="font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);margin-bottom:4px;">Chave PIX</div>
+        <div style="font-family:var(--mono);font-size:14px;color:var(--green);user-select:all;">${esc(m.chave_pix)}</div>
+      </div>`:''}
+    </div>
+    <div class="panel-section">
+      <div class="panel-section-title">Acesso</div>
+      <div style="background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px;display:flex;align-items:center;gap:8px;">
+        <span style="font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:4px 10px;border-radius:2px;${m.user_id?'background:var(--green-dim);color:var(--green);border:1px solid rgba(48,209,88,0.2);':'background:var(--sf3);color:var(--w4);border:1px solid var(--ln2);'}">${m.user_id?'Com Login':'Sem Login'}</span>
+        ${admin&&!m.user_id?`<button class="btn-sm primary" onclick="fecharPanel();abrirCriarLogin('${m.id}')">Criar Login</button>`:''}
+        ${admin&&m.user_id?`<button class="btn-sm" onclick="fecharPanel();abrirGerenciarLogin('${m.id}')">Gerenciar</button>`:''}
+      </div>
+    </div>`;
+
+  document.getElementById('panel-footer').innerHTML=admin?`
+    <button class="btn-panel cancel" onclick="fecharPanel()">Fechar</button>
+    <button class="btn-panel save" onclick="fecharPanel();abrirEditar('${m.id}')">Editar</button>
+    ${m.id!==PERFIL.id&&m.role!=='dono'?`<button class="btn-panel delete" onclick="excluir('${m.id}','${esc(m.nome)}')">Excluir</button>`:''}
+  `:`<button class="btn-panel cancel" onclick="fecharPanel()">Fechar</button>`;
+
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('panel').classList.add('open');
+}
+
+// ── FORM NOVO/EDITAR ──
+function abrirFormNovo(){abrirForm({});}
+
+async function abrirEditar(id){
+  const{data}=await db.from('profiles').select('*').eq('id',id).eq('oficina_id',OFICINA_ID).single();
+  if(data)abrirForm(data);
+}
+
+function abrirForm(dados){
+  const editando=!!dados.id;
+  document.getElementById('panel-title').innerHTML=editando?'Editar <span>Membro</span>':'Novo <span>Membro</span>';
+  document.getElementById('panel-body').innerHTML=`
+    <form id="form-membro">
+      <div class="field">
+        <label>Nome *</label>
+        <input type="text" id="f-nome" required value="${esc(dados.nome||'')}" placeholder="Nome completo">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="f-email" value="${esc(dados.email||'')}" placeholder="email@exemplo.com">
+        </div>
+        <div class="field">
+          <label>Telefone</label>
+          <input type="text" id="f-telefone" value="${esc(dados.telefone||'')}" placeholder="(00) 00000-0000">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Funcao</label>
+          <select id="f-role">
+            <option value="mecanico" ${dados.role==='mecanico'||!dados.role?'selected':''}>Mecanico</option>
+            <option value="aux_mecanico" ${dados.role==='aux_mecanico'?'selected':''}>Aux. Mecanico</option>
+            <option value="atendente" ${dados.role==='atendente'?'selected':''}>Atendente</option>
+            <option value="aux_admin" ${dados.role==='aux_admin'?'selected':''}>Aux. Administrativo</option>
+            <option value="gerente" ${dados.role==='gerente'?'selected':''}>Gerente</option>
+            <option value="dono" ${dados.role==='dono'?'selected':''}>Dono</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Comissao (%)</label>
+          <input type="number" id="f-comissao" value="${dados.comissao_percent||OFICINA?.comissao_padrao||0}" min="0" max="100" step="0.5">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Salario Base (R$)</label>
+          <input type="number" id="f-salario" value="${dados.salario_base||0}" min="0" step="0.01">
+        </div>
+        <div class="field">
+          <label>Vale Refeicao (R$)</label>
+          <input type="number" id="f-vr" value="${dados.vale_refeicao||0}" min="0" step="0.01">
+        </div>
+      </div>
+      <div class="field">
+        <label>Chave PIX</label>
+        <input type="text" id="f-pix" value="${esc(dados.chave_pix||'')}" placeholder="CPF, celular, email ou chave aleatoria">
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <select id="f-ativo">
+          <option value="true" ${dados.ativo!==false?'selected':''}>Ativo</option>
+          <option value="false" ${dados.ativo===false?'selected':''}>Inativo</option>
+        </select>
+      </div>
+    </form>`;
+
+  document.getElementById('panel-footer').innerHTML=`
+    <button class="btn-panel cancel" onclick="fecharPanel()">Cancelar</button>
+    <button class="btn-panel save" onclick="salvarMembro('${dados.id||''}')">Salvar</button>`;
+
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('panel').classList.add('open');
+}
+
+async function salvarMembro(id){
+  const dados={
+    nome:document.getElementById('f-nome').value.trim(),
+    email:document.getElementById('f-email').value.trim()||null,
+    telefone:document.getElementById('f-telefone').value.trim()||null,
+    role:document.getElementById('f-role').value,
+    comissao_percent:parseFloat(document.getElementById('f-comissao').value)||0,
+    salario_base:parseFloat(document.getElementById('f-salario').value)||0,
+    vale_refeicao:parseFloat(document.getElementById('f-vr').value)||0,
+    chave_pix:document.getElementById('f-pix').value.trim()||null,
+    ativo:document.getElementById('f-ativo').value==='true'
+  };
+
+  if(!dados.nome){toast('Nome obrigatorio','err');return;}
+
+  if(id){
+    const{error}=await db.from('profiles').update(dados).eq('id',id).eq('oficina_id',OFICINA_ID);
+    if(error){toast('Erro: '+error.message,'err');return;}
+    toast('Membro atualizado');
+  }else{
+    const{error}=await db.rpc('criar_membro_equipe',{
+      p_oficina_id:OFICINA_ID,
+      p_nome:dados.nome,
+      p_email:dados.email,
+      p_telefone:dados.telefone,
+      p_role:dados.role,
+      p_comissao:dados.comissao_percent,
+      p_ativo:dados.ativo
+    });
+    if(error){toast('Erro: '+error.message,'err');return;}
+    toast('Membro cadastrado');
+  }
+
+  fecharPanel();
+  carregar();
+}
+
+async function excluir(id,nome){
+  if(!confirm('Excluir '+nome+' da equipe? Essa acao nao pode ser desfeita.'))return;
+  const{error}=await db.from('profiles').delete().eq('id',id).eq('oficina_id',OFICINA_ID);
+  if(error){toast('Erro: '+error.message,'err');return;}
+  toast(nome+' removido');
+  fecharPanel();
+  carregar();
+}
+
+// ── LOGIN MANAGEMENT ──
+function abrirCriarLogin(id){
+  const m=_membros.find(x=>x.id===id);
+  if(!m)return;
+  const emailSuggestion=m.email?m.email.split('@')[0]:m.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'.');
+
+  document.getElementById('panel-title').innerHTML='Criar Login — <span>'+esc(m.nome)+'</span>';
+  document.getElementById('panel-body').innerHTML=`
+    <div class="panel-section">
+      <div class="panel-section-title">Credenciais</div>
+      <div class="field">
+        <label>Email</label>
+        <div style="display:flex;gap:0;">
+          <input type="text" id="cl-email" value="${esc(emailSuggestion)}" placeholder="nome.usuario" style="border-radius:var(--r2) 0 0 var(--r2);border-right:0;">
+          <span style="background:var(--sf);border:1px solid var(--ln2);padding:10px 12px;font-family:var(--mono);font-size:12px;color:var(--w3);white-space:nowrap;border-radius:0 var(--r2) var(--r2) 0;">@rpmpro.com.br</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Senha</label>
+        <input type="text" id="cl-senha" placeholder="Minimo 6 caracteres" minlength="6">
+      </div>
+      <div style="background:var(--amber-dim);border:1px solid rgba(232,147,12,0.2);border-radius:var(--r2);padding:10px 14px;font-size:12px;color:var(--amber);">
+        Anote a senha! Voce pode resetar depois, mas o membro vai precisar dela pra logar.
+      </div>
+    </div>`;
+
+  document.getElementById('panel-footer').innerHTML=`
+    <button class="btn-panel cancel" onclick="fecharPanel()">Cancelar</button>
+    <button class="btn-panel save" onclick="salvarLogin('${m.id}')">Criar Login</button>`;
+
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('panel').classList.add('open');
+}
+
+async function salvarLogin(profileId){
+  const emailUser=document.getElementById('cl-email').value.trim().toLowerCase().replace(/\s+/g,'.');
+  if(!emailUser){toast('Preencha o email','err');return;}
+  const email=emailUser+'@rpmpro.com.br';
+  const senha=document.getElementById('cl-senha').value;
+  if(!senha||senha.length<6){toast('Senha precisa ter pelo menos 6 caracteres','err');return;}
+
+  const tempDb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:false}});
+  const{data:authData,error:authError}=await tempDb.auth.signUp({email,password:senha,options:{data:{created_by_team:true}}});
+  if(authError){toast('Erro: '+authError.message,'err');return;}
+  if(!authData.user||!authData.user.identities||authData.user.identities.length===0){toast('Email ja cadastrado','err');return;}
+
+  const userId=authData.user.id;
+  const{data,error}=await db.rpc('vincular_login_membro',{p_profile_id:profileId,p_user_id:userId,p_email:email,p_senha:senha});
+  if(error){toast('Erro ao vincular: '+error.message,'err');return;}
+  if(data&&!data.ok){toast(data.erro,'err');return;}
+
+  fecharPanel();
+  toast('Login criado! '+email);
+  carregar();
+}
+
+function abrirGerenciarLogin(id){
+  const m=_membros.find(x=>x.id===id);
+  if(!m)return;
+
+  document.getElementById('panel-title').innerHTML='Login — <span>'+esc(m.nome)+'</span>';
+  document.getElementById('panel-body').innerHTML=`
+    <div class="panel-section">
+      <div class="panel-section-title">Acesso Atual</div>
+      <div class="field">
+        <label>Email</label>
+        <input type="text" value="${esc(m.email||'')}" readonly style="opacity:.6;">
+      </div>
+    </div>
+    <div class="panel-section">
+      <div class="panel-section-title">Redefinir Senha</div>
+      <div class="field">
+        <label>Nova Senha</label>
+        <input type="text" id="gl-senha" placeholder="Minimo 6 caracteres" minlength="6">
+      </div>
+    </div>`;
+
+  document.getElementById('panel-footer').innerHTML=`
+    <button class="btn-panel delete" onclick="removerLogin('${m.id}','${esc(m.nome)}')">Remover Login</button>
+    <div style="flex:1;"></div>
+    <button class="btn-panel cancel" onclick="fecharPanel()">Fechar</button>
+    <button class="btn-panel save" onclick="redefinirSenha('${m.id}')">Redefinir</button>`;
+
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('panel').classList.add('open');
+}
+
+async function redefinirSenha(profileId){
+  const senha=document.getElementById('gl-senha').value;
+  if(!senha||senha.length<6){toast('Senha precisa ter pelo menos 6 caracteres','err');return;}
+  const{data,error}=await db.rpc('redefinir_senha_membro',{p_profile_id:profileId,p_nova_senha:senha});
+  if(error){toast('Erro: '+error.message,'err');return;}
+  if(data&&!data.ok){toast(data.erro,'err');return;}
+  fecharPanel();
+  toast('Senha redefinida!');
+}
+
+async function removerLogin(profileId,nome){
+  if(!confirm('Remover login de '+nome+'? Ele nao vai mais conseguir acessar o sistema.'))return;
+  const{data,error}=await db.rpc('remover_login_membro',{p_profile_id:profileId});
+  if(error){toast('Erro: '+error.message,'err');return;}
+  if(data&&!data.ok){toast(data.erro,'err');return;}
+  fecharPanel();
+  toast('Login removido');
+  carregar();
+}
+
+// ── PANEL ──
+function fecharPanel(){
+  document.getElementById('panel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')fecharPanel();});
+
+// ── AUTH ──
+async function fazerLogin(){
+  const email=document.getElementById('login-email').value.trim();
+  const senha=document.getElementById('login-senha').value;
+  const btn=document.getElementById('login-btn');
+  const err=document.getElementById('login-err');
+  if(!email||!senha)return;
+  btn.disabled=true;btn.textContent='Entrando...';err.style.display='none';
+  const{error}=await db.auth.signInWithPassword({email,password:senha});
+  if(error){err.style.display='block';btn.disabled=false;btn.textContent='Entrar';return;}
+  await init();
+}
+function sair(){db.auth.signOut();location.reload();}
+
+async function init(){
+  db.auth.onAuthStateChange((ev)=>{if(ev==='SIGNED_OUT')window.location.href='login.html';});
+  const{data:{session}}=await db.auth.getSession();
+  if(!session){document.getElementById('loading').style.display='none';document.getElementById('login-overlay').style.display='flex';return;}
+  document.getElementById('login-overlay').style.display='none';
+  document.getElementById('loading').style.display='flex';
+
+  const{data:perfil}=await db.from('profiles').select('*, oficinas(*)').eq('user_id',session.user.id).single();
+  if(!perfil){toast('Perfil nao encontrado','err');document.getElementById('loading').style.display='none';document.getElementById('login-overlay').style.display='flex';return;}
+
+  PERFIL=perfil;
+  OFICINA_ID=perfil.oficina_id;
+  OFICINA=perfil.oficinas;
+
+  const nome=perfil.nome||session.user.email;
+  document.getElementById('user-nome').textContent=nome;
+  document.getElementById('user-role').textContent=perfil.role||'';
+  document.getElementById('user-avatar').textContent=nome.charAt(0).toUpperCase();
+  document.getElementById('oficina-nome').textContent=perfil.oficinas?.nome||'';
+
+  if(isAdmin())document.getElementById('btn-novo').style.display='flex';
+
+  await carregar();
+  document.getElementById('loading').style.display='none';
+}
+
+init();
+</script>
+</body>
+</html>

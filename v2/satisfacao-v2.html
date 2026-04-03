@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro V2 — Satisfacao</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#09090B;--sf:#111114;--sf2:#18181C;--sf3:#1F1F24;--sf4:#27272D;
+  --ln:rgba(255,255,255,0.04);--ln2:rgba(255,255,255,0.08);--ln3:rgba(255,255,255,0.14);
+  --amber:#E8930C;--amber-dim:rgba(232,147,12,0.1);
+  --orange:#EA580C;--orange-dim:rgba(234,88,12,0.12);
+  --red:#FF3B30;--red-dim:rgba(255,59,48,0.08);
+  --green:#30D158;--green-dim:rgba(48,209,88,0.08);
+  --blue:#0A84FF;--blue-dim:rgba(10,132,255,0.1);
+  --w:#F0F0F2;--w2:rgba(255,255,255,0.6);--w3:rgba(255,255,255,0.32);--w4:rgba(255,255,255,0.14);
+  --mono:'JetBrains Mono',monospace;--head:'Barlow Condensed',sans-serif;--body:'Space Grotesk',sans-serif;
+  --r:3px;--r2:4px;
+}
+body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100vh;-webkit-font-smoothing:antialiased;overflow:hidden;}
+.app{display:flex;height:100vh;overflow:hidden;}
+.sidebar{width:220px;flex-shrink:0;background:var(--sf);border-right:1px solid var(--ln2);display:flex;flex-direction:column;height:100vh;}
+.sidebar-logo{padding:20px 16px 16px;border-bottom:1px solid var(--ln2);}
+.sidebar-logo-brand{font-family:var(--head);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.sidebar-logo-brand span{color:var(--amber);}
+.sidebar-logo-oficina{font-family:var(--body);font-size:11px;color:var(--w3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sidebar-nav{flex:1;overflow-y:auto;padding:12px 0;scrollbar-width:none;}
+.sidebar-nav::-webkit-scrollbar{display:none;}
+.nav-section{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);padding:10px 16px 6px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 16px;font-family:var(--body);font-size:13px;font-weight:500;color:var(--w3);cursor:pointer;transition:all .12s;text-decoration:none;}
+.nav-item:hover{color:var(--w);background:var(--sf2);}
+.nav-item.active{color:var(--amber);background:var(--amber-dim);border-left:2px solid var(--amber);}
+.nav-item .nav-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0;}
+.sidebar-footer{padding:16px;border-top:1px solid var(--ln2);}
+.user-info{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.user-avatar{width:34px;height:34px;border-radius:var(--r);background:var(--amber-dim);border:1px solid rgba(232,147,12,0.3);display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:14px;font-weight:800;color:var(--amber);flex-shrink:0;}
+.user-details{min-width:0;}
+.user-name{font-family:var(--body);font-size:13px;font-weight:600;color:var(--w);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.user-role{font-family:var(--mono);font-size:10px;color:var(--w3);text-transform:uppercase;letter-spacing:.5px;}
+.btn-logout{width:100%;font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--w3);background:none;border:1px solid var(--ln3);padding:7px;border-radius:var(--r);cursor:pointer;transition:all .15s;}
+.btn-logout:hover{color:var(--w);border-color:var(--w3);}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.main-topbar{height:48px;background:var(--sf);border-bottom:1px solid var(--ln2);display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0;}
+.main-title{font-family:var(--head);font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:2px;}
+.main-content{flex:1;overflow-y:auto;padding:20px;scrollbar-width:thin;scrollbar-color:var(--sf3) transparent;}
+.main-content::-webkit-scrollbar{width:4px;}
+.main-content::-webkit-scrollbar-thumb{background:var(--sf3);border-radius:2px;}
+
+/* KPIs */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:24px;}
+.kpi{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:16px;text-align:center;}
+.kpi-val{font-family:var(--mono);font-size:28px;font-weight:800;letter-spacing:-1px;line-height:1;}
+.kpi-lbl{font-family:var(--head);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);margin-top:6px;}
+.kpi-sub{font-family:var(--mono);font-size:10px;color:var(--w4);margin-top:3px;}
+
+/* DISTRIBUTION */
+.dist-wrap{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:18px;margin-bottom:24px;}
+.dist-title{font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w3);margin-bottom:14px;}
+.dist-row{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+.dist-label{font-family:var(--mono);font-size:12px;font-weight:700;min-width:26px;text-align:right;color:var(--w2);}
+.dist-bar-bg{flex:1;height:8px;background:var(--sf3);border-radius:4px;overflow:hidden;}
+.dist-bar-fill{height:100%;border-radius:4px;transition:width .4s;}
+.dist-count{font-family:var(--mono);font-size:11px;color:var(--w3);min-width:50px;text-align:right;}
+
+/* TABLE */
+.data-table{width:100%;border-collapse:collapse;}
+.data-table th{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);text-align:left;padding:8px 12px;border-bottom:1px solid var(--ln2);}
+.data-table td{padding:10px 12px;border-bottom:1px solid var(--ln);font-size:13px;color:var(--w2);}
+.data-table tr:hover td{background:var(--sf);}
+.td-os{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--amber);}
+.td-stars{font-size:14px;letter-spacing:1px;}
+.td-comment{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--w3);}
+.td-status{font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:3px 8px;border-radius:2px;}
+.btn-reenviar{padding:5px 10px;background:rgba(37,211,102,0.1);border:1px solid rgba(37,211,102,0.2);border-radius:var(--r);font-family:var(--mono);font-size:10px;font-weight:700;color:#25D366;cursor:pointer;transition:all .12s;text-transform:uppercase;letter-spacing:.5px;}
+.btn-reenviar:hover{background:rgba(37,211,102,0.2);border-color:#25D366;}
+
+.login-overlay{position:fixed;inset:0;z-index:2000;background:var(--bg);display:none;align-items:center;justify-content:center;}
+.login-box{width:360px;padding:40px;text-align:center;}
+.login-brand{font-family:var(--head);font-size:36px;font-weight:900;text-transform:uppercase;margin-bottom:28px;}
+.login-brand span{color:var(--amber);}
+.login-input{width:100%;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px 16px;color:var(--w);font-family:var(--body);font-size:14px;margin-bottom:12px;outline:none;transition:border-color .15s;}
+.login-input:focus{border-color:var(--amber);}
+.login-input::placeholder{color:var(--w4);}
+.login-btn{width:100%;padding:14px;background:var(--amber);border:none;border-radius:var(--r2);font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#000;cursor:pointer;}
+.login-err{color:var(--red);font-size:12px;margin-top:8px;display:none;}
+.loading-overlay{position:fixed;inset:0;z-index:1500;background:var(--bg);display:none;align-items:center;justify-content:center;}
+.loading-overlay span{font-family:var(--head);font-size:20px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:var(--amber);animation:pulse 1.2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+.toast-container{position:fixed;top:16px;right:16px;z-index:3000;display:flex;flex-direction:column;gap:6px;}
+.toast{padding:10px 18px;border-radius:var(--r2);font-family:var(--body);font-size:13px;font-weight:500;color:#000;background:var(--green);animation:toastIn .3s;max-width:340px;}
+.toast.err{background:var(--red);color:#fff;}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:none;}}
+.empty-state{text-align:center;padding:60px 20px;color:var(--w3);}
+.empty-state .icon{font-size:48px;margin-bottom:12px;}
+.empty-state h3{font-family:var(--head);font-size:20px;font-weight:700;text-transform:uppercase;color:var(--w2);margin-bottom:6px;}
+.empty-state p{font-size:13px;color:var(--w4);}
+
+@media(max-width:768px){
+  .sidebar{display:none;}
+  .kpis{grid-template-columns:repeat(2,1fr);}
+  .data-table th:nth-child(5),.data-table td:nth-child(5){display:none;}
+}
+</style>
+</head>
+<body>
+
+<div class="login-overlay" id="login-overlay">
+  <div class="login-box">
+    <div class="login-brand">RPM <span>PRO</span></div>
+    <input class="login-input" type="email" id="login-email" placeholder="email@oficina.com">
+    <input class="login-input" type="password" id="login-senha" placeholder="••••••••" onkeydown="if(event.key==='Enter')fazerLogin()">
+    <button class="login-btn" id="login-btn" onclick="fazerLogin()">Entrar</button>
+    <div class="login-err" id="login-err">Email ou senha incorretos</div>
+  </div>
+</div>
+<div class="loading-overlay" id="loading" style="display:flex;"><span>Carregando...</span></div>
+<div class="toast-container" id="toasts"></div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-brand">RPM <span>PRO</span></div>
+      <div class="sidebar-logo-oficina" id="oficina-nome"></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Operacao</div>
+      <a class="nav-item" href="kanban-v2.html"><span class="nav-icon">⬛</span>Patio</a>
+      <a class="nav-item" href="dashboard-v2.html"><span class="nav-icon">◈</span>Dashboard</a>
+      <div class="nav-section">Atendimento</div>
+      <a class="nav-item" href="fila-espera-v2.html"><span class="nav-icon">⏳</span>Fila de Espera</a>
+      <a class="nav-item" href="os-list-v2.html"><span class="nav-icon">📋</span>Ordens de Servico</a>
+      <a class="nav-item" href="execucao-os-v2.html"><span class="nav-icon">🔧</span>Execucao OS</a>
+      <a class="nav-item" href="clientes-v2.html"><span class="nav-icon">👥</span>Clientes</a>
+      <a class="nav-item" href="veiculos-v2.html"><span class="nav-icon">🚗</span>Veiculos</a>
+      <a class="nav-item" href="agendamentos-v2.html"><span class="nav-icon">📅</span>Agendamentos</a>
+      <div class="nav-section">Catalogo</div>
+      <a class="nav-item" href="catalogo-v2.html"><span class="nav-icon">🔧</span>Servicos / Pecas</a>
+      <div class="nav-section">Financeiro</div>
+      <a class="nav-item" href="financeiro-v2.html"><span class="nav-icon">💰</span>Caixa</a>
+      <a class="nav-item" href="comissao-v2.html"><span class="nav-icon">📊</span>Comissao</a>
+      <a class="nav-item" href="folha-v2.html"><span class="nav-icon">📄</span>Folha</a>
+      <div class="nav-section">Gestao</div>
+      <a class="nav-item" href="equipe-v2.html"><span class="nav-icon">👤</span>Equipe</a>
+      <a class="nav-item" href="produtividade-v2.html"><span class="nav-icon">⚡</span>Produtividade</a>
+      <a class="nav-item" href="crm-v2.html"><span class="nav-icon">📡</span>CRM / Reativacao</a>
+      <a class="nav-item active" href="satisfacao-v2.html"><span class="nav-icon">⭐</span>Satisfacao</a>
+      <a class="nav-item" href="config-v2.html"><span class="nav-icon">⚙️</span>Configuracoes</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="user-avatar">?</div>
+        <div class="user-details">
+          <div class="user-name" id="user-nome">...</div>
+          <div class="user-role" id="user-role">...</div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="sair()">Sair</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="main-topbar">
+      <div class="main-title">Pesquisa de Satisfacao</div>
+      <button onclick="enviarPesquisas()" style="padding:8px 16px;background:var(--green-dim);color:var(--green);border:1px solid rgba(48,209,88,0.2);border-radius:var(--r);font-family:var(--head);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;cursor:pointer;">Gerar Pesquisas</button>
+    </div>
+    <div class="main-content">
+      <div id="kpis" class="kpis"></div>
+      <div id="distribuicao"></div>
+      <div id="tabela"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL='https://roeeyypssutzfzzkypsq.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZWV5eXBzc3V0emZ6emt5cHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MTk0MTgsImV4cCI6MjA5MDM5NTQxOH0.9oCOmABUTXox3FaRViD2zcUaqv94VfOJFMQYz_fcJi4';
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+let PERFIL=null,OFICINA_ID=null,OFICINA=null;
+
+function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function escAttr(s){return esc(s).replace(/'/g,'&#39;');}
+function toast(msg,tipo){const d=document.createElement('div');d.className='toast'+(tipo==='err'?' err':'');d.textContent=msg;document.getElementById('toasts').appendChild(d);setTimeout(()=>d.remove(),3500);}
+function estrelas(n){return'★'.repeat(n)+'☆'.repeat(5-n);}
+function fmtData(d){if(!d)return'—';const dt=new Date(d);return String(dt.getDate()).padStart(2,'0')+'/'+String(dt.getMonth()+1).padStart(2,'0')+'/'+dt.getFullYear();}
+
+async function carregar(){
+  const{data:lista,error}=await db.from('pesquisas_satisfacao')
+    .select('*, clientes(nome, whatsapp), ordens_servico(numero)')
+    .eq('oficina_id',OFICINA_ID)
+    .order('created_at',{ascending:false})
+    .limit(100);
+
+  if(error){toast('Erro: '+error.message,'err');return;}
+  const pesquisas=lista||[];
+
+  const respondidas=pesquisas.filter(p=>p.respondido_em);
+  const media=respondidas.length?(respondidas.reduce((s,p)=>s+(p.nota||0),0)/respondidas.length).toFixed(1):'-';
+  const taxa=pesquisas.length?Math.round(respondidas.length/pesquisas.length*100):0;
+
+  // Distribuicao
+  const dist=[0,0,0,0,0];
+  respondidas.forEach(p=>{if(p.nota>=1&&p.nota<=5)dist[p.nota-1]++;});
+
+  // KPIs
+  document.getElementById('kpis').innerHTML=`
+    <div class="kpi">
+      <div class="kpi-val" style="color:var(--amber);">${media}</div>
+      <div class="kpi-lbl">Nota Media</div>
+      <div class="kpi-sub">de 5.0</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-val" style="color:var(--blue);">${pesquisas.length}</div>
+      <div class="kpi-lbl">Enviadas</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-val" style="color:var(--green);">${respondidas.length}</div>
+      <div class="kpi-lbl">Respondidas</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-val" style="color:var(--w2);">${taxa}%</div>
+      <div class="kpi-lbl">Taxa Resposta</div>
+    </div>`;
+
+  // Distribuicao chart
+  if(respondidas.length){
+    document.getElementById('distribuicao').innerHTML=`
+      <div class="dist-wrap">
+        <div class="dist-title">Distribuicao de Notas</div>
+        ${[5,4,3,2,1].map(n=>{
+          const qtd=dist[n-1];
+          const pct=Math.round(qtd/respondidas.length*100);
+          const cor=n>=4?'var(--green)':n===3?'var(--amber)':'var(--red)';
+          return`<div class="dist-row">
+            <span class="dist-label">${n}★</span>
+            <div class="dist-bar-bg"><div class="dist-bar-fill" style="width:${pct}%;background:${cor};"></div></div>
+            <span class="dist-count">${qtd} (${pct}%)</span>
+          </div>`;
+        }).join('')}
+      </div>`;
+  }else{
+    document.getElementById('distribuicao').innerHTML='';
+  }
+
+  // Tabela
+  if(!pesquisas.length){
+    document.getElementById('tabela').innerHTML=`<div class="empty-state"><div class="icon">⭐</div><h3>Nenhuma pesquisa</h3><p>As pesquisas sao criadas automaticamente ao entregar uma OS</p></div>`;
+    return;
+  }
+
+  document.getElementById('tabela').innerHTML=`
+    <table class="data-table">
+      <thead><tr>
+        <th>OS</th>
+        <th>Cliente</th>
+        <th>Enviada</th>
+        <th>Nota</th>
+        <th>Comentario</th>
+        <th style="text-align:right;">Acao</th>
+      </tr></thead>
+      <tbody>
+        ${pesquisas.map(p=>{
+          const osNum=p.ordens_servico?.numero||'—';
+          const nome=p.clientes?.nome||'—';
+          const wpp=p.clientes?.whatsapp||'';
+          const respondeu=!!p.respondido_em;
+          return`<tr>
+            <td class="td-os">#${osNum}</td>
+            <td>${esc(nome)}</td>
+            <td style="font-family:var(--mono);font-size:12px;color:var(--w3);">${fmtData(p.created_at)}</td>
+            <td>${respondeu?`<span class="td-stars" style="color:var(--amber);">${estrelas(p.nota||0)}</span>`:`<span class="td-status" style="background:var(--amber-dim);color:var(--amber);">Aguardando</span>`}</td>
+            <td class="td-comment">${respondeu&&p.comentario?esc(p.comentario):'—'}</td>
+            <td style="text-align:right;">${!respondeu&&wpp?`<button class="btn-reenviar" onclick="reenviar('${escAttr(wpp)}','${escAttr(nome)}','${escAttr(p.token||'')}')">Reenviar</button>`:''}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
+function reenviar(fone,nome,token){
+  let num=fone.replace(/\D/g,'');
+  if(num.length<=11)num='55'+num;
+  const link=window.location.origin+'/pesquisa.html?t='+token;
+  const msg='Oi '+nome+'! Voce ainda nao avaliou nosso servico. Leva menos de 1 minuto:\n'+link+'\nSua opiniao nos ajuda a melhorar!';
+  window.open('https://wa.me/'+num+'?text='+encodeURIComponent(msg),'_blank');
+}
+
+// AUTH
+async function fazerLogin(){
+  const email=document.getElementById('login-email').value.trim();
+  const senha=document.getElementById('login-senha').value;
+  const btn=document.getElementById('login-btn');
+  const err=document.getElementById('login-err');
+  if(!email||!senha)return;
+  btn.disabled=true;btn.textContent='Entrando...';err.style.display='none';
+  const{error}=await db.auth.signInWithPassword({email,password:senha});
+  if(error){err.style.display='block';btn.disabled=false;btn.textContent='Entrar';return;}
+  await init();
+}
+function sair(){db.auth.signOut();location.reload();}
+const _busy={};
+
+function gerarToken(){return Math.random().toString(36).substring(2)+Date.now().toString(36);}
+
+async function enviarPesquisas(){
+  if(_busy.enviarPesquisas)return;
+  _busy.enviarPesquisas=true;
+  try{
+    // Busca OS entregues nos ultimos 30 dias que ainda não tem pesquisa
+    const agora=new Date();
+    const inicio=new Date(agora);inicio.setDate(inicio.getDate()-30);
+
+    const[resOS,resPesq]=await Promise.all([
+      db.from('ordens_servico').select('id, numero, cliente_id, clientes(nome, whatsapp)')
+        .eq('oficina_id',OFICINA_ID).eq('status','entregue')
+        .gte('data_entrega',inicio.toISOString())
+        .order('data_entrega',{ascending:false}),
+      db.from('pesquisas_satisfacao').select('os_id')
+        .eq('oficina_id',OFICINA_ID)
+    ]);
+
+    if(resOS.error){toast('Erro ao buscar OS','err');return;}
+    const jaEnviadas=new Set((resPesq.data||[]).map(p=>p.os_id));
+    const pendentes=(resOS.data||[]).filter(os=>os.cliente_id&&!jaEnviadas.has(os.id));
+
+    if(!pendentes.length){toast('Todas as OS entregues já tem pesquisa');return;}
+
+    const inserts=pendentes.map(os=>({
+      oficina_id:OFICINA_ID,
+      os_id:os.id,
+      cliente_id:os.cliente_id,
+      token:gerarToken(),
+      created_by:PERFIL.id
+    }));
+
+    const{error}=await db.from('pesquisas_satisfacao').insert(inserts);
+    if(error){toast('Erro: '+error.message,'err');return;}
+
+    toast(inserts.length+' pesquisa(s) criada(s)');
+
+    // Envia WhatsApp pra primeira pendente como exemplo
+    const primeira=pendentes[0];
+    if(primeira.clientes?.whatsapp){
+      const token=inserts[0].token;
+      let num=primeira.clientes.whatsapp.replace(/\D/g,'');
+      if(num.length<=11)num='55'+num;
+      const link=window.location.origin+'/pesquisa.html?t='+token;
+      const msg='Oi '+(primeira.clientes.nome||'')+'! Avalie nosso servico (OS #'+primeira.numero+'). Leva menos de 1 minuto:\n'+link;
+      window.open('https://wa.me/'+num+'?text='+encodeURIComponent(msg),'_blank');
+    }
+
+    await carregar();
+  }catch(err){console.error('enviarPesquisas',err);toast('Erro ao gerar pesquisas','err');}
+  finally{_busy.enviarPesquisas=false;}
+}
+
+async function init(){
+  db.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_OUT') window.location.href = 'login.html'; });
+  const{data:{session}}=await db.auth.getSession();
+  if(!session){document.getElementById('login-overlay').style.display='flex';return;}
+  document.getElementById('login-overlay').style.display='none';
+  document.getElementById('loading').style.display='flex';
+
+  const{data:perfil}=await db.from('profiles').select('*, oficinas(*)').eq('user_id',session.user.id).single();
+  if(!perfil){toast('Perfil nao encontrado','err');document.getElementById('loading').style.display='none';document.getElementById('login-overlay').style.display='flex';return;}
+
+  PERFIL=perfil;OFICINA_ID=perfil.oficina_id;OFICINA=perfil.oficinas;
+  const nome=perfil.nome||session.user.email;
+  document.getElementById('user-nome').textContent=nome;
+  document.getElementById('user-role').textContent=perfil.role||'';
+  document.getElementById('user-avatar').textContent=nome.charAt(0).toUpperCase();
+  document.getElementById('oficina-nome').textContent=perfil.oficinas?.nome||'';
+
+  await carregar();
+  document.getElementById('loading').style.display='none';
+}
+
+init();
+</script>
+</body>
+</html>

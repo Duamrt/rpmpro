@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Avalie nosso servico — RPM Pro</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root { --primary: #D97706; --primary-hover: #B45309; --bg: #131316; --bg-card: #1E1E22; --border: #2E2E36; --text: #F5F5F5; --text-sec: #A1A1AA; --text-muted: #71717A; --success: #16A34A; --heading: 'Barlow Condensed', sans-serif; --body: 'IBM Plex Sans', sans-serif; }
+  body { font-family: var(--body); background: var(--bg); color: var(--text); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; -webkit-font-smoothing: antialiased; }
+  .hazard-p { position:fixed; top:0; left:0; right:0; height:3px; background:repeating-linear-gradient(-45deg,var(--primary),var(--primary) 6px,transparent 6px,transparent 12px); opacity:.5; z-index:10; }
+  .container { width: 100%; max-width: 480px; }
+  .logo { text-align: center; margin-bottom: 32px; }
+  .logo h1 { font-family: var(--heading); font-size: 36px; font-weight: 800; letter-spacing: 3px; }
+  .logo .rpm { color: var(--primary); }
+  .logo .pro { color: #fff; }
+  .card { background: var(--bg-card); border: 1px solid var(--border); border-top: 3px solid var(--primary); border-radius: 8px; padding: 32px; }
+  .card h2 { font-family: var(--heading); font-size: 20px; text-align: center; margin-bottom: 8px; letter-spacing: 1px; text-transform: uppercase; }
+  .card .sub { text-align: center; color: var(--text-sec); font-size: 14px; margin-bottom: 24px; }
+  .info { background: #2A2A30; padding: 12px 16px; border-radius: 6px; margin-bottom: 24px; font-size: 14px; }
+  .info span { color: var(--text-sec); }
+  .info strong { color: var(--primary); }
+  .stars { display: flex; justify-content: center; gap: 8px; margin-bottom: 24px; }
+  .star { width: 56px; height: 56px; border-radius: 6px; border: 2px solid var(--border); background: #2A2A30; font-size: 28px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+  .star:hover, .star.active { border-color: var(--primary); background: rgba(217,119,6,0.12); transform: scale(1.1); }
+  .star.active { box-shadow: 0 0 16px rgba(217,119,6,0.25); }
+  textarea { width: 100%; background: #2A2A30; border: 1px solid var(--border); border-radius: 6px; padding: 12px; color: var(--text); font-family: var(--body); font-size: 14px; resize: vertical; min-height: 80px; margin-bottom: 16px; }
+  textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(217,119,6,0.15); }
+  .btn { width: 100%; padding: 14px; background: var(--primary); color: #000; border: none; border-radius: 6px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: var(--body); transition: background 0.2s; }
+  .btn:hover { background: var(--primary-hover); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .sucesso { text-align: center; padding: 40px 0; }
+  .sucesso .icon { font-size: 64px; margin-bottom: 16px; }
+  .sucesso h2 { margin-bottom: 8px; color: var(--success); }
+  .erro { text-align: center; padding: 40px 0; }
+  .erro .icon { font-size: 64px; margin-bottom: 16px; }
+  .footer { text-align: center; margin-top: 20px; font-size: 12px; color: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<div class="hazard-p"></div>
+<div class="container">
+  <div class="logo">
+    <h1><span class="rpm">RPM</span><span class="pro">PRO</span></h1>
+  </div>
+
+  <div class="card" id="card-pesquisa">
+    <div style="text-align:center;padding:30px;color:#8b949e;">Carregando...</div>
+  </div>
+
+  <div class="footer"><a href="https://rpmpro.com.br/landing.html" target="_blank" style="color:var(--text-muted);text-decoration:none;">Powered by <strong style="color:var(--primary);">RPM Pro</strong></a> — Sistema de gestao para oficinas</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = 'https://roeeyypssutzfzzkypsq.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZWV5eXBzc3V0emZ6emt5cHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MTk0MTgsImV4cCI6MjA5MDM5NTQxOH0.9oCOmABUTXox3FaRViD2zcUaqv94VfOJFMQYz_fcJi4';
+  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let notaSelecionada = 0;
+  const token = new URLSearchParams(window.location.search).get('t');
+  const card = document.getElementById('card-pesquisa');
+
+  async function init() {
+    if (!token) {
+      card.innerHTML = `<div class="erro"><div class="icon">🔗</div><h2>Link invalido</h2><p style="color:#8b949e;">Este link de avaliacao nao e valido.</p></div>`;
+      return;
+    }
+
+    const { data } = await db.rpc('buscar_pesquisa', { p_token: token });
+
+    if (!data || !data.ok) {
+      card.innerHTML = `<div class="erro"><div class="icon">❌</div><h2>${data?.erro || 'Pesquisa nao encontrada'}</h2><p style="color:#8b949e;">Verifique o link e tente novamente.</p></div>`;
+      return;
+    }
+
+    if (data.ja_respondida) {
+      card.innerHTML = `<div class="sucesso"><div class="icon">✅</div><h2>Voce ja avaliou!</h2><p style="color:#8b949e;">Obrigado pela sua avaliacao. Ela e muito importante pra gente!</p></div>`;
+      return;
+    }
+
+    card.innerHTML = `
+      ${data.logo ? `<div style="text-align:center;margin-bottom:16px;"><img src="${escAttr(data.logo)}" style="max-height:60px;max-width:200px;object-fit:contain;"></div>` : ''}
+      <h2>Como foi nosso servico?</h2>
+      <p class="sub">Sua avaliacao ajuda a ${esc(data.oficina)} a melhorar</p>
+
+      <div class="info">
+        <span>Cliente:</span> <strong>${esc(data.cliente)}</strong><br>
+        <span>OS:</span> <strong>#${esc(data.os_numero)}</strong>
+      </div>
+
+      <p style="text-align:center;font-size:14px;margin-bottom:12px;color:#8b949e;">Toque na nota:</p>
+      <div class="stars">
+        ${[1,2,3,4,5].map(n => `<div class="star" onclick="selNota(${n})" id="star-${n}">${n <= 2 ? ['😡','😕'][n-1] : n === 3 ? '😐' : n === 4 ? '😊' : '🤩'}</div>`).join('')}
+      </div>
+
+      <textarea id="comentario" placeholder="Deixe um comentario (opcional)..."></textarea>
+
+      <button class="btn" id="btn-enviar" onclick="enviar()" disabled>Enviar avaliacao</button>
+    `;
+  }
+
+  function esc(str) {
+    if (!str) return '';
+    const d = document.createElement('div');
+    d.textContent = String(str);
+    return d.innerHTML;
+  }
+  function escAttr(str) {
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/'/g,'&#39;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function selNota(n) {
+    notaSelecionada = n;
+    for (let i = 1; i <= 5; i++) {
+      document.getElementById('star-' + i).classList.toggle('active', i <= n);
+    }
+    document.getElementById('btn-enviar').disabled = false;
+  }
+
+  async function enviar() {
+    const btn = document.getElementById('btn-enviar');
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+
+    const comentario = document.getElementById('comentario').value.trim();
+
+    const { data } = await db.rpc('responder_pesquisa', {
+      p_token: token,
+      p_nota: notaSelecionada,
+      p_comentario: comentario || null
+    });
+
+    if (data && data.ok) {
+      card.innerHTML = `
+        <div class="sucesso">
+          <div class="icon">🎉</div>
+          <h2>Obrigado pela avaliacao!</h2>
+          <p style="color:#8b949e;margin-top:8px;">Sua nota: ${'★'.repeat(notaSelecionada)}${'☆'.repeat(5 - notaSelecionada)}</p>
+          <p style="color:#8b949e;margin-top:16px;">Sua opiniao e muito importante e nos ajuda a melhorar cada vez mais.</p>
+        </div>
+      `;
+    } else {
+      btn.disabled = false;
+      btn.textContent = 'Enviar avaliacao';
+      alert(data?.erro || 'Erro ao enviar. Tente novamente.');
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>

@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro V2 — Nova OS (Side Panel)</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#09090B;--sf:#111114;--sf2:#18181C;--sf3:#1F1F24;--sf4:#27272D;
+  --panel:#141417;
+  --ln:rgba(255,255,255,0.04);--ln2:rgba(255,255,255,0.08);--ln3:rgba(255,255,255,0.14);
+  --amber:#E8930C;--amber-dim:rgba(232,147,12,0.1);
+  --orange:#EA580C;--orange-dim:rgba(234,88,12,0.12);
+  --red:#FF3B30;--red-dim:rgba(255,59,48,0.1);
+  --green:#30D158;--green-dim:rgba(48,209,88,0.1);
+  --blue:#0A84FF;--blue-dim:rgba(10,132,255,0.1);
+  --w:#F0F0F2;--w2:rgba(255,255,255,0.6);--w3:rgba(255,255,255,0.32);--w4:rgba(255,255,255,0.14);
+  --mono:'JetBrains Mono',monospace;--head:'Barlow Condensed',sans-serif;--body:'Space Grotesk',sans-serif;
+  --r:3px;--r2:4px;
+}
+body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100vh;-webkit-font-smoothing:antialiased;}
+
+/* ═══ BACKDROP ═══ */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:900;opacity:0;pointer-events:none;transition:opacity .25s;}
+.overlay.open{opacity:1;pointer-events:auto;}
+
+/* ═══ SIDE PANEL ═══ */
+.side-panel{
+  position:fixed;top:0;right:0;bottom:0;
+  width:520px;max-width:100%;
+  background:var(--panel);
+  border-left:1px solid var(--ln2);
+  z-index:1000;
+  transform:translateX(100%);
+  transition:transform .3s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+.side-panel.open{transform:translateX(0);}
+
+/* PANEL HEADER */
+.panel-head{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:20px 24px;border-bottom:1px solid var(--ln2);
+  flex-shrink:0;
+}
+.panel-title{
+  font-family:var(--head);font-size:22px;font-weight:900;
+  text-transform:uppercase;letter-spacing:1px;
+}
+.panel-title span{color:var(--amber);}
+.panel-close{
+  width:36px;height:36px;
+  background:var(--sf3);border:1px solid var(--ln2);border-radius:var(--r);
+  color:var(--w3);font-size:18px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .12s;
+}
+.panel-close:hover{background:var(--sf4);color:var(--w);}
+
+/* PANEL BODY */
+.panel-body{
+  flex:1;overflow-y:auto;padding:24px;
+  scrollbar-width:thin;scrollbar-color:var(--sf3) transparent;
+}
+.panel-body::-webkit-scrollbar{width:4px;}
+.panel-body::-webkit-scrollbar-thumb{background:var(--sf3);border-radius:2px;}
+
+/* SECTION */
+.p-section{margin-bottom:28px;}
+.p-label{
+  font-family:var(--head);font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:2px;color:var(--w3);
+  margin-bottom:10px;display:flex;align-items:center;gap:8px;
+}
+.p-label-line{flex:1;height:1px;background:var(--ln2);}
+
+/* ═══ PLACA INPUT + SCAN ═══ */
+.placa-input-wrap{
+  display:flex;gap:8px;align-items:stretch;
+}
+.placa-input{
+  flex:1;
+  background:var(--sf2);border:2px solid var(--ln3);border-radius:var(--r2);
+  padding:18px 20px;
+  font-family:var(--mono);font-size:28px;font-weight:800;
+  color:var(--w);letter-spacing:4px;text-transform:uppercase;
+  outline:none;transition:border-color .15s;
+  text-align:center;
+}
+.placa-input::placeholder{
+  color:var(--w4);font-size:18px;letter-spacing:2px;font-weight:400;
+}
+.placa-input:focus{border-color:var(--amber);}
+
+/* SCAN BUTTON */
+.scan-btn{
+  width:80px;flex-shrink:0;
+  background:var(--sf2);border:2px solid var(--ln3);border-radius:var(--r2);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  cursor:pointer;transition:all .15s;position:relative;overflow:hidden;
+}
+.scan-btn:hover{border-color:var(--amber);background:var(--amber-dim);}
+.scan-btn:active{transform:scale(.96);}
+.scan-btn svg{width:28px;height:28px;stroke:var(--w2);transition:stroke .15s;}
+.scan-btn:hover svg{stroke:var(--amber);}
+.scan-btn-label{
+  font-family:var(--head);font-size:9px;font-weight:700;
+  text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);
+  transition:color .15s;
+}
+.scan-btn:hover .scan-btn-label{color:var(--amber);}
+
+/* Scanner animation line */
+.scan-btn::after{
+  content:'';position:absolute;left:10%;right:10%;
+  height:2px;background:var(--amber);
+  top:-2px;opacity:0;
+  transition:opacity .2s;
+}
+.scan-btn.scanning::after{
+  opacity:1;
+  animation:scanLine 1.5s ease-in-out infinite;
+}
+@keyframes scanLine{
+  0%{top:10%;}50%{top:85%;}100%{top:10%;}
+}
+
+/* VEHICLE RESULT */
+.vei-result{
+  margin-top:12px;background:var(--sf2);
+  border:1px solid var(--ln2);border-left:3px solid var(--amber);
+  border-radius:var(--r2);padding:16px 18px;
+  display:none;animation:slideUp .2s ease;
+}
+.vei-result.show{display:block;}
+.vei-result-placa{
+  display:inline-flex;flex-direction:column;
+  background:#FFFFFF;border-radius:2px;overflow:hidden;
+  border:2px solid #C8C8C8;margin-bottom:10px;line-height:1;
+}
+.vei-result-placa-topo{
+  background:#003399;padding:1px 6px;
+  display:flex;align-items:center;justify-content:space-between;gap:4px;
+}
+.vei-result-placa-br{font-family:var(--mono);font-size:5.5px;font-weight:700;color:#fff;}
+.vei-result-placa-flag{display:flex;gap:1px;}
+.vei-result-placa-flag span{display:block;width:2px;height:4px;border-radius:1px;}
+.vei-result-placa-cod{
+  padding:3px 8px 4px;font-family:var(--mono);
+  font-size:18px;font-weight:800;color:#1A1A1A;
+  letter-spacing:2px;text-align:center;line-height:1;
+}
+.vei-result-model{font-family:var(--head);font-size:18px;font-weight:700;text-transform:uppercase;margin-bottom:4px;}
+.vei-result-owner{font-family:var(--body);font-size:13px;color:var(--w2);}
+.vei-result-hist{font-family:var(--mono);font-size:11px;color:var(--w3);margin-top:8px;padding-top:8px;border-top:1px solid var(--ln);}
+@keyframes slideUp{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+/* ═══ KM INPUT ═══ */
+.km-input{
+  width:100%;background:var(--sf2);border:1px solid var(--ln2);border-radius:var(--r2);
+  padding:14px 18px;font-family:var(--mono);font-size:22px;font-weight:700;
+  color:var(--w);outline:none;letter-spacing:1px;
+  transition:border-color .15s;
+}
+.km-input::placeholder{color:var(--w4);font-size:14px;font-weight:400;letter-spacing:0;}
+.km-input:focus{border-color:var(--amber);}
+.km-suffix{
+  display:flex;align-items:center;gap:12px;margin-top:6px;
+}
+.km-last{font-family:var(--mono);font-size:11px;color:var(--w3);}
+
+/* ═══ DIAGNOSTICO / AUDIO ═══ */
+.diag-wrap{position:relative;}
+.diag-textarea{
+  width:100%;background:var(--sf2);border:1px solid var(--ln2);border-radius:var(--r2);
+  padding:16px 18px;padding-bottom:60px;
+  font-family:var(--body);font-size:14px;color:var(--w);
+  outline:none;resize:none;min-height:140px;line-height:1.6;
+  transition:border-color .15s;
+}
+.diag-textarea::placeholder{color:var(--w4);}
+.diag-textarea:focus{border-color:var(--ln3);}
+
+/* AUDIO BUTTON — dentro do textarea */
+.audio-btn{
+  position:absolute;bottom:12px;left:12px;right:12px;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  padding:12px;
+  background:var(--sf3);border:1px solid var(--orange);border-radius:var(--r2);
+  cursor:pointer;transition:all .15s;
+}
+.audio-btn:hover{background:var(--orange-dim);border-color:var(--orange);}
+.audio-btn:active{transform:scale(.98);}
+.audio-btn svg{width:22px;height:22px;fill:var(--orange);flex-shrink:0;}
+.audio-btn-text{
+  font-family:var(--head);font-size:13px;font-weight:700;
+  text-transform:uppercase;letter-spacing:1.5px;color:var(--orange);
+}
+
+/* Recording state */
+.audio-btn.recording{
+  background:rgba(255,59,48,0.12);border-color:var(--red);
+  animation:audioPulse 1s infinite;
+}
+.audio-btn.recording svg{fill:var(--red);}
+.audio-btn.recording .audio-btn-text{color:var(--red);}
+@keyframes audioPulse{0%,100%{opacity:1;}50%{opacity:.7;}}
+
+/* Waveform placeholder */
+.audio-wave{
+  display:none;align-items:center;justify-content:center;gap:2px;height:24px;
+}
+.audio-wave.show{display:flex;}
+.audio-wave span{
+  width:3px;background:var(--orange);border-radius:1px;
+  animation:wave 0.6s ease-in-out infinite;
+}
+.audio-wave span:nth-child(1){height:8px;animation-delay:0s;}
+.audio-wave span:nth-child(2){height:16px;animation-delay:.1s;}
+.audio-wave span:nth-child(3){height:12px;animation-delay:.2s;}
+.audio-wave span:nth-child(4){height:20px;animation-delay:.15s;}
+.audio-wave span:nth-child(5){height:10px;animation-delay:.25s;}
+.audio-wave span:nth-child(6){height:18px;animation-delay:.05s;}
+.audio-wave span:nth-child(7){height:8px;animation-delay:.3s;}
+@keyframes wave{0%,100%{transform:scaleY(0.4);}50%{transform:scaleY(1);}}
+
+/* ═══ MECANICO SELECT ═══ */
+.mec-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.mec-opt{
+  background:var(--sf2);border:1px solid var(--ln2);border-radius:var(--r2);
+  padding:14px;cursor:pointer;transition:all .12s;
+  display:flex;align-items:center;gap:10px;
+}
+.mec-opt:hover{border-color:var(--ln3);}
+.mec-opt:active{background:var(--sf3);}
+.mec-opt.sel{border-color:var(--amber);background:var(--amber-dim);}
+.mec-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;}
+.mec-opt.sel .mec-dot{background:var(--amber);}
+.mec-name{font-family:var(--head);font-size:14px;font-weight:700;text-transform:uppercase;}
+.mec-opt.sel .mec-name{color:var(--amber);}
+.mec-load{font-family:var(--mono);font-size:10px;color:var(--w3);margin-left:auto;}
+
+/* ═══ SUBMIT BUTTON ═══ */
+.panel-footer{
+  flex-shrink:0;padding:16px 24px;
+  border-top:1px solid var(--ln2);
+  background:var(--panel);
+}
+.submit-btn{
+  width:100%;padding:20px;
+  background:var(--amber);border:none;border-radius:var(--r2);
+  font-family:var(--head);font-size:18px;font-weight:900;
+  text-transform:uppercase;letter-spacing:2px;
+  color:#000;cursor:pointer;
+  transition:all .12s;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+}
+.submit-btn:hover{background:#F5A623;transform:translateY(-1px);}
+.submit-btn:active{transform:translateY(0);background:#D4860A;}
+.submit-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+
+/* ═══ DEMO CONTEXT (kanban atras) ═══ */
+.demo-bg{
+  padding:40px;opacity:.4;pointer-events:none;
+}
+.demo-bg-title{
+  font-family:var(--head);font-size:24px;font-weight:800;
+  text-transform:uppercase;letter-spacing:1px;color:var(--w3);
+  margin-bottom:16px;
+}
+.demo-bg-cols{display:flex;gap:12px;}
+.demo-bg-col{
+  flex:1;background:var(--sf);border:1px solid var(--ln);
+  border-radius:var(--r2);padding:20px;min-height:300px;
+}
+.demo-bg-col-title{
+  font-family:var(--head);font-size:12px;font-weight:600;
+  text-transform:uppercase;letter-spacing:2px;color:var(--w4);
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ KANBAN ATRAS (contexto visual) ═══ -->
+<div class="demo-bg">
+  <div class="demo-bg-title">Patio — Carbon Auto Center</div>
+  <div class="demo-bg-cols">
+    <div class="demo-bg-col"><div class="demo-bg-col-title">Entrada</div></div>
+    <div class="demo-bg-col"><div class="demo-bg-col-title">Diagnostico</div></div>
+    <div class="demo-bg-col"><div class="demo-bg-col-title">Execucao</div></div>
+    <div class="demo-bg-col"><div class="demo-bg-col-title">Ag. Peca</div></div>
+    <div class="demo-bg-col"><div class="demo-bg-col-title">Pronto</div></div>
+  </div>
+</div>
+
+<!-- ═══ OVERLAY ═══ -->
+<div class="overlay open" onclick="togglePanel()"></div>
+
+<!-- ═══ SIDE PANEL — NOVA OS ═══ -->
+<div class="side-panel open" id="panel">
+
+  <!-- HEADER -->
+  <div class="panel-head">
+    <div class="panel-title">Nova <span>OS</span></div>
+    <div class="panel-close" onclick="togglePanel()">&times;</div>
+  </div>
+
+  <!-- BODY -->
+  <div class="panel-body">
+
+    <!-- VEICULO -->
+    <div class="p-section">
+      <div class="p-label">Veiculo <span class="p-label-line"></span></div>
+      <div class="placa-input-wrap">
+        <input class="placa-input" id="placa-input" placeholder="PLACA" maxlength="7" oninput="simularBusca(this.value)">
+        <div class="scan-btn" id="scan-btn" onclick="simularScan()">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <!-- Visor de foco de camera -->
+            <path d="M2 7V3a2 2 0 0 1 2-2h4"/>
+            <path d="M16 1h4a2 2 0 0 1 2 2v4"/>
+            <path d="M22 17v4a2 2 0 0 1-2 2h-4"/>
+            <path d="M8 23H4a2 2 0 0 1-2-2v-4"/>
+            <circle cx="12" cy="12" r="4"/>
+          </svg>
+          <div class="scan-btn-label">Scan</div>
+        </div>
+      </div>
+
+      <!-- Resultado do veiculo -->
+      <div class="vei-result" id="vei-result">
+        <div class="vei-result-placa">
+          <div class="vei-result-placa-topo">
+            <div class="vei-result-placa-flag"><span style="background:#009739;"></span><span style="background:#FEDD00;"></span><span style="background:#012169;"></span></div>
+            <div class="vei-result-placa-br">BRASIL</div>
+          </div>
+          <div class="vei-result-placa-cod" id="vei-placa">PGA2J53</div>
+        </div>
+        <div class="vei-result-model" id="vei-model">Hyundai HB20 2020</div>
+        <div class="vei-result-owner" id="vei-owner">Romario da Silva &middot; (87) 9 9912-3456</div>
+        <div class="vei-result-hist" id="vei-hist">Ultima visita: 15/02/2026 &middot; 3 OS no historico &middot; Ticket medio: R$ 380,00</div>
+      </div>
+    </div>
+
+    <!-- QUILOMETRAGEM -->
+    <div class="p-section">
+      <div class="p-label">Quilometragem <span class="p-label-line"></span></div>
+      <input class="km-input" type="text" placeholder="KM atual do veiculo" value="">
+      <div class="km-suffix">
+        <span class="km-last">Ultimo registro: 62.440 km (15/02/2026)</span>
+      </div>
+    </div>
+
+    <!-- DIAGNOSTICO / PROBLEMA -->
+    <div class="p-section">
+      <div class="p-label">Problema Relatado <span class="p-label-line"></span></div>
+      <div class="diag-wrap">
+        <textarea class="diag-textarea" id="diag-text" placeholder="Descreva o problema ou use o microfone..."></textarea>
+        <div class="audio-btn" id="audio-btn" onclick="simularAudio()">
+          <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="12" y1="19" x2="12" y2="23" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <span class="audio-btn-text" id="audio-label">Gravar Diagnostico</span>
+          <div class="audio-wave" id="audio-wave">
+            <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MECANICO -->
+    <div class="p-section">
+      <div class="p-label">Mecanico <span class="p-label-line"></span></div>
+      <div class="mec-grid">
+        <div class="mec-opt" onclick="selMec(this)">
+          <div class="mec-dot"></div>
+          <div class="mec-name">Daniel</div>
+          <div class="mec-load">1 OS</div>
+        </div>
+        <div class="mec-opt" onclick="selMec(this)">
+          <div class="mec-dot"></div>
+          <div class="mec-name">Evandro</div>
+          <div class="mec-load">2 OS</div>
+        </div>
+        <div class="mec-opt" onclick="selMec(this)">
+          <div class="mec-dot"></div>
+          <div class="mec-name">Clodoaldo</div>
+          <div class="mec-load">0 OS</div>
+        </div>
+        <div class="mec-opt" onclick="selMec(this)">
+          <div class="mec-dot"></div>
+          <div class="mec-name">Renerson</div>
+          <div class="mec-load">1 OS</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER — SUBMIT -->
+  <div class="panel-footer">
+    <button class="submit-btn" id="submit-btn">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      ABRIR ORDEM DE SERVICO
+    </button>
+  </div>
+
+</div>
+
+<script>
+function togglePanel(){
+  document.getElementById('panel').classList.toggle('open');
+  document.querySelector('.overlay').classList.toggle('open');
+}
+
+function selMec(el){
+  document.querySelectorAll('.mec-opt').forEach(o=>o.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+// Simula busca de placa
+function simularBusca(val){
+  const clean=val.replace(/[^A-Za-z0-9]/g,'').toUpperCase();
+  const result=document.getElementById('vei-result');
+  if(clean.length>=4){
+    result.classList.add('show');
+  } else {
+    result.classList.remove('show');
+  }
+}
+
+// Simula scan OCR
+function simularScan(){
+  const btn=document.getElementById('scan-btn');
+  const input=document.getElementById('placa-input');
+  btn.classList.add('scanning');
+  input.value='';
+  input.placeholder='ESCANEANDO...';
+
+  // Simula delay de leitura
+  setTimeout(()=>{
+    btn.classList.remove('scanning');
+    input.value='PGA2J53';
+    input.placeholder='PLACA';
+    document.getElementById('vei-result').classList.add('show');
+  },2000);
+}
+
+// Simula gravacao de audio
+let audioState=false;
+function simularAudio(){
+  const btn=document.getElementById('audio-btn');
+  const label=document.getElementById('audio-label');
+  const wave=document.getElementById('audio-wave');
+  const textarea=document.getElementById('diag-text');
+
+  if(!audioState){
+    // Inicia gravacao
+    audioState=true;
+    btn.classList.add('recording');
+    label.textContent='Gravando...';
+    wave.classList.add('show');
+  } else {
+    // Para gravacao e "transcreve"
+    audioState=false;
+    btn.classList.remove('recording');
+    label.textContent='Gravar Diagnostico';
+    wave.classList.remove('show');
+    // Simula transcricao
+    textarea.value='Cliente relata barulho metalico na roda dianteira direita ao frear. Verificar pastilhas e disco de freio. Possivel desgaste irregular. Checar tambem rolamento.';
+  }
+}
+</script>
+</body>
+</html>

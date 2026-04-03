@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro V2 — Produtividade</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#09090B;--sf:#1A1A1E;--sf2:#202024;--sf3:#28282E;
+  --ln:rgba(255,255,255,0.04);--ln2:rgba(255,255,255,0.07);--ln3:rgba(255,255,255,0.12);
+  --amber:#E8930C;--amber-dim:rgba(232,147,12,0.08);
+  --red:#FF3B30;--red-dim:rgba(255,59,48,0.06);--red-soft:#FF3B30;
+  --green-neon:#30D158;--green-dim:rgba(48,209,88,0.06);--green-dark:#0B2E12;
+  --blue:#0A84FF;--blue-dim:rgba(10,132,255,0.08);
+  --cyan:#00C7BE;
+  --w:#EAEAEC;--w2:rgba(255,255,255,0.55);--w3:rgba(255,255,255,0.28);--w4:rgba(255,255,255,0.12);
+  --mono:'JetBrains Mono',monospace;--head:'Barlow Condensed',sans-serif;--body:'Space Grotesk',sans-serif;
+  --r:4px;
+}
+body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100vh;-webkit-font-smoothing:antialiased;padding:32px 40px;max-width:1100px;margin:0 auto;}
+
+/* HEADER */
+.page-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
+.page-title{font-family:var(--head);font-size:32px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.page-title span{color:var(--amber);}
+
+/* PERIOD */
+.period-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;}
+.period-nav{display:flex;align-items:center;gap:12px;}
+.period-btn{
+  width:38px;height:38px;background:var(--sf);border:1px solid var(--ln3);border-radius:var(--r);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .12s;
+}
+.period-btn:hover{border-color:var(--amber);background:var(--amber-dim);}
+.period-btn svg{width:16px;height:16px;stroke:var(--w2);stroke-width:2.5;}
+.period-btn:hover svg{stroke:var(--amber);}
+.period-label{font-family:var(--head);font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:2px;}
+.period-label span{color:var(--amber);}
+.period-filters{display:flex;gap:4px;}
+.p-btn{
+  font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;
+  padding:8px 18px;border:1px solid var(--ln2);border-radius:var(--r);
+  background:var(--sf);color:var(--w3);cursor:pointer;transition:all .12s;
+}
+.p-btn:hover{border-color:var(--ln3);color:var(--w2);}
+.p-btn.on{background:var(--amber);color:#000;border-color:var(--amber);}
+
+/* MACRO KPIs */
+.macro{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:24px;}
+.macro-card{
+  background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r);
+  padding:18px;position:relative;
+}
+.macro-label{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w3);margin-bottom:8px;}
+.macro-val{font-family:var(--mono);font-size:32px;font-weight:800;letter-spacing:-2px;line-height:1;}
+.macro-sub{font-family:var(--mono);font-size:11px;color:var(--w3);margin-top:6px;}
+.macro-bar{height:4px;background:var(--sf3);border-radius:2px;margin-top:10px;overflow:hidden;}
+.macro-bar-fill{height:100%;border-radius:2px;}
+
+/* Sangramento (destaque vermelho) */
+.macro-sangra{border-color:rgba(255,59,48,0.12);}
+.macro-sangra .macro-val{color:var(--red);}
+
+/* Ocupacao */
+.macro-ocup .macro-val{color:var(--green-neon);}
+
+/* Eficiencia */
+.macro-efic .macro-val{color:var(--amber);}
+
+/* Ociosos */
+.macro-ocio .macro-val{color:var(--amber);}
+
+/* SECTION TITLE */
+.section-title{
+  font-family:var(--head);font-size:13px;font-weight:800;text-transform:uppercase;
+  letter-spacing:3px;color:var(--w3);margin-bottom:12px;padding-bottom:8px;
+  border-bottom:1px solid var(--ln2);
+}
+
+/* RANKING HEADER */
+.rank-head{
+  display:grid;grid-template-columns:40px 180px 1fr 120px 80px;
+  gap:10px;align-items:center;padding:6px 16px;margin-bottom:4px;
+}
+.rank-head span{font-family:var(--head);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);}
+
+/* RANK ROW */
+.rank-row{
+  display:grid;grid-template-columns:40px 180px 1fr 120px 80px;
+  gap:10px;align-items:center;
+  background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r);
+  padding:12px 16px;margin-bottom:4px;transition:all .12s;
+}
+.rank-row:hover{border-color:var(--ln3);background:var(--sf2);}
+
+/* Posicao */
+.rank-pos{font-family:var(--head);font-size:22px;font-weight:900;text-align:center;color:var(--w4);}
+.rank-row:nth-child(2) .rank-pos{color:var(--amber);}
+.rank-row:nth-child(3) .rank-pos{color:var(--w2);}
+
+/* Operador */
+.rank-op{display:flex;align-items:center;gap:10px;}
+.rank-avatar{
+  width:36px;height:36px;border-radius:2px;
+  background:var(--sf3);border:1px solid var(--ln3);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  font-family:var(--mono);font-size:12px;font-weight:700;color:var(--w3);letter-spacing:2px;
+}
+.rank-info{min-width:0;}
+.rank-nome{font-family:var(--head);font-size:15px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;}
+.rank-cargo{font-family:var(--body);font-size:10px;color:var(--w3);}
+.rank-status-tag{
+  font-family:var(--mono);font-size:8px;font-weight:700;text-transform:uppercase;
+  letter-spacing:1px;padding:2px 6px;border-radius:2px;margin-top:2px;display:inline-block;
+}
+.tag-servico{background:var(--green-dim);color:var(--green-neon);border:1px solid rgba(48,209,88,0.1);}
+.tag-ocioso{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(232,147,12,0.1);}
+
+/* Barra comparativa TMT vs Real */
+.rank-bar-wrap{padding:0 8px;}
+.rank-bar-labels{display:flex;justify-content:space-between;margin-bottom:4px;}
+.rank-bar-label{font-family:var(--mono);font-size:9px;color:var(--w3);}
+.rank-bar-label span{font-weight:700;}
+.rank-bar{display:flex;height:6px;background:#222;border-radius:2px;overflow:hidden;position:relative;}
+.rank-bar-tmt{
+  height:100%;
+}
+.rank-bar-real{
+  height:100%;position:absolute;top:0;left:0;
+}
+/* Eficiente (real < tmt) */
+.bar-efficient .rank-bar-tmt{background:#333;width:100%;}
+.bar-efficient .rank-bar-real{background:var(--green-neon);}
+/* Estourado (real > tmt) */
+.bar-over .rank-bar-tmt{background:var(--green-neon);opacity:.3;}
+.bar-over .rank-bar-real{background:var(--red);}
+/* Normal */
+.bar-normal .rank-bar-tmt{background:#333;width:100%;}
+.bar-normal .rank-bar-real{background:var(--amber);}
+
+.rank-bar-summary{font-family:var(--mono);font-size:9px;color:var(--w3);margin-top:3px;text-align:right;}
+
+/* Financeiro */
+.rank-money{text-align:right;}
+.rank-money-val{font-family:var(--mono);font-size:15px;font-weight:800;}
+.rank-money-val.lucro{color:var(--green-neon);}
+.rank-money-val.prejuizo{color:var(--red);}
+.rank-money-val.neutro{color:var(--w3);}
+.rank-money-lbl{font-family:var(--head);font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--w4);margin-top:1px;}
+
+/* Eficiencia % */
+.rank-eff{text-align:center;}
+.rank-eff-val{font-family:var(--mono);font-size:18px;font-weight:800;}
+.rank-eff-val.high{color:var(--green-neon);}
+.rank-eff-val.mid{color:var(--amber);}
+.rank-eff-val.low{color:var(--red);}
+
+/* RECEPCAO — bloco administrativo */
+.admin-section{margin-top:32px;}
+.admin-grid{display:flex;gap:8px;}
+.admin-card{
+  flex:1;background:#18181B;border:1px solid #333;border-radius:var(--r);
+  padding:12px 16px;
+  display:grid;grid-template-columns:auto 1fr 80px 80px 80px;gap:14px;align-items:center;
+}
+.admin-id{display:flex;align-items:center;gap:10px;}
+.admin-avatar{
+  width:36px;height:36px;border-radius:2px;
+  background:var(--sf3);border:1px solid var(--ln3);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  font-family:var(--mono);font-size:12px;font-weight:700;color:var(--w3);letter-spacing:2px;
+}
+.admin-info{}
+.admin-nome{font-family:var(--head);font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;}
+.admin-cargo{font-family:var(--body);font-size:10px;color:var(--w3);}
+.admin-metric{text-align:center;}
+.admin-metric-val{font-family:var(--mono);font-size:18px;font-weight:800;}
+.admin-metric-lbl{font-family:var(--head);font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--w4);margin-top:1px;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="page-head">
+  <div class="page-title">Painel de <span>Produtividade</span></div>
+</div>
+
+<!-- PERIOD -->
+<div class="period-bar">
+  <div class="period-nav">
+    <div class="period-btn"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></div>
+    <div class="period-label">Abril <span>2026</span></div>
+    <div class="period-btn"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+  </div>
+  <div class="period-filters">
+    <div class="p-btn">Hoje</div>
+    <div class="p-btn on">Semana</div>
+    <div class="p-btn">Mês</div>
+  </div>
+</div>
+
+<!-- MACRO KPIs -->
+<div class="macro">
+  <div class="macro-card macro-ocup">
+    <div class="macro-label">Taxa de Ocupação</div>
+    <div class="macro-val">82%</div>
+    <div class="macro-sub">5 de 5 elevadores em uso</div>
+    <div class="macro-bar"><div class="macro-bar-fill" style="width:82%;background:var(--green-neon);"></div></div>
+  </div>
+
+  <div class="macro-card macro-efic">
+    <div class="macro-label">Eficiência Global</div>
+    <div class="macro-val">91%</div>
+    <div class="macro-sub">140h estimado / 155h real</div>
+    <div class="macro-bar"><div class="macro-bar-fill" style="width:91%;background:var(--amber);"></div></div>
+  </div>
+
+  <div class="macro-card macro-sangra">
+    <div class="macro-label">Desperdício (Sangramento)</div>
+    <div class="macro-val">-R$ 1.800</div>
+    <div class="macro-sub">15h perdidas × R$ 120/h</div>
+    <div class="macro-bar"><div class="macro-bar-fill" style="width:11%;background:var(--red);"></div></div>
+  </div>
+
+  <div class="macro-card macro-ocio">
+    <div class="macro-label">Mecânicos Ociosos</div>
+    <div class="macro-val">2</div>
+    <div class="macro-sub">Sergio (inativo) + Wellington (sem OS)</div>
+  </div>
+</div>
+
+<!-- RANKING DO BOX -->
+<div class="section-title">Ranking do Box — Eficiência por Mecânico</div>
+
+<div class="rank-head">
+  <span style="text-align:center;">#</span>
+  <span>Operador</span>
+  <span>TMT Estimado vs Real</span>
+  <span style="text-align:right;">Impacto R$</span>
+  <span style="text-align:center;">Efic.</span>
+</div>
+
+<!-- 1. Daniel — Eficiente -->
+<div class="rank-row">
+  <div class="rank-pos">1</div>
+  <div class="rank-op">
+    <div class="rank-avatar">DA</div>
+    <div class="rank-info">
+      <div class="rank-nome">Daniel</div>
+      <div class="rank-cargo">Mecânico Senior</div>
+      <div class="rank-status-tag tag-servico">Em Serviço</div>
+    </div>
+  </div>
+  <div class="rank-bar-wrap">
+    <div class="rank-bar-labels">
+      <span class="rank-bar-label">TMT: <span>32h</span></span>
+      <span class="rank-bar-label">Real: <span>28h</span></span>
+    </div>
+    <div class="rank-bar bar-efficient" style="position:relative;">
+      <div class="rank-bar-tmt" style="width:100%;"></div>
+      <div class="rank-bar-real" style="width:87.5%;"></div>
+    </div>
+    <div class="rank-bar-summary">4h abaixo do estimado</div>
+  </div>
+  <div class="rank-money">
+    <div class="rank-money-val lucro">+R$ 480</div>
+    <div class="rank-money-lbl">Lucro Extra</div>
+  </div>
+  <div class="rank-eff">
+    <div class="rank-eff-val high">115%</div>
+  </div>
+</div>
+
+<!-- 2. Evandro — Eficiente -->
+<div class="rank-row">
+  <div class="rank-pos">2</div>
+  <div class="rank-op">
+    <div class="rank-avatar">EV</div>
+    <div class="rank-info">
+      <div class="rank-nome">Evandro</div>
+      <div class="rank-cargo">Mecânico Senior</div>
+      <div class="rank-status-tag tag-servico">Em Serviço</div>
+    </div>
+  </div>
+  <div class="rank-bar-wrap">
+    <div class="rank-bar-labels">
+      <span class="rank-bar-label">TMT: <span>28h</span></span>
+      <span class="rank-bar-label">Real: <span>26h</span></span>
+    </div>
+    <div class="rank-bar bar-efficient" style="position:relative;">
+      <div class="rank-bar-tmt" style="width:100%;"></div>
+      <div class="rank-bar-real" style="width:92.8%;"></div>
+    </div>
+    <div class="rank-bar-summary">2h abaixo do estimado</div>
+  </div>
+  <div class="rank-money">
+    <div class="rank-money-val lucro">+R$ 240</div>
+    <div class="rank-money-lbl">Lucro Extra</div>
+  </div>
+  <div class="rank-eff">
+    <div class="rank-eff-val high">108%</div>
+  </div>
+</div>
+
+<!-- 3. Juninho — Normal -->
+<div class="rank-row">
+  <div class="rank-pos">3</div>
+  <div class="rank-op">
+    <div class="rank-avatar">JU</div>
+    <div class="rank-info">
+      <div class="rank-nome">Juninho</div>
+      <div class="rank-cargo">Mecânico</div>
+      <div class="rank-status-tag tag-servico">Em Serviço</div>
+    </div>
+  </div>
+  <div class="rank-bar-wrap">
+    <div class="rank-bar-labels">
+      <span class="rank-bar-label">TMT: <span>24h</span></span>
+      <span class="rank-bar-label">Real: <span>25h</span></span>
+    </div>
+    <div class="rank-bar bar-normal" style="position:relative;">
+      <div class="rank-bar-tmt" style="width:100%;"></div>
+      <div class="rank-bar-real" style="width:100%;"></div>
+    </div>
+    <div class="rank-bar-summary">1h acima — margem aceitável</div>
+  </div>
+  <div class="rank-money">
+    <div class="rank-money-val neutro">-R$ 120</div>
+    <div class="rank-money-lbl">Marginal</div>
+  </div>
+  <div class="rank-eff">
+    <div class="rank-eff-val mid">96%</div>
+  </div>
+</div>
+
+<!-- 4. Marcos — Estourado -->
+<div class="rank-row">
+  <div class="rank-pos">4</div>
+  <div class="rank-op">
+    <div class="rank-avatar">MA</div>
+    <div class="rank-info">
+      <div class="rank-nome">Marcos</div>
+      <div class="rank-cargo">Mecânico</div>
+      <div class="rank-status-tag tag-servico">Em Serviço</div>
+    </div>
+  </div>
+  <div class="rank-bar-wrap">
+    <div class="rank-bar-labels">
+      <span class="rank-bar-label">TMT: <span>20h</span></span>
+      <span class="rank-bar-label" style="color:var(--red);">Real: <span>26h</span></span>
+    </div>
+    <div class="rank-bar bar-over" style="position:relative;">
+      <div class="rank-bar-tmt" style="width:77%;"></div>
+      <div class="rank-bar-real" style="width:100%;"></div>
+    </div>
+    <div class="rank-bar-summary" style="color:var(--red);">6h acima — gargalo ativo</div>
+  </div>
+  <div class="rank-money">
+    <div class="rank-money-val prejuizo">-R$ 720</div>
+    <div class="rank-money-lbl">Prejuízo</div>
+  </div>
+  <div class="rank-eff">
+    <div class="rank-eff-val low">77%</div>
+  </div>
+</div>
+
+<!-- 5. Leandro — Estourado leve -->
+<div class="rank-row">
+  <div class="rank-pos">5</div>
+  <div class="rank-op">
+    <div class="rank-avatar">LE</div>
+    <div class="rank-info">
+      <div class="rank-nome">Leandro</div>
+      <div class="rank-cargo">Mecânico</div>
+      <div class="rank-status-tag tag-servico">Em Serviço</div>
+    </div>
+  </div>
+  <div class="rank-bar-wrap">
+    <div class="rank-bar-labels">
+      <span class="rank-bar-label">TMT: <span>18h</span></span>
+      <span class="rank-bar-label" style="color:var(--red);">Real: <span>22h</span></span>
+    </div>
+    <div class="rank-bar bar-over" style="position:relative;">
+      <div class="rank-bar-tmt" style="width:82%;"></div>
+      <div class="rank-bar-real" style="width:100%;"></div>
+    </div>
+    <div class="rank-bar-summary" style="color:var(--red);">4h acima</div>
+  </div>
+  <div class="rank-money">
+    <div class="rank-money-val prejuizo">-R$ 480</div>
+    <div class="rank-money-lbl">Prejuízo</div>
+  </div>
+  <div class="rank-eff">
+    <div class="rank-eff-val low">82%</div>
+  </div>
+</div>
+
+<!-- 6. Wellington — Ocioso -->
+<div class="rank-row">
+  <div class="rank-pos">6</div>
+  <div class="rank-op">
+    <div class="rank-avatar">WE</div>
+    <div class="rank-info">
+      <div class="rank-nome">Wellington</div>
+      <div class="rank-cargo">Aux. Mecânico</div>
+      <div class="rank-status-tag tag-ocioso">Ocioso</div>
+    </div>
+  </div>
+  <div class="rank-bar-wrap">
+    <div class="rank-bar-labels">
+      <span class="rank-bar-label">TMT: <span>18h</span></span>
+      <span class="rank-bar-label">Real: <span>16h</span></span>
+    </div>
+    <div class="rank-bar bar-efficient" style="position:relative;">
+      <div class="rank-bar-tmt" style="width:100%;"></div>
+      <div class="rank-bar-real" style="width:88.8%;"></div>
+    </div>
+    <div class="rank-bar-summary">2h livre — sem OS atribuída</div>
+  </div>
+  <div class="rank-money">
+    <div class="rank-money-val neutro">R$ 0</div>
+    <div class="rank-money-lbl">Ocioso</div>
+  </div>
+  <div class="rank-eff">
+    <div class="rank-eff-val mid">89%</div>
+  </div>
+</div>
+
+<!-- RECEPCAO / ADMINISTRATIVO -->
+<div class="admin-section">
+  <div class="section-title">Recepção e Administrativo</div>
+  <div class="admin-grid">
+    <div class="admin-card">
+      <div class="admin-id">
+        <div class="admin-avatar">MJ</div>
+        <div class="admin-info">
+          <div class="admin-nome">Marcondes Jr</div>
+          <div class="admin-cargo">Gestor</div>
+        </div>
+      </div>
+      <div></div>
+      <div class="admin-metric">
+        <div class="admin-metric-val" style="color:var(--w2);">12</div>
+        <div class="admin-metric-lbl">Orçamentos</div>
+      </div>
+      <div class="admin-metric">
+        <div class="admin-metric-val" style="color:var(--green-neon);">9</div>
+        <div class="admin-metric-lbl">Aprovados</div>
+      </div>
+      <div class="admin-metric">
+        <div class="admin-metric-val" style="color:var(--amber);">75%</div>
+        <div class="admin-metric-lbl">Conversão</div>
+      </div>
+    </div>
+    <div class="admin-card">
+      <div class="admin-id">
+        <div class="admin-avatar">RA</div>
+        <div class="admin-info">
+          <div class="admin-nome">Rafael</div>
+          <div class="admin-cargo">Atendente</div>
+        </div>
+      </div>
+      <div></div>
+      <div class="admin-metric">
+        <div class="admin-metric-val" style="color:var(--w2);">16</div>
+        <div class="admin-metric-lbl">Orçamentos</div>
+      </div>
+      <div class="admin-metric">
+        <div class="admin-metric-val" style="color:var(--green-neon);">11</div>
+        <div class="admin-metric-lbl">Aprovados</div>
+      </div>
+      <div class="admin-metric">
+        <div class="admin-metric-val" style="color:var(--amber);">69%</div>
+        <div class="admin-metric-lbl">Conversão</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

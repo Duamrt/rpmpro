@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro V2 — Configurações</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#09090B;--sf:#111114;--sf2:#18181C;--sf3:#1F1F24;--sf4:#27272D;
+  --ln:rgba(255,255,255,0.04);--ln2:rgba(255,255,255,0.08);--ln3:rgba(255,255,255,0.14);
+  --amber:#E8930C;--amber-dim:rgba(232,147,12,0.1);
+  --orange:#EA580C;--orange-dim:rgba(234,88,12,0.1);
+  --red:#FF3B30;--red-dim:rgba(255,59,48,0.08);
+  --green:#30D158;--green-dim:rgba(48,209,88,0.08);
+  --blue:#0A84FF;--blue-dim:rgba(10,132,255,0.1);
+  --purple:#7C3AED;--purple-dim:rgba(124,58,237,0.1);
+  --cyan:#00C7BE;--cyan-dim:rgba(0,199,190,0.1);
+  --w:#F0F0F2;--w2:rgba(255,255,255,0.6);--w3:rgba(255,255,255,0.32);--w4:rgba(255,255,255,0.14);
+  --mono:'JetBrains Mono',monospace;--head:'Barlow Condensed',sans-serif;--body:'Space Grotesk',sans-serif;
+  --r:3px;--r2:4px;
+}
+body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100vh;-webkit-font-smoothing:antialiased;overflow:hidden;}
+
+/* ── LAYOUT ── */
+.app{display:flex;height:100vh;overflow:hidden;}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:220px;flex-shrink:0;
+  background:var(--sf);border-right:1px solid var(--ln2);
+  display:flex;flex-direction:column;
+}
+.sidebar-logo{padding:20px 16px 12px;border-bottom:1px solid var(--ln);}
+.sidebar-logo-brand{font-family:var(--head);font-size:22px;font-weight:900;letter-spacing:1px;}
+.sidebar-logo-brand span{color:var(--amber);}
+.sidebar-logo-oficina{font-family:var(--mono);font-size:10px;color:var(--w3);margin-top:2px;letter-spacing:.5px;}
+.sidebar-nav{flex:1;overflow-y:auto;padding:8px 0;}
+.nav-section{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);padding:14px 16px 4px;}
+.nav-item{display:flex;align-items:center;gap:8px;padding:7px 16px;font-size:13px;color:var(--w3);cursor:pointer;transition:all .12s;text-decoration:none;border-left:3px solid transparent;}
+.nav-item:hover{color:var(--w);background:var(--sf2);}
+.nav-item.active{color:var(--amber);border-left-color:var(--amber);background:var(--amber-dim);}
+.nav-icon{font-size:14px;width:20px;text-align:center;flex-shrink:0;}
+.sidebar-footer{border-top:1px solid var(--ln2);padding:12px 16px;display:flex;align-items:center;gap:8px;}
+.user-info{flex:1;display:flex;align-items:center;gap:8px;}
+.user-avatar{width:28px;height:28px;border-radius:50%;background:var(--amber-dim);border:1px solid var(--amber);color:var(--amber);display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:12px;font-weight:900;flex-shrink:0;}
+.user-details{min-width:0;}
+.user-name{font-family:var(--body);font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.user-role{font-family:var(--mono);font-size:9px;color:var(--w3);text-transform:uppercase;letter-spacing:1px;}
+.btn-logout{background:none;border:1px solid var(--ln3);color:var(--w3);font-family:var(--mono);font-size:10px;padding:4px 8px;border-radius:var(--r);cursor:pointer;transition:all .12s;}
+.btn-logout:hover{border-color:var(--red);color:var(--red);}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.main-topbar{padding:16px 24px;border-bottom:1px solid var(--ln);display:flex;align-items:center;gap:12px;}
+.main-title{font-family:var(--head);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.main-title span{color:var(--amber);}
+.main-body{flex:1;overflow-y:auto;padding:24px;}
+
+/* ── LOGIN OVERLAY ── */
+.login-overlay{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;}
+.login-box{width:340px;padding:32px;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);}
+.login-brand{font-family:var(--head);font-size:36px;font-weight:900;text-align:center;letter-spacing:2px;}
+.login-brand span{color:var(--amber);}
+.login-sub{font-family:var(--mono);font-size:10px;color:var(--w3);text-align:center;margin:4px 0 24px;letter-spacing:2px;}
+.login-label{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);margin-bottom:4px;display:block;}
+.login-input{width:100%;padding:10px 14px;background:var(--sf2);border:1px solid var(--ln3);border-radius:var(--r);color:var(--w);font-family:var(--mono);font-size:14px;outline:none;margin-bottom:12px;}
+.login-input:focus{border-color:var(--amber);}
+.login-btn{width:100%;padding:12px;background:var(--amber);border:none;border-radius:var(--r);font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#000;cursor:pointer;margin-top:4px;}
+.login-err{display:none;text-align:center;font-size:12px;color:var(--red);margin-top:10px;}
+
+/* ── LOADING ── */
+.loading-screen{position:fixed;inset:0;background:var(--bg);z-index:9998;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
+.loading-spinner{width:32px;height:32px;border:3px solid var(--ln3);border-top-color:var(--amber);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-label{font-family:var(--mono);font-size:12px;color:var(--w3);}
+
+/* ── CONFIG NAV ── */
+.config-layout{display:grid;grid-template-columns:210px 1fr;gap:24px;max-width:1100px;}
+.cfg-nav{position:sticky;top:0;}
+.cfg-nav-item{
+  padding:10px 14px;border-radius:var(--r);cursor:pointer;
+  font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;
+  letter-spacing:1.5px;color:var(--w3);transition:all .12s;margin-bottom:2px;
+  display:flex;align-items:center;gap:10px;border-left:3px solid transparent;
+}
+.cfg-nav-item:hover{color:var(--w2);background:var(--sf2);}
+.cfg-nav-item.on{color:var(--amber);background:var(--amber-dim);border-left-color:var(--amber);}
+
+/* ── FORM ── */
+.cfg-section{margin-bottom:24px;}
+.cfg-section-title{font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--ln2);}
+.cfg-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.cfg-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px;}
+.cfg-field{display:flex;flex-direction:column;gap:5px;}
+.cfg-label{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);}
+.cfg-input{
+  background:var(--sf);border:1px solid var(--ln3);border-radius:var(--r);
+  padding:10px 14px;font-family:var(--mono);font-size:13px;font-weight:600;
+  color:var(--w);outline:none;transition:border-color .15s;width:100%;
+}
+.cfg-input:focus{border-color:var(--amber);}
+.cfg-input::placeholder{color:var(--w4);font-family:var(--body);font-weight:400;}
+.cfg-input-big{font-size:20px;font-weight:800;text-align:center;letter-spacing:1px;padding:12px;}
+.cfg-hint{font-family:var(--body);font-size:10px;color:var(--w4);margin-top:2px;}
+.cfg-btn{
+  padding:10px 24px;background:var(--amber);border:none;border-radius:var(--r);
+  font-family:var(--mono);font-size:11px;font-weight:800;text-transform:uppercase;
+  letter-spacing:2px;color:#000;cursor:pointer;transition:all .12s;
+}
+.cfg-btn:hover{background:#F5A623;}
+.cfg-btn:active{transform:scale(.97);}
+.cfg-btn-sm{padding:6px 14px;font-size:10px;}
+.cfg-btn-danger{background:var(--red);}
+.cfg-btn-danger:hover{background:#FF5544;}
+.cfg-btn-secondary{background:var(--sf2);border:1px solid var(--ln3);color:var(--w2);}
+.cfg-btn-secondary:hover{border-color:var(--amber);color:var(--amber);}
+
+/* ── TOGGLE ── */
+.cfg-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--ln);}
+.cfg-toggle-label{font-family:var(--body);font-size:13px;color:var(--w2);}
+.cfg-toggle-sub{font-family:var(--body);font-size:10px;color:var(--w4);}
+.cfg-toggle{
+  width:40px;height:22px;border-radius:11px;
+  background:var(--sf3);border:1px solid var(--ln2);
+  position:relative;cursor:pointer;transition:all .12s;flex-shrink:0;
+}
+.cfg-toggle.on{background:rgba(48,209,88,0.12);border-color:rgba(48,209,88,0.2);}
+.cfg-toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--w3);transition:all .12s;}
+.cfg-toggle.on::after{left:20px;background:var(--green);}
+
+/* ── HORÁRIO GRID ── */
+.horario-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--ln);}
+.horario-row.fechado{opacity:.4;}
+.horario-dia-nome{font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--w3);width:60px;}
+.horario-check{accent-color:var(--amber);cursor:pointer;width:16px;height:16px;}
+.horario-time{background:var(--sf);border:1px solid var(--ln3);border-radius:var(--r);padding:6px 8px;font-family:var(--mono);font-size:12px;color:var(--w);outline:none;width:90px;}
+.horario-time:focus{border-color:var(--amber);}
+
+/* ── MAQUININHA CARD ── */
+.maq-card{display:flex;align-items:center;gap:12px;padding:12px;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r);margin-bottom:8px;}
+.maq-card .maq-info{flex:1;}
+.maq-card .maq-nome{font-family:var(--head);font-size:14px;font-weight:700;}
+.maq-card .maq-taxas{font-family:var(--mono);font-size:11px;color:var(--w3);}
+
+/* ── LOGO UPLOAD ── */
+.logo-upload{display:flex;align-items:center;gap:16px;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r);padding:16px;margin-bottom:12px;}
+.logo-preview{width:64px;height:64px;border-radius:var(--r);background:var(--sf3);border:1px dashed var(--ln3);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;color:var(--w4);flex-shrink:0;overflow:hidden;}
+.logo-preview img{width:100%;height:100%;object-fit:contain;}
+
+/* ── CALCULADORA ── */
+.calc-panel{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r);overflow:hidden;margin-bottom:20px;}
+.calc-header{padding:12px 18px;border-bottom:1px solid var(--ln2);font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w3);display:flex;align-items:center;gap:8px;}
+.calc-body{display:grid;grid-template-columns:1fr 1fr;gap:0;}
+.calc-result{padding:24px;text-align:center;border-right:1px solid var(--ln2);display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.calc-result-val{font-family:var(--mono);font-size:36px;font-weight:800;color:var(--green);letter-spacing:-2px;line-height:1;}
+.calc-result-sub{font-family:var(--mono);font-size:12px;color:var(--w3);margin-top:8px;}
+.calc-result-status{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;padding:4px 12px;border-radius:var(--r);margin-top:10px;}
+.calc-breakdown{padding:16px 18px;}
+.calc-line{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--ln);}
+.calc-line:last-child{border-bottom:none;}
+.calc-line-label{font-family:var(--body);font-size:12px;color:var(--w2);}
+.calc-line-val{font-family:var(--mono);font-size:12px;font-weight:700;}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:5000;display:none;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:24px;width:420px;max-height:80vh;overflow-y:auto;}
+.modal-title{font-family:var(--head);font-size:18px;font-weight:900;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;}
+.modal-title span{color:var(--amber);}
+
+/* ── TOAST ── */
+.toast-area{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:6px;}
+.toast{padding:10px 16px;border-radius:var(--r);font-family:var(--mono);font-size:11px;font-weight:600;animation:fadeIn .2s;border:1px solid var(--ln2);background:var(--sf);}
+.toast-ok{border-color:var(--green);color:var(--green);}
+.toast-err{border-color:var(--red);color:var(--red);}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+
+@media(max-width:900px){
+  .config-layout{grid-template-columns:1fr;}
+  .cfg-nav{display:flex;overflow-x:auto;gap:4px;padding-bottom:8px;border-bottom:1px solid var(--ln2);margin-bottom:16px;}
+  .cfg-nav-item{white-space:nowrap;font-size:11px;padding:8px 12px;border-left:none;border-bottom:3px solid transparent;}
+  .cfg-nav-item.on{border-left:none;border-bottom-color:var(--amber);}
+  .calc-body{grid-template-columns:1fr;}
+  .calc-result{border-right:none;border-bottom:1px solid var(--ln2);}
+  .cfg-row,.cfg-row-3{grid-template-columns:1fr;}
+}
+@media(max-width:768px){
+  .sidebar{display:none;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN OVERLAY -->
+<div class="login-overlay" id="login-overlay">
+  <div class="login-box">
+    <div class="login-brand">RPM <span>PRO</span></div>
+    <div class="login-sub">V2 · CONFIGURAÇÕES</div>
+    <label class="login-label">Email</label>
+    <input class="login-input" type="email" id="login-email" placeholder="email@oficina.com" autocomplete="email">
+    <label class="login-label">Senha</label>
+    <input class="login-input" type="password" id="login-senha" placeholder="••••••••" onkeydown="if(event.key==='Enter')fazerLogin()">
+    <button class="login-btn" id="login-btn" onclick="fazerLogin()">Entrar</button>
+    <div class="login-err" id="login-err">Email ou senha incorretos</div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="loading-screen" id="loading" style="display:none;">
+  <div class="loading-spinner"></div>
+  <div class="loading-label">carregando configurações...</div>
+</div>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-brand">RPM <span>PRO</span></div>
+      <div class="sidebar-logo-oficina" id="oficina-nome">—</div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section">Oficina</div>
+      <a class="nav-item" href="kanban-v2.html"><span class="nav-icon">⬛</span>Pátio</a>
+      <a class="nav-item" href="dashboard-v2.html"><span class="nav-icon">◈</span>Dashboard</a>
+
+      <div class="nav-section">Atendimento</div>
+      <a class="nav-item" href="fila-espera-v2.html"><span class="nav-icon">⏳</span>Fila de Espera</a>
+      <a class="nav-item" href="os-list-v2.html"><span class="nav-icon">📋</span>Ordens de Servico</a>
+      <a class="nav-item" href="execucao-os-v2.html"><span class="nav-icon">🔧</span>Execucao OS</a>
+      <a class="nav-item" href="clientes-v2.html"><span class="nav-icon">👥</span>Clientes</a>
+      <a class="nav-item" href="veiculos-v2.html"><span class="nav-icon">🚗</span>Veículos</a>
+      <a class="nav-item" href="agendamentos-v2.html"><span class="nav-icon">📅</span>Agendamentos</a>
+
+      <div class="nav-section">Catálogo</div>
+      <a class="nav-item" href="catalogo-v2.html"><span class="nav-icon">🔧</span>Servicos / Pecas</a>
+
+      <div class="nav-section">Financeiro</div>
+      <a class="nav-item" href="financeiro-v2.html"><span class="nav-icon">💰</span>Caixa</a>
+      <a class="nav-item" href="comissao-v2.html"><span class="nav-icon">📊</span>Comissão</a>
+      <a class="nav-item" href="folha-v2.html"><span class="nav-icon">📄</span>Folha</a>
+
+      <div class="nav-section">Equipe</div>
+      <a class="nav-item" href="equipe-v2.html"><span class="nav-icon">👤</span>Equipe</a>
+      <a class="nav-item" href="produtividade-v2.html"><span class="nav-icon">⚡</span>Produtividade</a>
+      <a class="nav-item" href="crm-v2.html"><span class="nav-icon">📡</span>CRM / Reativacao</a>
+      <a class="nav-item" href="satisfacao-v2.html"><span class="nav-icon">⭐</span>Satisfacao</a>
+      <a class="nav-item active"><span class="nav-icon">⚙️</span>Configurações</a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="user-avatar">—</div>
+        <div class="user-details">
+          <div class="user-name" id="user-nome">—</div>
+          <div class="user-role" id="user-role">—</div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="sair()">Sair</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="main-topbar">
+      <div class="main-title"><span>Configurações</span></div>
+    </div>
+    <div class="main-body">
+      <div class="config-layout">
+
+        <!-- NAV CONFIG -->
+        <div class="cfg-nav" id="cfg-nav">
+          <div class="cfg-nav-item on" onclick="switchCfg('dados',this)">Dados da Oficina</div>
+          <div class="cfg-nav-item" onclick="switchCfg('valores',this)">Valores e Comissão</div>
+          <div class="cfg-nav-item" onclick="switchCfg('maquininhas',this)">Maquininhas</div>
+          <div class="cfg-nav-item" onclick="switchCfg('horario',this)">Horário</div>
+          <div class="cfg-nav-item" onclick="switchCfg('pix',this)">Chave PIX</div>
+          <div class="cfg-nav-item" onclick="switchCfg('mensagens',this)">Mensagens WhatsApp</div>
+          <div class="cfg-nav-item" onclick="switchCfg('logo',this)">Logo</div>
+          <div class="cfg-nav-item" onclick="switchCfg('calculadora',this)">Calculadora MO</div>
+          <div class="cfg-nav-item" onclick="switchCfg('plano',this)">Plano</div>
+          <div class="cfg-nav-item" onclick="switchCfg('tv',this)">Painel TV</div>
+        </div>
+
+        <!-- CONTEÚDO -->
+        <div id="cfg-content">
+          <div style="text-align:center;padding:60px;font-family:var(--mono);font-size:12px;color:var(--w4);">carregando...</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)fecharModal()">
+  <div class="modal-box" id="modal-box"></div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-area" id="toast-area"></div>
+
+<script>
+// ── CONFIG SUPABASE ──
+const SUPABASE_URL = 'https://roeeyypssutzfzzkypsq.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZWV5eXBzc3V0emZ6emt5cHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MTk0MTgsImV4cCI6MjA5MDM5NTQxOH0.9oCOmABUTXox3FaRViD2zcUaqv94VfOJFMQYz_fcJi4';
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let PERFIL = null;
+let OFICINA_ID = null;
+let OFICINA = null;
+let ABA = 'dados';
+
+function esc(s) { return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : ''; }
+
+function toast(msg, tipo='ok') {
+  const area = document.getElementById('toast-area');
+  const el = document.createElement('div');
+  el.className = 'toast toast-' + tipo;
+  el.textContent = msg;
+  area.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+function isDono() {
+  return PERFIL && ['dono','gerente'].includes(PERFIL.role);
+}
+
+function abrirModal(html) {
+  document.getElementById('modal-box').innerHTML = html;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function fecharModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+// ── LOGIN ──
+async function fazerLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const senha = document.getElementById('login-senha').value;
+  const btn   = document.getElementById('login-btn');
+  const err   = document.getElementById('login-err');
+  if (!email || !senha) return;
+  btn.disabled = true; btn.textContent = 'Entrando...'; err.style.display = 'none';
+  const { error } = await db.auth.signInWithPassword({ email, password: senha });
+  if (error) { err.style.display = 'block'; btn.disabled = false; btn.textContent = 'Entrar'; return; }
+  await init();
+}
+
+async function sair() {
+  await db.auth.signOut();
+  window.location.href = 'login.html';
+}
+
+const _busy = {};
+
+// ── INIT ──
+async function init() {
+  db.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_OUT') window.location.href = 'login.html'; });
+  const { data:{ session } } = await db.auth.getSession();
+  if (!session) { document.getElementById('login-overlay').style.display = 'flex'; return; }
+  document.getElementById('login-overlay').style.display = 'none';
+  document.getElementById('loading').style.display = 'flex';
+
+  const { data: perfil } = await db.from('profiles').select('*, oficinas(*)').eq('user_id', session.user.id).single();
+  if (!perfil) { toast('Perfil não encontrado','err'); return; }
+
+  PERFIL = perfil;
+  OFICINA_ID = perfil.oficina_id;
+  OFICINA = perfil.oficinas;
+
+  const nomeDisplay = perfil.nome || session.user.email;
+  document.getElementById('user-nome').textContent = nomeDisplay;
+  document.getElementById('user-role').textContent = perfil.role || '';
+  document.getElementById('user-avatar').textContent = nomeDisplay.charAt(0).toUpperCase();
+  document.getElementById('oficina-nome').textContent = OFICINA?.nome || '';
+
+  renderAba();
+  document.getElementById('loading').style.display = 'none';
+}
+
+// ── NAVEGAÇÃO ──
+function switchCfg(aba, el) {
+  ABA = aba;
+  document.querySelectorAll('.cfg-nav-item').forEach(n => n.classList.remove('on'));
+  if (el) el.classList.add('on');
+  renderAba();
+}
+
+function renderAba() {
+  const ct = document.getElementById('cfg-content');
+  switch (ABA) {
+    case 'dados': renderDados(ct); break;
+    case 'valores': renderValores(ct); break;
+    case 'maquininhas': renderMaquininhas(ct); break;
+    case 'horario': renderHorario(ct); break;
+    case 'pix': renderPix(ct); break;
+    case 'mensagens': renderMensagens(ct); break;
+    case 'logo': renderLogo(ct); break;
+    case 'calculadora': renderCalculadora(ct); break;
+    case 'plano': renderPlano(ct); break;
+    case 'tv': renderTV(ct); break;
+  }
+}
+
+// ══════════════════════════════════════════
+// ══ DADOS DA OFICINA ══
+// ══════════════════════════════════════════
+function renderDados(ct) {
+  const o = OFICINA || {};
+  ct.innerHTML = `
+    <div class="cfg-section">
+      <div class="cfg-section-title">Informações da Oficina</div>
+      <div class="cfg-row">
+        <div class="cfg-field"><div class="cfg-label">Nome</div><input class="cfg-input" id="cfg-nome" value="${esc(o.nome||'')}"></div>
+        <div class="cfg-field"><div class="cfg-label">CNPJ</div><input class="cfg-input" id="cfg-cnpj" value="${esc(o.cnpj||'')}" maxlength="18"></div>
+      </div>
+      <div class="cfg-row">
+        <div class="cfg-field"><div class="cfg-label">Telefone</div><input class="cfg-input" id="cfg-telefone" value="${esc(o.telefone||'')}" maxlength="15"></div>
+        <div class="cfg-field"><div class="cfg-label">WhatsApp</div><input class="cfg-input" id="cfg-whatsapp" value="${esc(o.whatsapp||'')}" maxlength="15"></div>
+      </div>
+      <div class="cfg-row">
+        <div class="cfg-field"><div class="cfg-label">Email</div><input class="cfg-input" id="cfg-email" value="${esc(o.email||'')}"></div>
+      </div>
+    </div>
+    <div class="cfg-section">
+      <div class="cfg-section-title">Endereço</div>
+      <div class="cfg-row">
+        <div class="cfg-field"><div class="cfg-label">Endereço</div><input class="cfg-input" id="cfg-endereco" value="${esc(o.endereco||'')}"></div>
+        <div class="cfg-field" style="max-width:120px;"><div class="cfg-label">Número</div><input class="cfg-input" id="cfg-numero" value="${esc(o.numero||'')}"></div>
+      </div>
+      <div class="cfg-row-3">
+        <div class="cfg-field"><div class="cfg-label">Bairro</div><input class="cfg-input" id="cfg-bairro" value="${esc(o.bairro||'')}"></div>
+        <div class="cfg-field"><div class="cfg-label">Cidade</div><input class="cfg-input" id="cfg-cidade" value="${esc(o.cidade||'')}"></div>
+        <div class="cfg-field" style="max-width:80px;"><div class="cfg-label">UF</div><input class="cfg-input" id="cfg-estado" value="${esc(o.estado||'')}" maxlength="2" style="text-transform:uppercase;"></div>
+      </div>
+    </div>
+    <div class="cfg-section">
+      <div class="cfg-section-title">Capacidade</div>
+      <div class="cfg-row">
+        <div class="cfg-field"><div class="cfg-label">Capacidade diária (veículos)</div><input class="cfg-input" id="cfg-capacidade" type="number" value="${o.capacidade_diaria||5}" min="1"><div class="cfg-hint">Quantos veículos a oficina atende por dia (elevadores/boxes)</div></div>
+      </div>
+    </div>
+    <button class="cfg-btn" onclick="salvarDados()">Salvar Dados</button>`;
+}
+
+async function salvarDados() {
+  if (_busy.salvarDados) return;
+  _busy.salvarDados = true;
+  try {
+    const campos = {
+      nome: document.getElementById('cfg-nome').value.trim(),
+      cnpj: document.getElementById('cfg-cnpj').value.trim(),
+      telefone: document.getElementById('cfg-telefone').value.trim(),
+      whatsapp: document.getElementById('cfg-whatsapp').value.trim(),
+      email: document.getElementById('cfg-email').value.trim(),
+      endereco: document.getElementById('cfg-endereco').value.trim(),
+      numero: document.getElementById('cfg-numero').value.trim(),
+      bairro: document.getElementById('cfg-bairro').value.trim(),
+      cidade: document.getElementById('cfg-cidade').value.trim(),
+      estado: document.getElementById('cfg-estado').value.trim().toUpperCase(),
+      capacidade_diaria: parseInt(document.getElementById('cfg-capacidade').value)||5
+    };
+    const { error } = await db.from('oficinas').update(campos).eq('id', OFICINA_ID);
+    if (error) { toast('Erro: '+error.message,'err'); return; }
+    Object.assign(OFICINA, campos);
+    document.getElementById('oficina-nome').textContent = campos.nome;
+    toast('Dados salvos');
+  } catch(e) { toast('Erro inesperado','err'); console.error('[salvarDados]',e); }
+  finally { _busy.salvarDados = false; }
+}
+
+// ══════════════════════════════════════════
+// ══ VALORES E COMISSÃO ══
+// ══════════════════════════════════════════
+function renderValores(ct) {
+  const o = OFICINA || {};
+  ct.innerHTML = `
+    <div class="cfg-section">
+      <div class="cfg-section-title">Valores Base</div>
+      <div class="cfg-row-3">
+        <div class="cfg-field">
+          <div class="cfg-label">Valor Hora MO (R$)</div>
+          <input class="cfg-input cfg-input-big" id="cfg-valor-hora" type="number" value="${o.valor_hora||0}" min="0" step="5">
+        </div>
+        <div class="cfg-field">
+          <div class="cfg-label">Comissão Padrão (%)</div>
+          <input class="cfg-input cfg-input-big" id="cfg-comissao" type="number" value="${o.comissao_padrao||0}" min="0" max="100" step="0.5">
+          <div class="cfg-hint">Aplicado ao cadastrar novo mecânico</div>
+        </div>
+        <div class="cfg-field">
+          <div class="cfg-label">Margem Peças (%)</div>
+          <input class="cfg-input cfg-input-big" id="cfg-margem" type="number" value="${o.margem_padrao||30}" min="0" max="500">
+          <div class="cfg-hint">Ex: 30% = peça de R$100 vende a R$130</div>
+        </div>
+      </div>
+    </div>
+    <button class="cfg-btn" onclick="salvarValores()">Salvar Valores</button>`;
+}
+
+async function salvarValores() {
+  if (_busy.salvarVal) return;
+  _busy.salvarVal = true;
+  try {
+    const campos = {
+      valor_hora: parseFloat(document.getElementById('cfg-valor-hora').value)||0,
+      comissao_padrao: parseFloat(document.getElementById('cfg-comissao').value)||0,
+      margem_padrao: parseFloat(document.getElementById('cfg-margem').value)||30
+    };
+    const { error } = await db.from('oficinas').update(campos).eq('id', OFICINA_ID);
+    if (error) { toast('Erro: '+error.message,'err'); return; }
+    Object.assign(OFICINA, campos);
+    toast('Valores salvos');
+  } catch(e) { toast('Erro inesperado','err'); console.error('[salvarValores]',e); }
+  finally { _busy.salvarVal = false; }
+}
+
+// ══════════════════════════════════════════
+// ══ MAQUININHAS ══
+// ══════════════════════════════════════════
+async function renderMaquininhas(ct) {
+  ct.innerHTML = '<div style="padding:20px;font-family:var(--mono);font-size:12px;color:var(--w4);">carregando...</div>';
+  const { data } = await db.from('maquininhas').select('*').eq('oficina_id', OFICINA_ID).eq('ativo', true).order('nome');
+  const maqs = data || [];
+
+  let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div class="cfg-section-title" style="margin:0;border:none;padding:0;">Maquininhas Cadastradas</div>
+    <button class="cfg-btn cfg-btn-sm" onclick="abrirNovaMaquininha()">+ Adicionar</button>
+  </div>`;
+
+  if (!maqs.length) {
+    html += '<div style="padding:20px;text-align:center;font-size:13px;color:var(--w3);background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r);">Nenhuma maquininha cadastrada.<br>Clique em "+ Adicionar" para começar.</div>';
+  } else {
+    html += maqs.map(m => `
+      <div class="maq-card">
+        <div class="maq-info">
+          <div class="maq-nome">${esc(m.nome)}</div>
+          <div class="maq-taxas">Débito: ${m.taxa_debito}% · Crédito 1x: ${m.taxa_credito}% · 2-6x: ${m.taxa_parcelado_6||0}% · 7-12x: ${m.taxa_parcelado_12||0}%</div>
+        </div>
+        <button class="cfg-btn cfg-btn-sm cfg-btn-secondary" onclick="abrirEditarMaquininha('${m.id}','${esc(m.nome)}',${m.taxa_debito},${m.taxa_credito},${m.taxa_parcelado_6||0},${m.taxa_parcelado_12||0})">Editar</button>
+        <button class="cfg-btn cfg-btn-sm cfg-btn-danger" onclick="excluirMaquininha('${m.id}','${esc(m.nome)}')">X</button>
+      </div>`).join('');
+  }
+
+  html += `<div style="margin-top:16px;font-size:11px;color:var(--w4);">Na entrega do veículo, o sistema pergunta qual maquininha foi usada e calcula a taxa automaticamente.</div>`;
+  ct.innerHTML = html;
+}
+
+function abrirNovaMaquininha() {
+  abrirModal(`
+    <div class="modal-title">Nova <span>Maquininha</span></div>
+    <div class="cfg-field" style="margin-bottom:12px;"><div class="cfg-label">Nome (ex: Stone, Itaú, Cielo...)</div><input class="cfg-input" id="maq-nome"></div>
+    <div class="cfg-row">
+      <div class="cfg-field"><div class="cfg-label">Taxa Débito (%)</div><input class="cfg-input" id="maq-debito" type="number" value="1.99" min="0" max="20" step="0.01"></div>
+      <div class="cfg-field"><div class="cfg-label">Crédito 1x (%)</div><input class="cfg-input" id="maq-credito" type="number" value="3.49" min="0" max="20" step="0.01"></div>
+    </div>
+    <div class="cfg-row">
+      <div class="cfg-field"><div class="cfg-label">Crédito 2-6x (%)</div><input class="cfg-input" id="maq-parc6" type="number" value="4.49" min="0" max="20" step="0.01"></div>
+      <div class="cfg-field"><div class="cfg-label">Crédito 7-12x (%)</div><input class="cfg-input" id="maq-parc12" type="number" value="5.49" min="0" max="20" step="0.01"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button class="cfg-btn cfg-btn-secondary" onclick="fecharModal()" style="flex:1;">Cancelar</button>
+      <button class="cfg-btn" onclick="salvarNovaMaquininha()" style="flex:2;">Salvar</button>
+    </div>`);
+}
+
+async function salvarNovaMaquininha() {
+  const nome = document.getElementById('maq-nome').value.trim();
+  if (!nome) { toast('Preencha o nome','err'); return; }
+  if (_busy.novaMaq) return;
+  _busy.novaMaq = true;
+  try {
+    const taxa_debito = parseFloat(document.getElementById('maq-debito').value)||0;
+    const taxa_credito = parseFloat(document.getElementById('maq-credito').value)||0;
+    const taxa_parcelado_6 = parseFloat(document.getElementById('maq-parc6').value)||0;
+    const taxa_parcelado_12 = parseFloat(document.getElementById('maq-parc12').value)||0;
+    const { error } = await db.from('maquininhas').insert({ oficina_id: OFICINA_ID, nome, taxa_debito, taxa_credito, taxa_parcelado_6, taxa_parcelado_12 });
+    if (error) { toast('Erro: '+error.message,'err'); return; }
+    fecharModal();
+    toast('Maquininha adicionada');
+    renderMaquininhas(document.getElementById('cfg-content'));
+  } catch(e) { toast('Erro inesperado','err'); console.error('[salvarNovaMaquininha]',e); }
+  finally { _busy.novaMaq = false; }
+}
+
+function abrirEditarMaquininha(id, nome, debito, credito, parc6, parc12) {
+  abrirModal(`
+    <div class="modal-title">Editar <span>${nome}</span></div>
+    <div class="cfg-field" style="margin-bottom:12px;"><div class="cfg-label">Nome</div><input class="cfg-input" id="maq-nome" value="${esc(nome)}"></div>
+    <div class="cfg-row">
+      <div class="cfg-field"><div class="cfg-label">Taxa Débito (%)</div><input class="cfg-input" id="maq-debito" type="number" value="${debito}" min="0" max="20" step="0.01"></div>
+      <div class="cfg-field"><div class="cfg-label">Crédito 1x (%)</div><input class="cfg-input" id="maq-credito" type="number" value="${credito}" min="0" max="20" step="0.01"></div>
+    </div>
+    <div class="cfg-row">
+      <div class="cfg-field"><div class="cfg-label">Crédito 2-6x (%)</div><input class="cfg-input" id="maq-parc6" type="number" value="${parc6}" min="0" max="20" step="0.01"></div>
+      <div class="cfg-field"><div class="cfg-label">Crédito 7-12x (%)</div><input class="cfg-input" id="maq-parc12" type="number" value="${parc12}" min="0" max="20" step="0.01"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button class="cfg-btn cfg-btn-secondary" onclick="fecharModal()" style="flex:1;">Cancelar</button>
+      <button class="cfg-btn" onclick="atualizarMaquininha('${id}')" style="flex:2;">Salvar</button>
+    </div>`);
+}
+
+async function atualizarMaquininha(id) {
+  const nome = document.getElementById('maq-nome').value.trim();
+  if (!nome) { toast('Preencha o nome','err'); return; }
+  if (_busy.attMaq) return;
+  _busy.attMaq = true;
+  try {
+    const taxa_debito = parseFloat(document.getElementById('maq-debito').value)||0;
+    const taxa_credito = parseFloat(document.getElementById('maq-credito').value)||0;
+    const taxa_parcelado_6 = parseFloat(document.getElementById('maq-parc6').value)||0;
+    const taxa_parcelado_12 = parseFloat(document.getElementById('maq-parc12').value)||0;
+    const { error } = await db.from('maquininhas').update({ nome, taxa_debito, taxa_credito, taxa_parcelado_6, taxa_parcelado_12 }).eq('id', id).eq('oficina_id', OFICINA_ID);
+    if (error) { toast('Erro: '+error.message,'err'); return; }
+    fecharModal();
+    toast('Maquininha atualizada');
+    renderMaquininhas(document.getElementById('cfg-content'));
+  } catch(e) { toast('Erro inesperado','err'); console.error('[atualizarMaquininha]',e); }
+  finally { _busy.attMaq = false; }
+}
+
+async function excluirMaquininha(id, nome) {
+  if (!confirm('Excluir maquininha '+nome+'?')) return;
+  if (_busy.exclMaq) return;
+  _busy.exclMaq = true;
+  try {
+    await db.from('maquininhas').update({ ativo: false }).eq('id', id).eq('oficina_id', OFICINA_ID);
+    toast('Maquininha removida');
+    renderMaquininhas(document.getElementById('cfg-content'));
+  } catch(e) { toast('Erro inesperado','err'); console.error('[excluirMaquininha]',e); }
+  finally { _busy.exclMaq = false; }
+}
+
+// ══════════════════════════════════════════
+// ══ HORÁRIO DE FUNCIONAMENTO ══
+// ══════════════════════════════════════════
+function renderHorario(ct) {
+  const h = OFICINA?.horario || {};
+  const dias = [
+    { key:'seg', label:'Segunda' },
+    { key:'ter', label:'Terça' },
+    { key:'qua', label:'Quarta' },
+    { key:'qui', label:'Quinta' },
+    { key:'sex', label:'Sexta' },
+    { key:'sab', label:'Sábado' },
+    { key:'dom', label:'Domingo' }
+  ];
+
+  let html = '<div class="cfg-section"><div class="cfg-section-title">Dias e Horários</div>';
+  dias.forEach((d, i) => {
+    const ativo = h[d.key]?.ativo !== false && i < 6;
+    const abertura = h[d.key]?.abertura || (i < 6 ? '08:00' : '');
+    const fechamento = h[d.key]?.fechamento || (i < 6 ? '18:00' : i === 5 ? '12:00' : '');
+    html += `
+      <div class="horario-row ${ativo?'':'fechado'}">
+        <input type="checkbox" class="horario-check cfg-dia" data-dia="${d.key}" ${ativo?'checked':''} onchange="this.closest('.horario-row').classList.toggle('fechado',!this.checked)">
+        <div class="horario-dia-nome">${d.label}</div>
+        <input type="time" class="horario-time cfg-abertura" data-dia="${d.key}" value="${abertura}">
+        <span style="color:var(--w3);font-size:12px;">às</span>
+        <input type="time" class="horario-time cfg-fechamento" data-dia="${d.key}" value="${fechamento}">
+      </div>`;
+  });
+  html += '</div><button class="cfg-btn" onclick="salvarHorario()">Salvar Horários</button>';
+  ct.innerHTML = html;
+}
+
+async function salvarHorario() {
+  if (_busy.salvarHor) return;
+  _busy.salvarHor = true;
+  try {
+    const horario = {};
+    ['seg','ter','qua','qui','sex','sab','dom'].forEach(dia => {
+      const ativo = document.querySelector(`.cfg-dia[data-dia="${dia}"]`)?.checked || false;
+      const abertura = document.querySelector(`.cfg-abertura[data-dia="${dia}"]`)?.value || '';
+      const fechamento = document.querySelector(`.cfg-fechamento[data-dia="${dia}"]`)?.value || '';
+      horario[dia] = { ativo, abertura, fechamento };
+    });
+    const { error } = await db.from('oficinas').update({ horario }).eq('id', OFICINA_ID);
+    if (error) { toast('Erro: '+error.message,'err'); return; }
+    OFICINA.horario = horario;
+    toast('Horários salvos');
+  } catch(e) { toast('Erro inesperado','err'); console.error('[salvarHorario]',e); }
+  finally { _busy.salvarHor = false; }
+}
+
+// ══════════════════════════════════════════
+// ══ CHAVE PIX ══
+// ══════════════════════════════════════════
+function renderPix(ct) {
+  const o = OFICINA || {};
+  const tipos = [{v:'',l:'Nenhuma'},{v:'cpf',l:'CPF'},{v:'cnpj',l:'CNPJ'},{v:'telefone',l:'Telefone'},{v:'email',l:'E-mail'},{v:'aleatoria',l:'Chave aleatória'}];
+  ct.innerHTML = `
+    <div class="cfg-section">
+      <div class="cfg-section-title">Dados PIX</div>
+      <div class="cfg-row">
+        <div class="cfg-field">
+          <div class="cfg-label">Tipo da Chave</div>
+          <select class="cfg-input" id="cfg-pix-tipo" style="cursor:pointer;">
+            ${tipos.map(t=>`<option value="${t.v}" ${o.pix_tipo===t.v?'selected':''}>${t.l}</option>`).join('')}
+          </select>
+        </div>
+        <div class="cfg-field"><div class="cfg-label">Chave PIX</div><input class="cfg-input" id="cfg-pix-chave" value="${esc(o.pix_chave||'')}"></div>
+      </div>
+      <div class="cfg-field"><div class="cfg-label">Nome do beneficiário</div><input class="cfg-input" id="cfg-pix-nome" value="${esc(o.pix_nome||o.nome||'')}"></div>
+      <div class="cfg-hint" style="margin-top:8px;">A chave PIX aparece como QR Code no recibo da OS. O cliente paga na hora pelo celular.</div>
+    </div>
+    <button class="cfg-btn" onclick="salvarPix()">Salvar PIX</button>`;
+}
+
+async function salvarPix() {
+  if (_busy.salvarPix) return;
+  _busy.salvarPix = true;
+  try {
+    const campos = {
+      pix_tipo: document.getElementById('cfg-pix-tipo').value || null,
+      pix_chave: document.getElementById('cfg-pix-chave').value.trim() || null,
+      pix_nome: document.getElementById('cfg-pix-nome').value.trim() || null
+    };
+    const { error } = await db.from('oficinas').update(campos).eq('id', OFICINA_ID);
+    if (error) { toast('Erro: '+error.message,'err'); return; }
+    Object.assign(OFICINA, campos);
+    toast('PIX salvo');
+  } catch(e) { toast('Erro inesperado','err'); console.error('[salvarPix]',e); }
+  finally { _busy.salvarPix = false; }
+}
+
+// ══════════════════════════════════════════
+// ══ MENSAGENS WHATSAPP ══
+// ══════════════════════════════════════════
+function renderMensagens(ct) {
+  const o = OFICINA || {};
+  ct.innerHTML = `
+    <div class="cfg-section">
+      <div class="cfg-section-title">Mensagem — Veículo Pronto</div>
+      <div style="font-size:12px;color:var(--w3);margin-bottom:12px;">O WhatsApp só dispara quando o veículo fica pronto. Personalize a saudação e o fechamento.</div>
+      <div class="cfg-field" style="margin-bottom:12px;">
+        <div class="cfg-label">Saudação</div>
+        <input class="cfg-input" id="cfg-msg-abertura" value="${esc(o.msg_pronto_abertura||'Olá! Boas notícias!')}">
+      </div>
+      <div style="padding:12px;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r);margin-bottom:12px;font-size:12px;color:var(--w3);line-height:1.6;">
+        <em>Seu <strong style="color:var(--w);">Marca Modelo — Placa</strong> está pronto e disponível para retirada aqui na <strong style="color:var(--w);">${esc(o.nome||'Oficina')}</strong>.</em>
+      </div>
+      <div class="cfg-field">
+        <div class="cfg-label">Fechamento</div>
+        <input class="cfg-input" id="cfg-msg-fechamento" value="${esc(o.msg_pronto_fechamento||'Quando pode vir buscar? Abraço!')}">
+      </div>
+    </div>
+    <button class="cfg-btn" onclick="salvarMensagens()">Salvar Mensagem</button>`;
+}
+
+async function salvarMensagens() {
+  if (_busy.salvarMsg) return;
+  _busy.salvarMsg = true;
+  try {
+    const campos = {
+      msg_pronto_abertura: document.getElementById('cfg-msg-abertura').value.trim(),
+      msg_pronto_fechamento: document.getElementById('cfg-msg-fechamento').value.trim()
+    };
+    const { error } = await db.from('oficinas').update(campos).eq('id', OFICINA_ID);
+    if (error) { toast('Erro: '+error.message,'err'); return; }
+    Object.assign(OFICINA, campos);
+    toast('Mensagem salva');
+  } catch(e) { toast('Erro inesperado','err'); console.error('[salvarMensagens]',e); }
+  finally { _busy.salvarMsg = false; }
+}
+
+// ══════════════════════════════════════════
+// ══ LOGO ══
+// ══════════════════════════════════════════
+function renderLogo(ct) {
+  const o = OFICINA || {};
+  ct.innerHTML = `
+    <div class="cfg-section">
+      <div class="cfg-section-title">Logo da Oficina</div>
+      <div class="logo-upload">
+        <div class="logo-preview" id="logo-preview">
+          ${o.logo_url ? `<img src="${esc(o.logo_url)}">` : 'LOGO'}
+        </div>
+        <div style="flex:1;">
+          <div style="font-family:var(--head);font-size:14px;font-weight:700;text-transform:uppercase;">Logo da Oficina</div>
+          <div style="font-size:11px;color:var(--w3);margin-top:2px;">PNG ou JPG, máx. 500KB. Aparece na sidebar, recibos e pesquisa.</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <input type="file" id="cfg-logo-file" accept="image/*" style="display:none;" onchange="uploadLogo(this.files[0])">
+          <button class="cfg-btn cfg-btn-sm cfg-btn-secondary" onclick="document.getElementById('cfg-logo-file').click()">Alterar</button>
+          ${o.logo_url ? '<button class="cfg-btn cfg-btn-sm cfg-btn-danger" onclick="removerLogo()">Remover</button>' : ''}
+        </div>
+      </div>
+    </div>`;
+}
+
+async function uploadLogo(file) {
+  if (!file) return;
+  if (file.size > 512000) { toast('Imagem muito grande. Máx 500KB.','err'); return; }
+  if (!file.type.startsWith('image/')) { toast('Selecione uma imagem.','err'); return; }
+  if (_busy.upLogo) return;
+  _busy.upLogo = true;
+  try {
+    const ext = file.name.split('.').pop().toLowerCase();
+    const path = `${OFICINA_ID}/logo.${ext}`;
+    await db.storage.from('logos').remove([`${OFICINA_ID}/logo.png`, `${OFICINA_ID}/logo.jpg`, `${OFICINA_ID}/logo.jpeg`, `${OFICINA_ID}/logo.webp`]);
+    const { error: upErr } = await db.storage.from('logos').upload(path, file, { upsert: true });
+    if (upErr) { toast('Erro no upload: '+upErr.message,'err'); return; }
+    const { data: urlData } = db.storage.from('logos').getPublicUrl(path);
+    const logoUrl = urlData.publicUrl + '?t=' + Date.now();
+    const { error } = await db.from('oficinas').update({ logo_url: logoUrl }).eq('id', OFICINA_ID);
+    if (error) { toast('Erro ao salvar: '+error.message,'err'); return; }
+    OFICINA.logo_url = logoUrl;
+    toast('Logo atualizado');
+    renderLogo(document.getElementById('cfg-content'));
+  } catch(e) { toast('Erro inesperado','err'); console.error('[uploadLogo]',e); }
+  finally { _busy.upLogo = false; }
+}
+
+async function removerLogo() {
+  if (_busy.rmLogo) return;
+  _busy.rmLogo = true;
+  try {
+    await db.storage.from('logos').remove([`${OFICINA_ID}/logo.png`, `${OFICINA_ID}/logo.jpg`, `${OFICINA_ID}/logo.jpeg`, `${OFICINA_ID}/logo.webp`]);
+    await db.from('oficinas').update({ logo_url: null }).eq('id', OFICINA_ID);
+    OFICINA.logo_url = null;
+    toast('Logo removido');
+    renderLogo(document.getElementById('cfg-content'));
+  } catch(e) { toast('Erro inesperado','err'); console.error('[removerLogo]',e); }
+  finally { _busy.rmLogo = false; }
+}
+
+// ══════════════════════════════════════════
+// ══ CALCULADORA MO ══
+// ══════════════════════════════════════════
+let _calcEquipe = [];
+
+async function renderCalculadora(ct) {
+  ct.innerHTML = '<div style="padding:20px;font-family:var(--mono);font-size:12px;color:var(--w4);">carregando equipe...</div>';
+
+  const { data: membros } = await db.from('profiles')
+    .select('id, nome, role, salario_base, vale_refeicao')
+    .eq('oficina_id', OFICINA_ID).eq('ativo', true).order('nome');
+
+  _calcEquipe = membros || [];
+  const roleLabel = { dono:'Dono', mecanico:'Mecânico', aux_mecanico:'Aux.Mec', gerente:'Gerente', atendente:'Atendente', aux_admin:'Aux.Admin' };
+
+  let equipHtml = '';
+  if (_calcEquipe.length) {
+    equipHtml = `<div class="cfg-section"><div class="cfg-section-title">Equipe (${_calcEquipe.length} ativos)</div>
+      ${_calcEquipe.map((m,i)=>`
+        <div style="display:grid;grid-template-columns:1fr 140px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--ln);">
+          <div><span style="font-weight:600;font-size:13px;">${esc(m.nome)}</span> <span style="font-size:11px;color:var(--w4);">${roleLabel[m.role]||m.role}</span></div>
+          <input class="cfg-input calc-sal" data-idx="${i}" type="number" value="${m.salario_base||0}" min="0" step="50" oninput="calcularCusto()" style="padding:6px 8px;font-size:12px;">
+        </div>`).join('')}
+      <button class="cfg-btn cfg-btn-sm" style="margin-top:8px;" onclick="salvarSalariosEquipe()">Salvar salários</button>
+    </div>`;
+  } else {
+    equipHtml = '<div style="font-size:13px;color:var(--amber);margin-bottom:16px;">Nenhum funcionário ativo. Cadastre na aba Equipe.</div>';
+  }
+
+  const o = OFICINA || {};
+  ct.innerHTML = `
+    ${equipHtml}
+    <div class="cfg-section">
+      <div class="cfg-section-title">Parâmetros</div>
+      <div class="cfg-row-3">
+        <div class="cfg-field"><div class="cfg-label">Custos fixos (R$/mês)</div><input class="cfg-input" id="calc-fixos" type="number" value="0" min="0" step="100" oninput="calcularCusto()"><div class="cfg-hint">Aluguel, luz, água, internet...</div></div>
+        <div class="cfg-field"><div class="cfg-label">Vagas (elevadores)</div><input class="cfg-input" id="calc-vagas" type="number" value="${o.capacidade_diaria||3}" min="1" max="20" oninput="calcularCusto()"></div>
+        <div class="cfg-field"><div class="cfg-label">Valor hora cobrado (R$)</div><input class="cfg-input" id="calc-cobrado" type="number" value="${o.valor_hora||120}" min="0" max="500" step="5" oninput="calcularCusto()"></div>
+      </div>
+      <div class="cfg-row-3">
+        <div class="cfg-field"><div class="cfg-label">Comissão mecânicos (%)</div><input class="cfg-input" id="calc-comissao" type="number" value="${o.comissao_padrao||5}" min="0" max="30" oninput="calcularCusto()"></div>
+        <div class="cfg-field"><div class="cfg-label">Impostos (%)</div><input class="cfg-input" id="calc-imposto" type="number" value="6" min="0" max="30" step="0.5" oninput="calcularCusto()"></div>
+        <div class="cfg-field"><div class="cfg-label">Taxa média cartão (%)</div><input class="cfg-input" id="calc-taxacartao" type="number" value="3" min="0" max="15" step="0.5" oninput="calcularCusto()"></div>
+      </div>
+    </div>
+    <div class="calc-panel">
+      <div class="calc-header">Simulador de Lucratividade</div>
+      <div id="calc-resultado"></div>
+    </div>`;
+
+  calcularCusto();
+}
+
+function calcularCusto() {
+  let salarios = 0, vr = 0;
+  document.querySelectorAll('.calc-sal').forEach((input, i) => {
+    salarios += parseFloat(input.value)||0;
+    if (_calcEquipe[i]) vr += _calcEquipe[i].vale_refeicao||0;
+  });
+
+  const h = OFICINA?.horario || {};
+  let diasSemana = 0, horasDia = 8;
+  ['seg','ter','qua','qui','sex','sab','dom'].forEach(dia => {
+    if (h[dia]?.ativo) {
+      diasSemana++;
+      const [hA,mA] = (h[dia].abertura||'08:00').split(':').map(Number);
+      const [hF,mF] = (h[dia].fechamento||'18:00').split(':').map(Number);
+      horasDia = (hF+mF/60)-(hA+mA/60);
+    }
+  });
+  if (!diasSemana) diasSemana = 6;
+  const diasMes = Math.round(diasSemana * 4.33);
+
+  const fixos = parseFloat(document.getElementById('calc-fixos')?.value)||0;
+  const vagas = parseInt(document.getElementById('calc-vagas')?.value)||3;
+  const cobrado = parseFloat(document.getElementById('calc-cobrado')?.value)||120;
+  const pctComissao = parseFloat(document.getElementById('calc-comissao')?.value)||5;
+  const pctImposto = parseFloat(document.getElementById('calc-imposto')?.value)||6;
+  const pctTaxa = parseFloat(document.getElementById('calc-taxacartao')?.value)||3;
+
+  const custoFixo = salarios + vr + fixos;
+  const eficiencia = 0.75;
+  const horasFat = vagas * horasDia * diasMes * eficiencia;
+  const custoFixoH = horasFat > 0 ? custoFixo / horasFat : 0;
+  const pctVar = pctComissao + pctImposto + pctTaxa;
+  const custoVarH = cobrado * pctVar / 100;
+  const custoTotalH = custoFixoH + custoVarH;
+  const lucroH = cobrado - custoTotalH;
+  const margem = cobrado > 0 ? (lucroH / cobrado * 100) : 0;
+
+  const el = document.getElementById('calc-resultado');
+  if (!el) return;
+
+  const saudavel = lucroH > 0 && margem >= 40;
+  const prejuizo = lucroH <= 0;
+  const statusCls = prejuizo ? 'color:var(--red);background:var(--red-dim);border:1px solid rgba(255,59,48,.12)' : (saudavel ? 'color:var(--green);background:var(--green-dim);border:1px solid rgba(48,209,88,.12)' : 'color:var(--amber);background:var(--amber-dim);border:1px solid rgba(232,147,12,.12)');
+  const statusTxt = prejuizo ? 'Prejuízo' : (saudavel ? 'Margem Saudável' : 'Atenção');
+
+  el.innerHTML = `
+    <div class="calc-body">
+      <div class="calc-result">
+        <div style="font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w3);margin-bottom:8px;">Lucro Real por Hora</div>
+        <div class="calc-result-val" style="${prejuizo?'color:var(--red)':''}">R$ ${lucroH.toFixed(2)}</div>
+        <div class="calc-result-sub">De R$ ${cobrado.toFixed(2)} cobrados</div>
+        <div class="calc-result-status" style="${statusCls};padding:4px 12px;border-radius:var(--r);margin-top:10px;font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;">${statusTxt}</div>
+      </div>
+      <div class="calc-breakdown">
+        <div style="font-family:var(--head);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);margin-bottom:10px;">Decomposição por Hora</div>
+        <div class="calc-line"><span class="calc-line-label">Valor cobrado</span><span class="calc-line-val" style="color:var(--w2);">R$ ${cobrado.toFixed(2)}</span></div>
+        <div class="calc-line"><span class="calc-line-label">Salários (proporcional)</span><span class="calc-line-val" style="color:var(--red);">-R$ ${custoFixoH.toFixed(2)}</span></div>
+        <div class="calc-line"><span class="calc-line-label">Impostos (${pctImposto}%)</span><span class="calc-line-val" style="color:var(--red);">-R$ ${(cobrado*pctImposto/100).toFixed(2)}</span></div>
+        <div class="calc-line"><span class="calc-line-label">Comissão (${pctComissao}%)</span><span class="calc-line-val" style="color:var(--red);">-R$ ${(cobrado*pctComissao/100).toFixed(2)}</span></div>
+        <div class="calc-line"><span class="calc-line-label">Taxa cartão (${pctTaxa}%)</span><span class="calc-line-val" style="color:var(--red);">-R$ ${(cobrado*pctTaxa/100).toFixed(2)}</span></div>
+        <div style="height:1px;background:var(--ln3);margin:6px 0;"></div>
+        <div class="calc-line"><span class="calc-line-label" style="font-weight:600;color:var(--w);">Lucro líquido</span><span class="calc-line-val" style="color:${prejuizo?'var(--red)':'var(--green)'};font-size:14px;">R$ ${lucroH.toFixed(2)}</span></div>
+        <div class="calc-line"><span class="calc-line-label">Margem efetiva</span><span class="calc-line-val" style="color:${prejuizo?'var(--red)':'var(--green)'};">${margem.toFixed(1)}%</span></div>
+      </div>
+    </div>`;
+}
+
+async function salvarSalariosEquipe() {
+  if (_busy.salvarSal) return;
+  _busy.salvarSal = true;
+  try {
+    const updates = [];
+    document.querySelectorAll('.calc-sal').forEach((input, i) => {
+      const m = _calcEquipe[i];
+      if (m) updates.push(db.from('profiles').update({ salario_base: parseFloat(input.value)||0 }).eq('id', m.id).eq('oficina_id', OFICINA_ID));
+    });
+    await Promise.all(updates);
+    toast('Salários salvos');
+  } catch(e) { toast('Erro inesperado','err'); console.error('[salvarSalariosEquipe]',e); }
+  finally { _busy.salvarSal = false; }
+}
+
+// ══════════════════════════════════════════
+// ══ PLANO ══
+// ══════════════════════════════════════════
+function renderPlano(ct) {
+  const o = OFICINA || {};
+  ct.innerHTML = `
+    <div class="cfg-section">
+      <div class="cfg-section-title">Seu Plano</div>
+      <div style="display:flex;align-items:center;gap:12px;padding:16px;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r);">
+        <span style="font-family:var(--head);font-size:18px;font-weight:900;color:var(--green);text-transform:uppercase;letter-spacing:1px;padding:6px 14px;background:var(--green-dim);border:1px solid rgba(48,209,88,.12);border-radius:var(--r);">${o.plano==='beta'?'Beta (grátis)':esc(o.plano||'—')}</span>
+        ${o.trial_ate ? `<span style="font-size:13px;color:var(--w3);">Válido até ${new Date(o.trial_ate).toLocaleDateString('pt-BR')}</span>` : ''}
+      </div>
+    </div>`;
+}
+
+// ══════════════════════════════════════════
+// ══ PAINEL TV ══
+// ══════════════════════════════════════════
+function renderTV(ct) {
+  const o = OFICINA || {};
+  if (!o.tv_token) {
+    ct.innerHTML = `
+      <div class="cfg-section">
+        <div class="cfg-section-title">Painel TV da Oficina</div>
+        <div style="font-size:12px;color:var(--w3);margin-bottom:16px;">Link para exibir o pátio num monitor/TV. Mostra o fluxo dos veículos em tempo real, sem valores financeiros.</div>
+        <button class="cfg-btn" onclick="gerarTokenTV()">Gerar link do painel</button>
+      </div>`;
+    return;
+  }
+  const base = location.origin;
+  ct.innerHTML = `
+    <div class="cfg-section">
+      <div class="cfg-section-title">Painel TV da Oficina</div>
+      <div style="font-size:12px;color:var(--w3);margin-bottom:16px;">Abra em tela cheia (F11) numa TV ou monitor. Atualiza sozinho a cada 30s.</div>
+      <div class="cfg-field" style="margin-bottom:12px;">
+        <div class="cfg-label">Recepção (clientes acompanham)</div>
+        <div style="display:flex;gap:8px;">
+          <input class="cfg-input" readonly value="${base}/tv.html?t=${o.tv_token}" id="tv-link-1" onclick="this.select()" style="flex:1;">
+          <button class="cfg-btn cfg-btn-sm cfg-btn-secondary" onclick="navigator.clipboard.writeText(document.getElementById('tv-link-1').value);toast('Link copiado')">Copiar</button>
+          <button class="cfg-btn cfg-btn-sm cfg-btn-secondary" onclick="window.open(document.getElementById('tv-link-1').value,'_blank')">Abrir</button>
+        </div>
+      </div>
+      <div class="cfg-field">
+        <div class="cfg-label">Equipe (demanda por mecânico)</div>
+        <div style="display:flex;gap:8px;">
+          <input class="cfg-input" readonly value="${base}/tv.html?t=${o.tv_token}&v=equipe" id="tv-link-2" onclick="this.select()" style="flex:1;">
+          <button class="cfg-btn cfg-btn-sm cfg-btn-secondary" onclick="navigator.clipboard.writeText(document.getElementById('tv-link-2').value);toast('Link copiado')">Copiar</button>
+          <button class="cfg-btn cfg-btn-sm cfg-btn-secondary" onclick="window.open(document.getElementById('tv-link-2').value,'_blank')">Abrir</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function gerarTokenTV() {
+  if (_busy.gerarToken) return;
+  _busy.gerarToken = true;
+  try {
+    const token = crypto.randomUUID().replace(/-/g,'').slice(0,16);
+    const { error } = await db.from('oficinas').update({ tv_token: token }).eq('id', OFICINA_ID);
+    if (error) { toast('Erro: '+error.message,'err'); return; }
+    OFICINA.tv_token = token;
+    toast('Link gerado');
+    renderTV(document.getElementById('cfg-content'));
+  } catch(e) { toast('Erro inesperado','err'); console.error('[gerarTokenTV]',e); }
+  finally { _busy.gerarToken = false; }
+}
+
+// ── BOOT ──
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro V2 — CRM Reativação</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#09090B;--sf:#1A1A1E;--sf2:#202024;--sf3:#28282E;
+  --ln:rgba(255,255,255,0.04);--ln2:rgba(255,255,255,0.07);--ln3:rgba(255,255,255,0.12);
+  --amber:#E8930C;--amber-dim:rgba(232,147,12,0.08);
+  --orange-alert:#FF5E00;--orange-dim:rgba(255,94,0,0.08);
+  --red-crit:#FF3B30;--red-dim:rgba(255,59,48,0.06);
+  --red:#FF3B30;
+  --green-neon:#30D158;--green-dim:rgba(48,209,88,0.06);--green-dark:#0B2E12;--green-wpp:#25D366;
+  --blue:#0A84FF;--blue-dim:rgba(10,132,255,0.08);
+  --w:#EAEAEC;--w2:rgba(255,255,255,0.55);--w3:rgba(255,255,255,0.28);--w4:rgba(255,255,255,0.12);
+  --mono:'JetBrains Mono',monospace;--head:'Barlow Condensed',sans-serif;--body:'Space Grotesk',sans-serif;
+  --r:4px;
+}
+body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100vh;-webkit-font-smoothing:antialiased;padding:32px 40px;max-width:1060px;margin:0 auto;}
+
+/* HEADER */
+.page-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
+.page-title{font-family:var(--head);font-size:32px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.page-title span{color:var(--amber);}
+.page-sub{font-family:var(--body);font-size:12px;color:var(--w3);margin-top:2px;}
+
+/* SEARCH */
+.search-bar{
+  display:flex;align-items:center;gap:12px;
+  background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r);
+  padding:12px 16px;margin-bottom:20px;transition:border-color .15s;
+}
+.search-bar:focus-within{border-color:var(--amber);}
+.search-bar svg{width:18px;height:18px;stroke:var(--w3);flex-shrink:0;}
+.search-bar input{flex:1;background:none;border:none;color:var(--w);font-family:var(--mono);font-size:14px;outline:none;letter-spacing:.5px;}
+.search-bar input::placeholder{color:var(--w3);font-family:var(--body);letter-spacing:0;}
+
+/* DEFCON KPIs */
+.defcon{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:24px;}
+.defcon-card{
+  background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r);
+  padding:18px;text-align:center;position:relative;overflow:hidden;
+  border-top:3px solid transparent;cursor:pointer;transition:all .12s;
+}
+.defcon-card:hover{background:var(--sf2);}
+.defcon-card.on{border-color:var(--ln3);}
+.defcon-val{font-family:var(--mono);font-size:32px;font-weight:800;letter-spacing:-2px;line-height:1;}
+.defcon-lbl{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w3);margin-top:6px;}
+.defcon-range{font-family:var(--mono);font-size:9px;color:var(--w4);margin-top:2px;}
+
+/* Defcon levels */
+.defcon-atencao{border-top-color:var(--amber);}
+.defcon-atencao .defcon-val{color:var(--amber);}
+.defcon-risco{border-top-color:var(--orange-alert);}
+.defcon-risco .defcon-val{color:var(--orange-alert);}
+.defcon-perdido{border-top-color:var(--red-crit);}
+.defcon-perdido .defcon-val{color:var(--red-crit);}
+.defcon-inativo .defcon-val{color:var(--w);}
+
+/* FILTERS */
+.filters{display:flex;gap:4px;margin-bottom:20px;overflow-x:auto;padding-bottom:8px;white-space:nowrap;-webkit-overflow-scrolling:touch;}
+.filters::-webkit-scrollbar{height:4px;}
+.filters::-webkit-scrollbar-track{background:rgba(255,255,255,0.05);border-radius:10px;}
+.filters::-webkit-scrollbar-thumb{background:#333;border-radius:10px;transition:background .3s;}
+.filters:hover::-webkit-scrollbar-thumb{background:var(--amber);}
+.f-btn{
+  font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;
+  padding:7px 14px;border:1px solid var(--ln2);border-radius:var(--r);
+  background:var(--sf);color:var(--w3);cursor:pointer;white-space:nowrap;transition:all .12s;
+}
+.f-btn:hover{border-color:var(--ln3);color:var(--w2);}
+.f-btn.on{background:var(--amber);color:#000;border-color:var(--amber);}
+
+/* CLIENT ROW */
+.cli-row{
+  display:flex;align-items:center;gap:14px;
+  background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r);
+  padding:12px 16px;margin-bottom:6px;cursor:pointer;
+  transition:all .12s;position:relative;
+}
+.cli-row:hover{border-color:var(--ln3);background:var(--sf2);}
+
+/* Threat level indicator */
+.cli-threat{position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:var(--r) 0 0 var(--r);}
+.threat-atencao{background:var(--amber);}
+.threat-risco{background:var(--orange-alert);}
+.threat-perdido{background:var(--red-crit);animation:threatPulse 1.5s infinite;}
+@keyframes threatPulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+
+/* Avatar */
+.cli-avatar{
+  width:38px;height:38px;border-radius:var(--r);
+  background:var(--sf2);border:1px solid var(--ln2);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  font-family:var(--mono);font-size:12px;font-weight:700;color:var(--w3);
+  text-transform:uppercase;letter-spacing:2px;
+}
+
+/* Info */
+.cli-info{flex:1;min-width:0;}
+.cli-nome{font-family:var(--head);font-size:16px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;}
+.cli-meta{display:flex;align-items:center;gap:10px;margin-top:3px;flex-wrap:wrap;}
+.cli-meta-item{font-family:var(--body);font-size:11px;color:var(--w2);display:flex;align-items:center;gap:4px;}
+.cli-meta-item svg{width:11px;height:11px;stroke:var(--w3);}
+
+/* Placa mini */
+.placa-micro{
+  display:inline-flex;flex-direction:column;
+  background:#FFF;overflow:hidden;line-height:1;flex-shrink:0;
+  border:1.5px solid #C8C8C8;
+}
+.placa-micro-topo{background:#003399;padding:0px 3px;display:flex;align-items:center;justify-content:center;}
+.placa-micro-br{font-family:var(--mono);font-size:4px;font-weight:700;color:#fff;}
+.placa-micro-cod{padding:1px 4px 2px;font-family:var(--mono);font-size:10px;font-weight:800;color:#1A1A1A;letter-spacing:1px;text-align:center;line-height:1;}
+
+/* Dias inativo — badge de ameaca */
+.cli-dias{
+  font-family:var(--mono);font-size:12px;font-weight:700;
+  padding:4px 10px;border-radius:var(--r);flex-shrink:0;text-align:center;
+  min-width:70px;
+}
+.dias-atencao{color:var(--amber);background:var(--amber-dim);border:1px solid rgba(232,147,12,0.12);}
+.dias-risco{color:var(--orange-alert);background:var(--orange-dim);border:1px solid rgba(255,94,0,0.12);}
+.dias-perdido{color:var(--red-crit);background:var(--red-dim);border:1px solid rgba(255,59,48,0.1);}
+
+/* Historico OS mini */
+.cli-os{
+  display:flex;flex-direction:column;align-items:center;flex-shrink:0;min-width:60px;
+}
+.cli-os-num{font-family:var(--mono);font-size:16px;font-weight:800;color:var(--w2);}
+.cli-os-lbl{font-family:var(--head);font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--w4);}
+
+/* Valor historico */
+.cli-valor{
+  display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;min-width:80px;
+}
+.cli-valor-num{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--amber);}
+.cli-valor-lbl{font-family:var(--head);font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--w4);}
+
+/* Acoes taticas */
+.cli-actions{display:flex;gap:4px;flex-shrink:0;}
+.cli-act{
+  padding:6px 10px;border:1px solid var(--ln2);border-radius:var(--r);
+  background:transparent;font-family:var(--head);font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:1px;
+  cursor:pointer;transition:all .12s;white-space:nowrap;
+}
+.cli-act:active{transform:scale(.96);}
+.cli-act-wpp{color:var(--w3);border-color:var(--ln3);}
+.cli-act-wpp:hover{color:var(--green-wpp);border-color:var(--green-wpp);background:rgba(37,211,102,0.06);}
+.cli-act-agendar{color:var(--w3);border-color:var(--ln3);}
+.cli-act-agendar:hover{color:var(--amber);border-color:var(--amber);background:var(--amber-dim);}
+
+/* Tag dado faltante */
+.cli-faltante{
+  display:inline-flex;align-items:center;gap:4px;
+  font-family:var(--mono);font-size:9px;font-weight:700;
+  color:var(--orange-alert);opacity:.7;cursor:pointer;
+  padding:2px 6px;border:1px solid rgba(255,94,0,0.2);border-radius:var(--r);
+  transition:all .12s;
+}
+.cli-faltante:hover{opacity:1;background:var(--orange-dim);}
+.cli-faltante svg{width:10px;height:10px;stroke:var(--orange-alert);}
+
+/* SIDE PANEL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:900;opacity:0;pointer-events:none;transition:opacity .25s;}
+.overlay.open{opacity:1;pointer-events:auto;}
+.side-panel{
+  position:fixed;top:0;right:0;bottom:0;width:480px;max-width:100%;
+  background:#161618;border-left:1px solid var(--ln2);z-index:1000;
+  transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.side-panel.open{transform:translateX(0);}
+.panel-head{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid var(--ln2);}
+.panel-title{font-family:var(--head);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.panel-title span{color:var(--amber);}
+.panel-close{width:36px;height:36px;background:var(--sf2);border:1px solid var(--ln2);border-radius:var(--r);color:var(--w3);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.panel-close:hover{background:var(--sf3);color:var(--w);}
+.panel-body{flex:1;overflow-y:auto;padding:24px;}
+
+/* Panel sections */
+.panel-section{margin-bottom:24px;}
+.panel-section-title{
+  font-family:var(--head);font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:2px;color:var(--w4);
+  margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--ln);
+}
+.panel-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.panel-kpi{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r);padding:14px;text-align:center;}
+.panel-kpi-val{font-family:var(--mono);font-size:20px;font-weight:800;letter-spacing:-1px;}
+.panel-kpi-lbl{font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);margin-top:3px;}
+
+/* Timeline */
+.timeline-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--ln);}
+.timeline-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.timeline-info{flex:1;font-family:var(--body);font-size:12px;color:var(--w2);}
+.timeline-date{font-family:var(--mono);font-size:10px;color:var(--w4);}
+.timeline-val{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--amber);}
+
+/* Panel actions */
+.panel-actions{display:flex;gap:8px;margin-top:20px;}
+.panel-btn{
+  flex:1;padding:10px;border:none;border-radius:2px;
+  font-family:var(--head);font-size:11px;font-weight:800;text-transform:uppercase;
+  letter-spacing:2px;cursor:pointer;transition:all .08s;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.panel-btn:active{transform:scale(.97);}
+.panel-btn svg{width:14px;height:14px;stroke:currentColor;stroke-width:2;}
+.panel-btn-wpp{background:var(--green-dark);color:var(--green-wpp);border:1px solid rgba(37,211,102,0.15);}
+.panel-btn-wpp:hover{background:rgba(37,211,102,0.12);}
+.panel-btn-agendar{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(232,147,12,0.15);}
+.panel-btn-agendar:hover{background:rgba(232,147,12,0.12);}
+.panel-btn-secondary{background:var(--sf2);color:var(--w2);border:1px solid var(--ln2);}
+.panel-btn-secondary:hover{border-color:var(--ln3);color:var(--w);}
+
+/* MSG TEMPLATES */
+.msg-template{
+  background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r);
+  padding:10px 14px;margin-bottom:6px;cursor:pointer;transition:all .12s;
+}
+.msg-template:hover{border-color:var(--ln3);background:var(--sf2);}
+.msg-template-title{font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--w2);}
+.msg-template-preview{font-family:var(--body);font-size:11px;color:var(--w3);margin-top:3px;line-height:1.4;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="page-head">
+  <div>
+    <div class="page-title">CRM — Radar de <span>Reativação</span></div>
+    <div class="page-sub">Clientes inativos, em risco e perdidos — prospeccao ativa</div>
+  </div>
+</div>
+
+<!-- SEARCH -->
+<div class="search-bar">
+  <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+  <input placeholder="Buscar por nome, placa ou telefone..." value="">
+</div>
+
+<!-- DEFCON KPIs -->
+<div class="defcon">
+  <div class="defcon-card defcon-inativo on">
+    <div class="defcon-val">18</div>
+    <div class="defcon-lbl">Inativos</div>
+    <div class="defcon-range">Total sem retorno</div>
+  </div>
+  <div class="defcon-card defcon-atencao">
+    <div class="defcon-val">7</div>
+    <div class="defcon-lbl">Atenção</div>
+    <div class="defcon-range">30 — 60 dias</div>
+  </div>
+  <div class="defcon-card defcon-risco">
+    <div class="defcon-val">6</div>
+    <div class="defcon-lbl">Risco</div>
+    <div class="defcon-range">60 — 90 dias</div>
+  </div>
+  <div class="defcon-card defcon-perdido">
+    <div class="defcon-val">5</div>
+    <div class="defcon-lbl">Perdidos</div>
+    <div class="defcon-range">90+ dias</div>
+  </div>
+</div>
+
+<!-- FILTERS -->
+<div class="filters">
+  <div class="f-btn on">Todos</div>
+  <div class="f-btn">Atenção</div>
+  <div class="f-btn">Risco</div>
+  <div class="f-btn">Perdidos</div>
+  <div class="f-btn">Sem Telefone</div>
+  <div class="f-btn">Sem OS</div>
+  <div class="f-btn">VIP Inativo</div>
+</div>
+
+<!-- CLIENT LIST -->
+
+<!-- 1. RISCO — 74 dias -->
+<div class="cli-row" onclick="abrirDetalhe()">
+  <div class="cli-threat threat-risco"></div>
+  <div class="cli-avatar">MR</div>
+  <div class="cli-info">
+    <div class="cli-nome">Mercio Ramos</div>
+    <div class="cli-meta">
+      <span class="cli-meta-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72"/></svg>
+        (87) 99111-2233
+      </span>
+      <div class="placa-micro"><div class="placa-micro-topo"><div class="placa-micro-br">BR</div></div><div class="placa-micro-cod">RZM8H30</div></div>
+      <span class="cli-meta-item">Sandero 2020</span>
+      <span class="cli-meta-item">Ultima: 18/01/2026</span>
+    </div>
+  </div>
+  <div class="cli-dias dias-risco">74d</div>
+  <div class="cli-os">
+    <div class="cli-os-num">8</div>
+    <div class="cli-os-lbl">OS</div>
+  </div>
+  <div class="cli-valor">
+    <div class="cli-valor-num">R$ 6.780</div>
+    <div class="cli-valor-lbl">Historico</div>
+  </div>
+  <div class="cli-actions">
+    <button class="cli-act cli-act-wpp">WPP</button>
+    <button class="cli-act cli-act-agendar">AGENDAR</button>
+  </div>
+</div>
+
+<!-- 2. PERDIDO — 112 dias -->
+<div class="cli-row" onclick="abrirDetalhe()">
+  <div class="cli-threat threat-perdido"></div>
+  <div class="cli-avatar">AS</div>
+  <div class="cli-info">
+    <div class="cli-nome">Antonio Santos</div>
+    <div class="cli-meta">
+      <span class="cli-meta-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72"/></svg>
+        (81) 98444-5566
+      </span>
+      <div class="placa-micro"><div class="placa-micro-topo"><div class="placa-micro-br">BR</div></div><div class="placa-micro-cod">KLP3E78</div></div>
+      <span class="cli-meta-item">Corsa Classic 2012</span>
+      <span class="cli-meta-item">Ultima: 12/12/2025</span>
+    </div>
+  </div>
+  <div class="cli-dias dias-perdido">112d</div>
+  <div class="cli-os">
+    <div class="cli-os-num">3</div>
+    <div class="cli-os-lbl">OS</div>
+  </div>
+  <div class="cli-valor">
+    <div class="cli-valor-num">R$ 1.420</div>
+    <div class="cli-valor-lbl">Historico</div>
+  </div>
+  <div class="cli-actions">
+    <button class="cli-act cli-act-wpp">WPP</button>
+    <button class="cli-act cli-act-agendar">AGENDAR</button>
+  </div>
+</div>
+
+<!-- 3. ATENCAO — 38 dias -->
+<div class="cli-row" onclick="abrirDetalhe()">
+  <div class="cli-threat threat-atencao"></div>
+  <div class="cli-avatar">FO</div>
+  <div class="cli-info">
+    <div class="cli-nome">Fernanda Oliveira</div>
+    <div class="cli-meta">
+      <span class="cli-meta-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72"/></svg>
+        (87) 99444-5566
+      </span>
+      <div class="placa-micro"><div class="placa-micro-topo"><div class="placa-micro-br">BR</div></div><div class="placa-micro-cod">QRS4F56</div></div>
+      <span class="cli-meta-item">Polo TSI 2023</span>
+      <span class="cli-meta-item">Ultima: 24/02/2026</span>
+    </div>
+  </div>
+  <div class="cli-dias dias-atencao">38d</div>
+  <div class="cli-os">
+    <div class="cli-os-num">1</div>
+    <div class="cli-os-lbl">OS</div>
+  </div>
+  <div class="cli-valor">
+    <div class="cli-valor-num">R$ 380</div>
+    <div class="cli-valor-lbl">Historico</div>
+  </div>
+  <div class="cli-actions">
+    <button class="cli-act cli-act-wpp">WPP</button>
+    <button class="cli-act cli-act-agendar">AGENDAR</button>
+  </div>
+</div>
+
+<!-- 4. PERDIDO — SEM TELEFONE -->
+<div class="cli-row" onclick="abrirDetalhe()">
+  <div class="cli-threat threat-perdido"></div>
+  <div class="cli-avatar">HG</div>
+  <div class="cli-info">
+    <div class="cli-nome">Higo Nascimento</div>
+    <div class="cli-meta">
+      <span class="cli-faltante">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        TELEFONE AUSENTE
+      </span>
+      <span class="cli-meta-item">Ultima: 05/11/2025</span>
+    </div>
+  </div>
+  <div class="cli-dias dias-perdido">149d</div>
+  <div class="cli-os">
+    <div class="cli-os-num">0</div>
+    <div class="cli-os-lbl">OS</div>
+  </div>
+  <div class="cli-valor">
+    <div class="cli-valor-num" style="color:var(--w3);">—</div>
+    <div class="cli-valor-lbl">Historico</div>
+  </div>
+  <div class="cli-actions">
+    <button class="cli-act cli-act-wpp" style="opacity:.3;cursor:not-allowed;" disabled>WPP</button>
+    <button class="cli-act cli-act-agendar">AGENDAR</button>
+  </div>
+</div>
+
+<!-- 5. ATENCAO — 45 dias -->
+<div class="cli-row" onclick="abrirDetalhe()">
+  <div class="cli-threat threat-atencao"></div>
+  <div class="cli-avatar">CE</div>
+  <div class="cli-info">
+    <div class="cli-nome">Carlos Eduardo Silva</div>
+    <div class="cli-meta">
+      <span class="cli-meta-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72"/></svg>
+        (81) 98765-1234
+      </span>
+      <div class="placa-micro"><div class="placa-micro-topo"><div class="placa-micro-br">BR</div></div><div class="placa-micro-cod">ABC1D23</div></div>
+      <span class="cli-meta-item">Toro 2022</span>
+      <span class="cli-meta-item">Ultima: 15/02/2026</span>
+    </div>
+  </div>
+  <div class="cli-dias dias-atencao">45d</div>
+  <div class="cli-os">
+    <div class="cli-os-num">2</div>
+    <div class="cli-os-lbl">OS</div>
+  </div>
+  <div class="cli-valor">
+    <div class="cli-valor-num">R$ 3.200</div>
+    <div class="cli-valor-lbl">Historico</div>
+  </div>
+  <div class="cli-actions">
+    <button class="cli-act cli-act-wpp">WPP</button>
+    <button class="cli-act cli-act-agendar">AGENDAR</button>
+  </div>
+</div>
+
+<!-- 6. SEM TELEFONE + SEM OS -->
+<div class="cli-row" onclick="abrirDetalhe()">
+  <div class="cli-threat threat-perdido"></div>
+  <div class="cli-avatar">JR</div>
+  <div class="cli-info">
+    <div class="cli-nome">Junior Almeida</div>
+    <div class="cli-meta">
+      <span class="cli-faltante">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        TELEFONE AUSENTE
+      </span>
+      <span class="cli-faltante">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        VEICULO AUSENTE
+      </span>
+    </div>
+  </div>
+  <div class="cli-dias dias-perdido">200d+</div>
+  <div class="cli-os">
+    <div class="cli-os-num" style="color:var(--w4);">0</div>
+    <div class="cli-os-lbl">OS</div>
+  </div>
+  <div class="cli-valor">
+    <div class="cli-valor-num" style="color:var(--w3);">—</div>
+    <div class="cli-valor-lbl">Historico</div>
+  </div>
+  <div class="cli-actions">
+    <button class="cli-act cli-act-wpp" style="opacity:.3;cursor:not-allowed;" disabled>WPP</button>
+    <button class="cli-act cli-act-agendar" style="opacity:.3;cursor:not-allowed;" disabled>AGENDAR</button>
+  </div>
+</div>
+
+<!-- OVERLAY + SIDE PANEL -->
+<div class="overlay" id="overlay" onclick="fecharPanel()"></div>
+<div class="side-panel" id="panel">
+  <div class="panel-head">
+    <div class="panel-title">Mercio <span>Ramos</span></div>
+    <button class="panel-close" onclick="fecharPanel()">&times;</button>
+  </div>
+  <div class="panel-body">
+
+    <!-- KPIs -->
+    <div class="panel-section">
+      <div class="panel-section-title">Perfil do Cliente</div>
+      <div class="panel-kpis">
+        <div class="panel-kpi">
+          <div class="panel-kpi-val" style="color:var(--orange-alert);">74d</div>
+          <div class="panel-kpi-lbl">Inativo</div>
+        </div>
+        <div class="panel-kpi">
+          <div class="panel-kpi-val">8</div>
+          <div class="panel-kpi-lbl">OS Total</div>
+        </div>
+        <div class="panel-kpi">
+          <div class="panel-kpi-val" style="color:var(--amber);">R$ 6.7k</div>
+          <div class="panel-kpi-lbl">Investido</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Templates de mensagem -->
+    <div class="panel-section">
+      <div class="panel-section-title">Mensagens Rapidas</div>
+      <div class="msg-template">
+        <div class="msg-template-title">Revisao Pendente</div>
+        <div class="msg-template-preview">Ola Mercio! Identificamos que seu Sandero pode estar precisando de uma revisao. Vamos agendar?</div>
+      </div>
+      <div class="msg-template">
+        <div class="msg-template-title">Retorno Promocional</div>
+        <div class="msg-template-preview">Mercio, temos uma condicao especial pra clientes antigos esse mes. Quer saber mais?</div>
+      </div>
+      <div class="msg-template">
+        <div class="msg-template-title">Lembrete Manutencao</div>
+        <div class="msg-template-preview">Ola! Ja faz 74 dias desde sua ultima visita. Seu Sandero precisa de atencao. Podemos ajudar?</div>
+      </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="panel-section">
+      <div class="panel-section-title">Historico</div>
+      <div class="timeline-row">
+        <div class="timeline-dot" style="background:var(--green-neon);"></div>
+        <div class="timeline-info">OS #06 — Pastilha + disco freio</div>
+        <div class="timeline-val">R$ 1.380</div>
+        <div class="timeline-date">18/01</div>
+      </div>
+      <div class="timeline-row">
+        <div class="timeline-dot" style="background:var(--green-neon);"></div>
+        <div class="timeline-info">OS #04 — Troca oleo + filtros</div>
+        <div class="timeline-val">R$ 320</div>
+        <div class="timeline-date">22/11</div>
+      </div>
+      <div class="timeline-row">
+        <div class="timeline-dot" style="background:var(--green-neon);"></div>
+        <div class="timeline-info">OS #02 — Revisao completa 30k</div>
+        <div class="timeline-val">R$ 2.400</div>
+        <div class="timeline-date">15/08</div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="panel-actions">
+      <button class="panel-btn panel-btn-wpp">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        WhatsApp
+      </button>
+      <button class="panel-btn panel-btn-agendar">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Agendar OS
+      </button>
+      <button class="panel-btn panel-btn-secondary">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Editar
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+function abrirDetalhe() {
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('panel').classList.add('open');
+}
+function fecharPanel() {
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('panel').classList.remove('open');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharPanel(); });
+</script>
+
+</body>
+</html>

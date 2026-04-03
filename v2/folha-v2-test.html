@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro V2 — Folha de Pagamento</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#09090B;--sf:#1A1A1E;--sf2:#202024;--sf3:#28282E;
+  --ln:rgba(255,255,255,0.04);--ln2:rgba(255,255,255,0.07);--ln3:rgba(255,255,255,0.12);
+  --amber:#E8930C;--amber-dim:rgba(232,147,12,0.08);
+  --red:#FF3B30;--red-dim:rgba(255,59,48,0.08);
+  --green-neon:#30D158;--green-dim:rgba(48,209,88,0.06);--green-badge:#0B2E12;
+  --w:#EAEAEC;--w2:rgba(255,255,255,0.55);--w3:rgba(255,255,255,0.28);--w4:rgba(255,255,255,0.12);
+  --op:#666;--op2:#888;
+  --mono:'JetBrains Mono',monospace;--head:'Barlow Condensed',sans-serif;--body:'Space Grotesk',sans-serif;
+  --r:3px;
+}
+body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100vh;-webkit-font-smoothing:antialiased;padding:32px 40px;max-width:1060px;margin:0 auto;}
+
+/* HEADER */
+.page-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
+.page-title{font-family:var(--head);font-size:32px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.page-title span{color:var(--amber);}
+.page-actions{display:flex;gap:8px;}
+.btn-cmd{
+  padding:10px 22px;background:var(--sf);border:1px solid var(--ln3);border-radius:var(--r);
+  font-family:var(--head);font-size:12px;font-weight:800;text-transform:uppercase;
+  letter-spacing:1.5px;cursor:pointer;transition:all .12s;
+  display:flex;align-items:center;gap:6px;
+}
+.btn-cmd:hover{background:var(--sf2);border-color:rgba(255,255,255,0.18);}
+.btn-cmd:active{transform:scale(.97);}
+.btn-vale{color:var(--red);border-color:rgba(255,59,48,0.2);}
+.btn-vale:hover{background:var(--red-dim);border-color:rgba(255,59,48,0.3);}
+.btn-pdf{color:var(--w2);}
+
+/* PERIOD */
+.period-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;}
+.period-nav{display:flex;align-items:center;gap:12px;}
+.period-btn{
+  width:38px;height:38px;background:var(--sf);border:1px solid var(--ln3);border-radius:var(--r);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .12s;
+}
+.period-btn:hover{border-color:var(--amber);background:var(--amber-dim);}
+.period-btn:active{transform:scale(.94);}
+.period-btn svg{width:16px;height:16px;stroke:var(--w2);stroke-width:2.5;}
+.period-btn:hover svg{stroke:var(--amber);}
+.period-label{font-family:var(--head);font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:2px;}
+.period-label span{color:var(--amber);}
+.period-badge{
+  font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:1.5px;padding:5px 14px;border-radius:var(--r);
+}
+.badge-aberto{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(232,147,12,0.15);}
+
+/* KPIs */
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:24px;}
+.kpi{
+  background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r);
+  padding:14px;text-align:center;
+}
+.kpi-val{font-family:var(--mono);font-size:19px;font-weight:800;letter-spacing:-1px;color:var(--w2);}
+.kpi-lbl{font-family:var(--head);font-size:9px;font-weight:600;color:var(--w3);text-transform:uppercase;letter-spacing:1.5px;margin-top:3px;}
+.kpi-soberano{
+  background:var(--sf);border:1px solid rgba(232,147,12,0.2);
+}
+.kpi-soberano .kpi-val{color:var(--amber);font-size:22px;}
+
+/* HOLERITE CARD */
+.holerite{
+  background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r);
+  margin-bottom:8px;overflow:hidden;transition:border-color .12s;
+}
+.holerite:hover{border-color:var(--ln3);}
+
+/* Head */
+.hol-head{
+  display:flex;align-items:center;gap:14px;
+  padding:14px 18px;border-bottom:1px solid var(--ln2);
+}
+.hol-avatar{
+  width:38px;height:38px;border-radius:var(--r);
+  background:var(--sf2);border:1px solid var(--ln2);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  font-family:var(--mono);font-size:13px;font-weight:700;color:var(--w3);
+  text-transform:uppercase;letter-spacing:2px;
+}
+.hol-info{flex:1;min-width:0;}
+.hol-nome{font-family:var(--head);font-size:18px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.hol-cargo{font-family:var(--body);font-size:11px;color:var(--w3);margin-top:1px;}
+
+/* Status badges */
+.hol-badge{
+  font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:1.5px;padding:5px 12px;border-radius:var(--r);flex-shrink:0;
+}
+.badge-pendente{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(232,147,12,0.12);}
+.badge-pago{background:var(--green-badge);color:var(--green-neon);border:1px solid rgba(48,209,88,0.12);}
+
+/* Check button */
+.hol-check{
+  width:38px;height:38px;border-radius:var(--r);flex-shrink:0;
+  background:var(--sf2);border:1px solid var(--ln2);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .12s;
+}
+.hol-check:hover{border-color:var(--green-neon);background:var(--green-dim);}
+.hol-check svg{width:18px;height:18px;stroke:var(--w3);stroke-width:2.5;}
+.hol-check:hover svg{stroke:var(--green-neon);}
+.holerite.pago .hol-check{background:var(--green-badge);border-color:rgba(48,209,88,0.2);}
+.holerite.pago .hol-check svg{stroke:var(--green-neon);}
+
+/* Body — equacao horizontal em grade fina */
+.hol-body{
+  display:flex;align-items:stretch;
+  padding:0;
+}
+
+/* Celula de valor */
+.hol-cell{
+  flex:1;padding:12px 10px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  border-right:1px solid var(--ln);
+}
+.hol-cell-val{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--w2);letter-spacing:-.5px;}
+.hol-cell-val.zero{color:var(--w4);}
+.hol-cell-lbl{font-family:var(--head);font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);margin-top:2px;}
+
+/* Operadores — discretos */
+.hol-op{
+  font-family:var(--mono);font-size:14px;font-weight:600;color:var(--op);
+  display:flex;align-items:center;justify-content:center;
+  width:20px;flex-shrink:0;border-right:1px solid var(--ln);
+}
+.hol-eq{
+  font-family:var(--mono);font-size:16px;font-weight:800;color:var(--op2);
+  display:flex;align-items:center;justify-content:center;
+  width:24px;flex-shrink:0;border-right:1px solid var(--ln);
+}
+
+/* LIQUIDO — o unico que brilha */
+.hol-liquido{
+  min-width:150px;padding:12px 18px;
+  display:flex;flex-direction:column;align-items:flex-end;justify-content:center;
+  flex-shrink:0;
+}
+.hol-liquido-val{
+  font-family:var(--mono);font-size:22px;font-weight:800;
+  color:var(--green-neon);letter-spacing:-1px;
+}
+.holerite.pago .hol-liquido-val{color:var(--w3);}
+.hol-liquido-lbl{font-family:var(--head);font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:var(--w3);margin-top:2px;}
+
+/* TOTAL */
+.total-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--sf);border:1px solid rgba(232,147,12,0.15);border-radius:var(--r);
+  padding:16px 20px;margin-top:16px;
+}
+.total-label{font-family:var(--head);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--w2);}
+.total-detail{font-family:var(--body);font-size:11px;color:var(--w3);margin-top:3px;}
+.total-detail .t-green{color:var(--green-neon);}
+.total-detail .t-amber{color:var(--amber);}
+.total-val{font-family:var(--mono);font-size:28px;font-weight:800;color:var(--amber);}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="page-head">
+  <div class="page-title">Folha de <span>Pagamento</span></div>
+  <div class="page-actions">
+    <button class="btn-cmd btn-vale">− Registrar Vale</button>
+    <button class="btn-cmd btn-pdf">⎙ Gerar Folha PDF</button>
+  </div>
+</div>
+
+<!-- PERIOD -->
+<div class="period-bar">
+  <div class="period-nav">
+    <div class="period-btn"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></div>
+    <div class="period-label">Abril <span>2026</span></div>
+    <div class="period-btn"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+  </div>
+  <div class="period-badge badge-aberto">Folha Aberta</div>
+</div>
+
+<!-- KPIs -->
+<div class="kpis">
+  <div class="kpi">
+    <div class="kpi-val">R$ 14.400</div>
+    <div class="kpi-lbl">Salarios</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-val">R$ 1.750</div>
+    <div class="kpi-lbl">VR / VA</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-val">R$ 1.164</div>
+    <div class="kpi-lbl">Comissoes</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-val" style="color:var(--red);">-R$ 450</div>
+    <div class="kpi-lbl">Vales</div>
+  </div>
+  <div class="kpi kpi-soberano">
+    <div class="kpi-val">R$ 16.864</div>
+    <div class="kpi-lbl">Líquido Total</div>
+  </div>
+</div>
+
+<!-- HOLERITES -->
+
+<!-- 1. DANIEL — PENDENTE -->
+<div class="holerite">
+  <div class="hol-head">
+    <div class="hol-avatar">DA</div>
+    <div class="hol-info">
+      <div class="hol-nome">Daniel</div>
+      <div class="hol-cargo">Mecânico Senior</div>
+    </div>
+    <div class="hol-badge badge-pendente">Pendente</div>
+    <div class="hol-check" onclick="togglePago(this)"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+  </div>
+  <div class="hol-body">
+    <div class="hol-cell"><div class="hol-cell-val">R$ 2.800</div><div class="hol-cell-lbl">Fixo</div></div>
+    <div class="hol-op">+</div>
+    <div class="hol-cell"><div class="hol-cell-val">R$ 250</div><div class="hol-cell-lbl">VR</div></div>
+    <div class="hol-op">+</div>
+    <div class="hol-cell"><div class="hol-cell-val">R$ 348</div><div class="hol-cell-lbl">Comissao</div></div>
+    <div class="hol-op">−</div>
+    <div class="hol-cell"><div class="hol-cell-val">R$ 200</div><div class="hol-cell-lbl">Vales</div></div>
+    <div class="hol-eq">=</div>
+    <div class="hol-liquido"><div class="hol-liquido-val">R$ 3.198</div><div class="hol-liquido-lbl">Líquido</div></div>
+  </div>
+</div>
+
+<!-- 2. EVANDRO — PENDENTE -->
+<div class="holerite">
+  <div class="hol-head">
+    <div class="hol-avatar">EV</div>
+    <div class="hol-info">
+      <div class="hol-nome">Evandro</div>
+      <div class="hol-cargo">Mecânico Senior</div>
+    </div>
+    <div class="hol-badge badge-pendente">Pendente</div>
+    <div class="hol-check" onclick="togglePago(this)"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+  </div>
+  <div class="hol-body">
+    <div class="hol-cell"><div class="hol-cell-val">R$ 2.800</div><div class="hol-cell-lbl">Fixo</div></div>
+    <div class="hol-op">+</div>
+    <div class="hol-cell"><div class="hol-cell-val">R$ 250</div><div class="hol-cell-lbl">VR</div></div>
+    <div class="hol-op">+</div>
+    <div class="hol-cell"><div class="hol-cell-val">R$ 286</div><div class="hol-cell-lbl">Comissao</div></div>
+    <div class="hol-op">−</div>
+    <div class="hol-cell"><div class="hol-cell-val zero">R$ 0</div><div class="hol-cell-lbl">Vales</div></div>
+    <div class="hol-eq">=</div>
+    <div class="hol-liquido"><div class="hol-liquido-val">R$ 3.336</div><div class="hol-liquido-lbl">Líquido</div></div>
+  </div>
+</div>
+
+<!-- 3. JUNINHO — PAGO -->
+<div class="holerite pago">
+  <div class="hol-head">
+    <div class="hol-avatar">JU</div>
+    <div class="hol-info">
+      <div class="hol-nome">Juninho</div>
+      <div class="hol-cargo">Mecânico</div>
+    </div>
+    <div class="hol-badge badge-pago">Pago</div>
+    <div class="hol-check" onclick="togglePago(this)"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+  </div>
+  <div class="hol-body">
+    <div class="hol-cell"><div class="hol-cell-val">R$ 2.200</div><div class="hol-cell-lbl">Fixo</div></div>
+    <div class="hol-op">+</div>
+    <div class="hol-cell"><div class="hol-cell-val">R$ 250</div><div class="hol-cell-lbl">VR</div></div>
+    <div class="hol-op">+</div>
+    <div class="hol-cell"><div class="hol-cell-val">R$ 214</div><div class="hol-cell-lbl">Comissao</div></div>
+    <div class="hol-op">−</div>
+    <div class="hol-cell"><div class="hol-cell-val">R$ 100</div><div class="hol-cell-lbl">Vales</div></div>
+    <div class="hol-eq">=</div>
+    <div class="hol-liquido"><div class="hol-liquido-val">R$ 2.564</div><div class="hol-liquido-lbl">Líquido</div></div>
+  </div>
+</div>
+
+<!-- 4. MARCOS — PENDENTE -->
+<div class="holerite">
+  <div class="hol-head">
+    <div class="hol-avatar">MA</div>
+    <div class="hol-info">
+      <div class="hol-nome">Marcos</div>
+      <div class="hol-cargo">Mecânico</div>
+    </div>
+    <div class="hol-badge badge-pendente">Pendente</div>
+    <div class="hol-check" onclick="togglePago(this)"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+  </div>
+  <div class="hol-body">
+    <div class="hol-cell"><div class="hol-cell-val">R$ 2.200</div><div class="hol-cell-lbl">Fixo</div></div>
+    <div class="hol-op">+</div>
+    <div class="hol-cell"><div class="hol-cell-val">R$ 250</div><div class="hol-cell-lbl">VR</div></div>
+    <div class="hol-op">+</div>
+    <div class="hol-cell"><div class="hol-cell-val">R$ 168</div><div class="hol-cell-lbl">Comissao</div></div>
+    <div class="hol-op">−</div>
+    <div class="hol-cell"><div class="hol-cell-val">R$ 150</div><div class="hol-cell-lbl">Vales</div></div>
+    <div class="hol-eq">=</div>
+    <div class="hol-liquido"><div class="hol-liquido-val">R$ 2.468</div><div class="hol-liquido-lbl">Líquido</div></div>
+  </div>
+</div>
+
+<!-- 5. LEANDRO — PENDENTE -->
+<div class="holerite">
+  <div class="hol-head">
+    <div class="hol-avatar">LE</div>
+    <div class="hol-info">
+      <div class="hol-nome">Leandro</div>
+      <div class="hol-cargo">Mecânico</div>
+    </div>
+    <div class="hol-badge badge-pendente">Pendente</div>
+    <div class="hol-check" onclick="togglePago(this)"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+  </div>
+  <div class="hol-body">
+    <div class="hol-cell"><div class="hol-cell-val">R$ 2.000</div><div class="hol-cell-lbl">Fixo</div></div>
+    <div class="hol-op">+</div>
+    <div class="hol-cell"><div class="hol-cell-val">R$ 250</div><div class="hol-cell-lbl">VR</div></div>
+    <div class="hol-op">+</div>
+    <div class="hol-cell"><div class="hol-cell-val">R$ 124</div><div class="hol-cell-lbl">Comissao</div></div>
+    <div class="hol-op">−</div>
+    <div class="hol-cell"><div class="hol-cell-val zero">R$ 0</div><div class="hol-cell-lbl">Vales</div></div>
+    <div class="hol-eq">=</div>
+    <div class="hol-liquido"><div class="hol-liquido-val">R$ 2.374</div><div class="hol-liquido-lbl">Líquido</div></div>
+  </div>
+</div>
+
+<!-- 6. WELLINGTON — PAGO -->
+<div class="holerite pago">
+  <div class="hol-head">
+    <div class="hol-avatar">WE</div>
+    <div class="hol-info">
+      <div class="hol-nome">Wellington</div>
+      <div class="hol-cargo">Aux. Mecânico</div>
+    </div>
+    <div class="hol-badge badge-pago">Pago</div>
+    <div class="hol-check" onclick="togglePago(this)"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+  </div>
+  <div class="hol-body">
+    <div class="hol-cell"><div class="hol-cell-val">R$ 1.600</div><div class="hol-cell-lbl">Fixo</div></div>
+    <div class="hol-op">+</div>
+    <div class="hol-cell"><div class="hol-cell-val">R$ 250</div><div class="hol-cell-lbl">VR</div></div>
+    <div class="hol-op">+</div>
+    <div class="hol-cell"><div class="hol-cell-val">R$ 24</div><div class="hol-cell-lbl">Comissao</div></div>
+    <div class="hol-op">−</div>
+    <div class="hol-cell"><div class="hol-cell-val zero">R$ 0</div><div class="hol-cell-lbl">Vales</div></div>
+    <div class="hol-eq">=</div>
+    <div class="hol-liquido"><div class="hol-liquido-val">R$ 1.874</div><div class="hol-liquido-lbl">Líquido</div></div>
+  </div>
+</div>
+
+<!-- 7. RAFAEL — PENDENTE -->
+<div class="holerite">
+  <div class="hol-head">
+    <div class="hol-avatar">RA</div>
+    <div class="hol-info">
+      <div class="hol-nome">Rafael</div>
+      <div class="hol-cargo">Atendente / Aux. Admin</div>
+    </div>
+    <div class="hol-badge badge-pendente">Pendente</div>
+    <div class="hol-check" onclick="togglePago(this)"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+  </div>
+  <div class="hol-body">
+    <div class="hol-cell"><div class="hol-cell-val">R$ 1.800</div><div class="hol-cell-lbl">Fixo</div></div>
+    <div class="hol-op">+</div>
+    <div class="hol-cell"><div class="hol-cell-val">R$ 250</div><div class="hol-cell-lbl">VR</div></div>
+    <div class="hol-op">+</div>
+    <div class="hol-cell"><div class="hol-cell-val zero">R$ 0</div><div class="hol-cell-lbl">Comissao</div></div>
+    <div class="hol-op">−</div>
+    <div class="hol-cell"><div class="hol-cell-val zero">R$ 0</div><div class="hol-cell-lbl">Vales</div></div>
+    <div class="hol-eq">=</div>
+    <div class="hol-liquido"><div class="hol-liquido-val">R$ 2.050</div><div class="hol-liquido-lbl">Líquido</div></div>
+  </div>
+</div>
+
+<!-- TOTAL -->
+<div class="total-bar">
+  <div>
+    <div class="total-label">Total Folha — Abril 2026</div>
+    <div class="total-detail">7 funcionários · <span class="t-green">2 pagos</span> · <span class="t-amber">5 pendentes</span></div>
+  </div>
+  <div class="total-val">R$ 17.864</div>
+</div>
+
+<script>
+function togglePago(el) {
+  const card = el.closest('.holerite');
+  card.classList.toggle('pago');
+  const isPago = card.classList.contains('pago');
+  const badge = card.querySelector('.hol-badge');
+  if (isPago) {
+    badge.className = 'hol-badge badge-pago';
+    badge.textContent = 'Pago';
+  } else {
+    badge.className = 'hol-badge badge-pendente';
+    badge.textContent = 'Pendente';
+  }
+}
+</script>
+
+</body>
+</html>
