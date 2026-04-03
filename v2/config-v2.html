@@ -1034,6 +1034,32 @@ async function gerarTokenTV() {
 
 // ── BOOT ──
 init();
+
+// Sidebar collapsible
+(function(){
+  const saved=JSON.parse(localStorage.getItem('rpmpro-nav-collapsed')||'{}');
+  document.querySelectorAll('.nav-section').forEach(sec=>{
+    const key=sec.textContent.trim();
+    const items=[];
+    let el=sec.nextElementSibling;
+    while(el&&!el.classList.contains('nav-section')){
+      if(el.classList.contains('nav-item'))items.push(el);
+      el=el.nextElementSibling;
+    }
+    const hasActive=items.some(i=>i.classList.contains('active'));
+    if(!hasActive&&saved[key]){
+      sec.classList.add('collapsed');
+      items.forEach(i=>i.style.display='none');
+    }
+    sec.addEventListener('click',()=>{
+      const collapsed=sec.classList.toggle('collapsed');
+      items.forEach(i=>i.style.display=collapsed?'none':'');
+      const s=JSON.parse(localStorage.getItem('rpmpro-nav-collapsed')||'{}');
+      s[key]=collapsed;
+      localStorage.setItem('rpmpro-nav-collapsed',JSON.stringify(s));
+    });
+  });
+})();
 </script>
 </body>
 </html>
