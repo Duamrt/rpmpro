@@ -6,7 +6,7 @@
 <title>RPM Pro V2 — Ordens de Servico</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04031408"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04031439"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -1654,42 +1654,43 @@ async function capturarPlaca() {
 }
 
 async function processarImagemOCR(imageData) {
-  const worker = await Tesseract.createWorker('por');
-  const { data: { text } } = await worker.recognize(imageData);
+  // Pré-processar: alto contraste pra OCR de placa
+  const img = await createImageBitmap(imageData instanceof Blob ? imageData : new Blob([imageData]));
+  const cv = document.createElement('canvas');
+  const ctx = cv.getContext('2d');
+  cv.width = img.width; cv.height = img.height;
+  ctx.drawImage(img, 0, 0);
+  const imgD = ctx.getImageData(0, 0, cv.width, cv.height);
+  const d = imgD.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const gray = d[i]*0.299 + d[i+1]*0.587 + d[i+2]*0.114;
+    const bin = gray > 127 ? 255 : 0;
+    d[i] = d[i+1] = d[i+2] = bin;
+  }
+  ctx.putImageData(imgD, 0, 0);
+  const processedBlob = await new Promise(r => cv.toBlob(r, 'image/png'));
+
+  const worker = await Tesseract.createWorker('eng');
+  await worker.setParameters({
+    tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+    tessedit_pageseg_mode: '7'
+  });
+  const { data: { text } } = await worker.recognize(processedBlob);
   await worker.terminate();
-
-  // Extrair placa brasileira do texto OCR
-  // Mercosul: ABC1D23 | Antiga: ABC1234
-  const limpo = text.replace(/[^A-Za-z0-9\n]/g, ' ');
-  const padraoMercosul = /[A-Z]{3}\s*\d\s*[A-Z]\s*\d{2}/gi;
-  const padraoAntiga = /[A-Z]{3}\s*\d{4}/gi;
-
+  const limpo = text.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+  const corrigido = limpo
+    .replace(/O(?=\d)/g, '0').replace(/(?<=\d)O/g, '0')
+    .replace(/I(?=\d)/g, '1').replace(/(?<=\d)I/g, '1')
+    .replace(/S(?=\d)/g, '5').replace(/(?<=\d)S/g, '5')
+    .replace(/B(?=\d{2}$)/g, '8');
   let placa = null;
-  let match = limpo.match(padraoMercosul);
-  if (match) {
-    placa = match[0].replace(/\s/g, '').toUpperCase();
-  } else {
-    match = limpo.match(padraoAntiga);
-    if (match) placa = match[0].replace(/\s/g, '').toUpperCase();
-  }
-
-  if (!placa) {
-    // Tenta tratamento agressivo: pega qualquer sequencia 7 chars alfanumerica
-    const todas = limpo.replace(/\s/g, '').match(/[A-Z0-9]{7}/gi);
-    if (todas) {
-      // Filtra: 3 letras + 4 alfanum
-      placa = todas.find(p => /^[A-Z]{3}[0-9A-Z]{4}$/i.test(p));
-      if (placa) placa = placa.toUpperCase();
-    }
-  }
-
+  let match = corrigido.match(/[A-Z]{3}\d[A-Z]\d{2}/);
+  if (match) placa = match[0];
+  if (!placa) { match = corrigido.match(/[A-Z]{3}\d{4}/); if (match) placa = match[0]; }
+  if (!placa) { match = corrigido.match(/[A-Z0-9]{7}/); if (match && /^[A-Z]{3}[0-9A-Z]{4}$/.test(match[0])) placa = match[0]; }
   if (placa) {
     const placaInput = document.getElementById('nos-placa');
-    if (placaInput) {
-      placaInput.value = placa;
-      buscarPlaca(placa);
-      toast('Placa detectada: ' + placa);
-    }
+    if (placaInput) { placaInput.value = placa; buscarPlaca(placa); toast('Placa detectada: ' + placa); }
   } else {
     toast('Nao detectei placa — digite manualmente', 'err');
   }

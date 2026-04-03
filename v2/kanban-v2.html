@@ -6,10 +6,10 @@
 <title>RPM Pro V2 — Pátio</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04031408"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04031408"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04031408"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04031408"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04031439"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04031439"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04031439"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04031439"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -1558,15 +1558,48 @@ async function capturarPlaca() {
 }
 
 async function nosProcessarOCR(imageData) {
-  const worker = await Tesseract.createWorker('por');
-  const { data: { text } } = await worker.recognize(imageData);
+  // Pré-processar imagem: alto contraste pra OCR de placa
+  const img = await createImageBitmap(imageData instanceof Blob ? imageData : new Blob([imageData]));
+  const cv = document.createElement('canvas');
+  const ctx = cv.getContext('2d');
+  cv.width = img.width; cv.height = img.height;
+  ctx.drawImage(img, 0, 0);
+  // Converter pra escala de cinza + threshold
+  const imgData = ctx.getImageData(0, 0, cv.width, cv.height);
+  const d = imgData.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const gray = d[i]*0.299 + d[i+1]*0.587 + d[i+2]*0.114;
+    const bin = gray > 127 ? 255 : 0;
+    d[i] = d[i+1] = d[i+2] = bin;
+  }
+  ctx.putImageData(imgData, 0, 0);
+  const processedBlob = await new Promise(r => cv.toBlob(r, 'image/png'));
+
+  const worker = await Tesseract.createWorker('eng');
+  await worker.setParameters({
+    tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+    tessedit_pageseg_mode: '7'
+  });
+  const { data: { text } } = await worker.recognize(processedBlob);
   await worker.terminate();
-  const limpo = text.replace(/[^A-Za-z0-9\n]/g, ' ');
+  const limpo = text.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+  // Corrigir confusões comuns de OCR
+  const corrigido = limpo
+    .replace(/O(?=\d)/g, '0')  // O antes de número → 0
+    .replace(/(?<=\d)O/g, '0') // O depois de número → 0
+    .replace(/I(?=\d)/g, '1')  // I antes de número → 1
+    .replace(/(?<=\d)I/g, '1') // I depois de número → 1
+    .replace(/S(?=\d)/g, '5')  // S antes de número → 5
+    .replace(/(?<=\d)S/g, '5') // S depois de número → 5
+    .replace(/B(?=\d{2}$)/g, '8'); // B no final → 8
   let placa = null;
-  let match = limpo.match(/[A-Z]{3}\s*\d\s*[A-Z]\s*\d{2}/gi);
-  if (match) { placa = match[0].replace(/\s/g, '').toUpperCase(); }
-  else { match = limpo.match(/[A-Z]{3}\s*\d{4}/gi); if (match) placa = match[0].replace(/\s/g, '').toUpperCase(); }
-  if (!placa) { const todas = limpo.replace(/\s/g, '').match(/[A-Z0-9]{7}/gi); if (todas) { placa = todas.find(p => /^[A-Z]{3}[0-9A-Z]{4}$/i.test(p)); if (placa) placa = placa.toUpperCase(); } }
+  // Mercosul: ABC1D23
+  let match = corrigido.match(/[A-Z]{3}\d[A-Z]\d{2}/);
+  if (match) placa = match[0];
+  // Antiga: ABC1234
+  if (!placa) { match = corrigido.match(/[A-Z]{3}\d{4}/); if (match) placa = match[0]; }
+  // Fallback: qualquer sequência de 7 chars alfanuméricos
+  if (!placa) { match = corrigido.match(/[A-Z0-9]{7}/); if (match && /^[A-Z]{3}[0-9A-Z]{4}$/.test(match[0])) placa = match[0]; }
   if (placa) { const pi = document.getElementById('nos-placa'); if(pi) { pi.value = placa; nosBuscarPlaca(placa); toast('Placa detectada: ' + placa); } }
   else { toast('Nao detectei placa — digite manualmente', 'err'); }
 }
