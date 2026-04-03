@@ -6,10 +6,10 @@
 <title>RPM Pro V2 — Pátio</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04031439"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04031439"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04031439"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04031439"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -511,18 +511,6 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 .nos-panel-autocomplete{display:none;position:absolute;left:0;right:0;top:100%;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r);max-height:200px;overflow-y:auto;z-index:20;}
 .nos-panel-ac-item{padding:10px 14px;cursor:pointer;font-family:var(--body);font-size:13px;border-bottom:1px solid var(--ln);display:flex;justify-content:space-between;align-items:center;}
 .nos-panel-ac-item:hover{background:var(--sf2);}
-
-/* ── BOTTOM NAV MOBILE ── */
-.bottom-nav-v2{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--sf);border-top:1px solid var(--ln2);z-index:1000;padding:4px 0 env(safe-area-inset-bottom,4px);}
-@media(max-width:768px){.bottom-nav-v2{display:flex;}body{overflow:auto!important;}.app{height:auto!important;overflow:auto!important;}.main{overflow:auto!important;}}
-.bottom-nav-v2 a{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;text-decoration:none;font-family:var(--body);font-size:10px;font-weight:600;color:var(--w4);transition:color .15s;}
-.bottom-nav-v2 a.bnav-active{color:var(--amber);}
-.bottom-nav-v2 a .bnav-icon{font-size:18px;}
-.bottom-nav-more{display:none;position:fixed;bottom:56px;left:0;right:0;background:var(--sf);border-top:1px solid var(--ln2);z-index:999;padding:12px 16px;max-height:60vh;overflow-y:auto;}
-.bottom-nav-more.show{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
-.bottom-nav-more a{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 4px;border-radius:var(--r);text-decoration:none;font-family:var(--body);font-size:11px;font-weight:600;color:var(--w3);background:var(--sf2);transition:all .15s;}
-.bottom-nav-more a:hover,.bottom-nav-more a.bnav-active{color:var(--amber);background:var(--amber-dim);}
-@media(max-width:768px){body{padding-bottom:60px;}}
 </style>
 </head>
 <body>
@@ -931,6 +919,7 @@ async function moverCard(osId, novoStatus) {
     if (!os.mecanico_id) faltando.push('mecânico responsável');
     if (!os.forma_pagamento || os.forma_pagamento === 'pendente') faltando.push('forma de pagamento');
     else if (['debito','credito'].includes(os.forma_pagamento) && MAQUININHAS.length && !os.maquininha_id) faltando.push('maquininha');
+    else if (os.forma_pagamento === 'credito' && MAQUININHAS.length && (!os.parcelas || os.parcelas < 1)) faltando.push('parcelas');
     if (faltando.length) {
       toast('Informe: ' + faltando.join(' e '), 'err');
       setTimeout(() => abrirOS(osId), 300);
@@ -1004,6 +993,7 @@ function fecharPaineis() {
 
 // ── DETALHE OS ──
 async function abrirOS(osId) {
+  _tipoItem = 'servico';
   abrirPanel('panel-os');
   document.getElementById('panel-os-body').innerHTML = '<div style="text-align:center;padding:40px;font-family:var(--mono);font-size:12px;color:var(--w4);">carregando...</div>';
   document.getElementById('panel-os-footer').innerHTML = '';
@@ -1235,8 +1225,11 @@ function _getTaxaCartao(maq, forma, parcelas) {
 async function _onChangeMaq(osId) {
   const forma = document.getElementById('sel-pag-'+osId)?.value;
   const maqId = document.getElementById('sel-maq-'+osId)?.value;
-  const parcelas = parseInt(document.getElementById('sel-parcelas-'+osId)?.value) || 1;
-  if (!maqId || !forma) return;
+  let parcelas = parseInt(document.getElementById('sel-parcelas-'+osId)?.value) || 0;
+  if (!forma) return;
+  if (!maqId) { toast('Selecione a maquininha','err'); return; }
+  if (forma === 'credito' && parcelas < 1) { toast('Selecione as parcelas','err'); return; }
+  if (forma === 'debito') parcelas = 1;
   const maq = MAQUININHAS.find(m => m.id === maqId);
   const taxa = _getTaxaCartao(maq, forma, parcelas);
   const payload = { forma_pagamento: forma, pago: true, maquininha_id: maqId, taxa_cartao: taxa, parcelas };
@@ -1558,48 +1551,15 @@ async function capturarPlaca() {
 }
 
 async function nosProcessarOCR(imageData) {
-  // Pré-processar imagem: alto contraste pra OCR de placa
-  const img = await createImageBitmap(imageData instanceof Blob ? imageData : new Blob([imageData]));
-  const cv = document.createElement('canvas');
-  const ctx = cv.getContext('2d');
-  cv.width = img.width; cv.height = img.height;
-  ctx.drawImage(img, 0, 0);
-  // Converter pra escala de cinza + threshold
-  const imgData = ctx.getImageData(0, 0, cv.width, cv.height);
-  const d = imgData.data;
-  for (let i = 0; i < d.length; i += 4) {
-    const gray = d[i]*0.299 + d[i+1]*0.587 + d[i+2]*0.114;
-    const bin = gray > 127 ? 255 : 0;
-    d[i] = d[i+1] = d[i+2] = bin;
-  }
-  ctx.putImageData(imgData, 0, 0);
-  const processedBlob = await new Promise(r => cv.toBlob(r, 'image/png'));
-
-  const worker = await Tesseract.createWorker('eng');
-  await worker.setParameters({
-    tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
-    tessedit_pageseg_mode: '7'
-  });
-  const { data: { text } } = await worker.recognize(processedBlob);
+  const worker = await Tesseract.createWorker('por');
+  const { data: { text } } = await worker.recognize(imageData);
   await worker.terminate();
-  const limpo = text.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
-  // Corrigir confusões comuns de OCR
-  const corrigido = limpo
-    .replace(/O(?=\d)/g, '0')  // O antes de número → 0
-    .replace(/(?<=\d)O/g, '0') // O depois de número → 0
-    .replace(/I(?=\d)/g, '1')  // I antes de número → 1
-    .replace(/(?<=\d)I/g, '1') // I depois de número → 1
-    .replace(/S(?=\d)/g, '5')  // S antes de número → 5
-    .replace(/(?<=\d)S/g, '5') // S depois de número → 5
-    .replace(/B(?=\d{2}$)/g, '8'); // B no final → 8
+  const limpo = text.replace(/[^A-Za-z0-9\n]/g, ' ');
   let placa = null;
-  // Mercosul: ABC1D23
-  let match = corrigido.match(/[A-Z]{3}\d[A-Z]\d{2}/);
-  if (match) placa = match[0];
-  // Antiga: ABC1234
-  if (!placa) { match = corrigido.match(/[A-Z]{3}\d{4}/); if (match) placa = match[0]; }
-  // Fallback: qualquer sequência de 7 chars alfanuméricos
-  if (!placa) { match = corrigido.match(/[A-Z0-9]{7}/); if (match && /^[A-Z]{3}[0-9A-Z]{4}$/.test(match[0])) placa = match[0]; }
+  let match = limpo.match(/[A-Z]{3}\s*\d\s*[A-Z]\s*\d{2}/gi);
+  if (match) { placa = match[0].replace(/\s/g, '').toUpperCase(); }
+  else { match = limpo.match(/[A-Z]{3}\s*\d{4}/gi); if (match) placa = match[0].replace(/\s/g, '').toUpperCase(); }
+  if (!placa) { const todas = limpo.replace(/\s/g, '').match(/[A-Z0-9]{7}/gi); if (todas) { placa = todas.find(p => /^[A-Z]{3}[0-9A-Z]{4}$/i.test(p)); if (placa) placa = placa.toUpperCase(); } }
   if (placa) { const pi = document.getElementById('nos-placa'); if(pi) { pi.value = placa; nosBuscarPlaca(placa); toast('Placa detectada: ' + placa); } }
   else { toast('Nao detectei placa — digite manualmente', 'err'); }
 }
@@ -1728,6 +1688,10 @@ let _tipoItem = 'servico';
 
 function setTipoItem(tipo, btn) {
   _tipoItem = tipo;
+  const descInput = document.getElementById('add-item-desc');
+  if (descInput) { descInput.value = ''; }
+  const acList = document.getElementById('item-ac-list');
+  if (acList) { acList.classList.remove('show'); acList.innerHTML = ''; }
   document.getElementById('btn-tipo-servico').className = tipo==='servico' ? 'btn-panel btn-panel-primary' : 'btn-panel btn-panel-secondary';
   document.getElementById('btn-tipo-peca').className    = tipo==='peca'    ? 'btn-panel btn-panel-primary' : 'btn-panel btn-panel-secondary';
   document.getElementById('btn-tipo-servico').style.flex = '1';
@@ -2398,13 +2362,16 @@ async function confirmarEntrega(osId) {
   if (_busy.entrega) return;
   _busy.entrega = true;
   try {
-    const { data: os } = await db.from('ordens_servico').select('forma_pagamento, maquininha_id').eq('id', osId).eq('oficina_id', OFICINA_ID).single();
+    const { data: os } = await db.from('ordens_servico').select('forma_pagamento, maquininha_id, parcelas').eq('id', osId).eq('oficina_id', OFICINA_ID).single();
     const fp = os?.forma_pagamento;
 
     if (!fp || fp === 'pendente') { toast('Selecione a forma de pagamento antes de entregar', 'err'); return; }
 
     if (['debito','credito'].includes(fp) && MAQUININHAS.length && !os.maquininha_id) {
       toast('Selecione a maquininha antes de entregar', 'err'); return;
+    }
+    if (fp === 'credito' && MAQUININHAS.length && (!os.parcelas || os.parcelas < 1)) {
+      toast('Selecione as parcelas antes de entregar', 'err'); return;
     }
 
     const pago = fp && fp !== 'pendente' && fp !== 'faturado';
@@ -2636,74 +2603,6 @@ async function pdfRecibo(osId) {
 }
 
 init();
-
-// Sidebar collapsible
-(function(){
-  const saved=JSON.parse(localStorage.getItem('rpmpro-nav-collapsed')||'{}');
-  document.querySelectorAll('.nav-section').forEach(sec=>{
-    const key=sec.textContent.trim();
-    const items=[];
-    let el=sec.nextElementSibling;
-    while(el&&!el.classList.contains('nav-section')){
-      if(el.classList.contains('nav-item'))items.push(el);
-      el=el.nextElementSibling;
-    }
-    const hasActive=items.some(i=>i.classList.contains('active'));
-    if(!hasActive&&saved[key]){
-      sec.classList.add('collapsed');
-      items.forEach(i=>i.style.display='none');
-    }
-    sec.addEventListener('click',()=>{
-      const collapsed=sec.classList.toggle('collapsed');
-      items.forEach(i=>i.style.display=collapsed?'none':'');
-      const s=JSON.parse(localStorage.getItem('rpmpro-nav-collapsed')||'{}');
-      s[key]=collapsed;
-      localStorage.setItem('rpmpro-nav-collapsed',JSON.stringify(s));
-    });
-  });
-})();
-
-// Bottom nav: marca pagina ativa
-(function(){
-  var page=location.pathname.split('/').pop();
-  document.querySelectorAll('.bottom-nav-v2 a, .bottom-nav-more a').forEach(function(a){
-    if(a.getAttribute('href')===page)a.classList.add('bnav-active');
-  });
-  // Fechar menu mais ao clicar fora
-  document.addEventListener('click',function(e){
-    var more=document.getElementById('bnav-more');
-    var btn=document.querySelector('.bottom-nav-v2 a:last-child');
-    if(more&&more.classList.contains('show')&&!more.contains(e.target)&&e.target!==btn&&!btn.contains(e.target)){
-      more.classList.remove('show');
-    }
-  });
-})();
-
 </script>
-
-<!-- BOTTOM NAV MOBILE V2 -->
-<div class="bottom-nav-more" id="bnav-more">
-  <a href="fila-espera-v2.html"><span class="bnav-icon">⏳</span>Fila</a>
-  <a href="agendamentos-v2.html"><span class="bnav-icon">📅</span>Agenda</a>
-  <a href="veiculos-v2.html"><span class="bnav-icon">🚗</span>Veiculos</a>
-  <a href="financeiro-v2.html"><span class="bnav-icon">💰</span>Financeiro</a>
-  <a href="comissao-v2.html"><span class="bnav-icon">📊</span>Comissao</a>
-  <a href="folha-v2.html"><span class="bnav-icon">📄</span>Folha</a>
-  <a href="equipe-v2.html"><span class="bnav-icon">👤</span>Equipe</a>
-  <a href="produtividade-v2.html"><span class="bnav-icon">⚡</span>Produtividade</a>
-  <a href="crm-v2.html"><span class="bnav-icon">📡</span>CRM</a>
-  <a href="satisfacao-v2.html"><span class="bnav-icon">⭐</span>Satisfacao</a>
-  <a href="execucao-os-v2.html"><span class="bnav-icon">🔧</span>Execucao</a>
-  <a href="config-v2.html"><span class="bnav-icon">⚙️</span>Config</a>
-</div>
-<nav class="bottom-nav-v2" id="bnav">
-  <a href="kanban-v2.html"><span class="bnav-icon">⬛</span>Patio</a>
-  <a href="dashboard-v2.html"><span class="bnav-icon">◈</span>Dashboard</a>
-  <a href="os-list-v2.html"><span class="bnav-icon">📋</span>OS</a>
-  <a href="clientes-v2.html"><span class="bnav-icon">👥</span>Clientes</a>
-  <a href="catalogo-v2.html"><span class="bnav-icon">🔧</span>Catalogo</a>
-  <a href="#" onclick="event.preventDefault();document.getElementById('bnav-more').classList.toggle('show');"><span class="bnav-icon">☰</span>Mais</a>
-</nav>
-
 </body>
 </html>
