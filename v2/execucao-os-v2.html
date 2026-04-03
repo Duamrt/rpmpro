@@ -349,7 +349,7 @@ async function init(){
   const{data:{session}}=await db.auth.getSession();
   if(!session){document.getElementById('loading').style.display='none';document.getElementById('login-overlay').style.display='flex';return;}
   const uid=session.user.id;
-  const{data:perfil}=await db.from('profiles').select('*').eq('id',uid).single();
+  const{data:perfil}=await db.from('profiles').select('*, oficinas(*)').eq('user_id',uid).maybeSingle();
   if(!perfil){toast('Perfil nao encontrado','err');return;}
   PERFIL=perfil;OFICINA_ID=perfil.oficina_id;
   document.getElementById('user-nome').textContent=perfil.nome||perfil.email;
