@@ -221,6 +221,18 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 .os-hist-val{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--amber);}
 .os-hist-date{font-family:var(--mono);font-size:10px;color:var(--w4);min-width:50px;text-align:right;}
 .os-hist-tag{font-family:var(--head);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:2px 6px;border-radius:2px;}
+
+/* ── BOTTOM NAV MOBILE ── */
+.bottom-nav-v2{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--sf);border-top:1px solid var(--ln2);z-index:1000;padding:4px 0 env(safe-area-inset-bottom,4px);}
+@media(max-width:768px){.bottom-nav-v2{display:flex;}}
+.bottom-nav-v2 a{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;text-decoration:none;font-family:var(--body);font-size:10px;font-weight:600;color:var(--w4);transition:color .15s;}
+.bottom-nav-v2 a.bnav-active{color:var(--amber);}
+.bottom-nav-v2 a .bnav-icon{font-size:18px;}
+.bottom-nav-more{display:none;position:fixed;bottom:56px;left:0;right:0;background:var(--sf);border-top:1px solid var(--ln2);z-index:999;padding:12px 16px;max-height:60vh;overflow-y:auto;}
+.bottom-nav-more.show{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.bottom-nav-more a{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 4px;border-radius:var(--r);text-decoration:none;font-family:var(--body);font-size:11px;font-weight:600;color:var(--w3);background:var(--sf2);transition:all .15s;}
+.bottom-nav-more a:hover,.bottom-nav-more a.bnav-active{color:var(--amber);background:var(--amber-dim);}
+@media(max-width:768px){body{padding-bottom:60px;}}
 </style>
 </head>
 <body>
@@ -1043,6 +1055,48 @@ init();
     });
   });
 })();
+
+// Bottom nav: marca pagina ativa
+(function(){
+  var page=location.pathname.split('/').pop();
+  document.querySelectorAll('.bottom-nav-v2 a, .bottom-nav-more a').forEach(function(a){
+    if(a.getAttribute('href')===page)a.classList.add('bnav-active');
+  });
+  // Fechar menu mais ao clicar fora
+  document.addEventListener('click',function(e){
+    var more=document.getElementById('bnav-more');
+    var btn=document.querySelector('.bottom-nav-v2 a:last-child');
+    if(more&&more.classList.contains('show')&&!more.contains(e.target)&&e.target!==btn&&!btn.contains(e.target)){
+      more.classList.remove('show');
+    }
+  });
+})();
+
 </script>
+
+<!-- BOTTOM NAV MOBILE V2 -->
+<div class="bottom-nav-more" id="bnav-more">
+  <a href="fila-espera-v2.html"><span class="bnav-icon">⏳</span>Fila</a>
+  <a href="agendamentos-v2.html"><span class="bnav-icon">📅</span>Agenda</a>
+  <a href="veiculos-v2.html"><span class="bnav-icon">🚗</span>Veiculos</a>
+  <a href="financeiro-v2.html"><span class="bnav-icon">💰</span>Financeiro</a>
+  <a href="comissao-v2.html"><span class="bnav-icon">📊</span>Comissao</a>
+  <a href="folha-v2.html"><span class="bnav-icon">📄</span>Folha</a>
+  <a href="equipe-v2.html"><span class="bnav-icon">👤</span>Equipe</a>
+  <a href="produtividade-v2.html"><span class="bnav-icon">⚡</span>Produtividade</a>
+  <a href="crm-v2.html"><span class="bnav-icon">📡</span>CRM</a>
+  <a href="satisfacao-v2.html"><span class="bnav-icon">⭐</span>Satisfacao</a>
+  <a href="execucao-os-v2.html"><span class="bnav-icon">🔧</span>Execucao</a>
+  <a href="config-v2.html"><span class="bnav-icon">⚙️</span>Config</a>
+</div>
+<nav class="bottom-nav-v2" id="bnav">
+  <a href="kanban-v2.html"><span class="bnav-icon">⬛</span>Patio</a>
+  <a href="dashboard-v2.html"><span class="bnav-icon">◈</span>Dashboard</a>
+  <a href="os-list-v2.html"><span class="bnav-icon">📋</span>OS</a>
+  <a href="clientes-v2.html"><span class="bnav-icon">👥</span>Clientes</a>
+  <a href="catalogo-v2.html"><span class="bnav-icon">🔧</span>Catalogo</a>
+  <a href="#" onclick="event.preventDefault();document.getElementById('bnav-more').classList.toggle('show');"><span class="bnav-icon">☰</span>Mais</a>
+</nav>
+
 </body>
 </html>
