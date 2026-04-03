@@ -302,7 +302,7 @@ async function carregar(){
     lockEl.innerHTML=((PERFIL?.role==='dono'||PERFIL?.role==='gerente')?`<button onclick="fecharMes()" style="padding:6px 14px;background:var(--green-dim);color:var(--green);border:1px solid rgba(48,209,88,0.2);border-radius:var(--r);font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;cursor:pointer;">Fechar Mes</button>`:'');
   }
 
-  let folha, totalSalarios=0, totalVR=0, totalComissoes=0, totalVales=0, totalLiquido=0;
+  let folha, totalSalarios=0, totalVR=0, totalComissoes=0, totalVales=0, totalLiquido=0, funcionarios=[], ordens=[];
 
   if(mesFechado&&fechamento.dados){
     // Usa snapshot congelado — não recalcula
