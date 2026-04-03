@@ -247,7 +247,7 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 
 /* ── BOTTOM NAV MOBILE ── */
 .bottom-nav-v2{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--sf);border-top:1px solid var(--ln2);z-index:1000;padding:4px 0 env(safe-area-inset-bottom,4px);}
-@media(max-width:768px){.bottom-nav-v2{display:flex;}}
+@media(max-width:768px){.bottom-nav-v2{display:flex;}body{overflow:auto!important;}.app{height:auto!important;overflow:auto!important;}.main{overflow:auto!important;}}
 .bottom-nav-v2 a{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;text-decoration:none;font-family:var(--body);font-size:10px;font-weight:600;color:var(--w4);transition:color .15s;}
 .bottom-nav-v2 a.bnav-active{color:var(--amber);}
 .bottom-nav-v2 a .bnav-icon{font-size:18px;}

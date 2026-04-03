@@ -6,7 +6,7 @@
 <title>RPM Pro V2 — Ordens de Servico</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04031405"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04031408"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -290,7 +290,7 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 
 /* ── BOTTOM NAV MOBILE ── */
 .bottom-nav-v2{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--sf);border-top:1px solid var(--ln2);z-index:1000;padding:4px 0 env(safe-area-inset-bottom,4px);}
-@media(max-width:768px){.bottom-nav-v2{display:flex;}}
+@media(max-width:768px){.bottom-nav-v2{display:flex;}body{overflow:auto!important;}.app{height:auto!important;overflow:auto!important;}.main{overflow:auto!important;}}
 .bottom-nav-v2 a{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;text-decoration:none;font-family:var(--body);font-size:10px;font-weight:600;color:var(--w4);transition:color .15s;}
 .bottom-nav-v2 a.bnav-active{color:var(--amber);}
 .bottom-nav-v2 a .bnav-icon{font-size:18px;}
