@@ -288,7 +288,11 @@ const OS = {
     ).slice(0, 12);
 
     if (!resultados.length) {
-      sugEl.innerHTML = '<div style="padding:8px 12px;font-size:13px;color:var(--text-secondary);">Nenhum servico encontrado</div>';
+      const nomePre = val.trim().replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      sugEl.innerHTML = `<div style="padding:8px 12px;font-size:13px;color:var(--text-secondary);">Nenhum servico encontrado</div>
+        <div style="padding:8px 12px;cursor:pointer;font-size:13px;color:var(--primary);font-weight:600;border-top:1px solid var(--border);"
+             onmouseover="this.style.background='rgba(255,69,0,0.1)'" onmouseout="this.style.background=''"
+             onclick="OS._cadastrarServicoInline('${nomePre}', '${sugId}', '${contexto}')">+ Cadastrar "${esc(val.trim())}"</div>`;
       sugEl.classList.remove('hidden');
       return;
     }
@@ -303,6 +307,18 @@ const OS = {
       </div>
     `).join('');
     sugEl.classList.remove('hidden');
+  },
+
+  _cadastrarServicoInline(nome, sugId, contexto) {
+    const sugEl = document.getElementById(sugId);
+    if (sugEl) sugEl.classList.add('hidden');
+    OS._onPostSalvarServico = async () => {
+      OS._servicosCache = null;
+      const todos = await OS._carregarServicosCache();
+      const novo = todos.find(s => s.nome.toLowerCase() === nome.toLowerCase());
+      if (novo) OS._selecionarServicoBusca(novo.nome, novo.valor, sugId, contexto);
+    };
+    if (typeof SERVICOS !== 'undefined') SERVICOS.abrirModal({ nome });
   },
 
   _selecionarServicoBusca(nome, valor, sugId, contexto) {
@@ -1067,7 +1083,11 @@ const OS = {
     resultados = resultados.slice(0, 15);
 
     if (!resultados.length) {
-      sugEl.innerHTML = '<div style="padding:8px 12px;font-size:13px;color:var(--text-secondary);">Nenhuma peca encontrada</div>';
+      const nomePre = val.trim().replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      sugEl.innerHTML = `<div style="padding:8px 12px;font-size:13px;color:var(--text-secondary);">Nenhuma peca encontrada</div>
+        <div style="padding:8px 12px;cursor:pointer;font-size:13px;color:var(--primary);font-weight:600;border-top:1px solid var(--border);"
+             onmouseover="this.style.background='rgba(255,69,0,0.1)'" onmouseout="this.style.background=''"
+             onclick="OS._cadastrarPecaInline('${nomePre}')">+ Cadastrar "${esc(val.trim())}"</div>`;
       sugEl.classList.remove('hidden');
       return;
     }
@@ -1111,6 +1131,17 @@ const OS = {
 
   _pecaSelecionadaQtd: 0,
   _pecaSelecionadaNome: '',
+
+  _cadastrarPecaInline(nome) {
+    const sugEl = document.getElementById('det-peca-sugestoes');
+    if (sugEl) sugEl.classList.add('hidden');
+    OS._onPostSalvarPeca = async (novaPeca) => {
+      if (!novaPeca) return;
+      OS._pecasEstoque = null;
+      OS._selecionarPecaEstoque(novaPeca.id, novaPeca.nome, novaPeca.preco_venda || 0, novaPeca.quantidade || 0, novaPeca.custo || 0);
+    };
+    if (typeof PECAS !== 'undefined') PECAS.abrirModal({ nome });
+  },
 
   async addPecaEstoque() {
     const pecaId = document.getElementById('det-peca-id').value;

@@ -337,6 +337,11 @@ const PECAS = {
     closeModal();
     APP.toast(id ? 'Peca atualizada' : 'Peca cadastrada');
     this.carregar();
+    if (!id && typeof OS !== 'undefined' && OS._onPostSalvarPeca) {
+      const cb = OS._onPostSalvarPeca;
+      OS._onPostSalvarPeca = null;
+      cb(res.data[0]);
+    }
   },
 
   async editar(id) {

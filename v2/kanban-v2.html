@@ -6,10 +6,10 @@
 <title>RPM Pro V2 — Pátio</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04070759"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04070759"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04070759"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04070759"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04070828"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04070828"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04070828"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04070828"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -1128,6 +1128,15 @@ async function abrirOS(osId) {
           autocomplete="off" oninput="buscarItemCatalogo(this.value)" style="margin-bottom:0;">
         <div class="item-autocomplete" id="item-ac-list"></div>
       </div>
+      <div id="inline-criar-item" style="display:none;background:var(--bg2);border:1px solid var(--amber);border-radius:8px;padding:12px;margin-bottom:8px;">
+        <div style="font-size:12px;font-weight:700;color:var(--amber);margin-bottom:8px;" id="inline-criar-titulo">Cadastrar novo serviço</div>
+        <input class="p-input" id="inline-criar-nome" placeholder="Nome..." style="margin-bottom:6px;">
+        <input class="p-input" id="inline-criar-valor" type="number" step="0.01" placeholder="Valor padrão (R$)" style="margin-bottom:8px;">
+        <div style="display:flex;gap:6px;">
+          <button class="btn-panel btn-panel-secondary" style="flex:1;" onclick="fecharCriarItemInline()">Cancelar</button>
+          <button class="btn-panel btn-panel-primary" style="flex:2;" onclick="salvarItemInline()">Criar e selecionar</button>
+        </div>
+      </div>
       <div style="display:flex;gap:6px;margin-bottom:8px;">
         <div style="flex:1;">
           <div class="p-field-label">Qtd</div>
@@ -1721,7 +1730,15 @@ async function buscarItemCatalogo(q) {
       .order('nome')
       .limit(10);
 
-    if (!data?.length) { ac.innerHTML = '<div class="item-ac-row"><span class="item-ac-nome" style="color:var(--w3);">Nenhum resultado</span></div>'; ac.classList.add('show'); return; }
+    if (!data?.length) {
+      const nomePre = q.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      const label = _tipoItem === 'servico' ? 'serviço' : 'peça';
+      ac.innerHTML = `<div class="item-ac-row"><span class="item-ac-nome" style="color:var(--w3);">Nenhum resultado</span></div>
+        <div class="item-ac-row" style="color:var(--amber);font-weight:600;cursor:pointer;border-top:1px solid var(--border2);"
+             onclick="abrirCriarItemInline('${nomePre}')">+ Criar ${label} <strong>"${esc(q)}"</strong></div>`;
+      ac.classList.add('show');
+      return;
+    }
 
     ac.innerHTML = data.map(item => {
       const val = item[campoValor] || 0;
@@ -1742,6 +1759,53 @@ function selecionarItemCatalogo(nome, valor) {
   document.getElementById('add-item-val').value = valor;
   document.getElementById('item-ac-list').classList.remove('show');
   calcItemTotal();
+}
+
+function abrirCriarItemInline(nome) {
+  document.getElementById('item-ac-list').classList.remove('show');
+  const el = document.getElementById('inline-criar-item');
+  if (!el) return;
+  const label = _tipoItem === 'servico' ? 'serviço' : 'peça';
+  document.getElementById('inline-criar-titulo').textContent = 'Cadastrar novo ' + label;
+  document.getElementById('inline-criar-nome').value = nome;
+  document.getElementById('inline-criar-valor').value = '';
+  el.style.display = 'block';
+  document.getElementById('inline-criar-nome').focus();
+}
+
+function fecharCriarItemInline() {
+  const el = document.getElementById('inline-criar-item');
+  if (el) el.style.display = 'none';
+}
+
+async function salvarItemInline() {
+  const nome = (document.getElementById('inline-criar-nome').value || '').trim();
+  const valor = parseFloat(document.getElementById('inline-criar-valor').value) || 0;
+  if (!nome) { toast('Digite o nome', 'err'); return; }
+
+  const btn = document.querySelector('#inline-criar-item .btn-panel-primary');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+
+  try {
+    if (_tipoItem === 'servico') {
+      const { error } = await db.from('servicos_catalogo').insert({
+        oficina_id: OFICINA_ID, nome, categoria: 'Geral', valor_padrao: valor, ativo: true
+      });
+      if (error) { toast('Erro: ' + error.message, 'err'); return; }
+    } else {
+      const { error } = await db.from('pecas').insert({
+        oficina_id: OFICINA_ID, nome, preco_venda: valor, quantidade: 0, estoque_minimo: 0
+      });
+      if (error) { toast('Erro: ' + error.message, 'err'); return; }
+    }
+    toast(_tipoItem === 'servico' ? 'Serviço cadastrado' : 'Peça cadastrada');
+    fecharCriarItemInline();
+    selecionarItemCatalogo(nome, valor);
+  } catch(e) {
+    toast('Erro inesperado', 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Criar e selecionar';
+  }
 }
 
 document.addEventListener('click', e => {
@@ -1890,7 +1954,6 @@ async function carregar() {
       .select('id,nome,taxa_debito,taxa_credito,taxa_parcelado_6,taxa_parcelado_12')
       .eq('oficina_id', OFICINA_ID)
       .eq('ativo', true)
-      .order('nome')
       .order('nome')
   ]);
 

@@ -186,6 +186,11 @@ const SERVICOS = {
     closeModal();
     APP.toast(id ? 'Servico atualizado' : 'Servico cadastrado');
     this.carregar();
+    if (!id && typeof OS !== 'undefined' && OS._onPostSalvarServico) {
+      const cb = OS._onPostSalvarServico;
+      OS._onPostSalvarServico = null;
+      cb();
+    }
   },
 
   async editar(id) {
