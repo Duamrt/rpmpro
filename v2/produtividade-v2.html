@@ -614,13 +614,13 @@ function calcularCurvaABC(itens){
     mapa[k].faturamento+=Number(i.valor_total)||0;
   });
 
-  const lista=Object.values(mapa).sort((a,b)=>b.faturamento-a.faturamento);
-  const totalFat=lista.reduce((s,r)=>s+r.faturamento,0);
+  const lista=Object.values(mapa).sort((a,b)=>b.qtd-a.qtd);
+  const totalQtd=lista.reduce((s,r)=>s+r.qtd,0);
 
   let acum=0;
   lista.forEach(r=>{
-    acum+=r.faturamento;
-    const pct=totalFat?acum/totalFat*100:0;
+    acum+=r.qtd;
+    const pct=totalQtd?acum/totalQtd*100:0;
     r.acum=pct;
     r.classe=pct<=80?'A':pct<=95?'B':'C';
   });
