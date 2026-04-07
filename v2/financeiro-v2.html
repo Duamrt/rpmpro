@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Financeiro</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04071835"></script>
+<script src="js/infra.js?v=04071839"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -418,7 +418,7 @@ async function carregar() {
   const el = document.getElementById('fin-content');
   el.innerHTML = `
     <div class="tabs">
-      ${['fechamento','caixa','despesas','pecas','dre','receber'].map(t => {
+      ${(INFRA.podeVer('fin_resumo') ? ['fechamento','caixa','despesas','pecas','dre','receber'] : ['despesas']).map(t => {
         const label = {fechamento:'Fechamento',caixa:'Caixa',despesas:'Despesas',pecas:'Lucro Peças',dre:'DRE',receber:'A Receber'}[t];
         return `<div class="tab ${ABA===t?'on':''}" onclick="switchTab('${t}')">${label}</div>`;
       }).join('')}
@@ -1584,8 +1584,11 @@ async function init() {
   if (!perfil) { toast('Perfil não encontrado','err'); return; }
 
   PERFIL = perfil;
-  INFRA.checkPermissions(PERFIL);  OFICINA_ID = perfil.oficina_id;
+  INFRA.checkPermissions(PERFIL);
+  OFICINA_ID = perfil.oficina_id;
   OFICINA = perfil.oficinas;
+  // Se não pode ver resumo financeiro, força aba Despesas
+  if (!INFRA.podeVer('fin_resumo')) ABA = 'despesas';
 
   const nomeDisplay = perfil.nome || session.user.email;
   document.getElementById('user-nome').textContent = nomeDisplay;

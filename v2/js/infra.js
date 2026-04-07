@@ -1,26 +1,29 @@
-// RPM Pro — Infra: Permissões granulares por módulo
+// RPM Pro — Infra: Permissões granulares por módulo e seção
 const INFRA = {
+  _perms: null,
 
-  // Mapeia página → chave de permissão
+  // Mapeia página → chave de permissão (bloqueio de rota inteira)
   PAGE_MODULE: {
-    'financeiro-v2.html': 'financeiro',
-    'comissao-v2.html':   'financeiro',
-    'folha-v2.html':      'financeiro',
-    'catalogo-v2.html':   'estoque',
+    'folha-v2.html':      'folha',
+    'comissao-v2.html':   'comissao',
     'config-v2.html':     'config',
-    'equipe-v2.html':     'equipe',
-    'produtividade-v2.html': 'equipe',
     'crm-v2.html':        'crm',
     'satisfacao-v2.html': 'crm',
   },
 
-  // Permissões padrão quando permissions == null
+  // Padrões para quem não tem permissions configurado
   DEFAULTS: {
-    financeiro: false,
-    estoque:    true,
+    folha:      false,
+    comissao:   false,
+    fin_resumo: false,
     config:     false,
-    equipe:     false,
     crm:        false,
+  },
+
+  // Verifica se usuário pode ver determinada chave
+  podeVer(key) {
+    if (!this._perms) return true; // dono/gerente — sem restrição
+    return this._perms[key] !== false;
   },
 
   checkPermissions(perfil) {
@@ -28,27 +31,27 @@ const INFRA = {
     // Dono e gerente nunca são bloqueados
     if (['dono', 'gerente'].includes(perfil.role)) return;
 
-    const perms = Object.assign({}, this.DEFAULTS, perfil.permissions || {});
+    this._perms = Object.assign({}, this.DEFAULTS, perfil.permissions || {});
 
     // Proteção de rota: redireciona se a página atual não tiver permissão
     const page = window.location.pathname.split('/').pop() || '';
     const pageModule = this.PAGE_MODULE[page];
-    if (pageModule && perms[pageModule] === false) {
+    if (pageModule && !this.podeVer(pageModule)) {
       window.location.replace('kanban-v2.html');
       return;
     }
 
-    // Aguarda DOM estar pronto antes de esconder itens da sidebar
+    // Oculta links da sidebar sem permissão
     const applyHide = () => {
       document.querySelectorAll('.sidebar-nav a[href]').forEach(a => {
         const href = (a.getAttribute('href') || '').split('/').pop().split('?')[0];
         const mod = this.PAGE_MODULE[href];
-        if (mod && perms[mod] === false) {
+        if (mod && !this.podeVer(mod)) {
           a.style.display = 'none';
         }
       });
 
-      // Oculta seção da sidebar se todos os itens da seção estiverem ocultos
+      // Oculta seção da sidebar se todos os itens estiverem ocultos
       document.querySelectorAll('.nav-section').forEach(section => {
         let next = section.nextElementSibling;
         let algumVisivel = false;

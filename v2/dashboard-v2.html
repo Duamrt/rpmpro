@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04071835"></script>
+<script src="js/infra.js?v=04071839"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -451,16 +451,17 @@ async function carregar() {
         <div class="kpi-lbl">Ticket Medio</div>
         <div class="kpi-sub">${osEntreguesMes.length} entregas</div>
       </div>
+      ${INFRA.podeVer('fin_resumo') ? `
       <div class="kpi">
         <div class="kpi-val" style="color:var(--green);">R$ ${fmtK(fatMes)}</div>
         <div class="kpi-lbl">Faturado Mes</div>
-      </div>
+      </div>` : ''}
       <div class="kpi">
         <div class="kpi-val">${tempoMedioMs > 0 ? tempoHumano(tempoMedioMs) : '—'}</div>
         <div class="kpi-lbl">Tempo Medio</div>
         <div class="kpi-sub">permanencia</div>
       </div>
-      ${semPag.length ? `
+      ${INFRA.podeVer('fin_resumo') ? (semPag.length ? `
       <div class="kpi kpi-alert">
         <div class="kpi-val" style="color:var(--red);">${semPag.length}</div>
         <div class="kpi-lbl">Sem Pagamento</div>
@@ -470,7 +471,7 @@ async function carregar() {
         <div class="kpi-val" style="color:var(--green);">R$ ${fmtK(lucroMes)}</div>
         <div class="kpi-lbl">Lucro Mes</div>
         <div class="kpi-sub">estimado</div>
-      </div>`}
+      </div>`) : ''}
     </div>
 
     <!-- RESUMO DE HOJE -->
