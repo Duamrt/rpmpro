@@ -192,6 +192,18 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 .empty-state h3{font-family:var(--head);font-size:20px;font-weight:700;text-transform:uppercase;color:var(--w2);margin-bottom:6px;}
 .empty-state p{font-size:13px;color:var(--w4);}
 
+/* CURVA ABC */
+.abc-table{width:100%;border-collapse:collapse;}
+.abc-table th{font-family:var(--head);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);padding:6px 12px;text-align:left;border-bottom:1px solid var(--ln2);}
+.abc-table th:last-child{text-align:center;}
+.abc-table td{padding:10px 12px;font-family:var(--body);font-size:13px;border-bottom:1px solid var(--ln);color:var(--w2);}
+.abc-table tr:hover td{background:var(--sf2);}
+.abc-table td.mono{font-family:var(--mono);font-size:13px;font-weight:700;}
+.abc-badge{display:inline-block;font-family:var(--head);font-size:12px;font-weight:900;letter-spacing:1px;padding:3px 10px;border-radius:2px;text-align:center;min-width:28px;}
+.abc-a{background:rgba(48,209,88,0.12);color:var(--green);border:1px solid rgba(48,209,88,0.2);}
+.abc-b{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(232,147,12,0.2);}
+.abc-c{background:var(--sf3);color:var(--w3);border:1px solid var(--ln2);}
+
 @media(max-width:768px){
   .sidebar{display:none;}
   .macro{grid-template-columns:repeat(2,1fr);}
@@ -200,6 +212,7 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
   .rank-row .rank-bar-wrap{display:none;}
   .admin-grid{grid-template-columns:1fr;}
   .side-panel{width:100%;}
+  .abc-table th:nth-child(3),.abc-table td:nth-child(3){display:none;}
 }
 </style>
 </head>
@@ -304,6 +317,12 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
         <div class="admin-grid" id="admin-grid"></div>
       </div>
 
+      <!-- CURVA ABC -->
+      <div style="margin-top:28px;">
+        <div class="section-title">Curva ABC de Pecas</div>
+        <div id="curva-abc"></div>
+      </div>
+
       <!-- ALERTAS -->
       <div class="alerts" id="alertas"></div>
     </div>
@@ -355,12 +374,13 @@ async function carregar(){
   else dataInicio=inicioMes.toISOString().split('T')[0];
 
   // Busca tudo em paralelo
-  const[profilesRes,osRes,clientesRes,veiculosRes,caixaRes]=await Promise.all([
+  const[profilesRes,osRes,clientesRes,veiculosRes,caixaRes,itensOsRes]=await Promise.all([
     db.from('profiles').select('id, nome, role, comissao_percent').eq('oficina_id',OFICINA_ID).eq('ativo',true).order('nome'),
     db.from('ordens_servico').select('id, numero, status, pago, valor_total, created_by, mecanico_id, created_at, data_entrega, updated_at, veiculos(placa), clientes(nome)').eq('oficina_id',OFICINA_ID).gte('created_at',dataInicio),
     db.from('clientes').select('id, nome, created_by, created_at').eq('oficina_id',OFICINA_ID).gte('created_at',dataInicio),
     db.from('veiculos').select('id, placa, created_by, created_at').eq('oficina_id',OFICINA_ID).gte('created_at',dataInicio),
-    db.from('caixa').select('id, tipo, categoria, descricao, valor, created_by, created_at').eq('oficina_id',OFICINA_ID).gte('created_at',dataInicio)
+    db.from('caixa').select('id, tipo, categoria, descricao, valor, created_by, created_at').eq('oficina_id',OFICINA_ID).gte('created_at',dataInicio),
+    db.from('itens_os').select('descricao, quantidade, valor_total').eq('oficina_id',OFICINA_ID).eq('tipo','peca').gte('created_at',dataInicio)
   ]);
 
   const profiles=profilesRes.data||[];
@@ -368,6 +388,7 @@ async function carregar(){
   const clientes=clientesRes.data||[];
   const veiculos=veiculosRes.data||[];
   const caixa=caixaRes.data||[];
+  const itensOs=itensOsRes.data||[];
 
   const mecanicos=profiles.filter(p=>['mecanico','aux_mecanico'].includes(p.role));
   const admins=profiles.filter(p=>['dono','gerente','atendente','aux_admin'].includes(p.role));
@@ -479,6 +500,9 @@ async function carregar(){
     ${gaps.map(g=>`<div class="alert-item alert-${g.nivel}">${esc(g.user)} — ${esc(g.msg)}</div>`).join('')}
   `:'';
 
+  // ── CURVA ABC ──
+  calcularCurvaABC(itensOs);
+
   // Cache pra side panel
   _dadosCache={dadosMec,dadosAdmin,osList};
 }
@@ -571,6 +595,54 @@ function renderAdmin(lista){
       <div class="activity-badge ${actClass}">${actLabel}</div>
     </div>`;
   }).join('');
+}
+
+// ── CURVA ABC ──
+function calcularCurvaABC(itens){
+  const el=document.getElementById('curva-abc');
+  if(!itens.length){
+    el.innerHTML='<div class="empty-state"><div class="icon">📦</div><h3>Sem pecas</h3><p>Nenhuma peca vendida no periodo</p></div>';
+    return;
+  }
+
+  // Agrupa por descricao
+  const mapa={};
+  itens.forEach(i=>{
+    const k=(i.descricao||'Sem descricao').trim();
+    if(!mapa[k])mapa[k]={descricao:k,qtd:0,faturamento:0};
+    mapa[k].qtd+=Number(i.quantidade)||1;
+    mapa[k].faturamento+=Number(i.valor_total)||0;
+  });
+
+  const lista=Object.values(mapa).sort((a,b)=>b.faturamento-a.faturamento);
+  const totalFat=lista.reduce((s,r)=>s+r.faturamento,0);
+
+  let acum=0;
+  lista.forEach(r=>{
+    acum+=r.faturamento;
+    const pct=totalFat?acum/totalFat*100:0;
+    r.acum=pct;
+    r.classe=pct<=80?'A':pct<=95?'B':'C';
+  });
+
+  el.innerHTML=`<table class="abc-table">
+    <thead><tr>
+      <th>Peca</th>
+      <th style="text-align:right;">Qtd</th>
+      <th style="text-align:right;">Faturamento</th>
+      <th style="text-align:right;">% Acum.</th>
+      <th style="text-align:center;">Classe</th>
+    </tr></thead>
+    <tbody>
+    ${lista.map(r=>`<tr>
+      <td>${esc(r.descricao)}</td>
+      <td class="mono" style="text-align:right;">${r.qtd}</td>
+      <td class="mono" style="text-align:right;">R$ ${fmt(r.faturamento)}</td>
+      <td class="mono" style="text-align:right;">${r.acum.toFixed(1)}%</td>
+      <td style="text-align:center;"><span class="abc-badge abc-${r.classe.toLowerCase()}">${r.classe}</span></td>
+    </tr>`).join('')}
+    </tbody>
+  </table>`;
 }
 
 // ── SIDE PANEL ──
