@@ -9,6 +9,7 @@ const APP = {
   },
 
   async init() {
+    try {
     const user = await AUTH.requireAuth();
     if (!user) return;
 
@@ -109,6 +110,7 @@ const APP = {
         if (moreMenu) moreMenu.remove();
       });
     });
+    } catch (e) { console.error('[APP] Erro no init:', e); }
   },
 
   // Páginas permitidas por perfil

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rpmpro-v2-final-resgate';
+const CACHE_NAME = 'rpmpro-v2-NUCLEAR-04071155';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -20,5 +20,6 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Network first — nunca serve cache antigo
   event.respondWith(fetch(event.request));
 });
