@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro — Gestao inteligente para oficinas mecanicas</title>
+<meta name="description" content="Sistema completo de gestao para oficinas mecanicas. Controle OS, clientes, estoque, financeiro e equipe. Simples, rapido e sem burocracia.">
+<meta property="og:title" content="RPM Pro — Gestao inteligente para oficinas mecanicas">
+<meta property="og:description" content="Controle OS, clientes, estoque, financeiro e equipe. Simples, rapido e sem burocracia. Teste gratis por 14 dias.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://rpmpro.com.br">
+<meta property="og:image" content="https://rpmpro.com.br/img/og-rpmpro.png">
+<meta name="theme-color" content="#D97706">
+<link rel="icon" type="image/svg+xml" href="img/icon-192.svg">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; border-radius: 0 !important; }
+  body { font-family: 'IBM Plex Sans', -apple-system, sans-serif; background: #131316; color: #F5F5F5; line-height: 1.6; scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+  a { color: #D97706; text-decoration: none; }
+  ::selection { background: #D97706; color: #131316; }
+
+  /* VARS */
+  :root {
+    --bg: #131316;
+    --bg-low: #1b1b1e;
+    --bg-high: #2a2a2d;
+    --bg-highest: #353438;
+    --border: #2E2E36;
+    --amber: #D97706;
+    --text: #F5F5F5;
+    --muted: #888888;
+    --success: #16A34A;
+    --danger: #DC2626;
+    --mono: 'JetBrains Mono', monospace;
+    --body: 'IBM Plex Sans', sans-serif;
+    --max: 1100px;
+  }
+
+  /* NAV */
+  .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: var(--bg); border-bottom: 2px solid var(--border); }
+  .nav-inner { max-width: var(--max); margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
+  .nav-logo { font-family: var(--mono); font-size: 24px; font-weight: 800; letter-spacing: -1px; }
+  .nav-logo .rpm { color: var(--amber); }
+  .nav-logo .pro { color: #fff; }
+  .nav-links { display: flex; gap: 24px; }
+  .nav-links a { font-family: var(--mono); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: -0.5px; color: var(--text); padding: 4px 8px; transition: none; }
+  .nav-links a:hover { background: var(--amber); color: var(--bg); }
+  .nav-links a.active { color: var(--amber); border-bottom: 2px solid var(--amber); }
+  .nav-btns { display: flex; gap: 12px; }
+
+  /* BUTTONS */
+  .btn { display: inline-block; padding: 12px 28px; font-family: var(--mono); font-weight: 700; font-size: 14px; border: 2px solid transparent; cursor: pointer; text-transform: uppercase; letter-spacing: -0.5px; text-align: center; transition: none; text-decoration: none; }
+  .btn-ghost { background: transparent; color: var(--text); border-color: var(--border); }
+  .btn-ghost:hover { border-color: var(--amber); color: var(--amber); }
+  .btn-primary { background: var(--amber); color: var(--bg); border-color: var(--bg); outline: 2px solid var(--amber); }
+  .btn-primary:hover { background: var(--bg); color: var(--amber); }
+  .btn-whatsapp { background: transparent; border-color: #25D366; color: #25D366; }
+  .btn-whatsapp:hover { background: #25D366; color: var(--bg); }
+  .btn-lg { padding: 16px 36px; font-size: 16px; }
+  .btn-sm { padding: 8px 16px; font-size: 12px; }
+
+  /* HAZARD STRIPE */
+  .hazard { background: repeating-linear-gradient(45deg, var(--amber), var(--amber) 10px, var(--bg) 10px, var(--bg) 20px); }
+
+  /* HERO */
+  .hero { position: relative; padding: 140px 24px 80px; max-width: var(--max); margin: 0 auto; display: grid; grid-template-columns: 1.2fr 1fr; gap: 48px; align-items: center; }
+  .hero::before { content: ''; position: absolute; top: 60px; left: 0; right: 0; height: 2px; }
+  .hero h1 { font-family: var(--mono); font-size: clamp(32px, 4.5vw, 56px); font-weight: 800; line-height: 1.1; margin-bottom: 20px; text-transform: uppercase; }
+  .hero h1 em { color: var(--amber); font-style: normal; }
+  .hero p { font-size: 17px; color: var(--muted); max-width: 520px; margin-bottom: 32px; border-left: 4px solid var(--amber); padding-left: 16px; }
+  .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; }
+  .hero-img { border: 4px solid var(--border); padding: 4px; background: var(--bg-low); box-shadow: 12px 12px 0 0 var(--amber); }
+  .hero-img img { width: 100%; display: block; }
+
+  /* HAZARD BAR (top of hero) */
+  .hazard-bar { position: absolute; top: 80px; left: 0; right: 0; height: 2px; opacity: 0.15; }
+
+  /* PROOF BAR */
+  .proof { background: var(--bg-low); border-top: 2px solid var(--border); border-bottom: 2px solid var(--border); padding: 28px 24px; }
+  .proof-inner { max-width: var(--max); margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; }
+  .proof-item { display: flex; align-items: center; gap: 12px; }
+  .proof-num { font-family: var(--mono); font-size: 28px; font-weight: 800; color: var(--amber); }
+  .proof-label { font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: 2px; }
+  .proof-sep { width: 1px; height: 32px; background: var(--border); }
+
+  /* SECTION */
+  .section { max-width: var(--max); margin: 0 auto; padding: 80px 24px; }
+  .section h2 { font-family: var(--mono); font-size: 32px; font-weight: 800; text-transform: uppercase; letter-spacing: -1px; margin-bottom: 16px; }
+  .section .sub { color: var(--muted); font-size: 16px; margin-bottom: 48px; }
+  .section-alt { background: var(--bg-low); }
+
+  /* PAIN SECTION */
+  .pain { background: var(--bg-high); border-left: 12px solid var(--amber); padding: 48px; }
+  .pain h2 { margin-bottom: 32px; display: flex; align-items: center; gap: 12px; }
+  .pain-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .pain-card { background: var(--bg); padding: 24px; border: 2px solid var(--border); }
+  .pain-card .x { color: var(--danger); font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+  .pain-card h3 { font-family: var(--mono); font-size: 16px; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; }
+  .pain-card p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+  /* KANBAN PREVIEW */
+  .kanban-preview { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-bottom: 24px; }
+  .kanban-col { background: var(--bg-highest); padding: 12px; border-top: 4px solid var(--muted); min-height: 100px; }
+  .kanban-col.diag { border-color: var(--amber); }
+  .kanban-col.exec { border-color: #3B82F6; }
+  .kanban-col.pronto { border-color: var(--success); }
+  .kanban-col.entregue { opacity: 0.4; }
+  .kanban-col h4 { font-family: var(--mono); font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 12px; color: inherit; }
+  .kanban-col.diag h4 { color: var(--amber); }
+  .kanban-col.exec h4 { color: #3B82F6; }
+  .kanban-col.pronto h4 { color: var(--success); }
+  .kanban-card { background: var(--bg); padding: 6px 8px; border: 1px solid var(--border); font-family: var(--mono); font-size: 10px; margin-bottom: 4px; }
+
+  /* SCREENSHOT */
+  .screenshot-wrap { border: 4px solid var(--border); background: #000; position: relative; overflow: hidden; cursor: pointer; }
+  .screenshot-wrap img { width: 100%; display: block; }
+  .screenshot-wrap .label { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--amber); color: var(--bg); padding: 12px 32px; font-family: var(--mono); font-weight: 800; font-size: 20px; text-transform: uppercase; letter-spacing: -1px; }
+  .screenshot-caption { font-size: 13px; color: #71717A; margin-top: 12px; text-align: center; }
+
+  /* COMPARISON TABLE */
+  .compare { display: grid; grid-template-columns: 1fr 1fr; border: 4px solid var(--border); }
+  .compare-col { padding: 32px; }
+  .compare-col.old { background: rgba(220, 38, 38, 0.08); border-right: 2px solid var(--border); }
+  .compare-col.new { background: rgba(22, 163, 74, 0.08); }
+  .compare-header { padding: 10px; text-align: center; font-family: var(--mono); font-weight: 700; font-size: 14px; text-transform: uppercase; margin-bottom: 24px; color: #fff; }
+  .compare-col.old .compare-header { background: var(--danger); }
+  .compare-col.new .compare-header { background: var(--success); }
+  .compare-item { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 16px; font-family: var(--mono); font-size: 13px; }
+  .compare-icon { font-size: 18px; flex-shrink: 0; }
+  .compare-col.old .compare-icon { color: var(--danger); }
+  .compare-col.new .compare-icon { color: var(--success); }
+
+  /* FEATURES */
+  .feat-main { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 20px; }
+  .feat-card { background: var(--bg-high); border: 2px solid var(--border); padding: 32px; }
+  .feat-card:hover { border-color: var(--amber); }
+  .feat-emoji { font-size: 36px; margin-bottom: 16px; }
+  .feat-card h3 { font-family: var(--mono); font-size: 18px; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; }
+  .feat-card p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+  .feat-pills { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .feat-pill { border: 2px solid var(--border); padding: 14px 16px; font-family: var(--mono); font-size: 11px; text-transform: uppercase; font-weight: 700; background: var(--bg-low); display: flex; align-items: center; gap: 10px; }
+  .feat-pill:hover { border-color: var(--amber); }
+  .feat-diamond { width: 8px; height: 8px; background: var(--amber); transform: rotate(45deg); flex-shrink: 0; }
+
+  /* PRICING */
+  .price-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; max-width: 800px; margin: 0 auto; }
+  .price-card { background: var(--bg); border: 4px solid var(--border); display: flex; flex-direction: column; }
+  .price-card.destaque { border-color: var(--amber); box-shadow: 12px 12px 0 0 var(--amber); }
+  .price-plate { padding: 8px; text-align: center; font-family: var(--mono); font-size: 10px; letter-spacing: 3px; font-weight: 700; }
+  .price-card .price-plate { background: var(--border); }
+  .price-card.destaque .price-plate { background: var(--amber); color: var(--bg); }
+  .price-body { padding: 32px; flex: 1; }
+  .price-name { font-family: var(--mono); font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+  .price-value { display: flex; align-items: baseline; gap: 4px; margin-bottom: 28px; }
+  .price-value .curr { font-family: var(--mono); font-size: 18px; color: var(--amber); }
+  .price-value .num { font-family: var(--mono); font-size: 48px; font-weight: 800; }
+  .price-value .per { font-family: var(--mono); font-size: 14px; color: var(--muted); }
+  .price-list { list-style: none; margin-bottom: 24px; }
+  .price-list li { padding: 8px 0; font-family: var(--mono); font-size: 13px; display: flex; align-items: center; gap: 8px; }
+  .price-list li::before { content: '✓'; color: var(--amber); font-weight: 700; }
+  .price-list li.no::before { content: '—'; color: #71717A; }
+  .price-list li.no { color: #71717A; }
+  .price-cta { border-top: 2px solid var(--border); }
+  .price-cta .btn { width: 100%; display: block; padding: 16px; }
+  .price-anchor { text-align: center; margin-top: 24px; font-family: var(--mono); font-size: 14px; color: var(--muted); }
+
+  /* FAQ */
+  .faq-list { max-width: 700px; }
+  .faq-item { border: 2px solid var(--border); margin-bottom: 8px; }
+  .faq-q { padding: 16px 20px; font-family: var(--mono); font-size: 14px; font-weight: 700; cursor: pointer; display: flex; justify-content: space-between; align-items: center; text-transform: uppercase; }
+  .faq-q:hover { background: var(--bg-low); }
+  .faq-q::after { content: '+'; font-size: 20px; color: var(--muted); }
+  .faq-item.open .faq-q::after { content: '−'; color: var(--amber); }
+  .faq-a { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+  .faq-item.open .faq-a { max-height: 500px; }
+  .faq-a p { padding: 0 20px 16px; font-size: 14px; color: var(--muted); line-height: 1.7; }
+  .faq-header { border-left: 8px solid var(--amber); padding-left: 20px; margin-bottom: 32px; }
+
+  /* CTA FINAL */
+  .cta { text-align: center; padding: 100px 24px; position: relative; overflow: hidden; }
+  .cta .bg-hazard { position: absolute; inset: 0; opacity: 0.04; pointer-events: none; }
+  .cta h2 { font-family: var(--mono); font-size: clamp(28px, 4vw, 48px); font-weight: 800; text-transform: uppercase; margin-bottom: 32px; line-height: 1.1; position: relative; z-index: 1; }
+  .cta-btns { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; position: relative; z-index: 1; }
+
+  /* FOOTER */
+  .footer { border-top: 4px solid var(--border); background: var(--bg-low); padding: 48px 24px; }
+  .footer-inner { max-width: var(--max); margin: 0 auto; display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 40px; }
+  .footer-col h4 { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--amber); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 2px; }
+  .footer-col p, .footer-col a { font-family: var(--mono); font-size: 12px; color: #71717A; line-height: 2; display: block; text-transform: uppercase; text-decoration: underline; }
+  .footer-col a:hover { color: var(--amber); }
+  .footer-brand { font-family: var(--mono); font-size: 18px; font-weight: 800; color: var(--text); margin-bottom: 12px; }
+  .footer-bottom { text-align: center; padding: 20px 24px; color: #71717A; font-family: var(--mono); font-size: 11px; border-top: 2px solid var(--border); background: var(--bg-low); text-transform: uppercase; letter-spacing: 2px; }
+
+  /* REVEAL ANIMATIONS */
+  .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.6s ease, transform 0.6s ease; }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  /* HERO ANIMATION */
+  .hero h1 { opacity: 0; transform: translateY(30px); animation: heroIn 0.8s ease forwards 0.2s; }
+  .hero p { opacity: 0; transform: translateY(20px); animation: heroIn 0.8s ease forwards 0.5s; }
+  .hero-cta { opacity: 0; transform: translateY(20px); animation: heroIn 0.8s ease forwards 0.7s; }
+  @keyframes heroIn { to { opacity: 1; transform: translateY(0); } }
+
+  /* NAV ANIMATION */
+  .nav { transform: translateY(-100%); animation: navSlide 0.5s ease forwards 0.1s; }
+  @keyframes navSlide { to { transform: translateY(0); } }
+
+  /* SCREENSHOT OVERLAY */
+  .screenshot-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.95); z-index: 99999; cursor: zoom-out; padding: 20px; align-items: center; justify-content: center; }
+  .screenshot-overlay.active { display: flex; }
+  .screenshot-overlay img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .nav-links { display: none; }
+    .hero { grid-template-columns: 1fr; padding: 120px 20px 60px; }
+    .hero-img { display: none; }
+    .proof-inner { justify-content: center; }
+    .proof-sep { display: none; }
+    .pain-grid { grid-template-columns: 1fr; }
+    .pain { padding: 24px; }
+    .kanban-preview { grid-template-columns: repeat(3, 1fr); }
+    .compare { grid-template-columns: 1fr; }
+    .compare-col.old { border-right: none; border-bottom: 2px solid var(--border); }
+    .feat-main { grid-template-columns: 1fr; }
+    .feat-pills { grid-template-columns: 1fr 1fr; }
+    .price-cards { grid-template-columns: 1fr; }
+    .footer-inner { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="nav-logo"><span class="rpm">RPM</span> <span class="pro">PRO</span></div>
+    <div class="nav-links">
+      <a href="#como-funciona">Como funciona</a>
+      <a href="#funcionalidades">Funcionalidades</a>
+      <a href="#planos">Planos</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <div class="nav-btns">
+      <a href="login.html" class="btn btn-ghost btn-sm">Entrar</a>
+      <a href="login.html#cadastro" class="btn btn-primary btn-sm">Testar gratis</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HAZARD BAR -->
+<div class="hazard" style="position:fixed;top:56px;left:0;right:0;height:2px;z-index:99;opacity:0.2;"></div>
+
+<!-- HERO -->
+<section class="hero">
+  <div>
+    <h1>Sua oficina organizada e o <em>lucro no seu bolso.</em> Sem papelada.</h1>
+    <p>Abra OS em segundos, controle o patio pelo celular e nunca mais perca dinheiro por falta de organizacao.</p>
+    <div class="hero-cta">
+      <a href="login.html#cadastro" class="btn btn-primary btn-lg">Testar 14 dias gratis</a>
+      <a href="https://wa.me/5587981456565?text=Oi!%20Quero%20conhecer%20o%20RPM%20Pro" class="btn btn-whatsapp btn-lg" target="_blank">Falar no WhatsApp</a>
+    </div>
+  </div>
+  <div class="hero-img">
+    <img src="img/screenshot-kanban.png" alt="Painel RPM Pro" onerror="this.parentElement.style.display='none'">
+  </div>
+</section>
+
+<!-- PROOF BAR -->
+<section class="proof">
+  <div class="proof-inner">
+    <div class="proof-item"><span class="proof-num">2 MIN</span><span class="proof-label">pra configurar</span></div>
+    <div class="proof-sep"></div>
+    <div class="proof-item"><span class="proof-num">0</span><span class="proof-label">instalacao</span></div>
+    <div class="proof-sep"></div>
+    <div class="proof-item"><span class="proof-num">100%</span><span class="proof-label">online</span></div>
+    <div class="proof-sep"></div>
+    <div class="proof-item"><span class="proof-num">SEM</span><span class="proof-label">contrato</span></div>
+  </div>
+</section>
+
+<!-- PAIN SECTION -->
+<section class="section reveal">
+  <div class="pain">
+    <h2><span style="color:var(--amber);font-size:32px;">&#9888;</span> CANSADO DE...</h2>
+    <div class="pain-grid">
+      <div class="pain-card">
+        <div class="x">&#10005;</div>
+        <h3>Papelada perdida</h3>
+        <p>Ordens de servico que somem e deixam o cliente irritado e voce no prejuizo.</p>
+      </div>
+      <div class="pain-card">
+        <div class="x">&#10005;</div>
+        <h3>Patio lotado</h3>
+        <p>Carros parados sem saber qual o proximo passo da manutencao ou diagnostico.</p>
+      </div>
+      <div class="pain-card">
+        <div class="x">&#10005;</div>
+        <h3>Dinheiro sumindo</h3>
+        <p>Pecas nao cobradas e servicos esquecidos por falta de controle financeiro.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- KANBAN + SCREENSHOT -->
+<section class="section-alt" style="padding:80px 24px;">
+  <div style="max-width:var(--max);margin:0 auto;">
+    <h2 style="font-family:var(--mono);font-size:32px;font-weight:800;text-transform:uppercase;text-align:center;margin-bottom:8px;letter-spacing:-1px;" class="reveal">O dashboard do mecanico moderno</h2>
+    <div style="height:4px;width:60px;background:var(--amber);margin:0 auto 40px;" class="reveal"></div>
+
+    <div class="kanban-preview reveal">
+      <div class="kanban-col">
+        <h4>Entrada (4)</h4>
+        <div class="kanban-card">GOL - ABC1234</div>
+        <div class="kanban-card">ONIX - XYZ9876</div>
+      </div>
+      <div class="kanban-col diag">
+        <h4>Diagnostico (2)</h4>
+        <div class="kanban-card">CIVIC - PTR0022</div>
+      </div>
+      <div class="kanban-col diag">
+        <h4>Orcamento (3)</h4>
+        <div class="kanban-card">COROLLA - JJJ4411</div>
+      </div>
+      <div class="kanban-col exec">
+        <h4>Execucao (5)</h4>
+        <div class="kanban-card">HB20 - KKK9988</div>
+      </div>
+      <div class="kanban-col pronto">
+        <h4>Pronto (1)</h4>
+        <div class="kanban-card">HILUX - OFF4X44</div>
+      </div>
+      <div class="kanban-col entregue">
+        <h4>Entregue</h4>
+      </div>
+    </div>
+
+    <div class="screenshot-wrap reveal" onclick="openScreenshot('img/screenshot-kanban.png')">
+      <img src="img/screenshot-kanban.png" alt="Painel RPM Pro" onerror="this.parentElement.style.display='none'">
+    </div>
+    <p class="screenshot-caption">Patio visual — acompanhe cada veiculo em tempo real <span style="color:var(--amber);">(clique pra ampliar)</span></p>
+  </div>
+</section>
+
+<!-- COMPARISON TABLE -->
+<section class="section reveal" id="como-funciona">
+  <h2 style="text-align:center;font-style:italic;margin-bottom:48px;">A evolucao e obrigatoria</h2>
+  <div class="compare">
+    <div class="compare-col old">
+      <div class="compare-header">Papel / Excel</div>
+      <div class="compare-item"><span class="compare-icon">&#10005;</span> 15 min pra abrir uma OS</div>
+      <div class="compare-item"><span class="compare-icon">&#10005;</span> Estoque no caderno — fura toda hora</div>
+      <div class="compare-item"><span class="compare-icon">&#10005;</span> Lucro do dia? So com calculadora</div>
+      <div class="compare-item"><span class="compare-icon">&#10005;</span> Historico do cliente? Memoria</div>
+      <div class="compare-item"><span class="compare-icon">&#10005;</span> Esquece de cobrar o cliente</div>
+    </div>
+    <div class="compare-col new">
+      <div class="compare-header">RPM Pro</div>
+      <div class="compare-item"><span class="compare-icon">&#10003;</span> OS em 30 segundos</div>
+      <div class="compare-item"><span class="compare-icon">&#10003;</span> Estoque com baixa automatica</div>
+      <div class="compare-item"><span class="compare-icon">&#10003;</span> Lucro liquido em 1 clique</div>
+      <div class="compare-item"><span class="compare-icon">&#10003;</span> Historico completo por placa</div>
+      <div class="compare-item"><span class="compare-icon">&#10003;</span> Alerta automatico no WhatsApp</div>
+    </div>
+  </div>
+</section>
+
+<!-- FUNCIONALIDADES -->
+<section class="section" id="funcionalidades">
+  <h2 style="text-align:center;">Tudo que sua oficina precisa</h2>
+  <p class="sub" style="text-align:center;">Sem instalar nada, sem contrato, sem dor de cabeca</p>
+
+  <div class="feat-main">
+    <div class="feat-card reveal">
+      <div class="feat-emoji">&#128663;</div>
+      <h3>Patio visual</h3>
+      <p>Arraste veiculos entre etapas: Entrada, Diagnostico, Orcamento, Execucao, Pronto, Entregue. Cores indicam tempo parado.</p>
+    </div>
+    <div class="feat-card reveal">
+      <div class="feat-emoji">&#128203;</div>
+      <h3>OS completa</h3>
+      <p>Abra OS em segundos. Servicos do catalogo, pecas do estoque, desconto, mecanico responsavel. PDF e recibo automaticos.</p>
+    </div>
+    <div class="feat-card reveal">
+      <div class="feat-emoji">&#128176;</div>
+      <h3>Financeiro completo</h3>
+      <p>Caixa diario, contas a pagar/receber, comissao por mecanico. OS paga entra no caixa automaticamente.</p>
+    </div>
+  </div>
+
+  <div class="feat-pills">
+    <div class="feat-pill reveal"><div class="feat-diamond"></div> Estoque inteligente</div>
+    <div class="feat-pill reveal"><div class="feat-diamond"></div> CRM WhatsApp</div>
+    <div class="feat-pill reveal"><div class="feat-diamond"></div> Relatorios PDF</div>
+    <div class="feat-pill reveal"><div class="feat-diamond"></div> Agenda tecnica</div>
+    <div class="feat-pill reveal"><div class="feat-diamond"></div> Pesquisa satisfacao</div>
+    <div class="feat-pill reveal"><div class="feat-diamond"></div> Equipe e comissao</div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="section-alt" style="padding:80px 24px;border-top:4px solid var(--border);border-bottom:4px solid var(--border);" id="planos">
+  <div style="max-width:var(--max);margin:0 auto;">
+    <h2 style="font-family:var(--mono);font-size:32px;font-weight:800;text-transform:uppercase;text-align:center;margin-bottom:48px;letter-spacing:-1px;">Escolha sua potencia</h2>
+    <div class="price-cards">
+      <div class="price-card reveal">
+        <div class="price-plate">BRASIL - RPM-01</div>
+        <div class="price-body">
+          <div class="price-name">Essencial</div>
+          <div class="price-value">
+            <span class="curr">R$</span>
+            <span class="num">189</span>
+            <span class="per">/mes</span>
+          </div>
+          <ul class="price-list">
+            <li>Ate 2 usuarios</li>
+            <li>OS ilimitadas</li>
+            <li>Kanban, clientes, veiculos</li>
+            <li>Catalogo de servicos</li>
+            <li>Estoque basico</li>
+            <li>PDF de OS</li>
+            <li>Suporte WhatsApp</li>
+            <li class="no">CRM e agendamento</li>
+            <li class="no">Pesquisa de satisfacao</li>
+          </ul>
+        </div>
+        <div class="price-cta"><a href="login.html#cadastro" class="btn btn-ghost">Testar 14 dias gratis</a></div>
+      </div>
+      <div class="price-card destaque reveal">
+        <div class="price-plate">PROFISSIONAL - RPM-02</div>
+        <div class="price-body">
+          <div class="price-name">Profissional</div>
+          <div class="price-value">
+            <span class="curr">R$</span>
+            <span class="num">324</span>
+            <span class="per">/mes</span>
+          </div>
+          <ul class="price-list">
+            <li>Ate 5 usuarios</li>
+            <li>OS ilimitadas</li>
+            <li>Estoque completo</li>
+            <li>Financeiro + Contas</li>
+            <li>CRM + Agendamento</li>
+            <li>Pesquisa de satisfacao</li>
+            <li>Comissao + Relatorios</li>
+            <li>Suporte prioritario</li>
+          </ul>
+        </div>
+        <div class="price-cta"><a href="login.html#cadastro" class="btn btn-primary">Testar 14 dias gratis</a></div>
+      </div>
+    </div>
+    <p class="price-anchor">Menos que 1 troca de oleo por mes.</p>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section" id="faq">
+  <div class="faq-header">
+    <h2>Duvidas tecnicas</h2>
+  </div>
+  <div class="faq-list">
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-q">Preciso instalar alguma coisa?</div>
+      <div class="faq-a"><p>Nao. O RPM Pro roda direto no navegador, do celular ou computador. So precisa de internet.</p></div>
+    </div>
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-q">Funciona no celular?</div>
+      <div class="faq-a"><p>Sim. O sistema e responsivo e funciona em qualquer celular com navegador. Ideal pra usar no dia a dia da oficina.</p></div>
+    </div>
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-q">Posso cancelar a qualquer momento?</div>
+      <div class="faq-a"><p>Sim. Sem contrato, sem multa, sem fidelidade. Cancele pelo WhatsApp quando quiser.</p></div>
+    </div>
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-q">Meus dados ficam seguros?</div>
+      <div class="faq-a"><p>Sim. Dados criptografados, backup diario e controle de acesso por oficina. Nenhuma oficina ve dados da outra.</p></div>
+    </div>
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-q">Quantas OS posso abrir?</div>
+      <div class="faq-a"><p>Ilimitadas em todos os planos. Sem limite de OS, clientes ou veiculos.</p></div>
+    </div>
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-q">Consigo importar dados de outro sistema?</div>
+      <div class="faq-a"><p>Nossa equipe ajuda na migracao pelo WhatsApp. Importacao automatica em desenvolvimento.</p></div>
+    </div>
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-q">O trial tem alguma limitacao?</div>
+      <div class="faq-a"><p>Nao. Durante 14 dias voce tem acesso a todas as funcionalidades do plano Profissional.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA FINAL -->
+<section class="cta">
+  <div class="bg-hazard hazard"></div>
+  <h2>Vamos colocar ordem na sua oficina?</h2>
+  <p style="color:var(--muted);font-size:16px;margin-bottom:32px;position:relative;z-index:1;">Cadastro em 30 segundos. Sem cartao de credito. 14 dias pra testar tudo.</p>
+  <div class="cta-btns">
+    <a href="login.html#cadastro" class="btn btn-primary btn-lg">Testar 14 dias gratis</a>
+    <a href="https://wa.me/5587981456565?text=Oi!%20Quero%20saber%20mais%20sobre%20o%20RPM%20Pro" class="btn btn-whatsapp btn-lg" target="_blank">Falar com consultor</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-col">
+      <div class="footer-brand">RPM PRO</div>
+      <p style="text-decoration:none;">Gestao inteligente para oficinas mecanicas.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Produto</h4>
+      <a href="#funcionalidades">Funcionalidades</a>
+      <a href="#planos">Planos e precos</a>
+      <a href="#faq">Perguntas frequentes</a>
+      <a href="login.html">Entrar</a>
+    </div>
+    <div class="footer-col">
+      <h4>Contato</h4>
+      <a href="https://wa.me/5587981456565" target="_blank">WhatsApp: (87) 98145-6565</a>
+      <a href="mailto:contato@rpmpro.com.br">contato@rpmpro.com.br</a>
+    </div>
+    <div class="footer-col">
+      <h4>Empresa</h4>
+      <p style="text-decoration:none;">RPM Pro Tecnologia</p>
+    </div>
+  </div>
+</footer>
+<div class="footer-bottom">RPM Pro &copy; 2026 — Todos os direitos reservados</div>
+
+<!-- Screenshot overlay -->
+<div class="screenshot-overlay" id="ss-overlay" onclick="closeScreenshot()">
+  <img id="ss-overlay-img" src="" alt="Screenshot">
+</div>
+
+<!-- WhatsApp flutuante -->
+<a href="https://wa.me/5587981456565?text=Oi%2C%20quero%20conhecer%20o%20RPM%20Pro!" target="_blank" rel="noopener noreferrer" style="position:fixed;bottom:24px;right:24px;width:56px;height:56px;background:#25D366;display:flex;align-items:center;justify-content:center;z-index:999;box-shadow:0 4px 16px rgba(37,211,102,0.4);" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+</a>
+
+<!-- Assistente -->
+<script src="js/utils.js?v=04070759"></script>
+<script src="js/config.js?v=04070759"></script>
+
+<script>
+// Screenshot zoom
+function openScreenshot(src) {
+  document.getElementById('ss-overlay-img').src = src;
+  document.getElementById('ss-overlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+function closeScreenshot() {
+  document.getElementById('ss-overlay').classList.remove('active');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeScreenshot(); });
+
+// Scroll Reveal
+(function() {
+  var els = document.querySelectorAll('.reveal');
+  if (!('IntersectionObserver' in window)) {
+    els.forEach(function(el) { el.classList.add('visible'); });
+    return;
+  }
+  var obs = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        obs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+  els.forEach(function(el) { obs.observe(el); });
+
+  // Nav scroll effect
+  var nav = document.querySelector('.nav');
+  window.addEventListener('scroll', function() {
+    if (window.scrollY > 80) {
+      nav.style.borderBottomColor = '#D9770640';
+      nav.style.background = '#131316f5';
+    } else {
+      nav.style.borderBottomColor = '#2E2E36';
+      nav.style.background = '#131316';
+    }
+  }, { passive: true });
+})();
+</script>
+</body>
+</html>
