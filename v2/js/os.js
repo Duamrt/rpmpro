@@ -13,7 +13,7 @@ const OS = {
     // Busca total e dados
     let query = db
       .from('ordens_servico')
-      .select('*, veiculos(placa, marca, modelo), clientes(nome), profiles!ordens_servico_mecanico_id_fkey(nome)', { count: 'exact' })
+      .select('*, veiculos(placa, marca, modelo), clientes(nome), profiles!mecanico_id(nome)', { count: 'exact' })
       .eq('oficina_id', APP.oficinaId)
       .order('created_at', { ascending: false });
 
@@ -599,7 +599,7 @@ const OS = {
     // Busca OS + itens + peças + checklists em paralelo
     const [osRes, itensRes, chkEntradaRes, chkSaidaRes, diagRes, mecsRes] = await Promise.all([
       db.from('ordens_servico')
-        .select('*, veiculos(placa, marca, modelo, km_atual), clientes(nome, whatsapp), profiles!ordens_servico_mecanico_id_fkey(nome)')
+        .select('*, veiculos(placa, marca, modelo, km_atual), clientes(nome, whatsapp), profiles!mecanico_id(nome)')
         .eq('id', id).single(),
       db.from('itens_os')
         .select('*, pecas(nome)')
@@ -627,7 +627,7 @@ const OS = {
     ]);
 
     const os = osRes.data;
-    if (!os) return;
+    if (!os) { APP.toast('Erro ao carregar OS. Tente novamente.', 'error'); return; }
     const itens = itensRes.data || [];
     // Peças do estoque carregadas sob demanda em mostrarAddPeca()
     this._pecasEstoque = null; // limpa cache ao abrir outra OS
@@ -1356,7 +1356,7 @@ const OS = {
 
   async editarOS(id) {
     const { data: os } = await db.from('ordens_servico')
-      .select('*, veiculos(placa), profiles!ordens_servico_mecanico_id_fkey(nome)')
+      .select('*, veiculos(placa), profiles!mecanico_id(nome)')
       .eq('id', id).single();
     if (!os) return;
 

@@ -32,12 +32,12 @@ const KANBAN = {
 
     const [ativasRes, entreguesRes] = await Promise.all([
       db.from('ordens_servico')
-        .select('*, veiculos(placa, marca, modelo, cor), clientes(nome, whatsapp), profiles!ordens_servico_mecanico_id_fkey(nome)')
+        .select('*, veiculos(placa, marca, modelo, cor), clientes(nome, whatsapp), profiles!mecanico_id(nome)')
         .eq('oficina_id', APP.oficinaId)
         .not('status', 'in', '("entregue","cancelada")')
         .order('created_at', { ascending: true }),
       db.from('ordens_servico')
-        .select('*, veiculos(placa, marca, modelo, cor), clientes(nome, whatsapp), profiles!ordens_servico_mecanico_id_fkey(nome)')
+        .select('*, veiculos(placa, marca, modelo, cor), clientes(nome, whatsapp), profiles!mecanico_id(nome)')
         .eq('oficina_id', APP.oficinaId)
         .eq('status', 'entregue')
         .gte('data_entrega', seteDiasAtras)
