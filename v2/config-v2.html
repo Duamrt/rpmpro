@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Configurações</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="js/infra.js?v=04071830"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -284,6 +285,7 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
           <div class="cfg-nav-item" onclick="switchCfg('calculadora',this)">Calculadora MO</div>
           <div class="cfg-nav-item" onclick="switchCfg('plano',this)">Plano</div>
           <div class="cfg-nav-item" onclick="switchCfg('tv',this)">Painel TV</div>
+          <div class="cfg-nav-item" id="nav-permissoes" style="display:none" onclick="switchCfg('permissoes',this)">🛡️ Permissões</div>
         </div>
 
         <!-- CONTEÚDO -->
@@ -370,7 +372,7 @@ async function init() {
   if (!perfil) { toast('Perfil não encontrado','err'); return; }
 
   PERFIL = perfil;
-  OFICINA_ID = perfil.oficina_id;
+  INFRA.checkPermissions(PERFIL);  OFICINA_ID = perfil.oficina_id;
   OFICINA = perfil.oficinas;
 
   const nomeDisplay = perfil.nome || session.user.email;
@@ -378,6 +380,11 @@ async function init() {
   document.getElementById('user-role').textContent = perfil.role || '';
   document.getElementById('user-avatar').textContent = nomeDisplay.charAt(0).toUpperCase();
   document.getElementById('oficina-nome').textContent = OFICINA?.nome || '';
+
+  // Mostra aba Permissões só para o dono
+  if (perfil.role === 'dono') {
+    document.getElementById('nav-permissoes').style.display = '';
+  }
 
   renderAba();
   document.getElementById('loading').style.display = 'none';
@@ -404,6 +411,7 @@ function renderAba() {
     case 'calculadora': renderCalculadora(ct); break;
     case 'plano': renderPlano(ct); break;
     case 'tv': renderTV(ct); break;
+    case 'permissoes': renderPermissoes(ct); break;
   }
 }
 
@@ -1030,6 +1038,77 @@ async function gerarTokenTV() {
     renderTV(document.getElementById('cfg-content'));
   } catch(e) { toast('Erro inesperado','err'); console.error('[gerarTokenTV]',e); }
   finally { _busy.gerarToken = false; }
+}
+
+// ══════════════════════════════════════════
+// ══ PERMISSÕES POR USUÁRIO ══
+// ══════════════════════════════════════════
+const _MODULOS = [
+  { key: 'financeiro', label: 'Financeiro / Caixa / Comissão / Folha' },
+  { key: 'estoque',    label: 'Catálogo (Serviços e Peças)' },
+  { key: 'equipe',     label: 'Equipe / Produtividade' },
+  { key: 'crm',        label: 'CRM / Satisfação' },
+  { key: 'config',     label: 'Configurações' },
+];
+const _DEFAULTS_PERM = { financeiro: false, estoque: true, equipe: false, crm: false, config: false };
+
+async function renderPermissoes(ct) {
+  ct.innerHTML = '<div style="color:var(--w4);font-size:13px;padding:24px;">Carregando equipe...</div>';
+  const { data: membros, error } = await db.from('profiles')
+    .select('id, nome, role, permissions')
+    .eq('oficina_id', OFICINA_ID).eq('ativo', true)
+    .not('role', 'in', '("dono","gerente")')
+    .order('nome');
+  if (error) { ct.innerHTML = '<div style="color:var(--red);">Erro ao carregar equipe.</div>'; return; }
+  if (!membros || !membros.length) {
+    ct.innerHTML = '<div style="color:var(--w4);font-size:13px;padding:12px;">Nenhum funcionário para configurar.</div>';
+    return;
+  }
+  const roleLabel = { mecanico:'Mecânico', aux_mecanico:'Aux. Mecânico', atendente:'Atendente', aux_admin:'Aux. Administrativo' };
+  ct.innerHTML = `
+    <div class="cfg-section">
+      <div class="cfg-section-title">Permissões por Funcionário</div>
+      <p style="font-size:12px;color:var(--w4);margin-bottom:16px;">
+        Controle o que cada funcionário pode acessar. Pátio, OS, Clientes e Agendamentos são sempre visíveis.
+      </p>
+      ${membros.map(m => {
+        const perms = Object.assign({}, _DEFAULTS_PERM, m.permissions || {});
+        return `
+        <div style="border:1px solid var(--ln2);border-radius:8px;padding:14px 16px;margin-bottom:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div>
+              <span style="font-weight:600;font-size:14px;">${esc(m.nome)}</span>
+              <span style="font-size:11px;color:var(--w4);margin-left:8px;">${roleLabel[m.role]||m.role}</span>
+            </div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;" id="perm-grid-${m.id}">
+            ${_MODULOS.map(mod => `
+              <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;background:var(--sf2);padding:6px 10px;border-radius:6px;border:1px solid ${perms[mod.key] ? 'var(--amber)' : 'var(--ln2)'};" id="perm-label-${m.id}-${mod.key}">
+                <input type="checkbox" data-uid="${m.id}" data-mod="${mod.key}"
+                  ${perms[mod.key] ? 'checked' : ''}
+                  onchange="togglePermissao(this)"
+                  style="accent-color:var(--amber);width:14px;height:14px;">
+                ${mod.label}
+              </label>`).join('')}
+          </div>
+          <button class="cfg-btn cfg-btn-sm" style="margin-top:10px;" onclick="salvarPermissoes('${m.id}')">Salvar</button>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function togglePermissao(el) {
+  const label = document.getElementById(`perm-label-${el.dataset.uid}-${el.dataset.mod}`);
+  if (label) label.style.borderColor = el.checked ? 'var(--amber)' : 'var(--ln2)';
+}
+
+async function salvarPermissoes(uid) {
+  const membros = document.querySelectorAll(`input[data-uid="${uid}"]`);
+  const perms = {};
+  membros.forEach(cb => { perms[cb.dataset.mod] = cb.checked; });
+  const { error } = await db.from('profiles').update({ permissions: perms }).eq('id', uid);
+  if (error) { toast('Erro ao salvar: '+error.message, 'err'); return; }
+  toast('Permissões salvas');
 }
 
 // ── BOOT ──
