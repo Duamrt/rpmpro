@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Equipe</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04071840"></script>
+<script src="js/infra.js?v=04071856"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -322,9 +322,9 @@ function render(){
       <div class="member-comissao">${m.comissao_percent?m.comissao_percent+'%':'—'}</div>
       <div class="member-status"><span class="badge-ativo ${statusCls}">${statusTxt}</span></div>
       <div class="member-actions">
-        ${admin?`<button class="btn-sm" onclick="event.stopPropagation();abrirEditar('${m.id}')">Editar</button>`:''}
-        ${admin&&!m.user_id?`<button class="btn-sm primary" onclick="event.stopPropagation();abrirCriarLogin('${m.id}')">Criar Login</button>`:''}
-        ${admin&&m.user_id?`<button class="btn-sm" onclick="event.stopPropagation();abrirGerenciarLogin('${m.id}')">Login</button>`:''}
+        ${admin&&INFRA.podeVer('equipe_edit')?`<button class="btn-sm" onclick="event.stopPropagation();abrirEditar('${m.id}')">Editar</button>`:''}
+        ${admin&&INFRA.podeVer('equipe_edit')&&!m.user_id?`<button class="btn-sm primary" onclick="event.stopPropagation();abrirCriarLogin('${m.id}')">Criar Login</button>`:''}
+        ${admin&&INFRA.podeVer('equipe_edit')&&m.user_id?`<button class="btn-sm" onclick="event.stopPropagation();abrirGerenciarLogin('${m.id}')">Login</button>`:''}
       </div>
     </div>`;
   }).join('');
@@ -383,7 +383,7 @@ function abrirDetalhe(id){
       </div>
     </div>`;
 
-  document.getElementById('panel-footer').innerHTML=admin?`
+  document.getElementById('panel-footer').innerHTML=admin&&INFRA.podeVer('equipe_edit')?`
     <button class="btn-panel cancel" onclick="fecharPanel()">Fechar</button>
     <button class="btn-panel save" onclick="fecharPanel();abrirEditar('${m.id}')">Editar</button>
     ${m.id!==PERFIL.id&&m.role!=='dono'?`<button class="btn-panel delete" onclick="excluir('${m.id}','${esc(m.nome)}')">Excluir</button>`:''}
@@ -662,7 +662,7 @@ async function init(){
   document.getElementById('user-avatar').textContent=nome.charAt(0).toUpperCase();
   document.getElementById('oficina-nome').textContent=perfil.oficinas?.nome||'';
 
-  if(isAdmin())document.getElementById('btn-novo').style.display='flex';
+  if(isAdmin()&&INFRA.podeVer('equipe_edit'))document.getElementById('btn-novo').style.display='flex';
 
   await carregar();
   document.getElementById('loading').style.display='none';

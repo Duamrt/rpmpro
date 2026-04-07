@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Financeiro</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04071840"></script>
+<script src="js/infra.js?v=04071856"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -418,10 +418,13 @@ async function carregar() {
   const el = document.getElementById('fin-content');
   el.innerHTML = `
     <div class="tabs">
-      ${(INFRA.podeVer('fin_resumo') ? ['fechamento','caixa','despesas','pecas','dre','receber'] : ['despesas']).map(t => {
-        const label = {fechamento:'Fechamento',caixa:'Caixa',despesas:'Despesas',pecas:'Lucro Peças',dre:'DRE',receber:'A Receber'}[t];
-        return `<div class="tab ${ABA===t?'on':''}" onclick="switchTab('${t}')">${label}</div>`;
-      }).join('')}
+      ${(()=>{
+        const MAP={fechamento:'fin_fechamento',caixa:'fin_caixa',pecas:'fin_lucro_pecas',dre:'fin_dre'};
+        const tabs=['fechamento','caixa','despesas','pecas','dre','receber'].filter(t=>!MAP[t]||INFRA.podeVer(MAP[t]));
+        if(!tabs.includes(ABA))ABA=tabs[0]||'despesas';
+        const lbl={fechamento:'Fechamento',caixa:'Caixa',despesas:'Despesas',pecas:'Lucro Peças',dre:'DRE',receber:'A Receber'};
+        return tabs.map(t=>`<div class="tab ${ABA===t?'on':''}" onclick="switchTab('${t}')">${lbl[t]}</div>`).join('');
+      })()}
     </div>
     <div id="fin-tab-content"><div style="text-align:center;padding:40px;font-family:var(--mono);font-size:12px;color:var(--w4);">carregando...</div></div>
   `;

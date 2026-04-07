@@ -4,20 +4,30 @@ const INFRA = {
 
   // Mapeia página → chave de permissão (bloqueio de rota inteira)
   PAGE_MODULE: {
-    'folha-v2.html':      'folha',
-    'comissao-v2.html':   'comissao',
-    'config-v2.html':     'config',
-    'crm-v2.html':        'crm',
-    'satisfacao-v2.html': 'crm',
+    'folha-v2.html':          'folha',
+    'comissao-v2.html':       'comissao',
+    'config-v2.html':         'config',
+    'crm-v2.html':            'crm',
+    'satisfacao-v2.html':     'crm',
+    'dashboard-v2.html':      'dashboard',
+    'produtividade-v2.html':  'produtividade',
   },
 
   // Padrões para quem não tem permissions configurado
   DEFAULTS: {
-    folha:      false,
-    comissao:   false,
-    fin_resumo: false,
-    config:     false,
-    crm:        false,
+    folha:           false,
+    comissao:        false,
+    fin_resumo:      false,
+    config:          false,
+    crm:             false,
+    dashboard:       false,
+    produtividade:   false,
+    fin_fechamento:  false,
+    fin_caixa:       false,
+    fin_lucro_pecas: false,
+    fin_dre:         false,
+    equipe_edit:     false,
+    config_full:     false,
   },
 
   // Verifica se usuário pode ver determinada chave

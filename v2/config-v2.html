@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Configurações</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04071840"></script>
+<script src="js/infra.js?v=04071856"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -384,6 +384,15 @@ async function init() {
   // Mostra aba Permissões só para o dono
   if (perfil.role === 'dono') {
     document.getElementById('nav-permissoes').style.display = '';
+  }
+
+  // config_full: false → só aba Painel TV visível
+  if (!INFRA.podeVer('config_full')) {
+    document.querySelectorAll('#cfg-nav .cfg-nav-item').forEach(n => {
+      if (!n.getAttribute('onclick')?.includes("'tv'")) n.style.display = 'none';
+    });
+    ABA = 'tv';
+    document.querySelector("#cfg-nav .cfg-nav-item[onclick*=\"'tv'\"]")?.classList.add('on');
   }
 
   renderAba();
@@ -1044,13 +1053,25 @@ async function gerarTokenTV() {
 // ══ PERMISSÕES POR USUÁRIO ══
 // ══════════════════════════════════════════
 const _MODULOS = [
-  { key: 'fin_resumo', label: 'Ver totais financeiros (Faturado, Lucro, Saldo, DRE)' },
-  { key: 'comissao',   label: 'Comissão' },
-  { key: 'folha',      label: 'Folha de Pagamento' },
-  { key: 'crm',        label: 'CRM / Reativação / Satisfação' },
-  { key: 'config',     label: 'Configurações' },
+  { key: 'dashboard',       label: 'Dashboard' },
+  { key: 'fin_fechamento',  label: 'Financeiro → Fechamento' },
+  { key: 'fin_caixa',       label: 'Financeiro → Caixa' },
+  { key: 'fin_lucro_pecas', label: 'Financeiro → Lucro Peças' },
+  { key: 'fin_dre',         label: 'Financeiro → DRE' },
+  { key: 'fin_resumo',      label: 'Dashboard → KPIs Faturado/Lucro' },
+  { key: 'folha',           label: 'Folha de Pagamento' },
+  { key: 'comissao',        label: 'Comissão' },
+  { key: 'crm',             label: 'CRM / Reativação / Satisfação' },
+  { key: 'produtividade',   label: 'Produtividade' },
+  { key: 'equipe_edit',     label: 'Equipe → Editar/Excluir membros' },
+  { key: 'config',          label: 'Configurações (acesso à página)' },
+  { key: 'config_full',     label: 'Configurações → todas as abas (sem isso: só Painel TV)' },
 ];
-const _DEFAULTS_PERM = { fin_resumo: false, comissao: false, folha: false, crm: false, config: false };
+const _DEFAULTS_PERM = {
+  dashboard: false, fin_fechamento: false, fin_caixa: false, fin_lucro_pecas: false,
+  fin_dre: false, fin_resumo: false, folha: false, comissao: false, crm: false,
+  produtividade: false, equipe_edit: false, config: false, config_full: false,
+};
 
 async function renderPermissoes(ct) {
   ct.innerHTML = '<div style="color:var(--w4);font-size:13px;padding:24px;">Carregando equipe...</div>';
