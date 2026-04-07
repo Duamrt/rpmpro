@@ -636,6 +636,7 @@ async function carregarCaixa() {
   let filtroInicio = dataInicio;
   if (PERIODO==='hoje') filtroInicio = hoje;
   else if (PERIODO==='semana') filtroInicio = inicioSemana.toISOString().split('T')[0];
+  else if (PERIODO==='dias60') { const d60=new Date(agora);d60.setDate(agora.getDate()-59);filtroInicio=d60.toISOString().split('T')[0]; }
 
   const [caixaRes, osRes] = await Promise.all([
     db.from('caixa').select('*').eq('oficina_id',OFICINA_ID)
@@ -658,7 +659,7 @@ async function carregarCaixa() {
   movs.filter(m=>m.tipo==='entrada').forEach(m => { const f=m.forma_pagamento||'outros'; porForma[f]=(porForma[f]||0)+(m.valor||0); });
 
   const nomeMes = new Date(CAIXA_ANO, CAIXA_MES).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
-  const periodoLabel = {hoje:'Hoje',semana:'Semana',mes:'Mês'};
+  const periodoLabel = {hoje:'Hoje',semana:'Semana',mes:'Mês',dias60:'60 dias'};
 
   el.innerHTML = `
     <!-- Nav mês -->
@@ -669,7 +670,7 @@ async function carregarCaixa() {
         <div class="p-btn" onclick="navCaixa(1)">▶</div>
       </div>
       <div class="period-filters">
-        ${['mes','semana','hoje'].map(p => `<div class="p-btn ${PERIODO===p?'on':''}" onclick="PERIODO='${p}';carregar();">${periodoLabel[p]}</div>`).join('')}
+        ${['mes','semana','hoje','dias60'].map(p => `<div class="p-btn ${PERIODO===p?'on':''}" onclick="PERIODO='${p}';carregar();">${periodoLabel[p]}</div>`).join('')}
       </div>
     </div>
 
@@ -821,6 +822,7 @@ async function carregarLucroPecas() {
   let inicio = dataInicio, fim = dataFim;
   if (PECAS_PERIODO==='hoje') inicio = hoje;
   else if (PECAS_PERIODO==='semana') inicio = inicioSemana.toISOString().split('T')[0];
+  else if (PECAS_PERIODO==='dias60') { const d60=new Date(agora);d60.setDate(agora.getDate()-59);inicio=d60.toISOString().split('T')[0]; }
 
   const { data: osMes } = await db.from('ordens_servico')
     .select('id, valor_total, valor_pecas, forma_pagamento, taxa_cartao')
@@ -863,7 +865,7 @@ async function carregarLucroPecas() {
     .sort((a,b) => b.lucro-a.lucro);
 
   const nomeMes = new Date(PECAS_ANO,PECAS_MES).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
-  const periodoLabel = {hoje:'Hoje',semana:'Semana',mes:'Mês'};
+  const periodoLabel = {hoje:'Hoje',semana:'Semana',mes:'Mês',dias60:'60 dias'};
 
   el.innerHTML = `
     <div class="period-bar">
@@ -874,7 +876,7 @@ async function carregarLucroPecas() {
         <span style="font-family:var(--mono);font-size:12px;color:var(--w3);">${itensPeca.length} peças vendidas</span>
       </div>
       <div class="period-filters">
-        ${['mes','semana','hoje'].map(p => `<div class="p-btn ${PECAS_PERIODO===p?'on':''}" onclick="PECAS_PERIODO='${p}';carregar();">${periodoLabel[p]}</div>`).join('')}
+        ${['mes','semana','hoje','dias60'].map(p => `<div class="p-btn ${PECAS_PERIODO===p?'on':''}" onclick="PECAS_PERIODO='${p}';carregar();">${periodoLabel[p]}</div>`).join('')}
       </div>
     </div>
 

@@ -6,10 +6,10 @@
 <title>RPM Pro V2 — Pátio</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04071355"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04071355"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04071355"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04071355"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04071745"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04071745"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04071745"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04071745"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -1195,7 +1195,7 @@ async function abrirOS(osId) {
   if (ant)  footerHtml += `<button class="btn-panel btn-panel-secondary" onclick="moverCard('${os.id}','${ant}');fecharPaineis()">← ${statusLabels[ant]||ant}</button>`;
   if (prox && prox !== 'entregue') footerHtml += `<button class="btn-panel btn-panel-primary" onclick="moverCard('${os.id}','${prox}');fecharPaineis()">${statusLabels[prox]||prox} →</button>`;
   if (prox === 'entregue') footerHtml += `<button class="btn-panel" style="background:var(--green);color:#000;flex:1;" onclick="fecharPaineis();abrirEntrega('${os.id}')">Entregar Veículo ✓</button>`;
-  if (os.clientes?.whatsapp) {
+  if (os.clientes?.whatsapp && os.status === 'pronto') {
     const num = '55'+os.clientes.whatsapp.replace(/\D/g,'');
     const veiculo = [os.veiculos?.marca,os.veiculos?.modelo].filter(Boolean).join(' ');
     const msg = encodeURIComponent(`Olá! Seu ${veiculo} placa ${os.veiculos?.placa} está ${statusLabels[os.status]?.toLowerCase()||os.status} aqui na ${OFICINA?.nome||'oficina'}.`);

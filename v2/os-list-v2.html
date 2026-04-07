@@ -6,7 +6,7 @@
 <title>RPM Pro V2 — Ordens de Servico</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04071355"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04071745"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -397,6 +397,7 @@ let PERFIL = null, OFICINA_ID = null, OFICINA = null;
 let OS_LISTA = [];
 let FILTRO = '';
 let BUSCA = '';
+let OS_PERIODO = 'tudo';
 let MECANICOS = [];
 let MAQUININHAS = [];
 let SERVICOS_CACHE = null;
@@ -436,10 +437,22 @@ function placaHTML(placa) {
 
 // ── CARREGAR ──
 async function carregar() {
+  const agora = new Date();
+  const hoje = agora.toISOString().split('T')[0];
   let query = db.from('ordens_servico')
     .select('*, veiculos(placa, marca, modelo), clientes(nome, whatsapp, prazo_pagamento), profiles!ordens_servico_mecanico_id_fkey(nome)', { count: 'exact' })
     .eq('oficina_id', OFICINA_ID)
     .order('created_at', { ascending: false });
+
+  if (OS_PERIODO !== 'tudo') {
+    const inicioSemana = new Date(agora); inicioSemana.setDate(agora.getDate() - agora.getDay());
+    let dataInicio;
+    if (OS_PERIODO === 'hoje') dataInicio = hoje;
+    else if (OS_PERIODO === 'semana') dataInicio = inicioSemana.toISOString().split('T')[0];
+    else if (OS_PERIODO === 'mes') { const d = new Date(agora.getFullYear(), agora.getMonth(), 1); dataInicio = d.toISOString().split('T')[0]; }
+    else if (OS_PERIODO === 'dias60') { const d = new Date(agora); d.setDate(agora.getDate()-59); dataInicio = d.toISOString().split('T')[0]; }
+    if (dataInicio) query = query.gte('created_at', dataInicio);
+  }
 
   if (FILTRO === 'pendente') {
     query = query.eq('status', 'entregue').eq('pago', false);
@@ -482,6 +495,13 @@ function renderLista() {
   const totalSemPagVal = all.filter(o => o.status === 'entregue' && !o.pago).reduce((s, o) => s + (o.valor_total || 0), 0);
 
   el.innerHTML = `
+    <!-- PERIOD FILTER -->
+    <div class="filters" style="margin-bottom:8px;">
+      ${[['tudo','Todas'],['hoje','Hoje'],['semana','Semana'],['mes','Mês'],['dias60','60 dias']].map(([v,l])=>
+        `<div class="f-btn ${OS_PERIODO===v?'on':''}" onclick="OS_PERIODO='${v}';carregar()">${l}</div>`
+      ).join('')}
+    </div>
+
     <!-- SEARCH -->
     <div class="search-bar">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>

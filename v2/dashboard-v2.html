@@ -268,6 +268,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let PERFIL = null, OFICINA_ID = null, OFICINA = null;
+let DASH_CHART_DIAS = 7;
 
 function esc(s){ return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmt(v){ return (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
@@ -312,9 +313,11 @@ async function carregar() {
   const hoje = agora.toISOString().split('T')[0];
   const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString().split('T')[0];
   const fimMes = new Date(agora.getFullYear(), agora.getMonth() + 1, 0, 23, 59, 59).toISOString();
+  const inicioChart = new Date(agora); inicioChart.setDate(agora.getDate() - (DASH_CHART_DIAS - 1));
+  const inicioChartStr = inicioChart.toISOString().split('T')[0];
 
   // Queries paralelas
-  const [osAbertasRes, osEntreguesMesRes, semPagRes, caixaRes, membrosRes] = await Promise.all([
+  const [osAbertasRes, osEntreguesMesRes, semPagRes, caixaRes, membrosRes, osChartRes] = await Promise.all([
     db.from('ordens_servico')
       .select('id, numero, status, valor_total, valor_mao_obra, created_at, mecanico_id, veiculos(placa, marca, modelo), clientes(nome)')
       .eq('oficina_id', OFICINA_ID)
@@ -332,23 +335,30 @@ async function carregar() {
     db.from('caixa').select('tipo, valor')
       .eq('oficina_id', OFICINA_ID).gte('created_at', inicioMes).lte('created_at', fimMes),
     db.from('profiles').select('id, nome')
-      .eq('oficina_id', OFICINA_ID).in('role', ['mecanico','aux_mecanico'])
+      .eq('oficina_id', OFICINA_ID).in('role', ['mecanico','aux_mecanico']),
+    db.from('ordens_servico')
+      .select('id, valor_total, data_entrega')
+      .eq('oficina_id', OFICINA_ID).eq('status', 'entregue').eq('pago', true)
+      .gte('data_entrega', inicioChartStr).lte('data_entrega', hoje)
   ]);
 
   const osAbertas = osAbertasRes.data || [];
   const osEntreguesMes = osEntreguesMesRes.data || [];
+  const osChart = osChartRes.data || [];
   const semPag = semPagRes.data || [];
   const movsMes = caixaRes.data || [];
   const membros = membrosRes.data || [];
 
-  // Faturamento 7 dias
+  // Faturamento por período (7/30/60 dias)
   const fat7dias = [];
-  for (let i = 6; i >= 0; i--) {
+  for (let i = DASH_CHART_DIAS - 1; i >= 0; i--) {
     const d = new Date(agora);
     d.setDate(d.getDate() - i);
     const ds = d.toISOString().split('T')[0];
-    const label = d.toLocaleDateString('pt-BR', {weekday: 'short'}).replace('.','').toUpperCase();
-    const total = osEntreguesMes.filter(o => (o.data_entrega||'').startsWith(ds)).reduce((s,o) => s + (o.valor_total||0), 0);
+    const label = DASH_CHART_DIAS <= 7
+      ? d.toLocaleDateString('pt-BR', {weekday: 'short'}).replace('.','').toUpperCase()
+      : d.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'});
+    const total = osChart.filter(o => (o.data_entrega||'').startsWith(ds)).reduce((s,o) => s + (o.valor_total||0), 0);
     fat7dias.push({ label, total, isToday: i === 0 });
   }
   const maxFat = Math.max(...fat7dias.map(d => d.total), 1);
@@ -488,11 +498,14 @@ async function carregar() {
         </div>
       </div>
 
-      <!-- Faturamento 7 dias -->
+      <!-- Faturamento por período -->
       <div class="card">
         <div class="card-head">
-          <div class="card-title">Faturamento 7 Dias</div>
-          <div class="card-badge">${fmt(fat7dias.reduce((s,d)=>s+d.total,0))}</div>
+          <div class="card-title">Faturamento ${DASH_CHART_DIAS} Dias</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            ${[7,30,60].map(n=>`<div class="p-btn${DASH_CHART_DIAS===n?' on':''}" style="font-size:10px;padding:3px 8px;cursor:pointer;" onclick="DASH_CHART_DIAS=${n};carregar();">${n}d</div>`).join('')}
+            <div class="card-badge">${fmt(fat7dias.reduce((s,d)=>s+d.total,0))}</div>
+          </div>
         </div>
         <div class="card-body">
           <div class="chart">

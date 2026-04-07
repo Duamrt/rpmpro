@@ -277,6 +277,7 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
           <button class="p-btn on" data-p="hoje" onclick="setPeriodo('hoje')">Hoje</button>
           <button class="p-btn" data-p="semana" onclick="setPeriodo('semana')">Semana</button>
           <button class="p-btn" data-p="mes" onclick="setPeriodo('mes')">Mes</button>
+          <button class="p-btn" data-p="dias60" onclick="setPeriodo('dias60')">60 dias</button>
         </div>
         <select class="filter-select" id="filtro-user" onchange="setFiltro(this.value)">
           <option value="">Todos</option>
@@ -350,6 +351,7 @@ async function carregar(){
   let dataInicio;
   if(_periodo==='hoje')dataInicio=hoje;
   else if(_periodo==='semana')dataInicio=inicioSemana.toISOString().split('T')[0];
+  else if(_periodo==='dias60'){const d60=new Date(agora);d60.setDate(agora.getDate()-59);dataInicio=d60.toISOString().split('T')[0];}
   else dataInicio=inicioMes.toISOString().split('T')[0];
 
   // Busca tudo em paralelo
