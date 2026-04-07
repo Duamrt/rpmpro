@@ -17,11 +17,11 @@ const APP = {
       await AUTH.logout();
       return;
     }
-    this.oficina = this.profile.oficinas;
+    this.oficina = this.profile.oficinas || null;
 
     // Atualiza nome da oficina no header
     const elNome = document.getElementById('oficina-nome');
-    if (elNome) elNome.textContent = this.oficina.nome;
+    if (elNome) elNome.textContent = this.oficina?.nome || '';
 
     const elUser = document.getElementById('user-nome');
     if (elUser) elUser.textContent = this.profile.nome;
