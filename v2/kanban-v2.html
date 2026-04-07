@@ -6,10 +6,10 @@
 <title>RPM Pro V2 — Pátio</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04070940"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04070940"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04070940"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04070940"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04070944"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04070944"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04070944"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04070944"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -1164,6 +1164,9 @@ async function abrirOS(osId) {
           <span>🧾</span><span>Recibo</span>
         </button>
       </div>
+      <button class="btn-panel btn-panel-secondary" style="width:100%;margin-top:6px;gap:6px;display:flex;align-items:center;justify-content:center;" onclick="pdfMecanico('${osId}')">
+        <span>🔧</span><span>Imprimir OS (Mecânico)</span>
+      </button>
     </div>
   `;
 
@@ -2619,6 +2622,41 @@ async function pdfOS(osId) {
   };
   const pdf = pdfMake.createPdf(docDef);
   pdf.open();
+}
+
+async function pdfMecanico(osId) {
+  const dados = await _buscarDadosOS(osId);
+  if (!dados) return;
+  const { os, itens } = dados;
+  const oficina = OFICINA||{};
+  const servicos = itens.filter(i=>i.tipo==='servico');
+  const pecas = itens.filter(i=>i.tipo==='peca');
+  const tabelaServicos = {
+    table:{ headerRows:1, widths:[30,'*'], body:[
+      [{text:'SERVIÇOS (Mão de obra)',bold:true,fontSize:9,fillColor:'#f5f5f5',colSpan:2},{}],
+      ...servicos.map(s=>[{text:String(s.quantidade||1),fontSize:9,alignment:'center'},{text:s.descricao||'',fontSize:9}]),
+      ...(servicos.length===0?[[{text:'Nenhum serviço',fontSize:8,color:'#999',colSpan:2},{}]]:[])
+    ]},
+    layout:{hLineWidth:(i,n)=>(i<=1||i===n.table.body.length)?0.5:0.3,vLineWidth:()=>0.5,hLineColor:()=>'#ccc',vLineColor:()=>'#ccc',paddingLeft:()=>6,paddingRight:()=>6,paddingTop:()=>4,paddingBottom:()=>4},
+    margin:[0,0,0,10]
+  };
+  const tabelaPecas = {
+    table:{ headerRows:2, widths:[30,'*'], body:[
+      [{text:'PEÇAS / MATERIAIS',bold:true,fontSize:9,fillColor:'#f5f5f5',colSpan:2},{}],
+      [{text:'Qtd',fontSize:8,bold:true,alignment:'center'},{text:'Descrição',fontSize:8,bold:true}],
+      ...pecas.map(p=>[{text:String(p.quantidade||1),fontSize:9,alignment:'center'},{text:p.descricao||'',fontSize:9}]),
+      ...(pecas.length===0?[[{text:'Nenhuma peça',fontSize:8,color:'#999',colSpan:2},{}]]:[])
+    ]},
+    layout:{hLineWidth:(i,n)=>(i<=2||i===n.table.body.length)?0.5:0.3,vLineWidth:()=>0.5,hLineColor:()=>'#ccc',vLineColor:()=>'#ccc',paddingLeft:()=>6,paddingRight:()=>6,paddingTop:()=>4,paddingBottom:()=>4},
+    margin:[0,0,0,10]
+  };
+  const obs = os.observacoes ? {text:'Obs: '+os.observacoes,fontSize:9,color:'#555',margin:[0,0,0,20]} : {text:''};
+  const docDef = {
+    pageSize:'A4', pageMargins:[40,30,40,50],
+    content:[..._pdfHeader(oficina,'ORDEM DE SERVIÇO — MECÂNICO'),_pdfInfoOS(os),tabelaServicos,tabelaPecas,obs],
+    footer:_pdfFooter(), styles:_pdfStyles()
+  };
+  pdfMake.createPdf(docDef).open();
 }
 
 async function pdfRecibo(osId) {
