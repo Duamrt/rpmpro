@@ -378,13 +378,11 @@ async function carregar(){
 
       return{...f, salario, vr, faturado, comissao, meusVales, totalVale, liquido, chave_pix:f.chave_pix||''};
     });
+    document.getElementById('period-info').innerHTML='<span class="period-info-val">'+funcionarios.length+'</span>&nbsp;funcionarios ativos &middot; <span class="period-info-val">'+ordens.length+'</span>&nbsp;OS entregues';
   }
 
   // Ordena por liquido desc
   folha.sort((a,b)=>b.liquido-a.liquido);
-
-  // Period info
-  document.getElementById('period-info').innerHTML='<span class="period-info-val">'+funcionarios.length+'</span>&nbsp;funcionarios ativos &middot; <span class="period-info-val">'+ordens.length+'</span>&nbsp;OS entregues';
 
   // Summary KPIs
   document.getElementById('summary').innerHTML=`
