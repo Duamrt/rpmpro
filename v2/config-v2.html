@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Configurações</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04071839"></script>
+<script src="js/infra.js?v=04071840"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -1057,7 +1057,7 @@ async function renderPermissoes(ct) {
   const { data: membros, error } = await db.from('profiles')
     .select('id, nome, role, permissions')
     .eq('oficina_id', OFICINA_ID)
-    .neq('role', 'dono').neq('role', 'gerente')
+    .neq('role', 'dono')
     .order('nome');
   if (error) { ct.innerHTML = `<div style="color:var(--red);padding:12px;">Erro: ${error.message}</div>`; return; }
   if (!membros || !membros.length) {

@@ -28,8 +28,10 @@ const INFRA = {
 
   checkPermissions(perfil) {
     if (!perfil) return;
-    // Dono e gerente nunca são bloqueados
-    if (['dono', 'gerente'].includes(perfil.role)) return;
+    // Dono nunca é bloqueado
+    // Gerente só é bloqueado se tiver permissions configurado explicitamente
+    if (perfil.role === 'dono') return;
+    if (perfil.role === 'gerente' && !perfil.permissions) return;
 
     this._perms = Object.assign({}, this.DEFAULTS, perfil.permissions || {});
 
