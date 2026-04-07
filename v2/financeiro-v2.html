@@ -1410,7 +1410,7 @@ async function init() {
   document.getElementById('oficina-nome').textContent = perfil.oficinas?.nome || '';
 
   // Carrega maquininhas
-  db.from('maquininhas').select('id,nome,taxa_debito,taxa_credito,taxa_parcelado_6,taxa_parcelado_12')
+  db.from('maquininhas').select('id,nome,taxa_debito,taxa_credito')
     .eq('oficina_id', OFICINA_ID).eq('ativo', true).order('nome')
     .then(r => { MAQUININHAS = r.data || []; });
 
