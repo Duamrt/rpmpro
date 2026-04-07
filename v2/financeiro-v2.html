@@ -226,6 +226,25 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 @keyframes spin{to{transform:rotate(360deg);}}
 .loading-label{font-family:var(--mono);font-size:12px;color:var(--w4);letter-spacing:2px;}
 
+/* ── DRE ── */
+.dre-tree{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:4px 0;margin-bottom:16px;}
+.dre-row{display:flex;justify-content:space-between;align-items:center;padding:10px 20px;transition:background .1s;}
+.dre-row:hover{background:var(--sf2);}
+.dre-row.dre-total{border-top:1px solid var(--ln2);background:var(--sf2);margin-top:2px;}
+.dre-row.dre-result{border-top:2px solid var(--ln3);background:var(--sf3);margin-top:2px;}
+.dre-label{font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--w3);}
+.dre-label.main{color:var(--w);font-size:13px;}
+.dre-label.indent{padding-left:16px;font-size:11px;color:var(--w4);font-weight:600;}
+.dre-val{font-family:var(--mono);font-size:13px;font-weight:700;}
+.dre-val.pos{color:var(--green);}.dre-val.neg{color:var(--red);}.dre-val.neu{color:var(--w2);}
+.dre-pct{font-family:var(--mono);font-size:10px;color:var(--w4);margin-left:8px;min-width:44px;text-align:right;}
+.dre-sep{height:1px;background:var(--ln);margin:4px 0;}
+.dre-hero{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;}
+.dre-hero-card{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:16px;text-align:center;}
+.dre-hero-label{font-family:var(--head);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);margin-bottom:6px;}
+.dre-hero-val{font-family:var(--mono);font-size:18px;font-weight:800;letter-spacing:-1px;}
+.dre-hero-pct{font-family:var(--mono);font-size:11px;color:var(--w3);margin-top:4px;}
+
 /* ── RESPONSIVE ── */
 @media(max-width:768px){
   .sidebar{display:none;}
@@ -355,6 +374,9 @@ let DESP_ANO = new Date().getFullYear();
 let PECAS_MES = new Date().getMonth();
 let PECAS_ANO = new Date().getFullYear();
 let PECAS_PERIODO = 'mes';
+let DRE_MES = new Date().getMonth();
+let DRE_ANO = new Date().getFullYear();
+let DRE_PERIODO = 'mes';
 
 // ── UTILS ──
 function esc(s){ return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -395,8 +417,8 @@ async function carregar() {
   const el = document.getElementById('fin-content');
   el.innerHTML = `
     <div class="tabs">
-      ${['fechamento','caixa','despesas','pecas','receber'].map(t => {
-        const label = {fechamento:'Fechamento',caixa:'Caixa',despesas:'Despesas',pecas:'Lucro Peças',receber:'A Receber'}[t];
+      ${['fechamento','caixa','despesas','pecas','dre','receber'].map(t => {
+        const label = {fechamento:'Fechamento',caixa:'Caixa',despesas:'Despesas',pecas:'Lucro Peças',dre:'DRE',receber:'A Receber'}[t];
         return `<div class="tab ${ABA===t?'on':''}" onclick="switchTab('${t}')">${label}</div>`;
       }).join('')}
     </div>
@@ -406,6 +428,7 @@ async function carregar() {
   else if (ABA === 'caixa') await carregarCaixa();
   else if (ABA === 'despesas') await carregarDespesas();
   else if (ABA === 'pecas') await carregarLucroPecas();
+  else if (ABA === 'dre') await carregarDRE();
   else if (ABA === 'receber') await carregarContasReceber();
 }
 
@@ -917,6 +940,164 @@ function navPecas(d) {
   PECAS_MES+=d;
   if(PECAS_MES>11){PECAS_MES=0;PECAS_ANO++;}
   if(PECAS_MES<0){PECAS_MES=11;PECAS_ANO--;}
+  carregar();
+}
+
+// ==================== DRE SIMPLIFICADO ====================
+async function carregarDRE() {
+  const el = document.getElementById('fin-tab-content');
+  const agora = new Date();
+  const dataInicio = new Date(DRE_ANO, DRE_MES, 1).toISOString().split('T')[0];
+  const dataFim = new Date(DRE_ANO, DRE_MES+1, 0, 23, 59, 59).toISOString();
+  const hoje = agora.toISOString().split('T')[0];
+  const inicioSemana = new Date(agora); inicioSemana.setDate(agora.getDate()-agora.getDay());
+  let filtroInicio = dataInicio;
+  if (DRE_PERIODO==='hoje') filtroInicio = hoje;
+  else if (DRE_PERIODO==='semana') filtroInicio = inicioSemana.toISOString().split('T')[0];
+  else if (DRE_PERIODO==='dias60') { const d60=new Date(agora);d60.setDate(agora.getDate()-59);filtroInicio=d60.toISOString().split('T')[0]; }
+
+  const [osRes, caixaRes] = await Promise.all([
+    db.from('ordens_servico')
+      .select('id, valor_total, valor_mao_obra, valor_pecas, taxa_cartao')
+      .eq('oficina_id', OFICINA_ID).eq('pago', true)
+      .gte('data_entrega', filtroInicio).lte('data_entrega', dataFim),
+    db.from('caixa').select('*')
+      .eq('oficina_id', OFICINA_ID)
+      .gte('created_at', filtroInicio).lte('created_at', dataFim)
+  ]);
+
+  const ordens = osRes.data || [];
+  const movs = caixaRes.data || [];
+  const saidas = movs.filter(m => m.tipo === 'saida');
+  const entradasAvulsas = movs.filter(m => m.tipo === 'entrada' && !m.os_id).reduce((s,m) => s+(m.valor||0), 0);
+
+  const catsPeca   = ['peca'];
+  const catsFixos  = ['aluguel','conta_luz','conta_agua','internet'];
+  const catsPessoal = ['retirada','vale'];
+
+  const totalOS      = ordens.reduce((s,o) => s+(o.valor_total||0), 0);
+  const totalTaxas   = ordens.reduce((s,o) => s+(o.valor_total||0)*(o.taxa_cartao||0)/100, 0);
+  const faturamento  = totalOS + entradasAvulsas;
+
+  const custoPecas   = saidas.filter(m => catsPeca.includes(m.categoria)).reduce((s,m) => s+(m.valor||0), 0);
+  const custosFixos  = saidas.filter(m => catsFixos.includes(m.categoria)).reduce((s,m) => s+(m.valor||0), 0);
+  const custosPessoal= saidas.filter(m => catsPessoal.includes(m.categoria)).reduce((s,m) => s+(m.valor||0), 0);
+  const outrosCustos = saidas.filter(m => !catsPeca.includes(m.categoria) && !catsFixos.includes(m.categoria) && !catsPessoal.includes(m.categoria)).reduce((s,m) => s+(m.valor||0), 0);
+
+  const margemMO     = faturamento - custoPecas;
+  const resultado    = margemMO - custosFixos - custosPessoal - outrosCustos - totalTaxas;
+  const pct = v => faturamento > 0 ? (v/faturamento*100).toFixed(1)+'%' : '—';
+  const sinal = (v, inv) => inv ? (v>0?'neg':'pos') : (v>=0?'pos':'neg');
+
+  const nomeMes = new Date(DRE_ANO, DRE_MES).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  const periodoLabel = {hoje:'Hoje',semana:'Semana',mes:'Mês',dias60:'60 dias'};
+
+  el.innerHTML = `
+    <div class="period-bar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="p-btn" onclick="navDRE(-1)">◀</div>
+        <div style="font-family:var(--head);font-size:18px;font-weight:800;text-transform:capitalize;">${nomeMes}</div>
+        <div class="p-btn" onclick="navDRE(1)">▶</div>
+      </div>
+      <div class="period-filters">
+        ${['mes','semana','hoje','dias60'].map(p => `<div class="p-btn ${DRE_PERIODO===p?'on':''}" onclick="DRE_PERIODO='${p}';carregar();">${periodoLabel[p]}</div>`).join('')}
+      </div>
+    </div>
+
+    <!-- HERO 3 cards -->
+    <div class="dre-hero">
+      <div class="dre-hero-card">
+        <div class="dre-hero-label">Faturamento</div>
+        <div class="dre-hero-val" style="color:var(--green);">${fmt(faturamento)}</div>
+        <div class="dre-hero-pct">${ordens.length} OS pagas</div>
+      </div>
+      <div class="dre-hero-card">
+        <div class="dre-hero-label">Margem MO</div>
+        <div class="dre-hero-val" style="color:var(--amber);">${fmt(margemMO)}</div>
+        <div class="dre-hero-pct">${pct(margemMO)} da receita</div>
+      </div>
+      <div class="dre-hero-card">
+        <div class="dre-hero-label">Resultado Líquido</div>
+        <div class="dre-hero-val" style="color:${resultado>=0?'var(--green)':'var(--red)'};">${fmt(resultado)}</div>
+        <div class="dre-hero-pct">${pct(resultado)} da receita</div>
+      </div>
+    </div>
+
+    <!-- ÁRVORE DRE -->
+    <div style="font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);margin-bottom:8px;">Demonstrativo de Resultado</div>
+    <div class="dre-tree">
+      <div class="dre-row">
+        <span class="dre-label main">Faturamento Bruto</span>
+        <span style="display:flex;align-items:center;">
+          <span class="dre-val pos">+${fmt(faturamento)}</span>
+          <span class="dre-pct">100%</span>
+        </span>
+      </div>
+      ${entradasAvulsas>0?`<div class="dre-row">
+        <span class="dre-label indent">↳ OS Pagas</span>
+        <span style="display:flex;align-items:center;"><span class="dre-val neu">${fmt(totalOS)}</span><span class="dre-pct">${pct(totalOS)}</span></span>
+      </div>
+      <div class="dre-row">
+        <span class="dre-label indent">↳ Entradas Avulsas</span>
+        <span style="display:flex;align-items:center;"><span class="dre-val neu">${fmt(entradasAvulsas)}</span><span class="dre-pct">${pct(entradasAvulsas)}</span></span>
+      </div>`:''}
+      <div class="dre-sep"></div>
+
+      <div class="dre-row">
+        <span class="dre-label">(-) Custo de Peças</span>
+        <span style="display:flex;align-items:center;">
+          <span class="dre-val ${custoPecas>0?'neg':'neu'}">${custoPecas>0?'-':''}${fmt(custoPecas)}</span>
+          <span class="dre-pct">${pct(custoPecas)}</span>
+        </span>
+      </div>
+      <div class="dre-row dre-total">
+        <span class="dre-label main">(=) Margem de Mão de Obra</span>
+        <span style="display:flex;align-items:center;">
+          <span class="dre-val ${margemMO>=0?'pos':'neg'}">${fmt(margemMO)}</span>
+          <span class="dre-pct">${pct(margemMO)}</span>
+        </span>
+      </div>
+      <div class="dre-sep"></div>
+
+      <div class="dre-row">
+        <span class="dre-label">(-) Custos Fixos</span>
+        <span style="display:flex;align-items:center;">
+          <span class="dre-val ${custosFixos>0?'neg':'neu'}">${custosFixos>0?'-':''}${fmt(custosFixos)}</span>
+          <span class="dre-pct">${pct(custosFixos)}</span>
+        </span>
+      </div>
+      <div class="dre-row">
+        <span class="dre-label">(-) Custos de Pessoal</span>
+        <span style="display:flex;align-items:center;">
+          <span class="dre-val ${custosPessoal>0?'neg':'neu'}">${custosPessoal>0?'-':''}${fmt(custosPessoal)}</span>
+          <span class="dre-pct">${pct(custosPessoal)}</span>
+        </span>
+      </div>
+      ${totalTaxas>0?`<div class="dre-row">
+        <span class="dre-label">(-) Taxas Maquininha</span>
+        <span style="display:flex;align-items:center;"><span class="dre-val neg">-${fmt(totalTaxas)}</span><span class="dre-pct">${pct(totalTaxas)}</span></span>
+      </div>`:''}
+      ${outrosCustos>0?`<div class="dre-row">
+        <span class="dre-label">(-) Outros Custos</span>
+        <span style="display:flex;align-items:center;"><span class="dre-val neg">-${fmt(outrosCustos)}</span><span class="dre-pct">${pct(outrosCustos)}</span></span>
+      </div>`:''}
+      <div class="dre-row dre-result">
+        <span class="dre-label main" style="font-size:15px;">(=) Resultado Líquido</span>
+        <span style="display:flex;align-items:center;">
+          <span class="dre-val" style="font-size:18px;color:${resultado>=0?'var(--green)':'var(--red)'};">${fmt(resultado)}</span>
+          <span class="dre-pct">${pct(resultado)}</span>
+        </span>
+      </div>
+    </div>
+
+    ${faturamento===0?'<div style="text-align:center;padding:40px;font-family:var(--mono);font-size:12px;color:var(--w4);">Nenhuma OS paga nesse período</div>':''}
+  `;
+}
+
+function navDRE(d) {
+  DRE_MES += d;
+  if (DRE_MES>11){DRE_MES=0;DRE_ANO++;}
+  if (DRE_MES<0){DRE_MES=11;DRE_ANO--;}
   carregar();
 }
 
