@@ -882,7 +882,7 @@ const OS = {
           <button class="btn btn-secondary" style="flex:1;" onclick="PDF_OS.gerar('${os.id}')">🖨️ Imprimir OS</button>
           <button class="btn btn-secondary" style="flex:1;" onclick="PDF_OS.recibo('${os.id}')">🧾 Gerar Recibo</button>
         </div>
-        <button class="btn btn-secondary" style="width:100%;margin-top:8px;" onclick="PDF_OS.gerarMecanico('${os.id}')">🔧 Imprimir OS (Mecânico)</button>
+        <button id="btn-imprimir-mecanico-modal" class="btn btn-secondary" style="width:100%;margin-top:8px;" onclick="window.gerarPDFMecanico('${os.id}')">🔧 Imprimir OS (Mecânico)</button>
 
         ${os.veiculos?.placa ? `
         <button class="btn btn-secondary" style="width:100%;margin-top:8px;" onclick="OS.enviarHistorico('${escAttr(os.veiculos.placa)}', '${os.clientes?.whatsapp || ''}', '${escAttr(os.veiculos?.marca || '')}', '${escAttr(os.veiculos?.modelo || '')}')">

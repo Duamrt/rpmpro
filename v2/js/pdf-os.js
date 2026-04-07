@@ -703,6 +703,8 @@ const PDF_OS = {
     if (window.innerWidth <= 768) { pdf.download(); } else { pdf.open(); }
   },
 
+  async gerarPDFMecanico(osId) { return this.gerarMecanico(osId); },
+
   async _gerarQRBase64(data) {
     if (typeof qrcode === 'undefined') return null;
     try {
@@ -731,3 +733,5 @@ const PDF_OS = {
     }
   }
 };
+
+window.gerarPDFMecanico = (osId) => PDF_OS.gerarMecanico(osId);
