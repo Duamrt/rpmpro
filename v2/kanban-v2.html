@@ -6,10 +6,10 @@
 <title>RPM Pro V2 — Pátio</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04071757"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04071757"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04071757"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04071757"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04071805"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04071805"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04071805"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04071805"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -1032,15 +1032,18 @@ async function abrirOS(osId) {
 
   document.getElementById('panel-os-title').innerHTML = `OS <span>#${esc(os.numero_os||osId.slice(-4))}</span>`;
 
-  const itensHtml = itens.length ? itens.map(i=>`
+  const itensHtml = itens.length ? itens.map(i=>{
+    const mecNome = i.mecanico_id ? (mecs.find(m=>m.id===i.mecanico_id)?.nome||'') : '';
+    return `
     <div class="det-item" id="det-item-${i.id}">
-      <span class="det-item-nome">${esc(i.descricao||'—')}<span class="det-item-tipo ${i.tipo==='servico'?'tipo-servico':'tipo-peca'}">${i.tipo==='servico'?'Serv':'Peça'}</span>${i.quantidade>1?`<span style="font-family:var(--mono);font-size:10px;color:var(--w3);margin-left:4px;">x${i.quantidade}</span>`:''}</span>
+      <span class="det-item-nome">${esc(i.descricao||'—')}<span class="det-item-tipo ${i.tipo==='servico'?'tipo-servico':'tipo-peca'}">${i.tipo==='servico'?'Serv':'Peça'}</span>${i.quantidade>1?`<span style="font-family:var(--mono);font-size:10px;color:var(--w3);margin-left:4px;">x${i.quantidade}</span>`:''} ${mecNome?`<span style="font-family:var(--mono);font-size:10px;color:var(--blue);margin-left:4px;">@${esc(mecNome)}</span>`:''}</span>
       <span style="display:flex;align-items:center;gap:8px;">
         <span class="det-item-val">R$ ${(i.valor_total||0).toFixed(2)}</span>
-        <button onclick="editarItem('${i.id}','${osId}',${i.quantidade},${i.valor_unitario||0},'${esc(i.descricao||'').replace(/'/g,"\\'")}')" style="background:none;border:none;color:var(--blue);cursor:pointer;font-size:13px;padding:2px 4px;" title="Editar">✏️</button>
+        <button onclick="editarItem('${i.id}','${osId}',${i.quantidade},${i.valor_unitario||0},'${esc(i.descricao||'').replace(/'/g,"\\'")}','${i.mecanico_id||''}')" style="background:none;border:none;color:var(--blue);cursor:pointer;font-size:13px;padding:2px 4px;" title="Editar">✏️</button>
         <button onclick="excluirItem('${i.id}','${osId}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:2px 4px;" title="Excluir">×</button>
       </span>
-    </div>`).join('')
+    </div>`;
+  }).join('')
   : '<div style="font-family:var(--mono);font-size:12px;color:var(--w4);padding:12px 0;">Sem itens lançados</div>';
 
   document.getElementById('panel-os-body').innerHTML = `
@@ -1136,6 +1139,13 @@ async function abrirOS(osId) {
           <button class="btn-panel btn-panel-secondary" style="flex:1;" onclick="fecharCriarItemInline()">Cancelar</button>
           <button class="btn-panel btn-panel-primary" style="flex:2;" onclick="salvarItemInline()">Criar e selecionar</button>
         </div>
+      </div>
+      <div style="margin-bottom:8px;">
+        <div class="p-field-label">Mecânico</div>
+        <select class="p-input" id="add-item-mec" style="padding:7px 10px;">
+          <option value="">— OS (${esc(os.profiles?.nome||'sem mecânico')})</option>
+          ${mecs.map(m=>`<option value="${m.id}"${m.id===os.mecanico_id?' selected':''}>${esc(m.nome)}</option>`).join('')}
+        </select>
       </div>
       <div style="display:flex;gap:6px;margin-bottom:8px;">
         <div style="flex:1;">
@@ -1832,6 +1842,7 @@ async function adicionarItem(osId) {
   const desc = document.getElementById('add-item-desc').value.trim();
   const qtd  = parseFloat(document.getElementById('add-item-qtd').value) || 1;
   const vUnit = parseFloat(document.getElementById('add-item-val').value) || 0;
+  const mecId = document.getElementById('add-item-mec')?.value || null;
   if (!desc) { toast('Informe a descrição', 'err'); return; }
   if (!vUnit) { toast('Informe o valor', 'err'); return; }
   _busy.addItem = true;
@@ -1840,7 +1851,8 @@ async function adicionarItem(osId) {
       os_id: osId, oficina_id: OFICINA_ID,
       tipo: _tipoItem, descricao: desc,
       quantidade: qtd, valor_unitario: vUnit,
-      valor_total: qtd * vUnit
+      valor_total: qtd * vUnit,
+      mecanico_id: mecId || null
     });
     if (error) { toast('Erro: '+error.message,'err'); return; }
 
@@ -1882,14 +1894,23 @@ async function excluirItem(itemId, osId) {
   finally { _busy.exclItem = false; }
 }
 
-function editarItem(itemId, osId, qtdAtual, valorAtual, descAtual) {
+function editarItem(itemId, osId, qtdAtual, valorAtual, descAtual, mecAtual='') {
   // Substitui a row do item por um form inline V2
   const row = document.getElementById('det-item-' + itemId);
   if (!row) return;
 
+  const mecsOpts = (MECANICOS||[]).map(m=>`<option value="${m.id}"${m.id===mecAtual?' selected':''}>${esc(m.nome)}</option>`).join('');
+
   row.innerHTML = `
     <div style="width:100%;display:flex;flex-direction:column;gap:6px;padding:4px 0;">
       <input class="p-input" id="edit-desc-${itemId}" value="${esc(descAtual)}" placeholder="Descrição" style="font-size:13px;padding:7px 10px;">
+      <div>
+        <div class="p-field-label">Mecânico</div>
+        <select class="p-input" id="edit-mec-${itemId}" style="padding:6px 8px;">
+          <option value="">— Padrão OS</option>
+          ${mecsOpts}
+        </select>
+      </div>
       <div style="display:flex;gap:6px;">
         <div style="flex:1;">
           <div class="p-field-label">Qtd</div>
@@ -1923,10 +1944,11 @@ async function salvarEdicaoItem(itemId, osId) {
   const desc = document.getElementById('edit-desc-'+itemId)?.value.trim();
   const qtd  = parseFloat(document.getElementById('edit-qtd-'+itemId)?.value)||1;
   const val  = parseFloat(document.getElementById('edit-val-'+itemId)?.value)||0;
+  const mecId = document.getElementById('edit-mec-'+itemId)?.value || null;
   if (!desc) { toast('Informe a descrição','err'); return; }
   _busy.editItem = true;
   try {
-    await db.from('itens_os').update({ descricao:desc, quantidade:qtd, valor_unitario:val, valor_total:qtd*val }).eq('id', itemId).eq('oficina_id', OFICINA_ID);
+    await db.from('itens_os').update({ descricao:desc, quantidade:qtd, valor_unitario:val, valor_total:qtd*val, mecanico_id:mecId||null }).eq('id', itemId).eq('oficina_id', OFICINA_ID);
     const { data: todos } = await db.from('itens_os').select('tipo, valor_total').eq('os_id', osId).eq('oficina_id', OFICINA_ID);
     const totalMao = (todos||[]).filter(i=>i.tipo==='servico').reduce((s,i)=>s+(i.valor_total||0),0);
     const totalPecas = (todos||[]).filter(i=>i.tipo==='peca').reduce((s,i)=>s+(i.valor_total||0),0);

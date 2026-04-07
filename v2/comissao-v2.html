@@ -305,67 +305,87 @@ async function carregar(){
 
   document.getElementById('period-label').innerHTML=MESES[MES-1]+' <span>'+ANO+'</span>';
 
-  // Busca OS entregues no periodo
-  const{data:ordens,error}=await db
-    .from('ordens_servico')
-    .select('id, numero, descricao, valor_total, valor_mao_obra, mecanico_id, data_entrega, status')
-    .eq('oficina_id',OFICINA_ID)
-    .eq('status','entregue')
-    .gte('data_entrega',inicio)
-    .lte('data_entrega',fim)
-    .order('data_entrega');
+  // Busca OS entregues no periodo + membros em paralelo
+  const[ordensRes,membrosRes]=await Promise.all([
+    db.from('ordens_servico')
+      .select('id, numero, descricao, valor_total, valor_mao_obra, mecanico_id, data_entrega, status')
+      .eq('oficina_id',OFICINA_ID)
+      .eq('status','entregue')
+      .gte('data_entrega',inicio)
+      .lte('data_entrega',fim)
+      .order('data_entrega'),
+    db.from('profiles').select('id, nome, role, comissao_percent')
+      .eq('oficina_id',OFICINA_ID)
+      .in('role',['mecanico','aux_mecanico'])
+  ]);
 
-  if(error){toast('Erro: '+error.message,'err');console.error(error);return;}
+  if(ordensRes.error){toast('Erro: '+ordensRes.error.message,'err');return;}
+  if(membrosRes.error){toast('Erro membros: '+membrosRes.error.message,'err');return;}
 
-  const lista=ordens||[];
+  const lista=ordensRes.data||[];
+  const membros=membrosRes.data||[];
 
-  // Busca todos mecanicos da oficina (pra mostrar inativos)
-  const{data:membros,error:errM}=await db.from('profiles').select('id, nome, role, comissao_percent')
-    .eq('oficina_id',OFICINA_ID)
-    .in('role',['mecanico','aux_mecanico']);
+  // Mapa de membros pra lookup rápido
+  const membroMap={};
+  membros.forEach(m=>{membroMap[m.id]=m;});
 
-  if(errM){toast('Erro membros: '+errM.message,'err');console.error(errM);return;}
+  // Busca itens de serviço de todas as OS do período
+  let itensServico=[];
+  if(lista.length){
+    const osIds=lista.map(o=>o.id);
+    const{data:itensData}=await db.from('itens_os')
+      .select('id, os_id, tipo, mecanico_id, valor_total')
+      .in('os_id',osIds)
+      .eq('tipo','servico');
+    itensServico=itensData||[];
+  }
 
-  // Agrupa por mecanico
+  // Mapa OS_ID → mecanico_id (fallback)
+  const osMecMap={};
+  lista.forEach(o=>{if(o.mecanico_id)osMecMap[o.id]=o.mecanico_id;});
+
+  // Agrupa serviços por mecânico (item.mecanico_id || OS.mecanico_id)
   const porMecanico={};
-  // Inicializa com todos os membros
-  (membros||[]).forEach(m=>{
-    porMecanico[m.id]={id:m.id,nome:m.nome,role:m.role,comissao_percent:m.comissao_percent||0,ordens:[]};
+  // Inicializa todos os membros
+  membros.forEach(m=>{
+    porMecanico[m.id]={id:m.id,nome:m.nome,role:m.role,comissao_percent:m.comissao_percent||0,_fat:0,_osIds:new Set()};
   });
-  // Adiciona OS
-  lista.forEach(os=>{
-    const mecId=os.mecanico_id;
+
+  itensServico.forEach(item=>{
+    const mecId=item.mecanico_id||osMecMap[item.os_id];
     if(!mecId)return;
     if(!porMecanico[mecId]){
-      porMecanico[mecId]={id:mecId,nome:os.profiles?.nome||'Sem nome',role:os.profiles?.role||'mecanico',comissao_percent:os.profiles?.comissao_percent||0,ordens:[]};
+      const membro=membroMap[mecId];
+      porMecanico[mecId]={id:mecId,nome:membro?.nome||'Mecânico',role:membro?.role||'mecanico',comissao_percent:membro?.comissao_percent||0,_fat:0,_osIds:new Set()};
     }
-    porMecanico[mecId].ordens.push(os);
+    porMecanico[mecId]._fat+=(item.valor_total||0);
+    porMecanico[mecId]._osIds.add(item.os_id);
+  });
+
+  // Converte Set para array/count e calcula comissão
+  Object.values(porMecanico).forEach(m=>{
+    m._osCount=m._osIds.size;
+    m._osIdsArr=[...m._osIds];
+    m._comissao=m._fat*(m.comissao_percent/100);
   });
 
   // Ordena por faturamento (ranking)
-  const ranking=Object.values(porMecanico).sort((a,b)=>{
-    const fa=a.ordens.reduce((s,o)=>s+(o.valor_total||0),0);
-    const fb=b.ordens.reduce((s,o)=>s+(o.valor_total||0),0);
-    return fb-fa;
-  });
+  const ranking=Object.values(porMecanico).sort((a,b)=>b._fat-a._fat);
 
   // Calcula totais
-  let totalOS=0, totalFat=0, totalComissao=0;
+  let totalOS=lista.length, totalFat=0, totalComissao=0;
   ranking.forEach(m=>{
-    m._fat=m.ordens.reduce((s,o)=>s+(o.valor_total||0),0);
-    m._comissao=m._fat*(m.comissao_percent/100);
-    totalOS+=m.ordens.length;
     totalFat+=m._fat;
     totalComissao+=m._comissao;
   });
 
   // Taxa label
   const taxas=[...new Set(ranking.map(m=>m.comissao_percent))].filter(Boolean);
-  document.getElementById('taxa-label').textContent=taxas.length===1?taxas[0]+'% sobre MO':'Individual';
+  document.getElementById('taxa-label').textContent=taxas.length===1?taxas[0]+'% sobre serviços':'Individual';
 
   // Summary
   document.getElementById('summary').innerHTML=`
-    <div class="summary-item"><div class="summary-val" style="color:var(--w);">${ranking.filter(m=>m.ordens.length>0).length}</div><div class="summary-lbl">Mecanicos</div></div>
+    <div class="summary-item"><div class="summary-val" style="color:var(--w);">${ranking.filter(m=>m._fat>0).length}</div><div class="summary-lbl">Mecanicos</div></div>
     <div class="summary-item"><div class="summary-val" style="color:var(--green);">${totalOS}</div><div class="summary-lbl">OS Entregues</div></div>
     <div class="summary-item"><div class="summary-val" style="color:var(--w2);">R$ ${fmtK(totalFat)}</div><div class="summary-lbl">Faturamento MO</div></div>
     <div class="summary-item"><div class="summary-val" style="color:var(--amber);">R$ ${fmtK(totalComissao)}</div><div class="summary-lbl">Total Comissao</div></div>`;
@@ -379,7 +399,7 @@ async function carregar(){
 
   document.getElementById('ranking-lista').innerHTML=ranking.map((m,i)=>{
     const pos=i+1;
-    const cls=m.ordens.length===0?'inativo':pos===1?'gold':pos===2?'silver':pos===3?'bronze':'';
+    const cls=m._fat===0?'inativo':pos===1?'gold':pos===2?'silver':pos===3?'bronze':'';
     const iniciais=(m.nome||'??').split(' ').map(p=>p[0]).join('').substring(0,2).toUpperCase();
     const roleTxt=m.role==='aux_mecanico'?'Aux. Mecanico':'Mecanico';
     return`<div class="perf-card ${cls}" onclick="abrirDetalhe('${m.id}')">
@@ -391,11 +411,11 @@ async function carregar(){
           <div class="perf-cargo">${roleTxt}</div>
         </div>
       </div>
-      <div><div class="perf-fat-val">R$ ${fmt(m._fat)}</div><div class="perf-fat-lbl">Faturado</div></div>
-      <div style="display:flex;justify-content:center;"><div class="perf-os-badge"><span class="perf-os-num">${m.ordens.length}</span><span class="perf-os-lbl">OS</span></div></div>
+      <div><div class="perf-fat-val">R$ ${fmt(m._fat)}</div><div class="perf-fat-lbl">Faturado MO</div></div>
+      <div style="display:flex;justify-content:center;"><div class="perf-os-badge"><span class="perf-os-num">${m._osCount}</span><span class="perf-os-lbl">OS</span></div></div>
       <div class="perf-comissao">
         <div class="perf-comissao-val">R$ ${fmt(m._comissao)}</div>
-        <div class="perf-comissao-pct">${m.ordens.length?m.comissao_percent+'% s/ MO':'Sem producao'}</div>
+        <div class="perf-comissao-pct">${m._fat>0?m.comissao_percent+'% s/ serv':'Sem producao'}</div>
       </div>
     </div>`;
   }).join('');
@@ -405,7 +425,7 @@ async function carregar(){
     <div class="total-bar">
       <div>
         <div class="total-label">Total Comissoes — ${MESES[MES-1]} ${ANO}</div>
-        <div class="total-detail">${ranking.filter(m=>m.ordens.length).length} mecanicos · ${totalOS} OS · R$ ${fmt(totalFat)} faturado MO</div>
+        <div class="total-detail">${ranking.filter(m=>m._fat>0).length} mecanicos · ${totalOS} OS · R$ ${fmt(totalFat)} faturado MO</div>
       </div>
       <div class="total-val">R$ ${fmt(totalComissao)}</div>
     </div>`;
@@ -421,17 +441,18 @@ function abrirDetalhe(mecId){
   if(!m)return;
 
   document.getElementById('panel-title').innerHTML='<span>'+esc(m.nome)+'</span>';
+  const ordensDoMec=(_dadosPDF.lista||[]).filter(os=>m._osIdsArr.includes(os.id));
   document.getElementById('panel-body').innerHTML=`
     <div class="panel-section">
       <div class="panel-section-title">Resumo do Periodo</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;">
         <div style="background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px;text-align:center;">
-          <div style="font-family:var(--mono);font-size:18px;font-weight:800;color:var(--green);">${m.ordens.length}</div>
+          <div style="font-family:var(--mono);font-size:18px;font-weight:800;color:var(--green);">${m._osCount}</div>
           <div style="font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);margin-top:2px;">OS</div>
         </div>
         <div style="background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px;text-align:center;">
           <div style="font-family:var(--mono);font-size:18px;font-weight:800;color:var(--amber);">R$ ${fmt(m._fat)}</div>
-          <div style="font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);margin-top:2px;">Faturado</div>
+          <div style="font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);margin-top:2px;">Faturado MO</div>
         </div>
         <div style="background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px;text-align:center;">
           <div style="font-family:var(--mono);font-size:18px;font-weight:800;color:var(--green);">R$ ${fmt(m._comissao)}</div>
@@ -439,16 +460,16 @@ function abrirDetalhe(mecId){
         </div>
       </div>
     </div>
-    ${m.ordens.length?`
+    ${ordensDoMec.length?`
     <div class="panel-section">
-      <div class="panel-section-title">OS Entregues</div>
-      ${m.ordens.map(os=>{
+      <div class="panel-section-title">OS com servicos deste mecanico</div>
+      ${ordensDoMec.map(os=>{
         const dt=os.data_entrega?new Date(os.data_entrega):null;
         const dtStr=dt?String(dt.getDate()).padStart(2,'0')+'/'+String(dt.getMonth()+1).padStart(2,'0'):'—';
         return`<div class="os-item">
           <div class="os-item-num">#${os.numero||'—'}</div>
           <div class="os-item-desc">${esc(os.descricao||'OS')}</div>
-          <div class="os-item-val">R$ ${fmt(os.valor_total)}</div>
+          <div class="os-item-val">R$ ${fmt(os.valor_mao_obra||os.valor_total)}</div>
           <div class="os-item-date">${dtStr}</div>
         </div>`;
       }).join('')}
@@ -487,9 +508,9 @@ async function gerarPDF(){
   const{ranking,totalOS,totalFat,totalComissao,mesNome,ano}=_dadosPDF;
   const oficina=OFICINA||{};
 
-  const rows=ranking.filter(m=>m.ordens.length>0).map(m=>[
+  const rows=ranking.filter(m=>m._fat>0).map(m=>[
     {text:m.nome,fontSize:10},
-    {text:String(m.ordens.length),fontSize:10,alignment:'center'},
+    {text:String(m._osCount),fontSize:10,alignment:'center'},
     {text:'R$ '+fmt(m._fat),fontSize:10,alignment:'right'},
     {text:m.comissao_percent+'%',fontSize:10,alignment:'center'},
     {text:'R$ '+fmt(m._comissao),fontSize:10,alignment:'right',bold:true}
