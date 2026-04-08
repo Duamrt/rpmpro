@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Satisfacao</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04080542"></script>
+<script src="js/infra.js?v=04080548"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -99,8 +99,14 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 .empty-state h3{font-family:var(--head);font-size:20px;font-weight:700;text-transform:uppercase;color:var(--w2);margin-bottom:6px;}
 .empty-state p{font-size:13px;color:var(--w4);}
 
+.mob-menu-btn{display:none;background:none;border:none;cursor:pointer;color:var(--amber);padding:4px 6px;flex-direction:column;gap:5px;align-items:center;justify-content:center;}
+.mob-menu-btn span{display:block;width:20px;height:2px;background:var(--amber);border-radius:1px;transition:all .2s;}
+.sidebar-mob-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:940;}
+.sidebar-mob-overlay.open{display:block;}
 @media(max-width:768px){
-  .sidebar{display:none;}
+  .sidebar{position:fixed;left:-240px;top:0;height:100vh;z-index:950;width:220px;transition:left .25s;box-shadow:4px 0 24px rgba(0,0,0,.5);}
+  .sidebar.mob-open{left:0;}
+  .mob-menu-btn{display:flex;}
   .kpis{grid-template-columns:repeat(2,1fr);}
   .data-table th:nth-child(5),.data-table td:nth-child(5){display:none;}
 }
@@ -164,7 +170,10 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 
   <div class="main">
     <div class="main-topbar">
-      <div class="main-title">Pesquisa de Satisfacao</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="mob-menu-btn" onclick="toggleSidebarMob()" aria-label="Menu"><span></span><span></span><span></span></button>
+        <div class="main-title">Pesquisa de Satisfacao</div>
+      </div>
       <button onclick="enviarPesquisas()" style="padding:8px 16px;background:var(--green-dim);color:var(--green);border:1px solid rgba(48,209,88,0.2);border-radius:var(--r);font-family:var(--head);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;cursor:pointer;">Gerar Pesquisas</button>
     </div>
     <div class="main-content">
@@ -301,6 +310,12 @@ async function fazerLogin(){
   if(error){err.style.display='block';btn.disabled=false;btn.textContent='Entrar';return;}
   await init();
 }
+function toggleSidebarMob() {
+  const sb = document.querySelector('.sidebar');
+  const ov = document.getElementById('sidebar-mob-overlay');
+  const open = sb.classList.toggle('mob-open');
+  ov.classList.toggle('open', open);
+}
 function sair(){db.auth.signOut();location.reload();}
 const _busy={};
 
@@ -383,5 +398,8 @@ async function init(){
 
 init();
 </script>
+
+<!-- SIDEBAR MOBILE OVERLAY -->
+<div class="sidebar-mob-overlay" id="sidebar-mob-overlay" onclick="toggleSidebarMob()"></div>
 </body>
 </html>

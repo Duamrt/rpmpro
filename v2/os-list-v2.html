@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Ordens de Servico</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04080542"></script>
+<script src="js/infra.js?v=04080548"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04080542"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04080548"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -277,8 +277,14 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 .modal-box{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:24px;max-width:420px;width:90%;}
 .modal-title{font-family:var(--head);font-size:18px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;}
 
+.mob-menu-btn{display:none;background:none;border:none;cursor:pointer;color:var(--amber);padding:4px 6px;flex-direction:column;gap:5px;align-items:center;justify-content:center;}
+.mob-menu-btn span{display:block;width:20px;height:2px;background:var(--amber);border-radius:1px;transition:all .2s;}
+.sidebar-mob-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:940;}
+.sidebar-mob-overlay.open{display:block;}
 @media(max-width:768px){
-  .sidebar{display:none;}
+  .sidebar{position:fixed;left:-240px;top:0;height:100vh;z-index:950;width:220px;transition:left .25s;box-shadow:4px 0 24px rgba(0,0,0,.5);}
+  .sidebar.mob-open{left:0;}
+  .mob-menu-btn{display:flex;}
   .summary{flex-wrap:wrap;}
   .summary-item{min-width:80px;}
   .os-row{flex-wrap:wrap;gap:10px;}
@@ -353,13 +359,19 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 
   <div class="main">
     <div class="main-topbar">
-      <div class="main-title">Ordens de Servico</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="mob-menu-btn" onclick="toggleSidebarMob()" aria-label="Menu"><span></span><span></span><span></span></button>
+        <div class="main-title">Ordens de Servico</div>
+      </div>
       <button class="btn-nova-os" onclick="abrirNovaOS()">+ Nova OS</button>
     </div>
     <div class="main-content" id="os-content"></div>
   </div>
 </div>
 
+
+<!-- SIDEBAR MOBILE OVERLAY -->
+<div class="sidebar-mob-overlay" id="sidebar-mob-overlay" onclick="toggleSidebarMob()"></div>
 <!-- OVERLAY + SIDE PANEL -->
 <div class="overlay" id="overlay" onclick="fecharPanel()"></div>
 <div class="side-panel" id="panel">
@@ -1924,6 +1936,12 @@ function enviarWhatsApp(whats, placa, status) {
 function abrirPanel() {
   document.getElementById('panel').classList.add('open');
   document.getElementById('overlay').classList.add('open');
+}
+function toggleSidebarMob() {
+  const sb = document.querySelector('.sidebar');
+  const ov = document.getElementById('sidebar-mob-overlay');
+  const open = sb.classList.toggle('mob-open');
+  ov.classList.toggle('open', open);
 }
 function fecharPanel() {
   document.getElementById('panel').classList.remove('open');

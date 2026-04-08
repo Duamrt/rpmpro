@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Fila de Espera</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04080542"></script>
+<script src="js/infra.js?v=04080548"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -186,8 +186,14 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 .toast.ok{background:var(--green);color:#000;}
 .toast.err{background:var(--red);color:#fff;}
 
+.mob-menu-btn{display:none;background:none;border:none;cursor:pointer;color:var(--amber);padding:4px 6px;flex-direction:column;gap:5px;align-items:center;justify-content:center;}
+.mob-menu-btn span{display:block;width:20px;height:2px;background:var(--amber);border-radius:1px;transition:all .2s;}
+.sidebar-mob-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:940;}
+.sidebar-mob-overlay.open{display:block;}
 @media(max-width:768px){
-  .sidebar{display:none;}
+  .sidebar{position:fixed;left:-240px;top:0;height:100vh;z-index:950;width:220px;transition:left .25s;box-shadow:4px 0 24px rgba(0,0,0,.5);}
+  .sidebar.mob-open{left:0;}
+  .mob-menu-btn{display:flex;}
   .fila-header,.fila-item{grid-template-columns:40px 1fr 100px;}
   .fila-header span:nth-child(2),.fila-item .placa-f-wrap{display:none;}
   .fila-header span:nth-child(5),.fila-item .fila-action{display:none;}
@@ -260,7 +266,10 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 
   <div class="main">
     <div class="main-topbar">
-      <div class="main-title">Fila de Espera</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="mob-menu-btn" onclick="toggleSidebarMob()" aria-label="Menu"><span></span><span></span><span></span></button>
+        <div class="main-title">Fila de Espera</div>
+      </div>
       <div style="display:flex;gap:8px;">
         <span id="fila-stats" style="font-family:var(--mono);font-size:12px;color:var(--w3);display:flex;align-items:center;gap:12px;"></span>
       </div>
@@ -269,6 +278,9 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
   </div>
 </div>
 
+
+<!-- SIDEBAR MOBILE OVERLAY -->
+<div class="sidebar-mob-overlay" id="sidebar-mob-overlay" onclick="toggleSidebarMob()"></div>
 <!-- OVERLAY + SIDE PANEL -->
 <div class="overlay" id="overlay" onclick="fecharPanel()"></div>
 <div class="side-panel" id="panel">
@@ -521,6 +533,12 @@ async function abrirNovoCompleto(editData) {
   setTimeout(() => document.getElementById('pf-nome').focus(), 300);
 }
 
+function toggleSidebarMob() {
+  const sb = document.querySelector('.sidebar');
+  const ov = document.getElementById('sidebar-mob-overlay');
+  const open = sb.classList.toggle('mob-open');
+  ov.classList.toggle('open', open);
+}
 function fecharPanel() {
   document.getElementById('panel').classList.remove('open');
   document.getElementById('overlay').classList.remove('open');
