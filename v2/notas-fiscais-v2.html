@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Notas Fiscais</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04080740"></script>
+<script src="js/infra.js?v=04080751"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -280,6 +280,21 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 </div><!-- /app -->
 
 <div class="toast" id="toast-el"></div>
+
+<!-- MODAL ENTRADA ESTOQUE -->
+<div id="entrada-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:8000;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--sf);border:1px solid var(--ln2);border-radius:8px;width:100%;max-width:700px;max-height:90vh;display:flex;flex-direction:column;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--ln2);flex-shrink:0;">
+      <div style="font-family:var(--head);font-size:15px;font-weight:800;text-transform:uppercase;letter-spacing:1px;">Entrada no Estoque</div>
+      <button onclick="_nfeFecharEntrada()" style="background:none;border:none;color:var(--w3);cursor:pointer;font-size:24px;line-height:1;padding:0;">×</button>
+    </div>
+    <div id="entrada-body" style="flex:1;overflow-y:auto;padding:20px;scrollbar-width:thin;scrollbar-color:var(--sf3) transparent;"></div>
+    <div style="padding:16px 20px;border-top:1px solid var(--ln2);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+      <span style="font-family:var(--mono);font-size:11px;color:var(--w3);" id="entrada-status"></span>
+      <button id="entrada-btn-confirmar" onclick="_nfeConfirmarEntrada()" style="background:var(--green);border:none;color:#000;padding:10px 24px;border-radius:var(--r2);font-family:var(--mono);font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.3px;">✓ CONFIRMAR ENTRADA</button>
+    </div>
+  </div>
+</div>
 
 <script>
 const SUPABASE_URL = 'https://roeeyypssutzfzzkypsq.supabase.co';
@@ -724,6 +739,7 @@ async function _nfeCarregarHistorico() {
       </div>
       <div style="display:flex;align-items:center;gap:16px;flex-shrink:0;">
         <span style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--red);">${fmt(nf.valor_total)}</span>
+        <button onclick="_nfeAbrirEntradaEstoque('${nf.id}')" style="background:rgba(48,209,88,.08);border:1px solid rgba(48,209,88,.3);border-radius:var(--r2);color:var(--green);cursor:pointer;font-family:var(--mono);font-size:10px;padding:4px 10px;letter-spacing:.3px;white-space:nowrap;">ENTRADA ESTOQUE</button>
         <button onclick="_nfeExcluirNota('${nf.id}','${esc(nf.numero)}')" style="background:none;border:1px solid rgba(255,59,48,.3);border-radius:var(--r2);color:var(--red);cursor:pointer;font-family:var(--mono);font-size:10px;padding:4px 10px;letter-spacing:.3px;white-space:nowrap;">ESTORNAR</button>
       </div>
     </div>`).join('');
@@ -737,6 +753,150 @@ async function _nfeExcluirNota(id, numero) {
   if (nfErr) { toast('Erro ao excluir nota: '+nfErr.message,'err'); return; }
   toast(`NF ${numero} estornada`);
   await _nfeCarregarHistorico();
+}
+
+// ── ENTRADA ESTOQUE ──
+let _entradaNfId = null;
+let _entradaItens = [];
+let _buscaTimer = null;
+
+async function _nfeAbrirEntradaEstoque(nfId) {
+  const { data: nf } = await db.from('notas_fiscais')
+    .select('id,numero,fornecedor_nome,itens')
+    .eq('id', nfId).single();
+  if (!nf || !nf.itens || !nf.itens.length) {
+    toast('Esta NF não tem itens registrados','err'); return;
+  }
+  _entradaNfId = nfId;
+  _entradaItens = nf.itens.map(item => ({ item, acao:'vincular', peca_id:null, peca_nome:null }));
+  _nfeRenderEntradaModal(nf);
+  document.getElementById('entrada-overlay').style.display = 'flex';
+}
+
+function _nfeFecharEntrada() {
+  document.getElementById('entrada-overlay').style.display = 'none';
+  _entradaNfId = null; _entradaItens = [];
+}
+
+function _nfeRenderEntradaModal(nf) {
+  const body = document.getElementById('entrada-body');
+  body.innerHTML = `
+    <div style="font-family:var(--mono);font-size:11px;color:var(--w3);margin-bottom:16px;">NF ${esc(nf.numero)} — ${esc(nf.fornecedor_nome)} — ${_entradaItens.length} item(ns)</div>
+    ${_entradaItens.map((ei,idx) => `
+      <div style="background:var(--sf2);border:1px solid var(--ln3);border-radius:var(--r2);padding:14px;margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:10px;">
+          <div style="min-width:0;">
+            <div style="font-family:var(--head);font-size:14px;font-weight:700;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(ei.item.desc)}</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--w3);margin-top:2px;">Qtd: ${ei.item.qtd} ${esc(ei.item.unidade||'UN')} · Unit: ${fmt(ei.item.preco)}${ei.item.cProd?` · Cód: ${esc(ei.item.cProd)}`:''}
+            </div>
+          </div>
+          <div style="display:flex;gap:5px;flex-shrink:0;">
+            <button onclick="_entradaAcao(${idx},'vincular')" id="btn-vinc-${idx}" style="font-family:var(--mono);font-size:9px;padding:4px 7px;border-radius:2px;cursor:pointer;border:1px solid rgba(48,209,88,.4);background:rgba(48,209,88,.1);color:var(--green);">VINCULAR</button>
+            <button onclick="_entradaAcao(${idx},'criar')" id="btn-cria-${idx}" style="font-family:var(--mono);font-size:9px;padding:4px 7px;border-radius:2px;cursor:pointer;border:1px solid var(--ln3);background:none;color:var(--w3);">CRIAR NOVA</button>
+            <button onclick="_entradaAcao(${idx},'pular')" id="btn-pula-${idx}" style="font-family:var(--mono);font-size:9px;padding:4px 7px;border-radius:2px;cursor:pointer;border:1px solid var(--ln3);background:none;color:var(--w3);">PULAR</button>
+          </div>
+        </div>
+        <div id="entrada-det-${idx}">${_entradaDetHTML(idx)}</div>
+      </div>`).join('')}`;
+  _entradaStatusUpdate();
+}
+
+function _entradaDetHTML(idx) {
+  const ei = _entradaItens[idx];
+  if (ei.acao==='pular') return `<div style="font-family:var(--mono);font-size:11px;color:var(--w4);">— Ignorado, não entra no estoque</div>`;
+  if (ei.acao==='criar') return `<div style="font-family:var(--mono);font-size:11px;color:var(--amber);">✓ Criar nova peça com ${ei.item.qtd} un. no estoque</div>`;
+  if (ei.peca_id) return `<div style="font-family:var(--mono);font-size:11px;color:var(--green);">✓ ${esc(ei.peca_nome)} — +${ei.item.qtd} un.</div><button onclick="_entradaLimparVinculo(${idx})" style="margin-top:5px;background:none;border:none;color:var(--w4);cursor:pointer;font-family:var(--mono);font-size:10px;padding:0;text-decoration:underline;">trocar peça</button>`;
+  return `<input id="busca-peca-${idx}" class="nfe-input" placeholder="Buscar peça no catálogo pelo nome ou código..." oninput="_entradaBuscar(${idx},this.value)" autocomplete="off" style="margin-bottom:6px;"><div id="busca-res-${idx}" style="display:none;background:var(--sf3);border:1px solid var(--ln3);border-radius:var(--r2);max-height:150px;overflow-y:auto;"></div>`;
+}
+
+function _entradaAcao(idx, acao) {
+  _entradaItens[idx].acao = acao;
+  if (acao !== 'vincular') { _entradaItens[idx].peca_id = null; _entradaItens[idx].peca_nome = null; }
+  document.getElementById(`entrada-det-${idx}`).innerHTML = _entradaDetHTML(idx);
+  _entradaStatusUpdate();
+  ['vinc','cria','pula'].forEach(k => {
+    const b = document.getElementById(`btn-${k}-${idx}`);
+    if (b) { b.style.background='none'; b.style.color='var(--w3)'; b.style.borderColor='var(--ln3)'; }
+  });
+  const map = {vincular:'vinc',criar:'cria',pular:'pula'};
+  const bAtivo = document.getElementById(`btn-${map[acao]}-${idx}`);
+  if (bAtivo) { bAtivo.style.background='rgba(255,255,255,.06)'; bAtivo.style.color='var(--w)'; bAtivo.style.borderColor='var(--ln2)'; }
+}
+
+function _entradaLimparVinculo(idx) {
+  _entradaItens[idx].peca_id = null; _entradaItens[idx].peca_nome = null;
+  document.getElementById(`entrada-det-${idx}`).innerHTML = _entradaDetHTML(idx);
+  _entradaStatusUpdate();
+}
+
+async function _entradaBuscar(idx, q) {
+  const resEl = document.getElementById(`busca-res-${idx}`);
+  if (!resEl) return;
+  if (q.length < 2) { resEl.style.display='none'; return; }
+  clearTimeout(_buscaTimer);
+  _buscaTimer = setTimeout(async () => {
+    const { data } = await db.from('pecas')
+      .select('id,nome,codigo,quantidade')
+      .eq('oficina_id', OFICINA_ID)
+      .or(`nome.ilike.%${q}%,codigo.ilike.%${q}%`)
+      .limit(8);
+    resEl.style.display = 'block';
+    if (!data || !data.length) {
+      resEl.innerHTML = `<div style="padding:10px;font-family:var(--mono);font-size:11px;color:var(--w4);">Nenhuma peça encontrada</div>`;
+      return;
+    }
+    resEl.innerHTML = data.map(p => `
+      <div onclick="_entradaVincular(${idx},'${p.id}','${esc(p.nome).replace(/'/g,"\\'")}')" style="padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--ln3);display:flex;justify-content:space-between;align-items:center;" onmouseover="this.style.background='var(--sf4)'" onmouseout="this.style.background=''">
+        <div><div style="font-size:13px;">${esc(p.nome)}</div><div style="font-family:var(--mono);font-size:10px;color:var(--w4);">${p.codigo||'sem código'}</div></div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--w3);flex-shrink:0;">${p.quantidade} un.</div>
+      </div>`).join('');
+  }, 300);
+}
+
+function _entradaVincular(idx, pecaId, pecaNome) {
+  _entradaItens[idx].peca_id = pecaId; _entradaItens[idx].peca_nome = pecaNome;
+  document.getElementById(`entrada-det-${idx}`).innerHTML = _entradaDetHTML(idx);
+  _entradaStatusUpdate();
+}
+
+function _entradaStatusUpdate() {
+  const total = _entradaItens.length;
+  const ok = _entradaItens.filter(ei => ei.acao==='pular' || ei.acao==='criar' || (ei.acao==='vincular'&&ei.peca_id)).length;
+  const el = document.getElementById('entrada-status');
+  if (el) el.textContent = `${ok}/${total} itens configurados`;
+}
+
+async function _nfeConfirmarEntrada() {
+  const pendentes = _entradaItens.filter(ei => ei.acao==='vincular' && !ei.peca_id);
+  if (pendentes.length) { toast(`${pendentes.length} item(ns) sem peça vinculada — vincule, crie nova ou pule`,'err'); return; }
+  const aProcessar = _entradaItens.filter(ei => ei.acao !== 'pular');
+  if (!aProcessar.length) { toast('Nenhum item pra processar','err'); return; }
+  const btn = document.getElementById('entrada-btn-confirmar');
+  if (btn) { btn.disabled=true; btn.textContent='Processando...'; }
+  try {
+    for (const ei of aProcessar) {
+      if (ei.acao === 'criar') {
+        const { data: nova, error: crErr } = await db.from('pecas').insert({
+          oficina_id:OFICINA_ID, nome:ei.item.desc, codigo:ei.item.cProd||'',
+          quantidade:ei.item.qtd, custo:ei.item.preco, preco_venda:0,
+          estoque_minimo:0, marca:'', localizacao:'', compatibilidade:[],
+          created_by:PERFIL.id
+        }).select('id').single();
+        if (crErr) throw new Error('Erro ao criar peça: '+crErr.message);
+        await db.from('estoque_movimentos').insert({ oficina_id:OFICINA_ID, peca_id:nova.id, tipo:'entrada', quantidade:ei.item.qtd, observacao:'Entrada NF', created_by:PERFIL.id });
+      } else {
+        const { data: pecaAtual } = await db.from('pecas').select('quantidade').eq('id',ei.peca_id).eq('oficina_id',OFICINA_ID).single();
+        const qtdAtual = pecaAtual?.quantidade ?? 0;
+        await db.from('pecas').update({ quantidade:qtdAtual+ei.item.qtd }).eq('id',ei.peca_id).eq('oficina_id',OFICINA_ID);
+        await db.from('estoque_movimentos').insert({ oficina_id:OFICINA_ID, peca_id:ei.peca_id, tipo:'entrada', quantidade:ei.item.qtd, observacao:'Entrada NF', created_by:PERFIL.id });
+      }
+    }
+    toast(`✓ Estoque atualizado — ${aProcessar.length} item(ns) processado(s)`);
+    _nfeFecharEntrada();
+  } catch(e) {
+    toast(e.message,'err');
+    if (btn) { btn.disabled=false; btn.textContent='✓ CONFIRMAR ENTRADA'; }
+  }
 }
 
 init();
