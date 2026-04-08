@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Financeiro</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04080633"></script>
+<script src="js/infra.js?v=04080640"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -343,8 +343,8 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 @keyframes boleto-pulse{0%,100%{box-shadow:0 0 0 0 rgba(232,147,12,0);}50%{box-shadow:0 0 0 4px rgba(232,147,12,.25);}}
 .boleto-aviso{background:rgba(232,147,12,.08);border:1px solid rgba(232,147,12,.3);border-radius:var(--r2);padding:10px 14px;font-size:12px;color:var(--amber);margin-top:8px;line-height:1.5;}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04080633"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04080633"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04080640"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04080640"></script>
 </head>
 <body>
 
@@ -1348,8 +1348,10 @@ async function carregarCalendarioDespesas(el) {
   const [sRes, eRes] = await Promise.all([
     db.from('caixa').select('*').eq('oficina_id',OFICINA_ID).eq('tipo','saida')
       .gte('data_vencimento', inicio).lte('data_vencimento', fim).order('data_vencimento'),
-    db.from('caixa').select('*').eq('oficina_id',OFICINA_ID).eq('tipo','entrada')
-      .gte('created_at', inicioTs).lte('created_at', fimTs).order('created_at')
+    INFRA.podeVer('fin_resumo')
+      ? db.from('caixa').select('*').eq('oficina_id',OFICINA_ID).eq('tipo','entrada')
+          .gte('created_at', inicioTs).lte('created_at', fimTs).order('created_at')
+      : Promise.resolve({ data: [] })
   ]);
 
   _calSaidas = sRes.data || [];
@@ -1434,12 +1436,13 @@ function buildCalendarioDespesas(el) {
       + '</div>';
   }).join('');
 
-  el.innerHTML = _despPeriodBar(nomeMes, _calSaidas.length + ' saída(s) · ' + _calEntradas.length + ' entrada(s)')
+  const _podeVerEntradas = INFRA.podeVer('fin_resumo');
+  el.innerHTML = _despPeriodBar(nomeMes, _calSaidas.length + ' saída(s)' + (_podeVerEntradas ? ' · ' + _calEntradas.length + ' entrada(s)' : ''))
     + '<div class="comp-grid" style="margin-bottom:20px;">'
     + '<div class="comp-block"><div class="comp-block-label">Saídas</div><div class="comp-block-val" style="color:var(--red);">' + fmt(totalSaidas) + '</div><div class="comp-block-sub">' + pendentes + ' pendente(s)</div></div>'
     + '<div class="comp-block"><div class="comp-block-label">A Pagar</div><div class="comp-block-val" style="color:' + (pendentes?'var(--amber)':'var(--w3)') + ';">' + fmt(totalPendente) + '</div><div class="comp-block-sub">vencimentos futuros</div></div>'
-    + '<div class="comp-block"><div class="comp-block-label">Entradas</div><div class="comp-block-val" style="color:var(--green);">' + fmt(totalEntradas) + '</div><div class="comp-block-sub">' + _calEntradas.length + ' recebimento(s)</div></div>'
-    + '<div class="comp-block"><div class="comp-block-label">Saldo Prev.</div><div class="comp-block-val" style="color:' + (totalEntradas-totalSaidas>=0?'var(--green)':'var(--red)') + ';">' + fmt(totalEntradas-totalSaidas) + '</div><div class="comp-block-sub">entradas − saídas</div></div>'
+    + (_podeVerEntradas ? '<div class="comp-block"><div class="comp-block-label">Entradas</div><div class="comp-block-val" style="color:var(--green);">' + fmt(totalEntradas) + '</div><div class="comp-block-sub">' + _calEntradas.length + ' recebimento(s)</div></div>' : '')
+    + (_podeVerEntradas ? '<div class="comp-block"><div class="comp-block-label">Saldo Prev.</div><div class="comp-block-val" style="color:' + (totalEntradas-totalSaidas>=0?'var(--green)':'var(--red)') + ';">' + fmt(totalEntradas-totalSaidas) + '</div><div class="comp-block-sub">entradas − saídas</div></div>' : '')
     + '</div>'
     + '<div class="agenda-cal-dow">' + ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(d=>'<div class="agenda-dow-lbl">'+d+'</div>').join('') + '</div>'
     + '<div class="agenda-cal">' + cellsHtml + '</div>';
@@ -1468,10 +1471,11 @@ function abrirDiaAgenda(dataStr) {
   }
 
   const saldoCls = saldo > 0 ? 'pos' : saldo < 0 ? 'neg' : 'zero';
+  const _podVerE = INFRA.podeVer('fin_resumo');
   const summaryHtml = '<div class="agd-summary">'
-    + '<div class="agd-sum-item"><span class="agd-sum-label">Entradas</span><span class="agd-sum-val pos">+' + fmt(totalE) + '</span></div>'
+    + (_podVerE ? '<div class="agd-sum-item"><span class="agd-sum-label">Entradas</span><span class="agd-sum-val pos">+' + fmt(totalE) + '</span></div>' : '')
     + '<div class="agd-sum-item"><span class="agd-sum-label">Saídas</span><span class="agd-sum-val neg">-' + fmt(totalS) + '</span></div>'
-    + '<div class="agd-sum-item"><span class="agd-sum-label">Saldo Previsto</span><span class="agd-sum-val ' + saldoCls + '">' + fmt(saldo) + '</span></div>'
+    + (_podVerE ? '<div class="agd-sum-item"><span class="agd-sum-label">Saldo Previsto</span><span class="agd-sum-val ' + saldoCls + '">' + fmt(saldo) + '</span></div>' : '')
     + '</div>';
 
   const saidasHtml = saidas.map(d => {
