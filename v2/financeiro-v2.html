@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Financeiro</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04081119"></script>
+<script src="js/infra.js?v=04081126"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -355,9 +355,9 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 .nfe-tbl td{padding:9px 8px;border-bottom:1px solid var(--ln3);vertical-align:middle;}
 .nfe-tbl tr:last-child td{border-bottom:none;}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04081119"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04081119"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js?v=04081119"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04081126"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04081126"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js?v=04081126"></script>
 </head>
 <body>
 
@@ -1726,7 +1726,11 @@ async function novaDespesa() {
       <button type="button" onclick="document.getElementById('boleto-camera-input').click()" style="margin-top:6px;width:100%;background:var(--sf2);border:1px solid var(--ln3);border-radius:var(--r2);padding:8px;font-size:11px;font-family:var(--mono);color:var(--w3);cursor:pointer;">📷 Tirar foto do boleto (celular)</button>
       <div id="boleto-sniper-result"></div>
     </div>
-    <input type="hidden" id="desp-codigo-barras">
+    <div class="panel-field" id="desp-codigo-barras-wrap" style="display:none;">
+      <div class="panel-label">Linha Digitável / Código de Barras</div>
+      <input type="text" class="panel-input" id="desp-codigo-barras" placeholder="Cole ou digite o código do boleto" style="font-family:var(--mono);font-size:11px;" oninput="this.value=this.value.replace(/[^\d.\s]/g,'')">
+      <div style="font-size:10px;color:var(--w4);margin-top:4px;">Preencha se o OCR não extraiu automaticamente</div>
+    </div>
     <div class="panel-field">
       <div class="panel-label">Categoria</div>
       <select class="panel-input" id="desp-cat" onchange="toggleMembro()" style="font-family:var(--body);">
@@ -1776,7 +1780,7 @@ async function novaDespesa() {
       </div>
       <div class="panel-field">
         <div class="panel-label">Forma de pagamento</div>
-        <select class="panel-input" id="desp-forma" style="font-family:var(--body);">
+        <select class="panel-input" id="desp-forma" style="font-family:var(--body);" onchange="document.getElementById('desp-codigo-barras-wrap').style.display=this.value==='boleto'?'':'none'">
           <option value="dinheiro">Dinheiro</option>
           <option value="pix">Pix</option>
           <option value="boleto">Boleto</option>
@@ -2109,10 +2113,12 @@ async function boletoOnFile(arquivo) {
     const resultado = await extrairDadosBoleto(arquivo);
     if (!resultado) {
       res.innerHTML = `<div class="boleto-sniper-err">Código não identificado — preencha os campos manualmente.</div>`;
+      document.getElementById('desp-codigo-barras-wrap').style.display = '';
       return;
     }
     const { valor, vencimento, codigo, beneficiario, cnpj, numeroDoc } = resultado;
     document.getElementById('desp-codigo-barras').value = codigo;
+    document.getElementById('desp-codigo-barras-wrap').style.display = '';
 
     const camposDestaque = [];
     if (valor > 0) {
@@ -2144,6 +2150,7 @@ async function boletoOnFile(arquivo) {
       if (el) { el.value = numeroDoc; el.classList.add('boleto-campo-destaque', 'ocr-highlight'); el.addEventListener('input', () => { el.classList.remove('boleto-campo-destaque', 'ocr-highlight'); updateSaveBtn(); }, { once: true }); camposDestaque.push('Nº Documento'); }
     }
     document.getElementById('desp-forma').value = 'boleto';
+    document.getElementById('desp-codigo-barras-wrap').style.display = '';
     // Mostrar bloco de conferência e bloquear botão salvar
     const wrap = document.getElementById('desp-conferencia-wrap');
     if (wrap) wrap.style.display = '';
