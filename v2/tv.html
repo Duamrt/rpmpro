@@ -345,13 +345,8 @@
 
       _placaHtml(placa) {
         const p = (placa || '???').replace(/[-\s]/g, '').toUpperCase();
-        return `<div class="tv-placa">
-          <div class="tv-placa-topo">
-            <div class="tv-placa-flag"><span style="background:#009739"></span><span style="background:#FEDD00"></span><span style="background:#012169"></span></div>
-            <div class="tv-placa-topo-br">BRASIL</div>
-          </div>
-          <div class="tv-placa-codigo">${this._esc(p)}</div>
-        </div>`;
+        const e = this._esc(p);
+        return '<div class="tv-placa"><div class="tv-placa-topo"><div class="tv-placa-flag"><span style="background:#009739"></span><span style="background:#FEDD00"></span><span style="background:#012169"></span></div><div class="tv-placa-topo-br">BRASIL</div></div><div class="tv-placa-codigo">'+e+'</div></div>';
       },
 
       _erro(msg) {
@@ -359,7 +354,10 @@
       }
     };
 
-    TV.init();
+    TV.init().catch(function(e) {
+      document.getElementById('tv-app').innerHTML = '<div class="tv-erro"><div style="font-size:32px;">⚠️</div><div>Erro: ' + (e && e.message ? e.message : String(e)) + '</div></div>';
+      console.error('[TV]', e);
+    });
   </script>
 </body>
 </html>
