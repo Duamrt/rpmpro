@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Financeiro</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04080701"></script>
+<script src="js/infra.js?v=04080713"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -342,9 +342,21 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 .boleto-campo-destaque{border-color:var(--amber)!important;animation:boleto-pulse 1.4s ease-in-out 4;}
 @keyframes boleto-pulse{0%,100%{box-shadow:0 0 0 0 rgba(232,147,12,0);}50%{box-shadow:0 0 0 4px rgba(232,147,12,.25);}}
 .boleto-aviso{background:rgba(232,147,12,.08);border:1px solid rgba(232,147,12,.3);border-radius:var(--r2);padding:10px 14px;font-size:12px;color:var(--amber);margin-top:8px;line-height:1.5;}
+/* NF-e view */
+.nfe-label{font-family:var(--mono);font-size:10px;color:var(--w3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;}
+.nfe-input{width:100%;background:var(--sf2);border:1px solid var(--ln3);border-radius:var(--r2);padding:9px 12px;font-family:var(--body);font-size:13px;color:var(--w);box-sizing:border-box;}
+.nfe-input:focus{outline:none;border-color:#16a34a;}
+.nfe-input[readonly]{cursor:default;background:rgba(255,255,255,.04);}
+.nfe-bloco{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:24px;margin-bottom:20px;}
+.nfe-bloco-num{background:#16a34a;color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:700;flex-shrink:0;}
+.nfe-bloco-title{font-family:var(--head);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1px;}
+.nfe-tbl{width:100%;border-collapse:collapse;font-size:13px;}
+.nfe-tbl th{text-align:left;padding:8px 8px;font-family:var(--mono);font-size:10px;color:var(--w3);font-weight:400;border-bottom:1px solid var(--ln2);}
+.nfe-tbl td{padding:9px 8px;border-bottom:1px solid var(--ln3);vertical-align:middle;}
+.nfe-tbl tr:last-child td{border-bottom:none;}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04080701"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04080701"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04080713"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04080713"></script>
 </head>
 <body>
 
@@ -456,6 +468,125 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
   <div class="agenda-drawer-body" id="agenda-drawer-body"></div>
 </div>
 
+<!-- MÓDULO NOVA NF-e -->
+<div id="view-nova-nfe" style="display:none;position:fixed;inset:0;z-index:500;background:var(--bg);overflow-y:auto;">
+  <div style="max-width:960px;margin:0 auto;padding:24px 20px 60px;">
+
+    <!-- TOP BAR -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;border-bottom:1px solid var(--ln2);padding-bottom:20px;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <button onclick="fecharNovaNFe()" style="background:none;border:none;color:var(--w3);cursor:pointer;font-size:13px;font-family:var(--mono);letter-spacing:.5px;">← VOLTAR</button>
+        <div style="font-family:var(--head);font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:2px;">Nova Nota Fiscal</div>
+      </div>
+      <button id="nfe-btn-salvar" onclick="_nfeSalvarNota()" style="background:#16a34a;border:none;color:#fff;padding:10px 22px;border-radius:var(--r2);font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.5px;cursor:pointer;">💾 SALVAR NOTA FISCAL</button>
+    </div>
+
+    <!-- BLOCO 1: CABEÇALHO -->
+    <div class="nfe-bloco">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+        <div class="nfe-bloco-num">1</div>
+        <div class="nfe-bloco-title">Cabeçalho da Nota</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div>
+          <div class="nfe-label">NATUREZA *</div>
+          <select id="nfe-natureza" class="nfe-input" style="font-family:var(--body);">
+            <option value="VENDA">VENDA</option>
+            <option value="COMPRA">COMPRA</option>
+            <option value="REMESSA">REMESSA</option>
+            <option value="DEVOLUCAO">DEVOLUÇÃO</option>
+            <option value="BONIFICACAO">BONIFICAÇÃO</option>
+            <option value="TRANSFERENCIA">TRANSFERÊNCIA</option>
+            <option value="OUTRO">OUTRO</option>
+          </select>
+        </div>
+        <div>
+          <div class="nfe-label">Nº DA NOTA *</div>
+          <input id="nfe-numero" class="nfe-input" placeholder="EX: 001234">
+        </div>
+        <div>
+          <div class="nfe-label">DATA DE EMISSÃO *</div>
+          <input id="nfe-data-emissao" class="nfe-input" type="date">
+        </div>
+        <div>
+          <div class="nfe-label">DATA DE RECEBIMENTO</div>
+          <input id="nfe-data-recebimento" class="nfe-input" type="date">
+        </div>
+      </div>
+      <div style="margin-top:14px;">
+        <div class="nfe-label">FORNECEDOR *</div>
+        <input id="nfe-fornecedor" class="nfe-input" placeholder="NOME DO FORNECEDOR">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;">
+        <div>
+          <div class="nfe-label">CNPJ</div>
+          <input id="nfe-cnpj" class="nfe-input" placeholder="00.000.000/0001-00">
+        </div>
+        <div>
+          <div class="nfe-label">OBSERVAÇÃO</div>
+          <input id="nfe-obs" class="nfe-input" placeholder="Observações gerais...">
+        </div>
+      </div>
+    </div>
+
+    <!-- BLOCO 2: ITENS -->
+    <div class="nfe-bloco">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+        <div class="nfe-bloco-num">2</div>
+        <div class="nfe-bloco-title">Itens da Nota</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;">
+        <button onclick="_nfeAbrirXML()" style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.3);color:#4ade80;padding:12px;border-radius:var(--r2);font-family:var(--mono);font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.3px;">📥 IMPORTAR XML <span style="font-weight:400;opacity:.7;font-size:11px;">Arquivo da NF-e</span></button>
+        <button onclick="_nfeToggleColagem()" style="background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.3);color:#a78bfa;padding:12px;border-radius:var(--r2);font-family:var(--mono);font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.3px;">📋 COLAR TEXTO <span style="font-weight:400;opacity:.7;font-size:11px;">Cola os itens da nota</span></button>
+      </div>
+      <!-- colar texto -->
+      <div id="nfe-colagem-area" style="display:none;margin-bottom:16px;">
+        <div class="nfe-label">COLE O TEXTO AQUI</div>
+        <textarea id="nfe-colagem-txt" class="nfe-input" rows="4" placeholder="Cole os itens do danfe ou email do fornecedor..." style="resize:vertical;"></textarea>
+        <button onclick="_nfeProcessarColagem()" style="margin-top:6px;background:rgba(167,139,250,.15);border:1px solid rgba(167,139,250,.4);color:#a78bfa;padding:8px 16px;border-radius:var(--r2);font-family:var(--mono);font-size:11px;cursor:pointer;">Processar Texto</button>
+      </div>
+      <!-- form manual -->
+      <div id="nfe-form-manual" style="display:none;background:var(--sf2);border:1px solid var(--ln3);border-radius:var(--r2);padding:16px;margin-bottom:14px;">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--w3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;">+ ADICIONAR ITEM MANUAL</div>
+        <div>
+          <div class="nfe-label">DESCRIÇÃO DO ITEM *</div>
+          <input id="nfe-item-desc" class="nfe-input" placeholder="EX: PASTILHA DE FREIO, FILTRO DE ÓLEO..." onkeydown="if(event.key==='Enter')_nfeAdicionarItemManualForm()">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-top:10px;">
+          <div><div class="nfe-label">QTD *</div><input id="nfe-item-qtd" class="nfe-input" type="number" min="0.001" step="any" value="1" oninput="_nfeCalcManual()"></div>
+          <div><div class="nfe-label">UNIDADE</div><input id="nfe-item-un" class="nfe-input" placeholder="UN"></div>
+          <div><div class="nfe-label">VLR UNIT (R$) *</div><input id="nfe-item-preco" class="nfe-input" type="number" min="0" step="0.01" placeholder="0,00" oninput="_nfeCalcManual()"></div>
+          <div><div class="nfe-label">IMPOSTO (R$)</div><input id="nfe-item-ipi" class="nfe-input" type="number" min="0" step="0.01" placeholder="0,00" oninput="_nfeCalcManual()"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;align-items:flex-end;">
+          <div><div class="nfe-label">TOTAL DO ITEM</div><input id="nfe-item-total" class="nfe-input" readonly placeholder="—"></div>
+          <button onclick="_nfeAdicionarItemManualForm()" style="background:#16a34a;border:none;color:#fff;padding:10px;border-radius:var(--r2);font-family:var(--mono);font-size:12px;font-weight:700;cursor:pointer;">+ ADICIONAR ITEM ou Enter</button>
+        </div>
+      </div>
+      <button onclick="_nfeToggleFormManual()" style="background:none;border:none;color:var(--w3);cursor:pointer;font-family:var(--mono);font-size:11px;letter-spacing:.3px;margin-bottom:14px;padding:0;">⊕ ADICIONAR ITEM MANUAL</button>
+      <div id="nfe-itens-area"><div style="text-align:center;color:var(--w4);padding:32px;font-size:13px;">Importe um XML ou adicione itens manualmente</div></div>
+      <div id="nfe-totais-area"></div>
+    </div>
+
+    <!-- BLOCO 3: FINANCEIRO -->
+    <div class="nfe-bloco">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+        <div class="nfe-bloco-num">3</div>
+        <div class="nfe-bloco-title">Financeiro — Duplicatas / Contas a Pagar</div>
+      </div>
+      <div id="nfe-dups-area"><div style="text-align:center;color:var(--w4);padding:24px;font-size:13px;">As parcelas aparecerão aqui após importar o XML, ou adicione manualmente abaixo.</div></div>
+      <div style="display:flex;gap:10px;align-items:flex-end;margin-top:16px;padding-top:16px;border-top:1px solid var(--ln3);">
+        <div style="flex:0 0 80px;"><div class="nfe-label">PARC.</div><input id="nfe-dup-n" class="nfe-input" placeholder="001"></div>
+        <div style="flex:1;"><div class="nfe-label">VENCIMENTO</div><input id="nfe-dup-venc" class="nfe-input" type="date"></div>
+        <div style="flex:1;"><div class="nfe-label">VALOR (R$)</div><input id="nfe-dup-val" class="nfe-input" type="number" min="0.01" step="0.01" placeholder="0,00"></div>
+        <button onclick="_nfeAdicionarDupManual()" style="background:var(--sf2);border:1px solid var(--ln3);color:var(--w);padding:10px 16px;border-radius:var(--r2);font-family:var(--mono);font-size:12px;cursor:pointer;white-space:nowrap;">+ Parcela</button>
+      </div>
+      <div id="nfe-dups-totais"></div>
+    </div>
+
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast-el"></div>
 
@@ -488,6 +619,10 @@ let AGENDA_ANO = new Date().getFullYear();
 let _agendaLista = [];
 let DESP_VISTA = 'lista'; // 'lista' | 'calendario'
 let _nfeDados = null;
+let _nfeItens  = [];
+let _nfeDups   = [];
+let _nfeVNF    = 0;
+let _nfeFrete  = 0;
 let _calSaidas = [];
 let _calEntradas = [];
 
@@ -887,7 +1022,7 @@ function _despPeriodBar(nomeMes, info) {
           <button class="vista-btn ${DESP_VISTA==='lista'?'on':''}" onclick="switchVistaDespesas('lista')">☰ Lista</button>
           <button class="vista-btn ${DESP_VISTA==='calendario'?'on':''}" onclick="switchVistaDespesas('calendario')">📅 Calendário</button>
         </div>
-        ${(PERFIL.role==='dono'||PERFIL.role==='gerente') ? `<button class="btn-cmd" style="background:#1e3a5f;border-color:#2d5a9e;color:#7eb8f7;" onclick="abrirImportarNFe()">📄 Lançar NF-e</button>` : ''}
+        ${(PERFIL.role==='dono'||PERFIL.role==='gerente') ? `<button class="btn-cmd" style="background:#1e3a5f;border-color:#2d5a9e;color:#7eb8f7;" onclick="abrirNovaNFe()">📄 Lançar NF-e</button>` : ''}
         <button class="btn-cmd btn-saida" onclick="novaDespesa()"><span style="font-family:var(--mono);font-size:16px;font-weight:800;">+</span> Nova Despesa</button>
       </div>
     </div>`;
@@ -1835,156 +1970,307 @@ async function salvarDespesa() {
   finally { _busy.salvarDesp = false; }
 }
 
-// ==================== IMPORTAR NF-e XML ====================
+// ==================== MÓDULO NOVA NF-e ====================
 
-function abrirImportarNFe() {
+function abrirNovaNFe() {
+  _nfeItens = []; _nfeDups = []; _nfeVNF = 0; _nfeFrete = 0;
+  const hoje = new Date().toISOString().split('T')[0];
+  ['nfe-numero','nfe-data-emissao','nfe-fornecedor','nfe-cnpj','nfe-obs'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('nfe-natureza').value = 'VENDA';
+  document.getElementById('nfe-data-recebimento').value = hoje;
+  document.getElementById('nfe-form-manual').style.display = 'none';
+  document.getElementById('nfe-colagem-area').style.display = 'none';
+  _nfeRenderItens();
+  _nfeRenderDups();
+  document.getElementById('view-nova-nfe').style.display = 'block';
+  document.getElementById('view-nova-nfe').scrollTop = 0;
+}
+
+function fecharNovaNFe() {
+  document.getElementById('view-nova-nfe').style.display = 'none';
+}
+
+function _nfeToggleFormManual() {
+  const el = document.getElementById('nfe-form-manual');
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  if (el.style.display === 'block') document.getElementById('nfe-item-desc').focus();
+}
+
+function _nfeToggleColagem() {
+  const el = document.getElementById('nfe-colagem-area');
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+// ---- XML ----
+function _nfeAbrirXML() {
   let inp = document.getElementById('_nfe-file-input');
   if (!inp) {
-    inp = document.createElement('input');
-    inp.type = 'file';
-    inp.id = '_nfe-file-input';
-    inp.accept = '.xml';
-    inp.style.display = 'none';
-    inp.onchange = e => { if (e.target.files[0]) _lerArquivoNFe(e.target.files[0]); inp.value=''; };
+    inp = document.createElement('input'); inp.type='file'; inp.id='_nfe-file-input';
+    inp.accept='.xml'; inp.style.display='none';
+    inp.onchange = e => { if(e.target.files[0]) _nfeLerArquivo(e.target.files[0]); inp.value=''; };
     document.body.appendChild(inp);
   }
   inp.click();
 }
 
-function _lerArquivoNFe(arquivo) {
+function _nfeLerArquivo(arquivo) {
   const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const dados = _parseNFeXML(e.target.result);
-      if (!dados) return;
-      _modalPreviewNFe(dados);
-    } catch(err) {
-      toast('Erro ao ler XML: '+err.message, 'err');
-      console.error('[_lerArquivoNFe]', err);
-    }
-  };
+  reader.onload = e => { try { _nfeParseXML(e.target.result); } catch(err) { toast('Erro ao ler XML: '+err.message,'err'); console.error(err); } };
   reader.readAsText(arquivo, 'UTF-8');
 }
 
-function _parseNFeXML(xmlText) {
+function _nfeParseXML(xmlText) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(xmlText, 'text/xml');
-  if (doc.querySelector('parsererror')) { toast('XML inválido ou corrompido','err'); return null; }
+  if (doc.querySelector('parsererror')) { toast('XML inválido ou corrompido','err'); return; }
 
-  const txt = el => el ? (el.textContent || '').trim() : '';
+  const txt = el => el ? (el.textContent||'').trim() : '';
+  const q   = (node, sel) => node ? node.querySelector(sel) : null;
 
-  // Fornecedor
+  // Cabeçalho
+  const ide  = doc.querySelector('ide');
   const emit = doc.querySelector('emit');
-  if (!emit) { toast('Tag <emit> não encontrada no XML','err'); return null; }
-  const xNome = txt(emit.querySelector('xNome')) || txt(emit.querySelector('xFant')) || 'Fornecedor';
-  const cnpj  = txt(emit.querySelector('CNPJ'));
-
-  // Número NF
-  const ide = doc.querySelector('ide');
-  const nNF = ide ? txt(ide.querySelector('nNF')) : '';
-
-  // Parcelas via <dup>
-  const dups = [...doc.querySelectorAll('dup')];
-  if (!dups.length) {
-    // Sem <dup>: tenta <fat> como parcela única
-    const fat = doc.querySelector('fat');
-    const vOrig = fat ? parseFloat(txt(fat.querySelector('vOrig'))) : 0;
-    const hoje = new Date().toISOString().split('T')[0];
-    if (!fat || vOrig <= 0) { toast('Nenhuma parcela (<dup> ou <fat>) encontrada na NF-e','err'); return null; }
-    return { xNome, cnpj, nNF, parcelas: [{ nDup:'001', dVenc: hoje, vDup: vOrig }] };
+  if (ide) {
+    document.getElementById('nfe-natureza').value = txt(q(ide,'natOp')) || 'VENDA';
+    document.getElementById('nfe-numero').value   = txt(q(ide,'nNF'));
+    const dhEmi = txt(q(ide,'dhEmi')) || txt(q(ide,'dEmi'));
+    if (dhEmi) document.getElementById('nfe-data-emissao').value = dhEmi.substring(0,10);
+  }
+  if (emit) {
+    document.getElementById('nfe-fornecedor').value = txt(q(emit,'xNome')) || txt(q(emit,'xFant'));
+    document.getElementById('nfe-cnpj').value = txt(q(emit,'CNPJ'));
   }
 
-  const parcelas = dups.map(d => ({
-    nDup: txt(d.querySelector('nDup')) || '?',
-    dVenc: txt(d.querySelector('dVenc')),
-    vDup: parseFloat(txt(d.querySelector('vDup'))) || 0
-  })).filter(p => p.vDup > 0);
+  // Totais da NF (fonte da verdade)
+  const icmsTot = doc.querySelector('ICMSTot');
+  _nfeVNF   = icmsTot ? parseFloat(txt(q(icmsTot,'vNF')))    || 0 : 0;
+  _nfeFrete = icmsTot ? parseFloat(txt(q(icmsTot,'vFrete'))) || 0 : 0;
 
-  if (!parcelas.length) { toast('Nenhum valor válido nas parcelas da NF-e','err'); return null; }
+  // Itens — totalItem = vProd + vIPI (impostos incluídos)
+  _nfeItens = [];
+  doc.querySelectorAll('det').forEach(det => {
+    const prod = q(det,'prod');
+    if (!prod) return;
+    const desc    = txt(q(prod,'xProd'));
+    const qtd     = parseFloat(txt(q(prod,'qCom')))   || parseFloat(txt(q(prod,'qTrib')))   || 1;
+    const preco   = parseFloat(txt(q(prod,'vUnCom'))) || parseFloat(txt(q(prod,'vUnTrib'))) || 0;
+    const unidade = txt(q(prod,'uCom')) || txt(q(prod,'uTrib')) || 'UN';
+    const vProd   = parseFloat(txt(q(prod,'vProd'))) || Math.round(qtd*preco*100)/100;
+    const cProd   = txt(q(prod,'cProd'));
+    // IPI: IPITrib (tributado) ou IPINT (não tributado)
+    const ipiNode = q(det,'IPI');
+    let vIPI = 0;
+    if (ipiNode) {
+      const ipiTrib = q(ipiNode,'IPITrib');
+      const ipiNT   = q(ipiNode,'IPINT');
+      vIPI = parseFloat(txt(q(ipiTrib||ipiNT||ipiNode,'vIPI'))) || 0;
+    }
+    const totalItem = Math.round((vProd + vIPI) * 100) / 100;
+    if (desc) _nfeItens.push({ desc, qtd, preco, unidade, vProd, vIPI, total: totalItem, cProd });
+  });
 
-  return { xNome, cnpj, nNF, parcelas };
+  // Duplicatas
+  _nfeDups = [];
+  const dups = [...doc.querySelectorAll('dup')];
+  if (dups.length) {
+    dups.forEach(d => {
+      const nDup = txt(q(d,'nDup')) || '?';
+      const dVenc = txt(q(d,'dVenc'));
+      const vDup = parseFloat(txt(q(d,'vDup'))) || 0;
+      if (vDup > 0) _nfeDups.push({ nDup, dVenc, vDup });
+    });
+  } else {
+    const fat = doc.querySelector('fat');
+    const vOrig = fat ? parseFloat(txt(q(fat,'vOrig'))) || 0 : 0;
+    if (_nfeVNF > 0 || vOrig > 0) {
+      _nfeDups.push({ nDup:'001', dVenc: new Date().toISOString().split('T')[0], vDup: _nfeVNF || vOrig });
+    }
+  }
+
+  _nfeRenderItens();
+  _nfeRenderDups();
+  toast('XML importado com sucesso');
 }
 
-function _modalPreviewNFe(dados) {
-  _nfeDados = dados;
-  const { xNome, cnpj, nNF, parcelas } = dados;
-  const total = parcelas.reduce((s,p) => s+p.vDup, 0);
+// ---- RENDER ITENS ----
+function _nfeRenderItens() {
+  const el = document.getElementById('nfe-itens-area');
+  const totEl = document.getElementById('nfe-totais-area');
+  if (!_nfeItens.length) {
+    el.innerHTML = `<div style="text-align:center;color:var(--w4);padding:32px;font-size:13px;">Importe um XML ou adicione itens manualmente</div>`;
+    totEl.innerHTML = '';
+    return;
+  }
+  const temIPI = _nfeItens.some(i => i.vIPI > 0);
+  el.innerHTML = `
+    <table class="nfe-tbl">
+      <thead><tr>
+        <th>DESCRIÇÃO</th><th style="text-align:right;">QTD</th><th style="text-align:center;">UN</th>
+        <th style="text-align:right;">VLR UNIT.</th>
+        ${temIPI ? '<th style="text-align:right;">IMPOSTO</th>' : ''}
+        <th style="text-align:right;">TOTAL</th><th style="width:32px;"></th>
+      </tr></thead>
+      <tbody>
+        ${_nfeItens.map((it,i) => `<tr>
+          <td>${esc(it.desc)}${it.cProd?`<br><span style="font-family:var(--mono);font-size:10px;color:var(--w4);">${esc(it.cProd)}</span>`:''}</td>
+          <td style="text-align:right;font-family:var(--mono);">${it.qtd}</td>
+          <td style="text-align:center;font-family:var(--mono);font-size:11px;color:var(--w3);">${esc(it.unidade)}</td>
+          <td style="text-align:right;font-family:var(--mono);">${fmt(it.preco)}</td>
+          ${temIPI ? `<td style="text-align:right;font-family:var(--mono);font-size:12px;color:var(--w3);">${it.vIPI>0?fmt(it.vIPI):'—'}</td>` : ''}
+          <td style="text-align:right;font-family:var(--mono);font-weight:700;">${fmt(it.total)}</td>
+          <td style="text-align:center;"><button onclick="_nfeRemoverItem(${i})" style="background:none;border:none;color:var(--w4);cursor:pointer;font-size:18px;line-height:1;padding:0;">×</button></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+
+  const totalBruto = _nfeItens.reduce((s,i)=>s+i.vProd,0);
+  const totalIPI   = _nfeItens.reduce((s,i)=>s+i.vIPI,0);
+  const totalItens = _nfeItens.reduce((s,i)=>s+i.total,0);
+  totEl.innerHTML = `
+    <div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:flex-end;padding:12px 6px 4px;border-top:1px solid var(--ln2);font-family:var(--mono);font-size:12px;color:var(--w3);">
+      <span>Produtos: <b style="color:var(--w);">${fmt(totalBruto)}</b></span>
+      ${temIPI ? `<span>IPI: <b style="color:var(--w);">${fmt(totalIPI)}</b></span>` : ''}
+      ${_nfeFrete > 0 ? `<span>Frete: <b style="color:var(--w);">${fmt(_nfeFrete)}</b></span>` : ''}
+      <span style="font-size:14px;color:var(--w);font-weight:700;">${_nfeVNF>0 ? `Total NF: <b>${fmt(_nfeVNF)}</b>` : `Total Itens: <b>${fmt(totalItens)}</b>`}</span>
+    </div>`;
+}
+
+function _nfeRemoverItem(idx) { _nfeItens.splice(idx,1); _nfeRenderItens(); }
+
+// ---- ITEM MANUAL ----
+function _nfeCalcManual() {
+  const qtd   = parseFloat(document.getElementById('nfe-item-qtd').value)   || 0;
+  const preco = parseFloat(document.getElementById('nfe-item-preco').value) || 0;
+  const ipi   = parseFloat(document.getElementById('nfe-item-ipi').value)   || 0;
+  const total = Math.round((qtd*preco + ipi)*100)/100;
+  document.getElementById('nfe-item-total').value = total > 0 ? fmt(total) : '';
+}
+
+function _nfeAdicionarItemManualForm() {
+  const desc  = document.getElementById('nfe-item-desc').value.trim().toUpperCase();
+  const qtd   = parseFloat(document.getElementById('nfe-item-qtd').value)   || 1;
+  const preco = parseFloat(document.getElementById('nfe-item-preco').value) || 0;
+  const ipi   = parseFloat(document.getElementById('nfe-item-ipi').value)   || 0;
+  const un    = document.getElementById('nfe-item-un').value.trim() || 'UN';
+  if (!desc || preco <= 0) { toast('Informe descrição e valor unitário','err'); return; }
+  const vProd = Math.round(qtd*preco*100)/100;
+  const total = Math.round((vProd+ipi)*100)/100;
+  _nfeItens.push({ desc, qtd, preco, unidade:un, vProd, vIPI:ipi, total, cProd:'' });
+  ['nfe-item-desc','nfe-item-qtd','nfe-item-preco','nfe-item-ipi','nfe-item-total'].forEach(id=>{
+    const el=document.getElementById(id); if(el){el.value=id==='nfe-item-qtd'?'1':'';}
+  });
+  _nfeRenderItens();
+  document.getElementById('nfe-item-desc').focus();
+}
+
+// ---- COLAR TEXTO (parser básico) ----
+function _nfeProcessarColagem() {
+  const txt = (document.getElementById('nfe-colagem-txt').value||'').trim();
+  if (!txt) return;
+  const linhas = txt.split('\n').map(l=>l.trim()).filter(Boolean);
+  let adicionados = 0;
+  linhas.forEach(linha => {
+    // Tenta padrão: "DESCRIÇÃO  QTD  UN  R$ VALOR"
+    const m = linha.match(/^(.+?)\s+(\d+[.,]?\d*)\s+(UN|PC|KG|LT|M|CX|SC|MT|M2|M3|PAR)\s+R?\$?\s*(\d+[.,]\d{2})/i);
+    if (m) {
+      const desc  = m[1].trim().toUpperCase();
+      const qtd   = parseFloat(m[2].replace(',','.'));
+      const un    = m[3].toUpperCase();
+      const preco = parseFloat(m[4].replace(',','.'));
+      _nfeItens.push({ desc, qtd, preco, unidade:un, vProd:Math.round(qtd*preco*100)/100, vIPI:0, total:Math.round(qtd*preco*100)/100, cProd:'' });
+      adicionados++;
+    }
+  });
+  if (adicionados) { _nfeRenderItens(); toast(adicionados+' item(ns) adicionado(s)'); }
+  else toast('Nenhum item reconhecido. Use o formato: Descrição  Qtd  UN  Valor','err');
+}
+
+// ---- RENDER DUPS ----
+function _nfeRenderDups() {
+  const el    = document.getElementById('nfe-dups-area');
+  const totEl = document.getElementById('nfe-dups-totais');
+  if (!_nfeDups.length) {
+    el.innerHTML = `<div style="text-align:center;color:var(--w4);padding:24px;font-size:13px;">As parcelas aparecerão aqui após importar o XML, ou adicione manualmente abaixo.</div>`;
+    totEl.innerHTML = '';
+    return;
+  }
   const fmtDt = d => d ? d.split('-').reverse().join('/') : '—';
-
-  document.getElementById('modal-box').innerHTML = `
-    <div class="modal-header">
-      <h3>Conferência da NF-e</h3>
-      <button class="panel-close" onclick="fecharModal()">×</button>
-    </div>
-
-    <div style="background:var(--sf2);border:1px solid var(--ln3);border-radius:var(--r2);padding:12px 14px;margin-bottom:14px;">
-      <div style="font-family:var(--mono);font-size:10px;color:var(--w3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Fornecedor identificado</div>
-      <div style="font-family:var(--head);font-size:15px;font-weight:700;">${esc(xNome)}</div>
-      ${cnpj ? `<div style="font-family:var(--mono);font-size:11px;color:var(--w3);margin-top:2px;">CNPJ: ${cnpj}</div>` : ''}
-      ${nNF  ? `<div style="font-family:var(--mono);font-size:11px;color:var(--w3);">NF nº ${nNF}</div>` : ''}
-    </div>
-
-    <div style="font-family:var(--mono);font-size:10px;color:var(--w3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">${parcelas.length} parcela(s) encontrada(s)</div>
-
-    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
-      ${parcelas.map(p => `
-        <div style="display:flex;justify-content:space-between;align-items:center;background:var(--sf2);border:1px solid var(--ln3);border-radius:var(--r2);padding:10px 14px;">
-          <div>
-            <span style="font-family:var(--mono);font-size:10px;color:var(--w3);">PARC. ${esc(p.nDup)}</span>
-            <div style="font-size:13px;color:var(--w);">Venc. ${fmtDt(p.dVenc)}</div>
-          </div>
-          <div style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--red);">${fmt(p.vDup)}</div>
-        </div>`).join('')}
-    </div>
-
-    <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:13px;padding:0 4px;margin-bottom:16px;">
-      <span style="color:var(--w3);">Total</span>
-      <span style="font-weight:700;color:var(--red);">${fmt(total)}</span>
-    </div>
-
-    <div style="background:rgba(250,204,21,.07);border:1px solid rgba(250,204,21,.35);border-radius:var(--r2);padding:12px 14px;margin-bottom:16px;">
-      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-family:var(--body);font-size:13px;color:var(--w);">
-        <input type="checkbox" id="nfe-check-conf" onchange="document.getElementById('nfe-btn-conf').disabled=!this.checked" style="width:18px;height:18px;accent-color:var(--green);cursor:pointer;">
-        Confirmo que as datas e valores conferem com a nota física
-      </label>
-    </div>
-
-    <button id="nfe-btn-conf" class="panel-btn-submit" disabled onclick="_confirmarNFe()">
-      Gerar Contas a Pagar (${parcelas.length} lançamento${parcelas.length>1?'s':''})
-    </button>
-  `;
-  document.getElementById('modal-overlay').classList.add('open');
+  const totalDups = _nfeDups.reduce((s,d)=>s+d.vDup,0);
+  const bate = _nfeVNF > 0 && Math.abs(_nfeVNF - totalDups) < 0.02;
+  const diff  = _nfeVNF > 0 ? Math.abs(_nfeVNF - totalDups) : 0;
+  el.innerHTML = `<div style="display:flex;flex-direction:column;gap:6px;">
+    ${_nfeDups.map((d,i) => `
+      <div style="display:flex;justify-content:space-between;align-items:center;background:var(--sf2);border:1px solid var(--ln3);border-radius:var(--r2);padding:10px 14px;">
+        <div style="display:flex;gap:16px;align-items:center;">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--w3);min-width:54px;">PARC. ${esc(d.nDup)}</span>
+          <span style="font-size:13px;">Venc. <b>${fmtDt(d.dVenc)}</b></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--red);">${fmt(d.vDup)}</span>
+          <button onclick="_nfeRemoverDup(${i})" style="background:none;border:none;color:var(--w4);cursor:pointer;font-size:18px;line-height:1;padding:0;">×</button>
+        </div>
+      </div>`).join('')}
+  </div>`;
+  totEl.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 4px 0;border-top:1px solid var(--ln2);margin-top:12px;">
+      <span style="font-family:var(--mono);font-size:12px;color:var(--w3);">Total Parcelas</span>
+      <div style="display:flex;align-items:center;gap:14px;">
+        ${_nfeVNF > 0 ? `<span style="font-family:var(--mono);font-size:11px;color:${bate?'#4ade80':'#FBBF24'};">${bate?'✓ Bate com total NF':'⚠ Difere do total NF em '+fmt(diff)}</span>` : ''}
+        <span style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--red);">${fmt(totalDups)}</span>
+      </div>
+    </div>`;
 }
 
-async function _confirmarNFe() {
-  const btn = document.getElementById('nfe-btn-conf');
-  if (btn) btn.disabled = true;
+function _nfeRemoverDup(idx) { _nfeDups.splice(idx,1); _nfeRenderDups(); }
 
-  const dados = _nfeDados;
-  if (!dados) { toast('Dados da NF-e não encontrados','err'); return; }
-  const { xNome, nNF, parcelas } = dados;
-  const hoje = new Date().toISOString();
+function _nfeAdicionarDupManual() {
+  const nDup  = document.getElementById('nfe-dup-n').value.trim() || String(_nfeDups.length+1).padStart(3,'0');
+  const dVenc = document.getElementById('nfe-dup-venc').value;
+  const vDup  = parseFloat(document.getElementById('nfe-dup-val').value) || 0;
+  if (!dVenc || vDup <= 0) { toast('Informe vencimento e valor','err'); return; }
+  _nfeDups.push({ nDup, dVenc, vDup });
+  ['nfe-dup-n','nfe-dup-venc','nfe-dup-val'].forEach(id=>{ document.getElementById(id).value=''; });
+  _nfeRenderDups();
+}
 
-  const rows = parcelas.map(p => ({
+// ---- SALVAR ----
+async function _nfeSalvarNota() {
+  const fornecedor = document.getElementById('nfe-fornecedor').value.trim();
+  const nNF        = document.getElementById('nfe-numero').value.trim();
+  const dataReceb  = document.getElementById('nfe-data-recebimento').value;
+  if (!fornecedor) { toast('Informe o fornecedor','err'); return; }
+  if (!nNF)        { toast('Informe o número da nota','err'); return; }
+  if (!_nfeDups.length) { toast('Adicione ao menos uma parcela no Bloco 3','err'); return; }
+
+  const btn = document.getElementById('nfe-btn-salvar');
+  if (btn) { btn.disabled=true; btn.textContent='Salvando...'; }
+
+  const createdAt = dataReceb ? new Date(dataReceb+'T12:00:00').toISOString() : new Date().toISOString();
+  const rows = _nfeDups.map(d => ({
     oficina_id: OFICINA_ID,
     tipo: 'saida',
     categoria: 'fornecedor',
-    descricao: `NF ${nNF} – Parc. ${p.nDup} – ${xNome}`.substring(0, 120),
-    valor: p.vDup,
+    descricao: `NF ${nNF} – Parc. ${d.nDup} – ${fornecedor}`.substring(0,120),
+    valor: d.vDup,
     forma_pagamento: 'boleto',
     created_by: PERFIL.id,
-    created_at: hoje,
-    data_vencimento: p.dVenc || hoje.split('T')[0],
+    created_at: createdAt,
+    data_vencimento: d.dVenc || createdAt.split('T')[0],
     pago: false
   }));
 
   const { error } = await db.from('caixa').insert(rows);
-  if (error) { toast('Erro ao salvar: '+error.message, 'err'); if(btn) btn.disabled=false; return; }
-
-  fecharModal();
-  toast(`${rows.length} conta${rows.length>1?'s':''} a pagar gerada${rows.length>1?'s':''}!`);
+  if (error) {
+    toast('Erro ao salvar: '+error.message,'err');
+    if(btn){ btn.disabled=false; btn.innerHTML='💾 SALVAR NOTA FISCAL'; }
+    return;
+  }
+  // Itens guardados em _nfeItens — hook para Fase 2 (estoque de peças)
+  fecharNovaNFe();
+  toast(`${rows.length} conta${rows.length>1?'s':''} a pagar gerada${rows.length>1?'s':''}! NF ${nNF} – ${fornecedor}`);
   carregar();
 }
+
 
 // ==================== LANÇAMENTO (SIDE PANEL) ====================
 let LANC_TIPO = 'entrada';
