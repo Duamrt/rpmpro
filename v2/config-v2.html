@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Configurações</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04081112"></script>
+<script src="js/infra.js?v=04081115"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -1037,7 +1037,7 @@ function renderTV(ct) {
         <div style="display:flex;gap:8px;">
           <input class="cfg-input" readonly value="${base}/tv.html?t=${o.tv_token}" id="tv-link-1" onclick="this.select()" style="flex:1;">
           <button class="cfg-btn cfg-btn-sm cfg-btn-secondary" onclick="navigator.clipboard.writeText(document.getElementById('tv-link-1').value);toast('Link copiado')">Copiar</button>
-          <button class="cfg-btn cfg-btn-sm cfg-btn-secondary" onclick="window.open(document.getElementById('tv-link-1').value,'_blank')">Abrir</button>
+          <button class="cfg-btn cfg-btn-sm cfg-btn-secondary" onclick="window.open(document.getElementById('tv-link-1').value+'&_='+Date.now(),'_blank')">Abrir</button>
         </div>
       </div>
       <div class="cfg-field">
@@ -1045,7 +1045,7 @@ function renderTV(ct) {
         <div style="display:flex;gap:8px;">
           <input class="cfg-input" readonly value="${base}/tv.html?t=${o.tv_token}&v=equipe" id="tv-link-2" onclick="this.select()" style="flex:1;">
           <button class="cfg-btn cfg-btn-sm cfg-btn-secondary" onclick="navigator.clipboard.writeText(document.getElementById('tv-link-2').value);toast('Link copiado')">Copiar</button>
-          <button class="cfg-btn cfg-btn-sm cfg-btn-secondary" onclick="window.open(document.getElementById('tv-link-2').value,'_blank')">Abrir</button>
+          <button class="cfg-btn cfg-btn-sm cfg-btn-secondary" onclick="window.open(document.getElementById('tv-link-2').value+'&_='+Date.now(),'_blank')">Abrir</button>
         </div>
       </div>
     </div>`;
