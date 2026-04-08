@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Financeiro</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04081126"></script>
+<script src="js/infra.js?v=04081131"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -355,9 +355,9 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 .nfe-tbl td{padding:9px 8px;border-bottom:1px solid var(--ln3);vertical-align:middle;}
 .nfe-tbl tr:last-child td{border-bottom:none;}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04081126"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04081126"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js?v=04081126"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04081131"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04081131"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js?v=04081131"></script>
 </head>
 <body>
 
@@ -977,16 +977,20 @@ async function carregarDespesas() {
     ${lista.map(d => {
       const t = catType(d.categoria);
       const dt = new Date(d.created_at).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
-      return '<div class="desp-row">'
+      const cbEsc = d.codigo_barras ? esc(d.codigo_barras) : '';
+      return '<div class="desp-row" style="flex-wrap:wrap;row-gap:0;">'
         + '<div class="desp-cat-tag desp-'+t+'">'+(t==='fixo'?'Fixo':t==='pessoal'?'Pessoal':'Variável')+'</div>'
         + '<div class="desp-body">'
         + '<div class="desp-nome">'+esc(d.descricao)+'</div>'
         + '<div class="desp-detail">'+esc(CAT_LABEL[d.categoria]||d.categoria||'')+' · '+esc(FORMA_LABEL[d.forma_pagamento]||d.forma_pagamento||'')+'</div>'
         + '</div>'
         + '<div class="desp-val">-'+fmt(d.valor)+'</div>'
-        + (d.codigo_barras ? '<button class="boleto-copy-btn" onclick="copiarCodBarras(event,\''+esc(d.codigo_barras)+'\')" title="Copiar código de barras">⎘</button>' : '')
         + '<div style="font-family:var(--mono);font-size:10px;color:var(--w4);flex-shrink:0;">'+dt+'</div>'
         + '<span style="font-size:14px;cursor:pointer;opacity:.3;flex-shrink:0;" onclick="excluirMov(\''+d.id+'\')" title="Excluir">✕</span>'
+        + (d.codigo_barras ? '<div style="width:100%;display:flex;align-items:center;gap:8px;padding:6px 8px 6px 0;margin-left:calc(72px);border-top:1px solid var(--ln2);">'
+          + '<span style="font-family:var(--mono);font-size:10px;color:var(--w3);flex:1;word-break:break-all;line-height:1.4;">'+cbEsc+'</span>'
+          + '<button onclick="copiarCodBarras(event,\''+cbEsc+'\')" style="flex-shrink:0;background:var(--amber);color:#000;border:none;border-radius:6px;padding:4px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--mono);">⎘ COPIAR</button>'
+          + '</div>' : '')
         + '</div>';
     }).join('')}
     ${!lista.length ? '<div style="text-align:center;padding:40px;font-family:var(--mono);font-size:12px;color:var(--w4);">Nenhuma despesa neste mês</div>' : ''}
@@ -2264,14 +2268,23 @@ function parsearLinhaDigitavel(texto) {
 
 async function copiarCodBarras(e, codigo) {
   e.stopPropagation();
+  const btn = e.currentTarget;
+  const orig = btn.innerHTML;
+  const ok = () => { btn.innerHTML = '✓ COPIADO'; btn.style.background='var(--green)'; setTimeout(()=>{btn.innerHTML=orig;btn.style.background='';},1800); };
   try {
     await navigator.clipboard.writeText(codigo);
-    const btn = e.currentTarget;
-    const orig = btn.innerHTML;
-    btn.innerHTML = '✓';
-    btn.style.color = 'var(--green)';
-    setTimeout(() => { btn.innerHTML = orig; btn.style.color = ''; }, 1500);
-  } catch(_) { toast('Não foi possível copiar','err'); }
+    ok();
+  } catch(_) {
+    // fallback via textarea
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = codigo; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      ok();
+    } catch(__) { toast('Não foi possível copiar','err'); }
+  }
 }
 
 // ==================== MODAL CÓDIGO DE BARRAS ====================
