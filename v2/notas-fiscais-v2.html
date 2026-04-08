@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Notas Fiscais</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04081144"></script>
+<script src="js/infra.js?v=04081618"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -72,6 +72,8 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 .nfe-input{width:100%;background:var(--sf2);border:1px solid var(--ln3);border-radius:var(--r2);padding:9px 12px;font-family:var(--body);font-size:13px;color:var(--w);box-sizing:border-box;}
 .nfe-input:focus{outline:none;border-color:var(--green);}
 .nfe-input[readonly]{cursor:default;background:rgba(255,255,255,.04);}
+.forn-wrap{position:relative;}
+.forn-drop{position:absolute;top:100%;left:0;right:0;background:var(--sf3);border:1px solid var(--ln3);border-radius:var(--r2);z-index:200;margin-top:2px;max-height:220px;overflow-y:auto;display:none;box-shadow:0 8px 24px rgba(0,0,0,.4);}
 .nfe-bloco{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:24px;margin-bottom:20px;}
 .nfe-bloco-num{background:var(--green);color:#000;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:700;flex-shrink:0;}
 .nfe-bloco-title{font-family:var(--head);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1px;}
@@ -126,6 +128,7 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
       <a class="nav-item" href="agendamentos-v2.html"><span class="nav-icon">📅</span>Agendamentos</a>
       <div class="nav-section">Catálogo</div>
       <a class="nav-item" href="catalogo-v2.html"><span class="nav-icon">🔧</span>Servicos / Pecas</a>
+      <a class="nav-item" href="fornecedores-v2.html"><span class="nav-icon">🏭</span>Fornecedores</a>
       <div class="nav-section">Financeiro</div>
       <a class="nav-item active"><span class="nav-icon">🧾</span>Nota Fiscal</a>
       <a class="nav-item" href="financeiro-v2.html"><span class="nav-icon">💰</span>Caixa</a>
@@ -192,7 +195,10 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
         </div>
         <div style="margin-top:14px;">
           <div class="nfe-label">FORNECEDOR *</div>
-          <input id="nfe-fornecedor" class="nfe-input" placeholder="NOME DO FORNECEDOR">
+          <div class="forn-wrap" id="forn-wrap">
+            <input id="nfe-fornecedor" class="nfe-input" placeholder="NOME DO FORNECEDOR" oninput="_fornecedorBuscar(this.value)" autocomplete="off">
+            <div class="forn-drop" id="forn-drop"></div>
+          </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;">
           <div>
@@ -284,6 +290,8 @@ let _nfeItens = [];
 let _nfeDups  = [];
 let _nfeVNF   = 0;
 let _nfeFrete = 0;
+let _nfeFornTimer = null;
+let _nfeFornId = null;
 
 // ── TOAST ──
 function toast(msg, tipo) {
@@ -348,6 +356,62 @@ async function init() {
   document.getElementById('loading').style.display = 'none';
   await _nfeCarregarHistorico();
 }
+
+// ── FORNECEDOR AUTOCOMPLETE ──
+async function _fornecedorBuscar(val) {
+  _nfeFornId = null;
+  const drop = document.getElementById('forn-drop');
+  if (!val || val.length < 2) { drop.style.display='none'; return; }
+  clearTimeout(_nfeFornTimer);
+  _nfeFornTimer = setTimeout(async () => {
+    const { data } = await db.from('fornecedores')
+      .select('id,nome,cnpj').eq('oficina_id', OFICINA_ID)
+      .ilike('nome', `%${val}%`).limit(6);
+    const rows = data || [];
+    const nomeSafe = esc(val).replace(/'/g,"\\'");
+    const criar = `<div onclick="_fornecedorCadastrarNovo()" style="padding:10px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;border-top:1px solid var(--ln2);" onmouseover="this.style.background='var(--sf4)'" onmouseout="this.style.background=''"><span style="color:var(--green);font-size:15px;">➕</span><div style="font-size:13px;">Cadastrar <b>"${esc(val)}"</b></div></div>`;
+    if (!rows.length) {
+      drop.innerHTML = criar;
+    } else {
+      drop.innerHTML = rows.map(f => {
+        const cnpjFmt = f.cnpj ? f.cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5') : '';
+        return `<div onclick="_fornecedorSelecionar('${f.id}','${esc(f.nome).replace(/'/g,"\\'")}','${f.cnpj||''}')" style="padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--ln3);" onmouseover="this.style.background='var(--sf4)'" onmouseout="this.style.background=''"><div style="font-size:13px;">${esc(f.nome)}</div>${cnpjFmt?`<div style="font-family:var(--mono);font-size:10px;color:var(--w4);">${cnpjFmt}</div>`:''}</div>`;
+      }).join('') + criar;
+    }
+    drop.style.display = 'block';
+  }, 300);
+}
+
+function _fornecedorSelecionar(id, nome, cnpj) {
+  _nfeFornId = id;
+  document.getElementById('nfe-fornecedor').value = nome;
+  if (cnpj) document.getElementById('nfe-cnpj').value = cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5');
+  document.getElementById('forn-drop').style.display = 'none';
+}
+
+async function _fornecedorCadastrarNovo() {
+  const nome = document.getElementById('nfe-fornecedor').value.trim();
+  const cnpjRaw = document.getElementById('nfe-cnpj').value.trim().replace(/\D/g,'');
+  if (!nome) { toast('Digite o nome do fornecedor primeiro','err'); return; }
+  // trava: checa duplicata por CNPJ
+  if (cnpjRaw) {
+    const { data: exist } = await db.from('fornecedores').select('id,nome').eq('oficina_id', OFICINA_ID).eq('cnpj', cnpjRaw).limit(1);
+    if (exist && exist.length) {
+      _nfeFornId = exist[0].id;
+      document.getElementById('nfe-fornecedor').value = exist[0].nome;
+      document.getElementById('forn-drop').style.display = 'none';
+      toast(`Fornecedor já existe: ${exist[0].nome}`);
+      return;
+    }
+  }
+  const { data: novo, error } = await db.from('fornecedores').insert({ oficina_id: OFICINA_ID, nome, cnpj: cnpjRaw || null }).select('id').single();
+  if (error) { toast('Erro ao cadastrar: '+error.message,'err'); return; }
+  _nfeFornId = novo.id;
+  document.getElementById('forn-drop').style.display = 'none';
+  toast('✓ Fornecedor cadastrado');
+}
+
+document.addEventListener('click', e => { if (!e.target.closest('#forn-wrap')) { const d = document.getElementById('forn-drop'); if(d) d.style.display='none'; } });
 
 // ── NF-e: XML ──
 function _nfeAbrirXML() {
@@ -585,7 +649,7 @@ function _nfeAdicionarDupManual() {
 
 // ── NF-e: LIMPAR ──
 function _nfeLimpar() {
-  _nfeItens=[]; _nfeDups=[]; _nfeVNF=0; _nfeFrete=0;
+  _nfeItens=[]; _nfeDups=[]; _nfeVNF=0; _nfeFrete=0; _nfeFornId=null;
   ['nfe-numero','nfe-data-emissao','nfe-fornecedor','nfe-cnpj','nfe-obs'].forEach(id=>{ document.getElementById(id).value=''; });
   document.getElementById('nfe-natureza').value = 'VENDA';
   document.getElementById('nfe-data-recebimento').value = new Date().toISOString().split('T')[0];
