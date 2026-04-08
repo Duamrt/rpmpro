@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Financeiro</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04071856"></script>
+<script src="js/infra.js?v=04080457"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -256,7 +256,15 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
   .rank-row>div:last-child{display:none;}
   .busca-input{width:100%;}
 }
+/* ── BOLETO SNIPER ── */
+.boleto-dropzone{border:1.5px dashed var(--ln3);border-radius:var(--r2);padding:18px 12px;text-align:center;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;color:var(--w3);font-family:var(--mono);}
+.boleto-dropzone:hover,.boleto-dropzone.drag-over{border-color:var(--amber);background:var(--amber-dim);color:var(--amber);}
+.boleto-sniper-ok{background:rgba(48,209,88,.08);border:1px solid rgba(48,209,88,.25);border-radius:var(--r2);padding:10px 14px;font-size:12px;font-family:var(--mono);color:var(--green);display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;}
+.boleto-sniper-err{background:var(--red-dim);border:1px solid rgba(255,59,48,.2);border-radius:var(--r2);padding:10px 14px;font-size:12px;font-family:var(--mono);color:var(--red);margin-top:8px;}
+.boleto-copy-btn{background:none;border:none;cursor:pointer;color:var(--w4);font-size:14px;padding:2px 4px;transition:color .12s;flex-shrink:0;}
+.boleto-copy-btn:hover{color:var(--amber);}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04080457"></script>
 </head>
 <body>
 
@@ -823,6 +831,7 @@ async function carregarDespesas() {
           <div class="desp-detail">${esc(CAT_LABEL[d.categoria]||d.categoria||'')} · ${esc(FORMA_LABEL[d.forma_pagamento]||d.forma_pagamento||'')}</div>
         </div>
         <div class="desp-val">-${fmt(d.valor)}</div>
+        ${d.codigo_barras ? `<button class="boleto-copy-btn" onclick="copiarCodBarras(event,'${esc(d.codigo_barras)}')" title="Copiar código de barras">⎘</button>` : ''}
         <div style="font-family:var(--mono);font-size:10px;color:var(--w4);flex-shrink:0;">${dt}</div>
         <span style="font-size:14px;cursor:pointer;opacity:.3;flex-shrink:0;" onclick="excluirMov('${d.id}')" title="Excluir">✕</span>
       </div>`;
@@ -1350,11 +1359,26 @@ async function novaDespesa() {
     .order('nome');
   const lista = membros || [];
 
+  _boletoFile = null;
   document.getElementById('modal-box').innerHTML = `
     <div class="modal-header">
       <h3>Nova Despesa</h3>
       <button class="panel-close" onclick="fecharModal()">×</button>
     </div>
+    <div class="panel-field">
+      <div class="panel-label">Boleto <span style="font-weight:400;color:var(--w4);">— PDF para preencher automaticamente</span></div>
+      <div class="boleto-dropzone" id="boleto-dropzone"
+        onclick="document.getElementById('boleto-file-input').click()"
+        ondragover="event.preventDefault();this.classList.add('drag-over')"
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="boletoOnDrop(event)">
+        <span style="font-size:22px;">📄</span>
+        <span>Arraste o PDF do boleto ou clique aqui</span>
+      </div>
+      <input type="file" id="boleto-file-input" accept=".pdf" style="display:none" onchange="boletoOnFile(this.files[0])">
+      <div id="boleto-sniper-result"></div>
+    </div>
+    <input type="hidden" id="desp-codigo-barras">
     <div class="panel-field">
       <div class="panel-label">Categoria</div>
       <select class="panel-input" id="desp-cat" onchange="toggleMembro()" style="font-family:var(--body);">
@@ -1424,14 +1448,32 @@ async function salvarDespesa() {
   if (!desc || valor <= 0) { toast('Preencha descrição e valor','err'); return; }
   if (cat === 'vale' && !membroId) { toast('Selecione o funcionário','err'); return; }
 
+  const codigoBarras = document.getElementById('desp-codigo-barras')?.value?.trim() || null;
+
   if (_busy.salvarDesp) return;
   _busy.salvarDesp = true;
+
+  // Upload boleto para Storage (se arquivo presente)
+  let urlAnexo = null;
+  if (_boletoFile) {
+    try {
+      const ext = _boletoFile.name.split('.').pop();
+      const path = `${OFICINA_ID}/${Date.now()}.${ext}`;
+      const { data: up, error: upErr } = await db.storage.from('boletos').upload(path, _boletoFile, { upsert: false });
+      if (!upErr && up) {
+        const { data: pub } = db.storage.from('boletos').getPublicUrl(path);
+        urlAnexo = pub?.publicUrl || null;
+      }
+    } catch(_) {}
+  }
+
   try {
   const { error } = await db.from('caixa').insert({
     oficina_id: OFICINA_ID, tipo:'saida', categoria:cat,
     descricao:desc, valor, forma_pagamento:document.getElementById('desp-forma').value,
     membro_id: cat==='vale' ? membroId : null, created_by: PERFIL.id,
-    created_at: data ? new Date(data+'T12:00:00').toISOString() : new Date().toISOString()
+    created_at: data ? new Date(data+'T12:00:00').toISOString() : new Date().toISOString(),
+    codigo_barras: codigoBarras, url_anexo: urlAnexo
   });
 
   if (error) { toast('Erro: '+error.message,'err'); return; }
@@ -1613,6 +1655,104 @@ async function init() {
     .subscribe();
 
   document.getElementById('loading').style.display = 'none';
+}
+
+// ==================== BOLETO SNIPER ====================
+let _boletoFile = null;
+
+function boletoOnDrop(e) {
+  e.preventDefault();
+  document.getElementById('boleto-dropzone').classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f) boletoOnFile(f);
+}
+
+async function boletoOnFile(arquivo) {
+  if (!arquivo) return;
+  _boletoFile = arquivo;
+  const res = document.getElementById('boleto-sniper-result');
+  if (!res) return;
+  res.innerHTML = `<div class="boleto-sniper-err" style="color:var(--w4);">Lendo boleto...</div>`;
+
+  try {
+    const resultado = await extrairDadosBoleto(arquivo);
+    if (!resultado) {
+      res.innerHTML = `<div class="boleto-sniper-err">Linha digitável não encontrada — preencha manualmente.</div>`;
+      return;
+    }
+    const { valor, vencimento, codigo } = resultado;
+    document.getElementById('desp-codigo-barras').value = codigo;
+    if (valor > 0) document.getElementById('desp-valor').value = valor.toFixed(2);
+    if (vencimento) document.getElementById('desp-data').value = vencimento;
+    document.getElementById('desp-forma').value = 'boleto';
+
+    const vencStr = vencimento
+      ? new Date(vencimento + 'T12:00:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' })
+      : 'sem vencimento';
+    res.innerHTML = `
+      <div class="boleto-sniper-ok">
+        <span>✅ Boleto detectado</span>
+        ${valor > 0 ? `<span style="font-weight:700;">R$ ${valor.toFixed(2).replace('.',',')}</span>` : ''}
+        <span style="color:var(--w3);">Venc. ${vencStr}</span>
+        <span style="font-size:10px;color:var(--w4);word-break:break-all;">${codigo.slice(0,30)}...</span>
+      </div>`;
+  } catch (err) {
+    console.error('[BoletoSniper]', err);
+    res.innerHTML = `<div class="boleto-sniper-err">Erro ao ler PDF — preencha manualmente.</div>`;
+  }
+}
+
+async function extrairDadosBoleto(arquivo) {
+  if (!arquivo.type.includes('pdf')) return null;
+  if (typeof pdfjsLib === 'undefined') { console.error('[BoletoSniper] pdf.js não carregado'); return null; }
+
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  const buffer = await arquivo.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+  let textoTotal = '';
+
+  for (let i = 1; i <= Math.min(pdf.numPages, 3); i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    textoTotal += content.items.map(item => item.str).join(' ') + ' ';
+  }
+
+  return parsearLinhaDigitavel(textoTotal);
+}
+
+function parsearLinhaDigitavel(texto) {
+  const t = texto.replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ');
+  // Padrão bancário FEBRABAN: AAAAA.BBBBB CCCCC.CCCCCC DDDDD.DDDDDD E VVVVDDDDDDDDDD
+  const re = /(\d{4,5})[.\s](\d{4,5})\s+(\d{4,5})[.\s](\d{5,6})\s+(\d{4,5})[.\s](\d{5,6})\s+(\d)\s+(\d{4})(\d{10})/;
+  const m = t.match(re);
+  if (!m) return null;
+
+  const fator = parseInt(m[8]);
+  const centavos = parseInt(m[9]);
+  const valor = centavos / 100;
+
+  let vencimento = null;
+  if (fator > 0) {
+    const base = new Date('1997-10-07T12:00:00-03:00');
+    base.setDate(base.getDate() + fator);
+    vencimento = base.toISOString().split('T')[0];
+  }
+
+  const codigo = `${m[1]}.${m[2]} ${m[3]}.${m[4]} ${m[5]}.${m[6]} ${m[7]} ${m[8]}${m[9]}`;
+  return { valor, vencimento, codigo };
+}
+
+async function copiarCodBarras(e, codigo) {
+  e.stopPropagation();
+  try {
+    await navigator.clipboard.writeText(codigo);
+    const btn = e.currentTarget;
+    const orig = btn.innerHTML;
+    btn.innerHTML = '✓';
+    btn.style.color = 'var(--green)';
+    setTimeout(() => { btn.innerHTML = orig; btn.style.color = ''; }, 1500);
+  } catch(_) { toast('Não foi possível copiar','err'); }
 }
 
 init();
