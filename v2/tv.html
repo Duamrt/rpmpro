@@ -4,85 +4,164 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RPM Pro — Painel da Oficina</title>
+  <link rel="icon" type="image/svg+xml" href="../assets/icon-192.svg">
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    :root { --bg: #0a0a0a; --card-bg: #161616; --border: #2a2a2a; --text: #f5f5f5; --text-muted: #888; --amber: #D97706; }
-    body { font-family: 'Barlow Condensed', 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); overflow: hidden; height: 100vh; cursor: none; }
-
-    .tv-header {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 16px 32px; border-bottom: 2px solid var(--amber);
-      background: linear-gradient(180deg, #111 0%, var(--bg) 100%);
+    :root {
+      --bg: #0a0a0a; --card-bg: #161616; --border: #2a2a2a;
+      --text: #f5f5f5; --text-muted: #888; --amber: #D97706;
+      --hdr-h: 80px; --bar-h: 32px;
     }
-    .tv-header h1 { font-size: 28px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; }
-    .tv-header h1 span { color: var(--amber); }
-    .tv-clock { font-size: 32px; font-weight: 700; color: var(--amber); font-variant-numeric: tabular-nums; }
-    .tv-subtitle { font-size: 13px; color: var(--text-muted); }
-    .tv-info { font-size: 14px; color: var(--text-muted); text-align: right; }
+    body {
+      font-family: 'Barlow Condensed', 'Segoe UI', sans-serif;
+      background: var(--bg); color: var(--text);
+      overflow: hidden; height: 100vh; cursor: none;
+    }
 
-    .tv-board { display: flex; gap: 0; height: calc(100vh - 80px); overflow: hidden; }
+    /* ── HEADER ── */
+    .tv-header {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      height: var(--hdr-h);
+      padding: 0 28px;
+      background: #111;
+      border-bottom: 3px solid var(--amber);
+    }
+    .tv-hdr-left { display: flex; align-items: center; gap: 14px; }
+    .tv-hdr-logo { height: 48px; border-radius: 6px; }
+    .tv-hdr-nome { font-size: 22px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; }
+    .tv-hdr-nome span { color: var(--amber); }
+    .tv-hdr-center { text-align: center; }
+    .tv-clock { font-size: 38px; font-weight: 800; color: var(--amber); font-variant-numeric: tabular-nums; line-height: 1; }
+    .tv-veiculos { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+    .tv-hdr-right { text-align: right; }
+    .tv-rpm-brand { font-size: 22px; font-weight: 800; letter-spacing: 3px; color: var(--amber); }
+    .tv-rpm-sub { font-size: 11px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+
+    /* ── BOARD ── */
+    .tv-board {
+      display: flex; gap: 0;
+      height: calc(100vh - var(--hdr-h) - var(--bar-h));
+      overflow: hidden;
+    }
     .tv-col { flex: 1; border-right: 1px solid var(--border); display: flex; flex-direction: column; min-width: 0; }
     .tv-col:last-child { border-right: none; }
-    .tv-col-header { padding: 14px 12px; text-align: center; border-bottom: 1px solid var(--border); background: #111; }
-    .tv-col-header .tv-col-icon { font-size: 22px; }
-    .tv-col-header .tv-col-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
-    .tv-col-header .tv-col-count {
-      display: inline-block; background: var(--amber); color: #000; font-weight: 800;
-      font-size: 13px; width: 24px; height: 24px; line-height: 24px; border-radius: 50%; margin-left: 6px;
-    }
-    /* Modo equipe: header com borda colorida */
-    .tv-col-header-equipe { padding: 16px 12px; text-align: center; background: #111; }
-    .tv-col-header-equipe .tv-mec-nome { font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
-    .tv-col-header-equipe .tv-mec-cargo { font-size: 11px; color: #888; text-transform: uppercase; margin-top: 2px; }
-    .tv-col-header-equipe .tv-mec-count {
-      display: inline-block; color: #000; font-weight: 800;
-      font-size: 14px; width: 28px; height: 28px; line-height: 28px; border-radius: 50%; margin-top: 6px;
+
+    /* ── COLUNA HEADER ── */
+    .tv-col-header { text-align: center; background: #111; border-bottom: 1px solid var(--border); }
+    .tv-col-color-bar { height: 4px; width: 100%; }
+    .tv-col-header-inner { padding: 10px 8px 12px; }
+    .tv-col-icon { font-size: 20px; line-height: 1; }
+    .tv-col-label { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+    .tv-col-count {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 26px; height: 26px; border-radius: 50%;
+      color: #000; font-weight: 800; font-size: 14px; margin-left: 6px;
+      vertical-align: middle;
     }
 
-    .tv-col-body { flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 8px; }
+    /* ── COLUNA EQUIPE HEADER ── */
+    .tv-col-header-equipe { text-align: center; background: #111; border-bottom: 1px solid var(--border); }
+    .tv-col-mec-inner { padding: 10px 8px 12px; }
+    .tv-mec-nome { font-size: 17px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+    .tv-mec-cargo { font-size: 11px; color: #888; text-transform: uppercase; margin-top: 2px; }
+    .tv-mec-count {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; border-radius: 50%;
+      color: #000; font-weight: 800; font-size: 14px; margin-top: 6px;
+    }
+
+    /* ── CARDS ── */
+    .tv-col-body { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
     .tv-col-body::-webkit-scrollbar { width: 0; }
 
-    .tv-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; animation: slideIn 0.4s ease; }
-    @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    /* Placa Mercosul — igual ao pátio */
-    .tv-placa{display:inline-flex;flex-direction:column;background:#FFF;border-radius:4px;overflow:hidden;border:2px solid #C8C8C8;line-height:1;margin-bottom:8px;}
-    .tv-placa-topo{background:#003399;padding:2px 8px;display:flex;align-items:center;justify-content:space-between;gap:4px;}
-    .tv-placa-topo-br{font-family:monospace;font-size:7px;font-weight:700;color:#fff;letter-spacing:.5px;}
-    .tv-placa-flag{display:flex;gap:1px;}
-    .tv-placa-flag span{display:block;width:4px;height:7px;border-radius:1px;}
-    .tv-placa-codigo{padding:3px 10px 5px;font-family:monospace;font-size:20px;font-weight:800;color:#1A1A1A;letter-spacing:3px;text-align:center;}
-    .tv-card-placa { font-size: 22px; font-weight: 800; color: var(--amber); letter-spacing: 1px; }
-    .tv-card-veiculo { font-size: 14px; color: var(--text); margin-top: 2px; }
-    .tv-card-info { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 12px; color: var(--text-muted); }
-    .tv-card-tempo { font-weight: 600; }
+    .tv-card {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 12px;
+      display: flex; flex-direction: column; align-items: center;
+      animation: slideIn 0.4s ease;
+    }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Placa Mercosul — grande para TV */
+    .tv-placa {
+      display: flex; flex-direction: column;
+      background: #FFF; border-radius: 6px; overflow: hidden;
+      border: 3px solid #C8C8C8; margin-bottom: 10px;
+    }
+    .tv-placa-topo {
+      background: #003399; padding: 3px 12px;
+      display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    }
+    .tv-placa-topo-br { font-family: monospace; font-size: 9px; font-weight: 700; color: #fff; letter-spacing: .5px; }
+    .tv-placa-flag { display: flex; gap: 2px; }
+    .tv-placa-flag span { display: block; width: 6px; height: 10px; border-radius: 1px; }
+    .tv-placa-codigo {
+      padding: 4px 16px 8px; font-family: monospace;
+      font-size: 34px; font-weight: 800; color: #1A1A1A;
+      letter-spacing: 4px; text-align: center;
+    }
+
+    .tv-card-veiculo {
+      font-size: 15px; font-weight: 700; color: var(--text);
+      text-align: center; text-transform: uppercase; margin-bottom: 8px;
+    }
+    .tv-card-footer {
+      display: flex; justify-content: space-between; align-items: center;
+      width: 100%; font-size: 13px; color: var(--text-muted);
+      border-top: 1px solid var(--border); padding-top: 8px;
+    }
+    .tv-card-mec { display: flex; align-items: center; gap: 4px; }
+    .tv-card-tempo { font-weight: 700; }
     .tv-card-tempo.alerta { color: #eab308; }
     .tv-card-tempo.critico { color: #ef4444; }
 
     /* Badges de status (modo equipe) */
-    .tv-badge { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .tv-badge-entrada { background: rgba(37,99,235,0.15); color: #60a5fa; }
-    .tv-badge-diagnostico { background: rgba(234,179,8,0.15); color: #eab308; }
-    .tv-badge-orcamento { background: rgba(220,38,38,0.15); color: #f87171; }
-    .tv-badge-aprovada { background: rgba(22,163,106,0.15); color: #4ade80; }
-    .tv-badge-aguardando_peca { background: rgba(153,153,153,0.15); color: #999; }
-    .tv-badge-execucao { background: rgba(22,163,106,0.15); color: #4ade80; }
-    .tv-badge-pronto { background: rgba(200,200,200,0.15); color: #ccc; }
-
-    .tv-empty { text-align: center; color: #333; font-size: 14px; padding: 20px; font-style: italic; }
-
-    .tv-statusbar {
-      position: fixed; bottom: 0; left: 0; right: 0;
-      display: flex; justify-content: space-between; padding: 6px 32px;
-      background: #111; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-muted);
+    .tv-badge {
+      font-size: 11px; font-weight: 700; padding: 3px 10px;
+      border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;
     }
-    .tv-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #16a34a; margin-right: 6px; animation: blink 2s infinite; }
+    .tv-badge-entrada        { background: rgba(59,130,246,.15);  color: #60a5fa; }
+    .tv-badge-diagnostico    { background: rgba(245,158,11,.15);  color: #fbbf24; }
+    .tv-badge-orcamento      { background: rgba(249,115,22,.15);  color: #fb923c; }
+    .tv-badge-aprovada       { background: rgba(34,197,94,.15);   color: #4ade80; }
+    .tv-badge-aguardando_peca{ background: rgba(139,92,246,.15);  color: #a78bfa; }
+    .tv-badge-execucao       { background: rgba(16,185,129,.15);  color: #34d399; }
+    .tv-badge-pronto         { background: rgba(34,197,94,.15);   color: #4ade80; }
+
+    .tv-empty { text-align: center; color: #333; font-size: 22px; padding: 24px; }
+
+    /* ── STATUS BAR ── */
+    .tv-statusbar {
+      position: fixed; bottom: 0; left: 0; right: 0; height: var(--bar-h);
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0 28px; background: #111; border-top: 1px solid var(--border);
+      font-size: 12px; color: var(--text-muted);
+    }
+    .tv-dot {
+      display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+      background: #16a34a; margin-right: 6px; animation: blink 2s infinite;
+    }
     @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-    .tv-loading { display: flex; align-items: center; justify-content: center; height: 100vh; font-size: 24px; color: var(--amber); flex-direction: column; gap: 16px; }
-    .tv-loading .spinner { width: 48px; height: 48px; border: 4px solid var(--border); border-top-color: var(--amber); border-radius: 50%; animation: spin 1s linear infinite; }
+    /* ── LOADING / ERRO ── */
+    .tv-loading {
+      display: flex; align-items: center; justify-content: center;
+      height: 100vh; font-size: 24px; color: var(--amber);
+      flex-direction: column; gap: 16px;
+    }
+    .tv-loading .spinner {
+      width: 48px; height: 48px; border: 4px solid var(--border);
+      border-top-color: var(--amber); border-radius: 50%; animation: spin 1s linear infinite;
+    }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .tv-erro { display: flex; align-items: center; justify-content: center; height: 100vh; font-size: 20px; color: #ef4444; flex-direction: column; gap: 12px; }
+    .tv-erro {
+      display: flex; align-items: center; justify-content: center;
+      height: 100vh; font-size: 20px; color: #ef4444;
+      flex-direction: column; gap: 12px;
+    }
   </style>
 </head>
 <body>
@@ -90,18 +169,24 @@
     <div class="tv-loading"><div class="spinner"></div><div>Conectando ao painel...</div></div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.js?v=04081103"></script>
   <script>
-    const TV = {
+    // Fallback para browsers sem URLSearchParams (TVs antigas)
+    function _getParam(name) {
+      var match = RegExp('[?&]' + name + '=([^&]*)').exec(window.location.search);
+      return match ? decodeURIComponent(match[1].replace(/\+/g, ' ')) : null;
+    }
+
+    var _TV_VER = 'v04081300';
+    var TV = {
       db: null,
       oficinaId: null,
       oficinaNome: '',
       _logoUrl: '',
-      _modo: 'recepcao', // 'recepcao' ou 'equipe'
+      _modo: 'recepcao',
       _interval: null,
       _mecanicos: [],
 
-      // Cores fixas por índice de mecânico
       _cores: ['#3b82f6','#f59e0b','#10b981','#8b5cf6','#ef4444','#06b6d4','#ec4899','#84cc16','#f97316','#6366f1'],
 
       _statusLabel: {
@@ -110,137 +195,155 @@
       },
 
       colunas: [
-        { status: 'entrada', label: 'Aguardando Avaliação', icon: '🔍' },
-        { status: 'diagnostico', label: 'Em Diagnóstico', icon: '🔧' },
-        { status: 'orcamento', label: 'Orçamento', icon: '📋' },
-        { status: 'aguardando_peca', label: 'Aguard. Peça', icon: '📦' },
-        { status: 'execucao', label: 'Em Execução', icon: '⚙️' },
-        { status: 'pronto', label: 'Pronto p/ Retirar', icon: '✅' },
+        { status: 'entrada',         label: 'Aguardando Avaliação', icon: '🔍', cor: '#3b82f6' },
+        { status: 'diagnostico',     label: 'Em Diagnóstico',       icon: '🔧', cor: '#f59e0b' },
+        { status: 'orcamento',       label: 'Orçamento',            icon: '📋', cor: '#f97316' },
+        { status: 'aguardando_peca', label: 'Aguard. Peça',         icon: '📦', cor: '#8b5cf6' },
+        { status: 'execucao',        label: 'Em Execução',          icon: '⚙️', cor: '#10b981' },
+        { status: 'pronto',          label: 'Pronto p/ Retirar',    icon: '✅', cor: '#22c55e' }
       ],
 
       _roleLabel: { dono: 'Gestor', mecanico: 'Mecânico', aux_mecanico: 'Aux. Mecânico', gerente: 'Gerente', atendente: 'Atendente', aux_admin: 'Adm.' },
 
-      async init() {
-        const params = new URLSearchParams(location.search);
-        const token = params.get('t');
-        if (!token) { this._erro('Link inválido. Gere o link na configuração da oficina.'); return; }
-        this._modo = params.get('v') === 'equipe' ? 'equipe' : 'recepcao';
+      init: function() {
+        var self = this;
+        var token = _getParam('t');
+        if (!token) { self._erro('Link inválido. Gere o link na configuração da oficina.'); return Promise.resolve(); }
+        self._modo = _getParam('v') === 'equipe' ? 'equipe' : 'recepcao';
 
-        const SUPABASE_URL = 'https://roeeyypssutzfzzkypsq.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZWV5eXBzc3V0emZ6emt5cHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MTk0MTgsImV4cCI6MjA5MDM5NTQxOH0.9oCOmABUTXox3FaRViD2zcUaqv94VfOJFMQYz_fcJi4';
-        this.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        var SUPABASE_URL = 'https://roeeyypssutzfzzkypsq.supabase.co';
+        var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZWV5eXBzc3V0emZ6emt5cHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MTk0MTgsImV4cCI6MjA5MDM5NTQxOH0.9oCOmABUTXox3FaRViD2zcUaqv94VfOJFMQYz_fcJi4';
+        self.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        const { data: oficina } = await this.db.from('oficinas')
+        return self.db.from('oficinas')
           .select('id, nome, logo_url')
           .eq('tv_token', token)
-          .maybeSingle();
+          .maybeSingle()
+          .then(function(res) {
+            var oficina = res.data;
+            if (!oficina) { self._erro('Token inválido ou oficina não encontrada.'); return; }
 
-        if (!oficina) { this._erro('Token inválido ou oficina não encontrada.'); return; }
+            self.oficinaId = oficina.id;
+            self.oficinaNome = oficina.nome;
+            self._logoUrl = oficina.logo_url || '';
 
-        this.oficinaId = oficina.id;
-        this.oficinaNome = oficina.nome;
-        this._logoUrl = oficina.logo_url || '';
+            var next = Promise.resolve();
+            if (self._modo === 'equipe') {
+              next = self.db.from('profiles')
+                .select('id, nome, role')
+                .eq('oficina_id', self.oficinaId)
+                .in('role', ['mecanico', 'aux_mecanico', 'dono', 'gerente'])
+                .eq('ativo', true)
+                .order('nome')
+                .then(function(r) { self._mecanicos = r.data || []; });
+            }
 
-        // Modo equipe: busca mecânicos
-        if (this._modo === 'equipe') {
-          const { data: mecs } = await this.db.from('profiles')
-            .select('id, nome, role')
-            .eq('oficina_id', this.oficinaId)
-            .in('role', ['mecanico', 'aux_mecanico', 'dono', 'gerente'])
-            .eq('ativo', true)
-            .order('nome');
-          this._mecanicos = mecs || [];
-        }
-
-        document.title = `RPM Pro — ${this._modo === 'equipe' ? 'Equipe' : 'Painel'} · ${oficina.nome}`;
-        await this.carregar();
-        this._interval = setInterval(() => this.carregar(), 30000);
-        this._iniciarRelogio();
-        this._iniciarRealtime();
+            return next.then(function() {
+              document.title = 'RPM Pro — ' + (self._modo === 'equipe' ? 'Equipe' : 'Painel') + ' · ' + oficina.nome;
+              return self.carregar().then(function() {
+                self._interval = setInterval(function() { self.carregar(); }, 30000);
+                self._iniciarRelogio();
+                self._iniciarRealtime();
+              });
+            });
+          });
       },
 
-      async carregar() {
-        const { data: lista, error } = await this.db.from('ordens_servico')
+      carregar: function() {
+        var self = this;
+        return self.db.from('ordens_servico')
           .select('id, status, created_at, mecanico_id, veiculos(placa, marca, modelo, cor), clientes(nome), profiles!ordens_servico_mecanico_id_fkey(nome)')
-          .eq('oficina_id', this.oficinaId)
+          .eq('oficina_id', self.oficinaId)
           .not('status', 'in', '("entregue","cancelada")')
-          .order('created_at', { ascending: true });
-
-        if (error) { console.error(error); return; }
-
-        if (this._modo === 'equipe') {
-          this._renderEquipe(lista || []);
-        } else {
-          this._renderRecepcao(lista || []);
-        }
+          .order('created_at', { ascending: true })
+          .then(function(res) {
+            if (res.error) { console.error(res.error); return; }
+            var lista = res.data || [];
+            if (self._modo === 'equipe') {
+              self._renderEquipe(lista);
+            } else {
+              self._renderRecepcao(lista);
+            }
+          });
       },
 
-      // ========== MODO RECEPÇÃO (por status) ==========
-      _renderRecepcao(lista) {
-        const grupos = {};
-        this.colunas.forEach(c => grupos[c.status] = []);
-        lista.forEach(os => { if (grupos[os.status]) grupos[os.status].push(os); });
-        const total = lista.length;
-
-        document.getElementById('tv-app').innerHTML = `
-          <div class="tv-header">
-            <div style="display:flex;align-items:center;gap:16px;">
-              ${this._logoUrl ? `<img src="${this._logoUrl}" style="height:40px;border-radius:6px;">` : ''}
-              <h1><span>⚙</span> ${this._esc(this.oficinaNome)}</h1>
-            </div>
-            <div style="text-align:right;">
-              <div class="tv-clock" id="tv-clock">${this._hora()}</div>
-              <div class="tv-info">${total} veículo${total !== 1 ? 's' : ''} no pátio</div>
-            </div>
-          </div>
-          <div class="tv-board">
-            ${this.colunas.map(col => {
-              const cards = grupos[col.status] || [];
-              return `
-                <div class="tv-col">
-                  <div class="tv-col-header">
-                    <span class="tv-col-icon">${col.icon}</span>
-                    <div class="tv-col-label">${col.label}${cards.length > 0 ? `<span class="tv-col-count">${cards.length}</span>` : ''}</div>
-                  </div>
-                  <div class="tv-col-body">
-                    ${cards.length ? cards.map(os => this._cardRecepcao(os)).join('') : '<div class="tv-empty">—</div>'}
-                  </div>
-                </div>`;
-            }).join('')}
-          </div>
-          <div class="tv-statusbar">
-            <div><span class="tv-dot"></span>Atualização automática a cada 30s</div>
-            <div>RPM Pro · Painel da Oficina</div>
-          </div>`;
+      // ========== HEADER HTML ==========
+      _headerHtml: function(total, subtitulo) {
+        var self = this;
+        var logoHtml = self._logoUrl ? '<img class="tv-hdr-logo" src="' + self._esc(self._logoUrl) + '">' : '';
+        var subHtml = subtitulo ? '<div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-top:1px;">' + subtitulo + '</div>' : '';
+        var veiStr = total + ' veículo' + (total !== 1 ? 's' : '') + ' no pátio';
+        return '<div class="tv-header">' +
+          '<div class="tv-hdr-left">' + logoHtml + '<div><div class="tv-hdr-nome"><span>⚙</span> ' + self._esc(self.oficinaNome) + '</div>' + subHtml + '</div></div>' +
+          '<div class="tv-hdr-center"><div class="tv-clock" id="tv-clock">' + self._hora() + '</div><div class="tv-veiculos">' + veiStr + '</div></div>' +
+          '<div class="tv-hdr-right"><div class="tv-rpm-brand">RPM PRO</div><div class="tv-rpm-sub">Gestão de Oficinas</div></div>' +
+        '</div>';
       },
 
-      _cardRecepcao(os) {
-        const placa = os.veiculos?.placa || '-';
-        const veiculo = [os.veiculos?.marca, os.veiculos?.modelo].filter(Boolean).join(' ');
-        const cor = os.veiculos?.cor || '';
-        const mecanico = os.profiles?.nome || '';
-        const tempo = this._tempo(os.created_at);
+      // ========== MODO RECEPÇÃO ==========
+      _renderRecepcao: function(lista) {
+        var self = this;
+        var grupos = {};
+        self.colunas.forEach(function(c) { grupos[c.status] = []; });
+        lista.forEach(function(os) { if (grupos[os.status]) grupos[os.status].push(os); });
+        var total = lista.length;
 
-        return `<div class="tv-card">
-          ${this._placaHtml(placa)}
-          <div class="tv-card-veiculo">${this._esc(veiculo)}${cor ? ' · ' + this._esc(cor) : ''}</div>
-          <div class="tv-card-info">
-            <span>${mecanico ? '🔧 ' + this._esc(mecanico) : ''}</span>
-            <span class="tv-card-tempo ${tempo.cls}">${tempo.txt}</span>
-          </div>
-        </div>`;
+        var colsHtml = self.colunas.map(function(col) {
+          var cards = grupos[col.status] || [];
+          var countHtml = cards.length > 0
+            ? '<span class="tv-col-count" style="background:' + col.cor + ';">' + cards.length + '</span>'
+            : '';
+          var cardsHtml = cards.length
+            ? cards.map(function(os) { return self._cardRecepcao(os); }).join('')
+            : '<div class="tv-empty">—</div>';
+          return '<div class="tv-col">' +
+            '<div class="tv-col-header">' +
+              '<div class="tv-col-color-bar" style="background:' + col.cor + ';"></div>' +
+              '<div class="tv-col-header-inner">' +
+                '<div class="tv-col-icon">' + col.icon + '</div>' +
+                '<div class="tv-col-label">' + col.label + countHtml + '</div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="tv-col-body">' + cardsHtml + '</div>' +
+          '</div>';
+        }).join('');
+
+        document.getElementById('tv-app').innerHTML =
+          self._headerHtml(total, null) +
+          '<div class="tv-board">' + colsHtml + '</div>' +
+          '<div class="tv-statusbar"><div><span class="tv-dot"></span>Atualização automática a cada 30s</div><div>' + _TV_VER + '</div></div>';
       },
 
-      // ========== MODO EQUIPE (por mecânico) ==========
-      _renderEquipe(lista) {
-        const total = lista.length;
+      _cardRecepcao: function(os) {
+        var self = this;
+        var v = os.veiculos || {};
+        var placa = v.placa || '-';
+        var veiculo = [v.marca, v.modelo].filter(Boolean).join(' ');
+        var cor = v.cor || '';
+        var mecanico = (os.profiles && os.profiles.nome) || '';
+        var tempo = self._tempo(os.created_at);
+        var veiculoStr = self._esc(veiculo) + (cor ? ' · ' + self._esc(cor) : '');
+        var mecHtml = mecanico ? '<span class="tv-card-mec">🔧 ' + self._esc(mecanico) + '</span>' : '<span></span>';
 
-        // Agrupa por mecanico_id
-        const porMec = {};
-        this._mecanicos.forEach(m => porMec[m.id] = []);
-        porMec['_sem'] = []; // sem mecânico
+        return '<div class="tv-card">' +
+          self._placaHtml(placa) +
+          '<div class="tv-card-veiculo">' + veiculoStr + '</div>' +
+          '<div class="tv-card-footer">' +
+            mecHtml +
+            '<span class="tv-card-tempo ' + tempo.cls + '">' + tempo.txt + '</span>' +
+          '</div>' +
+        '</div>';
+      },
 
-        lista.forEach(os => {
+      // ========== MODO EQUIPE ==========
+      _renderEquipe: function(lista) {
+        var self = this;
+        var total = lista.length;
+        var porMec = {};
+        self._mecanicos.forEach(function(m) { porMec[m.id] = []; });
+        porMec['_sem'] = [];
+
+        lista.forEach(function(os) {
           if (os.mecanico_id && porMec[os.mecanico_id]) {
             porMec[os.mecanico_id].push(os);
           } else {
@@ -248,114 +351,129 @@
           }
         });
 
-        // Monta colunas: mecânicos com OS + mecânicos sem OS + "sem mecânico"
-        const colsMec = this._mecanicos.map((m, i) => ({
-          id: m.id, nome: m.nome, role: m.role, cor: this._cores[i % this._cores.length], cards: porMec[m.id] || []
-        }));
-        // Só mostra "sem mecânico" se tiver OS sem atribuição
-        const semMec = porMec['_sem'];
+        var colsMec = self._mecanicos.map(function(m, i) {
+          return { id: m.id, nome: m.nome, role: m.role, cor: self._cores[i % self._cores.length], cards: porMec[m.id] || [] };
+        });
+        var semMec = porMec['_sem'];
 
-        document.getElementById('tv-app').innerHTML = `
-          <div class="tv-header">
-            <div style="display:flex;align-items:center;gap:16px;">
-              ${this._logoUrl ? `<img src="${this._logoUrl}" style="height:40px;border-radius:6px;">` : ''}
-              <div>
-                <h1><span>⚙</span> ${this._esc(this.oficinaNome)}</h1>
-                <div class="tv-subtitle">DEMANDA POR MECÂNICO</div>
-              </div>
-            </div>
-            <div style="text-align:right;">
-              <div class="tv-clock" id="tv-clock">${this._hora()}</div>
-              <div class="tv-info">${total} veículo${total !== 1 ? 's' : ''} no pátio</div>
-            </div>
-          </div>
-          <div class="tv-board">
-            ${colsMec.map(col => `
-              <div class="tv-col">
-                <div class="tv-col-header-equipe" style="border-bottom:3px solid ${col.cor};">
-                  <div class="tv-mec-nome">${this._esc(col.nome)}</div>
-                  <div class="tv-mec-cargo">${this._roleLabel[col.role] || col.role}</div>
-                  ${col.cards.length > 0 ? `<div class="tv-mec-count" style="background:${col.cor};">${col.cards.length}</div>` : ''}
-                </div>
-                <div class="tv-col-body">
-                  ${col.cards.length ? col.cards.map(os => this._cardEquipe(os, col.cor)).join('') : '<div class="tv-empty">Livre</div>'}
-                </div>
-              </div>`).join('')}
-            ${semMec.length ? `
-              <div class="tv-col">
-                <div class="tv-col-header-equipe" style="border-bottom:3px solid #666;">
-                  <div class="tv-mec-nome" style="color:#888;">Sem mecânico</div>
-                  <div class="tv-mec-cargo">A distribuir</div>
-                  <div class="tv-mec-count" style="background:#666;">${semMec.length}</div>
-                </div>
-                <div class="tv-col-body">
-                  ${semMec.map(os => this._cardEquipe(os, '#666')).join('')}
-                </div>
-              </div>` : ''}
-          </div>
-          <div class="tv-statusbar">
-            <div><span class="tv-dot"></span>Atualização automática a cada 30s</div>
-            <div>RPM Pro · Demanda por Mecânico</div>
-          </div>`;
+        var colsHtml = colsMec.map(function(col) {
+          var countHtml = col.cards.length > 0 ? '<div class="tv-mec-count" style="background:' + col.cor + ';">' + col.cards.length + '</div>' : '';
+          var cardsHtml = col.cards.length
+            ? col.cards.map(function(os) { return self._cardEquipe(os, col.cor); }).join('')
+            : '<div class="tv-empty">Livre</div>';
+          return '<div class="tv-col">' +
+            '<div class="tv-col-header-equipe">' +
+              '<div class="tv-col-color-bar" style="background:' + col.cor + ';"></div>' +
+              '<div class="tv-col-mec-inner">' +
+                '<div class="tv-mec-nome">' + self._esc(col.nome) + '</div>' +
+                '<div class="tv-mec-cargo">' + (self._roleLabel[col.role] || col.role) + '</div>' +
+                countHtml +
+              '</div>' +
+            '</div>' +
+            '<div class="tv-col-body">' + cardsHtml + '</div>' +
+          '</div>';
+        }).join('');
+
+        var semHtml = semMec.length ? '<div class="tv-col">' +
+          '<div class="tv-col-header-equipe">' +
+            '<div class="tv-col-color-bar" style="background:#555;"></div>' +
+            '<div class="tv-col-mec-inner">' +
+              '<div class="tv-mec-nome" style="color:#888;">Sem mecânico</div>' +
+              '<div class="tv-mec-cargo">A distribuir</div>' +
+              '<div class="tv-mec-count" style="background:#555;">' + semMec.length + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="tv-col-body">' + semMec.map(function(os) { return self._cardEquipe(os, '#555'); }).join('') + '</div>' +
+        '</div>' : '';
+
+        document.getElementById('tv-app').innerHTML =
+          self._headerHtml(total, 'Demanda por mecânico') +
+          '<div class="tv-board">' + colsHtml + semHtml + '</div>' +
+          '<div class="tv-statusbar"><div><span class="tv-dot"></span>Atualização automática a cada 30s</div><div>' + _TV_VER + '</div></div>';
       },
 
-      _cardEquipe(os, cor) {
-        const placa = os.veiculos?.placa || '-';
-        const veiculo = [os.veiculos?.marca, os.veiculos?.modelo].filter(Boolean).join(' ');
-        const corVeiculo = os.veiculos?.cor || '';
-        const statusTxt = this._statusLabel[os.status] || os.status;
-        const tempo = this._tempo(os.created_at);
+      _cardEquipe: function(os, cor) {
+        var self = this;
+        var v = os.veiculos || {};
+        var placa = v.placa || '-';
+        var veiculo = [v.marca, v.modelo].filter(Boolean).join(' ');
+        var corVeiculo = v.cor || '';
+        var statusTxt = self._statusLabel[os.status] || os.status;
+        var tempo = self._tempo(os.created_at);
+        var veiculoStr = self._esc(veiculo) + (corVeiculo ? ' · ' + self._esc(corVeiculo) : '');
 
-        return `<div class="tv-card" style="border-left:4px solid ${cor};">
-          ${this._placaHtml(placa)}
-          <div class="tv-card-veiculo">${this._esc(veiculo)}${corVeiculo ? ' · ' + this._esc(corVeiculo) : ''}</div>
-          <div class="tv-card-info">
-            <span class="tv-badge tv-badge-${os.status}">${statusTxt}</span>
-            <span class="tv-card-tempo ${tempo.cls}">${tempo.txt}</span>
-          </div>
-        </div>`;
+        return '<div class="tv-card" style="border-left:4px solid ' + cor + ';">' +
+          self._placaHtml(placa) +
+          '<div class="tv-card-veiculo">' + veiculoStr + '</div>' +
+          '<div class="tv-card-footer">' +
+            '<span class="tv-badge tv-badge-' + os.status + '">' + statusTxt + '</span>' +
+            '<span class="tv-card-tempo ' + tempo.cls + '">' + tempo.txt + '</span>' +
+          '</div>' +
+        '</div>';
       },
 
       // ========== UTILS ==========
-      _tempo(createdAt) {
-        const horas = Math.floor((Date.now() - new Date(createdAt).getTime()) / 3600000);
-        let txt = '', cls = '';
+      _tempo: function(createdAt) {
+        var horas = Math.floor((Date.now() - new Date(createdAt).getTime()) / 3600000);
+        var txt = '', cls = '';
         if (horas < 1) txt = 'Agora';
         else if (horas < 24) txt = horas + 'h';
         else txt = Math.floor(horas / 24) + 'd';
         if (horas >= 72) cls = 'critico';
         else if (horas >= 24) cls = 'alerta';
-        return { txt, cls };
+        return { txt: txt, cls: cls };
       },
 
-      _iniciarRealtime() {
-        this.db.channel('tv-os')
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'ordens_servico', filter: `oficina_id=eq.${this.oficinaId}` },
-            () => { this.carregar(); })
+      _iniciarRealtime: function() {
+        var self = this;
+        self.db.channel('tv-os')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'ordens_servico', filter: 'oficina_id=eq.' + self.oficinaId },
+            function() { self.carregar(); })
           .subscribe();
       },
 
-      _iniciarRelogio() {
-        setInterval(() => { const el = document.getElementById('tv-clock'); if (el) el.textContent = this._hora(); }, 1000);
+      _iniciarRelogio: function() {
+        setInterval(function() {
+          var el = document.getElementById('tv-clock');
+          if (el) el.textContent = TV._hora();
+        }, 1000);
       },
 
-      _hora() { return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); },
+      _hora: function() { return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); },
 
-      _esc(str) { if (!str) return ''; const d = document.createElement('div'); d.textContent = str; return d.innerHTML; },
-
-      _placaHtml(placa) {
-        const p = (placa || '???').replace(/[-\s]/g, '').toUpperCase();
-        const e = this._esc(p);
-        return '<div class="tv-placa"><div class="tv-placa-topo"><div class="tv-placa-flag"><span style="background:#009739"></span><span style="background:#FEDD00"></span><span style="background:#012169"></span></div><div class="tv-placa-topo-br">BRASIL</div></div><div class="tv-placa-codigo">'+e+'</div></div>';
+      _esc: function(str) {
+        if (!str) return '';
+        var d = document.createElement('div');
+        d.textContent = str;
+        return d.innerHTML;
       },
 
-      _erro(msg) {
-        document.getElementById('tv-app').innerHTML = `<div class="tv-erro"><div style="font-size:48px;">⚠️</div><div>${msg}</div><div style="font-size:14px;color:#888;margin-top:12px;">Entre em contato com o suporte.</div></div>`;
+      _placaHtml: function(placa) {
+        var p = (placa || '???').replace(/[-\s]/g, '').toUpperCase();
+        var e = this._esc(p);
+        return '<div class="tv-placa">' +
+          '<div class="tv-placa-topo">' +
+            '<div class="tv-placa-flag">' +
+              '<span style="background:#009739"></span>' +
+              '<span style="background:#FEDD00"></span>' +
+              '<span style="background:#012169"></span>' +
+            '</div>' +
+            '<div class="tv-placa-topo-br">BRASIL</div>' +
+          '</div>' +
+          '<div class="tv-placa-codigo">' + e + '</div>' +
+        '</div>';
+      },
+
+      _erro: function(msg) {
+        document.getElementById('tv-app').innerHTML =
+          '<div class="tv-erro"><div style="font-size:48px;">⚠️</div><div>' + msg + '</div>' +
+          '<div style="font-size:14px;color:#888;margin-top:12px;">Entre em contato com o suporte.</div></div>';
       }
     };
 
     TV.init().catch(function(e) {
-      document.getElementById('tv-app').innerHTML = '<div class="tv-erro"><div style="font-size:32px;">⚠️</div><div>Erro: ' + (e && e.message ? e.message : String(e)) + '</div></div>';
+      document.getElementById('tv-app').innerHTML =
+        '<div class="tv-erro"><div style="font-size:32px;">⚠️</div><div>Erro: ' + (e && e.message ? e.message : String(e)) + '</div></div>';
       console.error('[TV]', e);
     });
   </script>
