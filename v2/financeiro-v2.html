@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Financeiro</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04080630"></script>
+<script src="js/infra.js?v=04080633"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -325,6 +325,13 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 .agd-sum-val{font-family:var(--mono);font-size:14px;font-weight:800;}
 .agd-sum-val.pos{color:var(--green);}.agd-sum-val.neg{color:var(--red);}.agd-sum-val.zero{color:var(--w3);}
 .agd-entrada-card{background:rgba(48,209,88,.05);border:1px solid rgba(48,209,88,.2);border-left:3px solid var(--green);border-radius:var(--r2);padding:14px;margin-bottom:8px;}
+/* ── OCR HIGHLIGHT ── */
+.ocr-highlight{background:rgba(250,204,21,.08)!important;border-color:rgba(250,204,21,.6)!important;box-shadow:0 0 0 2px rgba(250,204,21,.15);}
+.panel-btn-submit:disabled{opacity:.45;cursor:not-allowed;filter:none;pointer-events:none;}
+/* ── BACK DASHBOARD (mobile) ── */
+.btn-back-dash{display:none;align-items:center;gap:6px;font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--w3);background:none;border:1px solid var(--ln3);border-radius:var(--r2);padding:6px 12px;cursor:pointer;text-decoration:none;transition:all .12s;}
+.btn-back-dash:hover{color:var(--w);border-color:var(--ln3);}
+@media(max-width:768px){.btn-back-dash{display:flex;}}
 /* ── BOLETO SNIPER ── */
 .boleto-dropzone{border:1.5px dashed var(--ln3);border-radius:var(--r2);padding:18px 12px;text-align:center;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;color:var(--w3);font-family:var(--mono);}
 .boleto-dropzone:hover,.boleto-dropzone.drag-over{border-color:var(--amber);background:var(--amber-dim);color:var(--amber);}
@@ -336,8 +343,8 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 @keyframes boleto-pulse{0%,100%{box-shadow:0 0 0 0 rgba(232,147,12,0);}50%{box-shadow:0 0 0 4px rgba(232,147,12,.25);}}
 .boleto-aviso{background:rgba(232,147,12,.08);border:1px solid rgba(232,147,12,.3);border-radius:var(--r2);padding:10px 14px;font-size:12px;color:var(--amber);margin-top:8px;line-height:1.5;}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04080630"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04080630"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04080633"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04080633"></script>
 </head>
 <body>
 
@@ -409,6 +416,7 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
     <div class="main-topbar">
       <div style="display:flex;align-items:center;gap:10px;">
         <button class="mob-menu-btn" onclick="toggleSidebarMob()" aria-label="Menu"><span></span><span></span><span></span></button>
+        <a class="btn-back-dash" href="kanban-v2.html">← Dashboard</a>
         <div class="main-title">Financeiro</div>
       </div>
       <div class="topbar-actions">
@@ -1737,7 +1745,18 @@ async function novaDespesa() {
         <input class="panel-input" id="desp-vencimento" type="date" placeholder="">
       </div>
     </div>
-    <button class="panel-btn-submit panel-btn-saida" onclick="salvarDespesa()">Registrar Despesa</button>
+    <div id="desp-conferencia-wrap" style="display:none;margin-top:14px;">
+      <div style="background:rgba(250,204,21,.07);border:1px solid rgba(250,204,21,.35);border-radius:var(--r2);padding:12px 14px;">
+        <div style="font-family:var(--body);font-size:12px;color:#FBBF24;margin-bottom:10px;line-height:1.5;">
+          ⚠️ Campos preenchidos automaticamente. A precisão depende da qualidade do arquivo/foto — confira antes de salvar.
+        </div>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-family:var(--body);font-size:13px;color:var(--w);">
+          <input type="checkbox" id="check-conferencia" onchange="updateSaveBtn()" style="width:18px;height:18px;accent-color:var(--green);cursor:pointer;">
+          Confirmo que conferi os valores e vencimento deste boleto
+        </label>
+      </div>
+    </div>
+    <button id="desp-save-btn" class="panel-btn-submit panel-btn-saida" onclick="salvarDespesa()">Registrar Despesa</button>
   `;
   document.getElementById('modal-overlay').classList.add('open');
 }
@@ -1747,7 +1766,19 @@ function toggleMembro() {
   wrap.style.display = document.getElementById('desp-cat').value === 'vale' ? '' : 'none';
 }
 
+function updateSaveBtn() {
+  const hasHighlights = document.querySelectorAll('#modal-box .ocr-highlight').length > 0;
+  const checked = document.getElementById('check-conferencia')?.checked || false;
+  const btn = document.getElementById('desp-save-btn');
+  if (!btn) return;
+  btn.disabled = hasHighlights && !checked;
+  btn.style.opacity = btn.disabled ? '0.45' : '';
+}
+
 async function salvarDespesa() {
+  // Guard extra: se botão disabled por OCR não confirmado, bloquear
+  const saveBtn = document.getElementById('desp-save-btn');
+  if (saveBtn && saveBtn.disabled) { toast('Confirme que conferiu os dados do boleto','err'); return; }
   const cat = document.getElementById('desp-cat').value;
   const membroId = document.getElementById('desp-membro')?.value || null;
   const desc = document.getElementById('desp-desc').value.trim();
@@ -2007,20 +2038,26 @@ async function boletoOnFile(arquivo) {
     if (valor > 0) {
       const el = document.getElementById('desp-valor');
       el.value = valor.toFixed(2);
-      el.classList.add('boleto-campo-destaque');
-      el.addEventListener('input', () => el.classList.remove('boleto-campo-destaque'), { once: true });
+      el.classList.add('boleto-campo-destaque', 'ocr-highlight');
+      el.addEventListener('input', () => { el.classList.remove('boleto-campo-destaque', 'ocr-highlight'); updateSaveBtn(); }, { once: true });
       camposDestaque.push('Valor');
     }
     if (vencimento) {
       const el = document.getElementById('desp-vencimento');
       if (el) {
         el.value = vencimento;
-        el.classList.add('boleto-campo-destaque');
-        el.addEventListener('change', () => el.classList.remove('boleto-campo-destaque'), { once: true });
+        el.classList.add('boleto-campo-destaque', 'ocr-highlight');
+        el.addEventListener('change', () => { el.classList.remove('boleto-campo-destaque', 'ocr-highlight'); updateSaveBtn(); }, { once: true });
         camposDestaque.push('Vencimento');
       }
     }
     document.getElementById('desp-forma').value = 'boleto';
+    // Mostrar bloco de conferência e bloquear botão salvar
+    const wrap = document.getElementById('desp-conferencia-wrap');
+    if (wrap) wrap.style.display = '';
+    const chk = document.getElementById('check-conferencia');
+    if (chk) chk.checked = false;
+    updateSaveBtn();
 
     const vencStr = vencimento
       ? new Date(vencimento + 'T12:00:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' })
