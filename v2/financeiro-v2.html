@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Financeiro</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04080457"></script>
+<script src="js/infra.js?v=04080515"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -264,7 +264,7 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 .boleto-copy-btn{background:none;border:none;cursor:pointer;color:var(--w4);font-size:14px;padding:2px 4px;transition:color .12s;flex-shrink:0;}
 .boleto-copy-btn:hover{color:var(--amber);}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04080457"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04080515"></script>
 </head>
 <body>
 
@@ -1366,14 +1366,14 @@ async function novaDespesa() {
       <button class="panel-close" onclick="fecharModal()">×</button>
     </div>
     <div class="panel-field">
-      <div class="panel-label">Boleto <span style="font-weight:400;color:var(--w4);">— PDF para preencher automaticamente</span></div>
+      <div class="panel-label">Importar Boleto <span style="font-weight:400;color:var(--w4);">— preenche os campos automaticamente</span></div>
       <div class="boleto-dropzone" id="boleto-dropzone"
         onclick="document.getElementById('boleto-file-input').click()"
         ondragover="event.preventDefault();this.classList.add('drag-over')"
         ondragleave="this.classList.remove('drag-over')"
         ondrop="boletoOnDrop(event)">
         <span style="font-size:22px;">📄</span>
-        <span>Arraste o PDF do boleto ou clique aqui</span>
+        <span>Arraste o PDF aqui ou clique para selecionar</span>
       </div>
       <input type="file" id="boleto-file-input" accept=".pdf" style="display:none" onchange="boletoOnFile(this.files[0])">
       <div id="boleto-sniper-result"></div>
@@ -1672,12 +1672,12 @@ async function boletoOnFile(arquivo) {
   _boletoFile = arquivo;
   const res = document.getElementById('boleto-sniper-result');
   if (!res) return;
-  res.innerHTML = `<div class="boleto-sniper-err" style="color:var(--w4);">Lendo boleto...</div>`;
+  res.innerHTML = `<div class="boleto-sniper-err" style="color:var(--w4);">Processando boleto...</div>`;
 
   try {
     const resultado = await extrairDadosBoleto(arquivo);
     if (!resultado) {
-      res.innerHTML = `<div class="boleto-sniper-err">Linha digitável não encontrada — preencha manualmente.</div>`;
+      res.innerHTML = `<div class="boleto-sniper-err">Código não identificado — preencha os campos manualmente.</div>`;
       return;
     }
     const { valor, vencimento, codigo } = resultado;
@@ -1691,14 +1691,14 @@ async function boletoOnFile(arquivo) {
       : 'sem vencimento';
     res.innerHTML = `
       <div class="boleto-sniper-ok">
-        <span>✅ Boleto detectado</span>
+        <span>✅ Boleto importado</span>
         ${valor > 0 ? `<span style="font-weight:700;">R$ ${valor.toFixed(2).replace('.',',')}</span>` : ''}
         <span style="color:var(--w3);">Venc. ${vencStr}</span>
         <span style="font-size:10px;color:var(--w4);word-break:break-all;">${codigo.slice(0,30)}...</span>
       </div>`;
   } catch (err) {
     console.error('[BoletoSniper]', err);
-    res.innerHTML = `<div class="boleto-sniper-err">Erro ao ler PDF — preencha manualmente.</div>`;
+    res.innerHTML = `<div class="boleto-sniper-err">Não foi possível processar o arquivo — preencha os campos manualmente.</div>`;
   }
 }
 
