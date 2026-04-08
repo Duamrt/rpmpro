@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Financeiro</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04080640"></script>
+<script src="js/infra.js?v=04080701"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -343,8 +343,8 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 @keyframes boleto-pulse{0%,100%{box-shadow:0 0 0 0 rgba(232,147,12,0);}50%{box-shadow:0 0 0 4px rgba(232,147,12,.25);}}
 .boleto-aviso{background:rgba(232,147,12,.08);border:1px solid rgba(232,147,12,.3);border-radius:var(--r2);padding:10px 14px;font-size:12px;color:var(--amber);margin-top:8px;line-height:1.5;}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04080640"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04080640"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04080701"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04080701"></script>
 </head>
 <body>
 
@@ -487,6 +487,7 @@ let AGENDA_MES = new Date().getMonth();
 let AGENDA_ANO = new Date().getFullYear();
 let _agendaLista = [];
 let DESP_VISTA = 'lista'; // 'lista' | 'calendario'
+let _nfeDados = null;
 let _calSaidas = [];
 let _calEntradas = [];
 
@@ -886,6 +887,7 @@ function _despPeriodBar(nomeMes, info) {
           <button class="vista-btn ${DESP_VISTA==='lista'?'on':''}" onclick="switchVistaDespesas('lista')">☰ Lista</button>
           <button class="vista-btn ${DESP_VISTA==='calendario'?'on':''}" onclick="switchVistaDespesas('calendario')">📅 Calendário</button>
         </div>
+        ${(PERFIL.role==='dono'||PERFIL.role==='gerente') ? `<button class="btn-cmd" style="background:#1e3a5f;border-color:#2d5a9e;color:#7eb8f7;" onclick="abrirImportarNFe()">📄 Lançar NF-e</button>` : ''}
         <button class="btn-cmd btn-saida" onclick="novaDespesa()"><span style="font-family:var(--mono);font-size:16px;font-weight:800;">+</span> Nova Despesa</button>
       </div>
     </div>`;
@@ -1831,6 +1833,157 @@ async function salvarDespesa() {
   carregar();
   } catch(e) { toast('Erro inesperado','err'); console.error('[salvarDespesa]',e); }
   finally { _busy.salvarDesp = false; }
+}
+
+// ==================== IMPORTAR NF-e XML ====================
+
+function abrirImportarNFe() {
+  let inp = document.getElementById('_nfe-file-input');
+  if (!inp) {
+    inp = document.createElement('input');
+    inp.type = 'file';
+    inp.id = '_nfe-file-input';
+    inp.accept = '.xml';
+    inp.style.display = 'none';
+    inp.onchange = e => { if (e.target.files[0]) _lerArquivoNFe(e.target.files[0]); inp.value=''; };
+    document.body.appendChild(inp);
+  }
+  inp.click();
+}
+
+function _lerArquivoNFe(arquivo) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const dados = _parseNFeXML(e.target.result);
+      if (!dados) return;
+      _modalPreviewNFe(dados);
+    } catch(err) {
+      toast('Erro ao ler XML: '+err.message, 'err');
+      console.error('[_lerArquivoNFe]', err);
+    }
+  };
+  reader.readAsText(arquivo, 'UTF-8');
+}
+
+function _parseNFeXML(xmlText) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(xmlText, 'text/xml');
+  if (doc.querySelector('parsererror')) { toast('XML inválido ou corrompido','err'); return null; }
+
+  const txt = el => el ? (el.textContent || '').trim() : '';
+
+  // Fornecedor
+  const emit = doc.querySelector('emit');
+  if (!emit) { toast('Tag <emit> não encontrada no XML','err'); return null; }
+  const xNome = txt(emit.querySelector('xNome')) || txt(emit.querySelector('xFant')) || 'Fornecedor';
+  const cnpj  = txt(emit.querySelector('CNPJ'));
+
+  // Número NF
+  const ide = doc.querySelector('ide');
+  const nNF = ide ? txt(ide.querySelector('nNF')) : '';
+
+  // Parcelas via <dup>
+  const dups = [...doc.querySelectorAll('dup')];
+  if (!dups.length) {
+    // Sem <dup>: tenta <fat> como parcela única
+    const fat = doc.querySelector('fat');
+    const vOrig = fat ? parseFloat(txt(fat.querySelector('vOrig'))) : 0;
+    const hoje = new Date().toISOString().split('T')[0];
+    if (!fat || vOrig <= 0) { toast('Nenhuma parcela (<dup> ou <fat>) encontrada na NF-e','err'); return null; }
+    return { xNome, cnpj, nNF, parcelas: [{ nDup:'001', dVenc: hoje, vDup: vOrig }] };
+  }
+
+  const parcelas = dups.map(d => ({
+    nDup: txt(d.querySelector('nDup')) || '?',
+    dVenc: txt(d.querySelector('dVenc')),
+    vDup: parseFloat(txt(d.querySelector('vDup'))) || 0
+  })).filter(p => p.vDup > 0);
+
+  if (!parcelas.length) { toast('Nenhum valor válido nas parcelas da NF-e','err'); return null; }
+
+  return { xNome, cnpj, nNF, parcelas };
+}
+
+function _modalPreviewNFe(dados) {
+  _nfeDados = dados;
+  const { xNome, cnpj, nNF, parcelas } = dados;
+  const total = parcelas.reduce((s,p) => s+p.vDup, 0);
+  const fmtDt = d => d ? d.split('-').reverse().join('/') : '—';
+
+  document.getElementById('modal-box').innerHTML = `
+    <div class="modal-header">
+      <h3>Conferência da NF-e</h3>
+      <button class="panel-close" onclick="fecharModal()">×</button>
+    </div>
+
+    <div style="background:var(--sf2);border:1px solid var(--ln3);border-radius:var(--r2);padding:12px 14px;margin-bottom:14px;">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--w3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Fornecedor identificado</div>
+      <div style="font-family:var(--head);font-size:15px;font-weight:700;">${esc(xNome)}</div>
+      ${cnpj ? `<div style="font-family:var(--mono);font-size:11px;color:var(--w3);margin-top:2px;">CNPJ: ${cnpj}</div>` : ''}
+      ${nNF  ? `<div style="font-family:var(--mono);font-size:11px;color:var(--w3);">NF nº ${nNF}</div>` : ''}
+    </div>
+
+    <div style="font-family:var(--mono);font-size:10px;color:var(--w3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">${parcelas.length} parcela(s) encontrada(s)</div>
+
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
+      ${parcelas.map(p => `
+        <div style="display:flex;justify-content:space-between;align-items:center;background:var(--sf2);border:1px solid var(--ln3);border-radius:var(--r2);padding:10px 14px;">
+          <div>
+            <span style="font-family:var(--mono);font-size:10px;color:var(--w3);">PARC. ${esc(p.nDup)}</span>
+            <div style="font-size:13px;color:var(--w);">Venc. ${fmtDt(p.dVenc)}</div>
+          </div>
+          <div style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--red);">${fmt(p.vDup)}</div>
+        </div>`).join('')}
+    </div>
+
+    <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:13px;padding:0 4px;margin-bottom:16px;">
+      <span style="color:var(--w3);">Total</span>
+      <span style="font-weight:700;color:var(--red);">${fmt(total)}</span>
+    </div>
+
+    <div style="background:rgba(250,204,21,.07);border:1px solid rgba(250,204,21,.35);border-radius:var(--r2);padding:12px 14px;margin-bottom:16px;">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-family:var(--body);font-size:13px;color:var(--w);">
+        <input type="checkbox" id="nfe-check-conf" onchange="document.getElementById('nfe-btn-conf').disabled=!this.checked" style="width:18px;height:18px;accent-color:var(--green);cursor:pointer;">
+        Confirmo que as datas e valores conferem com a nota física
+      </label>
+    </div>
+
+    <button id="nfe-btn-conf" class="panel-btn-submit" disabled onclick="_confirmarNFe()">
+      Gerar Contas a Pagar (${parcelas.length} lançamento${parcelas.length>1?'s':''})
+    </button>
+  `;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+async function _confirmarNFe() {
+  const btn = document.getElementById('nfe-btn-conf');
+  if (btn) btn.disabled = true;
+
+  const dados = _nfeDados;
+  if (!dados) { toast('Dados da NF-e não encontrados','err'); return; }
+  const { xNome, nNF, parcelas } = dados;
+  const hoje = new Date().toISOString();
+
+  const rows = parcelas.map(p => ({
+    oficina_id: OFICINA_ID,
+    tipo: 'saida',
+    categoria: 'fornecedor',
+    descricao: `NF ${nNF} – Parc. ${p.nDup} – ${xNome}`.substring(0, 120),
+    valor: p.vDup,
+    forma_pagamento: 'boleto',
+    created_by: PERFIL.id,
+    created_at: hoje,
+    data_vencimento: p.dVenc || hoje.split('T')[0],
+    pago: false
+  }));
+
+  const { error } = await db.from('caixa').insert(rows);
+  if (error) { toast('Erro ao salvar: '+error.message, 'err'); if(btn) btn.disabled=false; return; }
+
+  fecharModal();
+  toast(`${rows.length} conta${rows.length>1?'s':''} a pagar gerada${rows.length>1?'s':''}!`);
+  carregar();
 }
 
 // ==================== LANÇAMENTO (SIDE PANEL) ====================
