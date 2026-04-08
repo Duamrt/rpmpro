@@ -45,6 +45,13 @@
 
     .tv-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; animation: slideIn 0.4s ease; }
     @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    /* Placa Mercosul — igual ao pátio */
+    .tv-placa{display:inline-flex;flex-direction:column;background:#FFF;border-radius:4px;overflow:hidden;border:2px solid #C8C8C8;line-height:1;margin-bottom:8px;}
+    .tv-placa-topo{background:#003399;padding:2px 8px;display:flex;align-items:center;justify-content:space-between;gap:4px;}
+    .tv-placa-topo-br{font-family:monospace;font-size:7px;font-weight:700;color:#fff;letter-spacing:.5px;}
+    .tv-placa-flag{display:flex;gap:1px;}
+    .tv-placa-flag span{display:block;width:4px;height:7px;border-radius:1px;}
+    .tv-placa-codigo{padding:3px 10px 5px;font-family:monospace;font-size:20px;font-weight:800;color:#1A1A1A;letter-spacing:3px;text-align:center;}
     .tv-card-placa { font-size: 22px; font-weight: 800; color: var(--amber); letter-spacing: 1px; }
     .tv-card-veiculo { font-size: 14px; color: var(--text); margin-top: 2px; }
     .tv-card-info { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 12px; color: var(--text-muted); }
@@ -215,7 +222,7 @@
         const tempo = this._tempo(os.created_at);
 
         return `<div class="tv-card">
-          <div class="tv-card-placa">${this._esc(placa)}</div>
+          ${this._placaHtml(placa)}
           <div class="tv-card-veiculo">${this._esc(veiculo)}${cor ? ' · ' + this._esc(cor) : ''}</div>
           <div class="tv-card-info">
             <span>${mecanico ? '🔧 ' + this._esc(mecanico) : ''}</span>
@@ -300,7 +307,7 @@
         const tempo = this._tempo(os.created_at);
 
         return `<div class="tv-card" style="border-left:4px solid ${cor};">
-          <div class="tv-card-placa">${this._esc(placa)}</div>
+          ${this._placaHtml(placa)}
           <div class="tv-card-veiculo">${this._esc(veiculo)}${corVeiculo ? ' · ' + this._esc(corVeiculo) : ''}</div>
           <div class="tv-card-info">
             <span class="tv-badge tv-badge-${os.status}">${statusTxt}</span>
@@ -335,6 +342,17 @@
       _hora() { return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); },
 
       _esc(str) { if (!str) return ''; const d = document.createElement('div'); d.textContent = str; return d.innerHTML; },
+
+      _placaHtml(placa) {
+        const p = (placa || '???').replace(/[-\s]/g, '').toUpperCase();
+        return `<div class="tv-placa">
+          <div class="tv-placa-topo">
+            <div class="tv-placa-flag"><span style="background:#009739"></span><span style="background:#FEDD00"></span><span style="background:#012169"></span></div>
+            <div class="tv-placa-topo-br">BRASIL</div>
+          </div>
+          <div class="tv-placa-codigo">${this._esc(p)}</div>
+        </div>`;
+      },
 
       _erro(msg) {
         document.getElementById('tv-app').innerHTML = `<div class="tv-erro"><div style="font-size:48px;">⚠️</div><div>${msg}</div><div style="font-size:14px;color:#888;margin-top:12px;">Entre em contato com o suporte.</div></div>`;
