@@ -37,7 +37,7 @@
     .tv-clock { font-size: 38px; font-weight: 800; color: var(--amber); font-variant-numeric: tabular-nums; line-height: 1; }
     .tv-veiculos { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
     .tv-hdr-right { text-align: right; }
-    .tv-rpm-brand { font-size: 22px; font-weight: 800; letter-spacing: 3px; color: var(--amber); }
+    .tv-rpm-brand { font-size: 22px; font-weight: 800; letter-spacing: 3px; color: var(--text); }
     .tv-rpm-sub { font-size: 11px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
 
     /* ── BOARD ── */
@@ -169,7 +169,7 @@
     <div class="tv-loading"><div class="spinner"></div><div>Conectando ao painel...</div></div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.js?v=04081103"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.js?v=04081109"></script>
   <script>
     // Fallback para browsers sem URLSearchParams (TVs antigas)
     function _getParam(name) {
@@ -276,7 +276,7 @@
         return '<div class="tv-header">' +
           '<div class="tv-hdr-left">' + logoHtml + '<div><div class="tv-hdr-nome"><span>⚙</span> ' + self._esc(self.oficinaNome) + '</div>' + subHtml + '</div></div>' +
           '<div class="tv-hdr-center"><div class="tv-clock" id="tv-clock">' + self._hora() + '</div><div class="tv-veiculos">' + veiStr + '</div></div>' +
-          '<div class="tv-hdr-right"><div class="tv-rpm-brand">RPM PRO</div><div class="tv-rpm-sub">Gestão de Oficinas</div></div>' +
+          '<div class="tv-hdr-right"><div class="tv-rpm-brand">RPM <span style="color:var(--amber)">PRO</span></div><div class="tv-rpm-sub">Gestão de Oficinas</div></div>' +
         '</div>';
       },
 
