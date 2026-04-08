@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Financeiro</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04081015"></script>
+<script src="js/infra.js?v=04081024"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -355,8 +355,9 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 .nfe-tbl td{padding:9px 8px;border-bottom:1px solid var(--ln3);vertical-align:middle;}
 .nfe-tbl tr:last-child td{border-bottom:none;}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04081015"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04081015"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04081024"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04081024"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js?v=04081024"></script>
 </head>
 <body>
 
@@ -468,6 +469,20 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
   </div>
   <div class="agenda-drawer-body" id="agenda-drawer-body"></div>
 </div>
+<!-- MODAL CÓDIGO DE BARRAS -->
+<div id="barcode-overlay" onclick="fecharBarcode()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:2000;align-items:center;justify-content:center;padding:20px;"></div>
+<div id="barcode-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1c1c1f;border:1px solid var(--ln2);border-radius:16px;z-index:2001;padding:24px 20px;width:min(480px,95vw);max-height:90vh;overflow-y:auto;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div style="font-family:var(--head);font-size:13px;font-weight:700;letter-spacing:.5px;">CÓDIGO DE BARRAS</div>
+    <button onclick="fecharBarcode()" style="background:none;border:none;color:var(--w4);font-size:20px;cursor:pointer;line-height:1;">×</button>
+  </div>
+  <div id="barcode-info" style="margin-bottom:14px;font-size:13px;color:var(--w3);font-family:var(--body);"></div>
+  <div style="background:#fff;border-radius:8px;padding:12px 8px;text-align:center;margin-bottom:14px;">
+    <svg id="barcode-svg"></svg>
+  </div>
+  <div id="barcode-numero" style="font-family:var(--mono);font-size:11px;color:var(--w4);word-break:break-all;text-align:center;margin-bottom:16px;line-height:1.6;"></div>
+  <button id="barcode-copy-btn" onclick="copiarCodigoModal()" style="width:100%;background:var(--amber);color:#000;border:none;border-radius:var(--r);padding:13px;font-family:var(--head);font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;">⎘ COPIAR CÓDIGO DE BARRAS</button>
+</div>
 <!-- TOAST -->
 <div class="toast" id="toast-el"></div>
 
@@ -501,6 +516,7 @@ let _agendaLista = [];
 let DESP_VISTA = 'lista'; // 'lista' | 'calendario'
 let _calSaidas = [];
 let _calEntradas = [];
+let _barcodeMap = {};
 
 // ── UTILS ──
 function esc(s){ return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -1494,12 +1510,17 @@ function abrirDiaAgenda(dataStr) {
     const s = statusCard(d);
     const cat = CAT_LABEL[d.categoria]||d.categoria||'';
     const forma = FORMA_LABEL[d.forma_pagamento]||d.forma_pagamento||'';
+    const benef = d.beneficiario ? '<div style="font-size:11px;color:var(--amber);font-family:var(--mono);margin-top:3px;">👤 '+esc(d.beneficiario)+(d.cnpj_beneficiario?' · '+esc(d.cnpj_beneficiario):'')+'</div>' : '';
+    const numDoc = d.numero_documento ? '<div style="font-size:10px;color:var(--w4);font-family:var(--mono);margin-top:2px;">Nº doc: '+esc(d.numero_documento)+'</div>' : '';
+    const bid = 'bc_' + d.id;
+    if (d.codigo_barras) _barcodeMap[bid] = { codigo: d.codigo_barras, desc: d.descricao||'', valor: d.valor||0, benef: d.beneficiario||'', cnpj: d.cnpj_beneficiario||'', venc: d.data_vencimento||'' };
     return '<div class="agd-card ' + s + '">'
       + '<div class="agd-desc">' + esc(d.descricao) + '</div>'
       + '<div class="agd-meta">' + esc(cat) + ' · ' + esc(forma) + ' · ' + statusLabel(s) + '</div>'
+      + benef + numDoc
       + '<div class="agd-val">-' + fmt(d.valor) + '</div>'
       + '<div class="agd-actions">'
-      + (d.codigo_barras ? '<button class="agd-btn" onclick="copiarCodBarras(event,\''+esc(d.codigo_barras)+'\')">⎘ Copiar código</button>' : '')
+      + (d.codigo_barras ? '<button class="agd-btn" style="background:var(--amber);color:#000;border-color:var(--amber);" onclick="abrirBarcode(\''+bid+'\')">📊 Ver / Copiar código</button>' : '')
       + (d.url_anexo ? '<button class="agd-btn" onclick="window.open(\''+esc(d.url_anexo)+'\',\'_blank\')">📄 Abrir boleto</button>' : '')
       + (!d.pago ? '<button class="agd-btn pagar" onclick="marcarPago(\''+d.id+'\')">✓ Marcar como pago</button>' : '')
       + '</div></div>';
@@ -2242,6 +2263,55 @@ async function copiarCodBarras(e, codigo) {
     btn.innerHTML = '✓';
     btn.style.color = 'var(--green)';
     setTimeout(() => { btn.innerHTML = orig; btn.style.color = ''; }, 1500);
+  } catch(_) { toast('Não foi possível copiar','err'); }
+}
+
+// ==================== MODAL CÓDIGO DE BARRAS ====================
+let _barcodeAtual = '';
+
+function abrirBarcode(key) {
+  const info = _barcodeMap[key];
+  if (!info) return;
+  const codigo = (info.codigo || '').replace(/[\s.]/g, '');
+  _barcodeAtual = info.codigo || '';
+
+  // Info do beneficiário
+  let infoHtml = '';
+  if (info.desc) infoHtml += '<div style="font-weight:700;color:var(--w);margin-bottom:4px;">'+esc(info.desc)+'</div>';
+  if (info.benef) infoHtml += '<div style="color:var(--amber);font-size:12px;">👤 '+esc(info.benef)+'</div>';
+  if (info.cnpj) infoHtml += '<div style="color:var(--w4);font-size:11px;">CNPJ: '+esc(info.cnpj)+'</div>';
+  if (info.valor) infoHtml += '<div style="font-size:15px;font-weight:700;color:var(--w);margin-top:6px;">R$ '+Number(info.valor).toFixed(2).replace('.',',')+'</div>';
+  if (info.venc) infoHtml += '<div style="font-size:11px;color:var(--w4);">Venc. '+new Date(info.venc+'T12:00:00').toLocaleDateString('pt-BR')+'</div>';
+  document.getElementById('barcode-info').innerHTML = infoHtml;
+
+  // Gerar imagem do código de barras
+  const svg = document.getElementById('barcode-svg');
+  svg.innerHTML = '';
+  if (codigo && typeof JsBarcode !== 'undefined') {
+    try {
+      JsBarcode(svg, codigo, { format:'CODE128', width:1.5, height:60, displayValue:false, margin:4, background:'#ffffff', lineColor:'#000000' });
+    } catch(e) { svg.innerHTML = '<text x="50%" y="50%" text-anchor="middle" font-size="11" fill="#888">Código não suportado</text>'; }
+  } else {
+    svg.innerHTML = '<text x="50%" y="50%" text-anchor="middle" font-size="11" fill="#888">Sem código de barras</text>';
+  }
+
+  document.getElementById('barcode-numero').textContent = info.codigo || '';
+  document.getElementById('barcode-overlay').style.display = 'block';
+  document.getElementById('barcode-modal').style.display = 'block';
+}
+
+function fecharBarcode() {
+  document.getElementById('barcode-overlay').style.display = 'none';
+  document.getElementById('barcode-modal').style.display = 'none';
+}
+
+async function copiarCodigoModal() {
+  try {
+    await navigator.clipboard.writeText(_barcodeAtual);
+    const btn = document.getElementById('barcode-copy-btn');
+    btn.textContent = '✓ COPIADO!';
+    btn.style.background = 'var(--green)';
+    setTimeout(() => { btn.textContent = '⎘ COPIAR CÓDIGO DE BARRAS'; btn.style.background = 'var(--amber)'; }, 2000);
   } catch(_) { toast('Não foi possível copiar','err'); }
 }
 
