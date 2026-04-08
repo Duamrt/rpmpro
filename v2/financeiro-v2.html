@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Financeiro</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04081131"></script>
+<script src="js/infra.js?v=04081144"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -313,7 +313,7 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 .agd-card.vencido .agd-val{color:var(--red);}
 .agd-card.hoje .agd-val{color:var(--amber);}
 .agd-card.futuro .agd-val{color:var(--blue);}
-.agd-card.pago .agd-val{color:var(--green);}
+.agd-card.pago .agd-val{color:var(--red);}
 .agd-actions{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;}
 .agd-btn{font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:7px 14px;border:1px solid var(--ln3);border-radius:var(--r);background:var(--sf2);color:var(--w3);cursor:pointer;transition:all .12s;}
 .agd-btn:hover{background:var(--sf3);color:var(--w);}
@@ -355,9 +355,9 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 .nfe-tbl td{padding:9px 8px;border-bottom:1px solid var(--ln3);vertical-align:middle;}
 .nfe-tbl tr:last-child td{border-bottom:none;}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04081131"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04081131"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js?v=04081131"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04081144"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04081144"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js?v=04081144"></script>
 </head>
 <body>
 
@@ -471,17 +471,17 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 </div>
 <!-- MODAL CÓDIGO DE BARRAS -->
 <div id="barcode-overlay" onclick="fecharBarcode()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:2000;align-items:center;justify-content:center;padding:20px;"></div>
-<div id="barcode-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1c1c1f;border:1px solid var(--ln2);border-radius:16px;z-index:2001;padding:24px 20px;width:min(480px,95vw);max-height:90vh;overflow-y:auto;">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+<div id="barcode-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1c1c1f;border:2px solid var(--ln3);border-radius:16px;z-index:2001;padding:28px;width:min(640px,96vw);box-shadow:0 8px 40px rgba(0,0,0,.6);">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
     <div style="font-family:var(--head);font-size:13px;font-weight:700;letter-spacing:.5px;">CÓDIGO DE BARRAS</div>
     <button onclick="fecharBarcode()" style="background:none;border:none;color:var(--w4);font-size:20px;cursor:pointer;line-height:1;">×</button>
   </div>
-  <div id="barcode-info" style="margin-bottom:14px;font-size:13px;color:var(--w3);font-family:var(--body);"></div>
-  <div style="background:#fff;border-radius:8px;padding:12px 8px;text-align:center;margin-bottom:14px;">
-    <svg id="barcode-svg"></svg>
+  <div id="barcode-info" style="margin-bottom:16px;font-size:13px;color:var(--w3);font-family:var(--body);"></div>
+  <div style="background:#fff;border-radius:8px;padding:16px 12px;text-align:center;margin-bottom:14px;">
+    <svg id="barcode-svg" style="width:100%;height:auto;display:block;"></svg>
   </div>
-  <div id="barcode-numero" style="font-family:var(--mono);font-size:11px;color:var(--w4);word-break:break-all;text-align:center;margin-bottom:16px;line-height:1.6;"></div>
-  <button id="barcode-copy-btn" onclick="copiarCodigoModal()" style="width:100%;background:var(--amber);color:#000;border:none;border-radius:var(--r);padding:13px;font-family:var(--head);font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;">⎘ COPIAR CÓDIGO DE BARRAS</button>
+  <div id="barcode-numero" style="font-family:var(--mono);font-size:11px;color:var(--w4);word-break:break-all;text-align:center;margin-bottom:20px;line-height:1.8;padding:10px 0;border-top:1px solid var(--ln2);border-bottom:1px solid var(--ln2);"></div>
+  <button id="barcode-copy-btn" onclick="copiarCodigoModal()" style="width:100%;background:var(--amber);color:#000;border:none;border-radius:var(--r);padding:15px;font-family:var(--head);font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;">⎘ COPIAR CÓDIGO DE BARRAS</button>
 </div>
 <!-- TOAST -->
 <div class="toast" id="toast-el"></div>
@@ -1452,17 +1452,17 @@ function buildCalendarioDespesas(el) {
     else if (cls === 'day-upcoming') dotHtml = '<div class="agenda-status-dot upcoming"></div>';
     else if (cls === 'day-paid') dotHtml = '<div class="agenda-paid-dot"></div>';
 
-    const greenDot = c.entradas.length ? '<div style="position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--green);"></div>' : '';
+    const greenDot = c.entradas.length ? '<div style="position:absolute;top:6px;left:6px;width:7px;height:7px;border-radius:50%;background:var(--green);"></div>' : '';
 
     const valHtml = hasData
-      ? '<div class="agenda-day-val">'+(totalS?'-'+fmt(totalS):'')+(totalE?'<br><span style="color:var(--green);font-size:10px;">+'+fmt(totalE)+'</span>':'')+'</div>'
+      ? '<div class="agenda-day-val">'+(totalS?'<span style="color:var(--red);">-'+fmt(totalS)+'</span>':'')+(totalE?'<br><span style="color:var(--green);font-size:10px;">+'+fmt(totalE)+'</span>':'')+'</div>'
         + '<div class="agenda-day-count">'+(c.saidas.length+c.entradas.length)+' item(s)</div>'
       : '';
 
     const onclk = hasData ? 'onclick="abrirDiaAgenda(\'' + c.dataStr + '\')"' : '';
     return '<div class="agenda-day ' + cls + '" ' + onclk + ' data-data="' + c.dataStr + '">'
       + dotHtml
-      + (c.entradas.length && cls !== 'day-overdue' && cls !== 'day-today' && cls !== 'day-upcoming' && cls !== 'day-paid' ? greenDot : '')
+      + (c.entradas.length ? greenDot : '')
       + '<div class="agenda-day-num">' + c.n + '</div>'
       + valHtml
       + '</div>';
@@ -2310,7 +2310,10 @@ function abrirBarcode(key) {
   svg.innerHTML = '';
   if (codigo && typeof JsBarcode !== 'undefined') {
     try {
-      JsBarcode(svg, codigo, { format:'CODE128', width:1.5, height:60, displayValue:false, margin:4, background:'#ffffff', lineColor:'#000000' });
+      JsBarcode(svg, codigo, { format:'CODE128', width:2, height:70, displayValue:false, margin:6, background:'#ffffff', lineColor:'#000000' });
+      svg.removeAttribute('width');
+      svg.style.width = '100%';
+      svg.style.height = 'auto';
     } catch(e) { svg.innerHTML = '<text x="50%" y="50%" text-anchor="middle" font-size="11" fill="#888">Código não suportado</text>'; }
   } else {
     svg.innerHTML = '<text x="50%" y="50%" text-anchor="middle" font-size="11" fill="#888">Sem código de barras</text>';
