@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Financeiro</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04080515"></script>
+<script src="js/infra.js?v=04080524"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -263,8 +263,12 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 .boleto-sniper-err{background:var(--red-dim);border:1px solid rgba(255,59,48,.2);border-radius:var(--r2);padding:10px 14px;font-size:12px;font-family:var(--mono);color:var(--red);margin-top:8px;}
 .boleto-copy-btn{background:none;border:none;cursor:pointer;color:var(--w4);font-size:14px;padding:2px 4px;transition:color .12s;flex-shrink:0;}
 .boleto-copy-btn:hover{color:var(--amber);}
+.boleto-campo-destaque{border-color:var(--amber)!important;animation:boleto-pulse 1.4s ease-in-out 4;}
+@keyframes boleto-pulse{0%,100%{box-shadow:0 0 0 0 rgba(232,147,12,0);}50%{box-shadow:0 0 0 4px rgba(232,147,12,.25);}}
+.boleto-aviso{background:rgba(232,147,12,.08);border:1px solid rgba(232,147,12,.3);border-radius:var(--r2);padding:10px 14px;font-size:12px;color:var(--amber);margin-top:8px;line-height:1.5;}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04080515"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04080524"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04080524"></script>
 </head>
 <body>
 
@@ -1375,7 +1379,9 @@ async function novaDespesa() {
         <span style="font-size:22px;">📄</span>
         <span>Arraste o PDF aqui ou clique para selecionar</span>
       </div>
-      <input type="file" id="boleto-file-input" accept=".pdf" style="display:none" onchange="boletoOnFile(this.files[0])">
+      <input type="file" id="boleto-file-input" accept=".pdf,image/*" style="display:none" onchange="boletoOnFile(this.files[0])">
+      <input type="file" id="boleto-camera-input" accept="image/*" capture="environment" style="display:none" onchange="boletoOnFile(this.files[0])">
+      <button type="button" onclick="document.getElementById('boleto-camera-input').click()" style="margin-top:6px;width:100%;background:var(--sf2);border:1px solid var(--ln3);border-radius:var(--r2);padding:8px;font-size:11px;font-family:var(--mono);color:var(--w3);cursor:pointer;">📷 Tirar foto do boleto (celular)</button>
       <div id="boleto-sniper-result"></div>
     </div>
     <input type="hidden" id="desp-codigo-barras">
@@ -1682,8 +1688,22 @@ async function boletoOnFile(arquivo) {
     }
     const { valor, vencimento, codigo } = resultado;
     document.getElementById('desp-codigo-barras').value = codigo;
-    if (valor > 0) document.getElementById('desp-valor').value = valor.toFixed(2);
-    if (vencimento) document.getElementById('desp-data').value = vencimento;
+
+    const camposDestaque = [];
+    if (valor > 0) {
+      const el = document.getElementById('desp-valor');
+      el.value = valor.toFixed(2);
+      el.classList.add('boleto-campo-destaque');
+      el.addEventListener('input', () => el.classList.remove('boleto-campo-destaque'), { once: true });
+      camposDestaque.push('Valor');
+    }
+    if (vencimento) {
+      const el = document.getElementById('desp-data');
+      el.value = vencimento;
+      el.classList.add('boleto-campo-destaque');
+      el.addEventListener('change', () => el.classList.remove('boleto-campo-destaque'), { once: true });
+      camposDestaque.push('Data');
+    }
     document.getElementById('desp-forma').value = 'boleto';
 
     const vencStr = vencimento
@@ -1695,7 +1715,8 @@ async function boletoOnFile(arquivo) {
         ${valor > 0 ? `<span style="font-weight:700;">R$ ${valor.toFixed(2).replace('.',',')}</span>` : ''}
         <span style="color:var(--w3);">Venc. ${vencStr}</span>
         <span style="font-size:10px;color:var(--w4);word-break:break-all;">${codigo.slice(0,30)}...</span>
-      </div>`;
+      </div>
+      <div class="boleto-aviso">⚠️ Dados extraídos automaticamente. Verifique os campos destacados em amarelo (${camposDestaque.join(', ')}) antes de salvar.</div>`;
   } catch (err) {
     console.error('[BoletoSniper]', err);
     res.innerHTML = `<div class="boleto-sniper-err">Não foi possível processar o arquivo — preencha os campos manualmente.</div>`;
@@ -1703,22 +1724,35 @@ async function boletoOnFile(arquivo) {
 }
 
 async function extrairDadosBoleto(arquivo) {
-  if (!arquivo.type.includes('pdf')) return null;
-  if (typeof pdfjsLib === 'undefined') { console.error('[BoletoSniper] pdf.js não carregado'); return null; }
+  if (arquivo.type.includes('pdf')) return await _extrairDePDF(arquivo);
+  if (arquivo.type.startsWith('image/')) return await _extrairDeImagem(arquivo);
+  return null;
+}
 
+async function _extrairDePDF(arquivo) {
+  if (typeof pdfjsLib === 'undefined') { console.error('[ImportarBoleto] pdf.js não carregado'); return null; }
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
   const buffer = await arquivo.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
   let textoTotal = '';
-
   for (let i = 1; i <= Math.min(pdf.numPages, 3); i++) {
     const page = await pdf.getPage(i);
     const content = await page.getTextContent();
     textoTotal += content.items.map(item => item.str).join(' ') + ' ';
   }
-
   return parsearLinhaDigitavel(textoTotal);
+}
+
+async function _extrairDeImagem(arquivo) {
+  if (typeof Tesseract === 'undefined') { console.error('[ImportarBoleto] Tesseract não carregado'); return null; }
+  const url = URL.createObjectURL(arquivo);
+  try {
+    const { data } = await Tesseract.recognize(url, 'por', { logger: () => {} });
+    return parsearLinhaDigitavel(data.text);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }
 
 function parsearLinhaDigitavel(texto) {
