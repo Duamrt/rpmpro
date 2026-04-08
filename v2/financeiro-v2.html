@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Financeiro</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04080548"></script>
+<script src="js/infra.js?v=04080617"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -262,6 +262,58 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
   .rank-row>div:last-child{display:none;}
   .busca-input{width:100%;}
 }
+/* ── AGENDA DE PAGAMENTOS ── */
+.agenda-nav{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+.agenda-cal-dow{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px;}
+.agenda-dow-lbl{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--w4);text-align:center;padding:4px 0;}
+.agenda-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.agenda-day{min-height:76px;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:8px;cursor:pointer;transition:all .12s;position:relative;overflow:hidden;}
+.agenda-day:hover{border-color:var(--ln3);background:var(--sf2);}
+.agenda-day.empty{background:transparent;border-color:transparent;cursor:default;pointer-events:none;}
+.agenda-day.day-overdue{border-color:rgba(255,59,48,.45);background:rgba(255,59,48,.05);}
+.agenda-day.day-today{border-color:rgba(232,147,12,.55);background:rgba(232,147,12,.06);}
+.agenda-day.day-upcoming{border-color:rgba(10,132,255,.35);background:rgba(10,132,255,.05);}
+.agenda-day.day-paid{border-color:rgba(48,209,88,.25);}
+.agenda-day-num{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--w3);}
+.agenda-day.day-overdue .agenda-day-num{color:var(--red);}
+.agenda-day.day-today .agenda-day-num{color:var(--amber);}
+.agenda-day.day-upcoming .agenda-day-num{color:var(--blue);}
+.agenda-day.day-paid .agenda-day-num{color:var(--green);}
+.agenda-day-val{font-family:var(--mono);font-size:11px;font-weight:700;margin-top:4px;line-height:1.2;}
+.agenda-day.day-overdue .agenda-day-val{color:var(--red);}
+.agenda-day.day-today .agenda-day-val{color:var(--amber);}
+.agenda-day.day-upcoming .agenda-day-val{color:var(--blue);}
+.agenda-day.day-paid .agenda-day-val{color:var(--green);}
+.agenda-day-count{font-family:var(--mono);font-size:9px;color:var(--w4);margin-top:2px;}
+.agenda-paid-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;background:var(--green);border-radius:50%;}
+.agenda-status-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;}
+.agenda-status-dot.overdue{background:var(--red);}
+.agenda-status-dot.today{background:var(--amber);}
+.agenda-status-dot.upcoming{background:var(--blue);}
+/* ── AGENDA DRAWER ── */
+.agenda-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:900;opacity:0;pointer-events:none;transition:opacity .25s;}
+.agenda-overlay.open{opacity:1;pointer-events:auto;}
+.agenda-drawer{position:fixed;top:0;right:0;bottom:0;width:440px;max-width:100%;background:#141417;border-left:1px solid var(--ln2);z-index:1001;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden;}
+.agenda-drawer.open{transform:translateX(0);}
+.agenda-drawer-head{padding:20px 24px;border-bottom:1px solid var(--ln2);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
+.agenda-drawer-body{flex:1;overflow-y:auto;padding:20px;}
+.agd-card{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:16px;margin-bottom:10px;border-left:3px solid var(--ln3);}
+.agd-card.vencido{border-left-color:var(--red);}
+.agd-card.hoje{border-left-color:var(--amber);}
+.agd-card.futuro{border-left-color:var(--blue);}
+.agd-card.pago{border-left-color:var(--green);opacity:.75;}
+.agd-desc{font-family:var(--head);font-size:15px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;}
+.agd-meta{font-family:var(--body);font-size:11px;color:var(--w3);margin-top:3px;}
+.agd-val{font-family:var(--mono);font-size:18px;font-weight:800;margin-top:8px;}
+.agd-card.vencido .agd-val{color:var(--red);}
+.agd-card.hoje .agd-val{color:var(--amber);}
+.agd-card.futuro .agd-val{color:var(--blue);}
+.agd-card.pago .agd-val{color:var(--green);}
+.agd-actions{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;}
+.agd-btn{font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:7px 14px;border:1px solid var(--ln3);border-radius:var(--r);background:var(--sf2);color:var(--w3);cursor:pointer;transition:all .12s;}
+.agd-btn:hover{background:var(--sf3);color:var(--w);}
+.agd-btn.pagar{background:var(--green);color:#000;border-color:var(--green);}
+.agd-btn.pagar:hover{filter:brightness(1.1);}
 /* ── BOLETO SNIPER ── */
 .boleto-dropzone{border:1.5px dashed var(--ln3);border-radius:var(--r2);padding:18px 12px;text-align:center;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;color:var(--w3);font-family:var(--mono);}
 .boleto-dropzone:hover,.boleto-dropzone.drag-over{border-color:var(--amber);background:var(--amber-dim);color:var(--amber);}
@@ -273,8 +325,8 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 @keyframes boleto-pulse{0%,100%{box-shadow:0 0 0 0 rgba(232,147,12,0);}50%{box-shadow:0 0 0 4px rgba(232,147,12,.25);}}
 .boleto-aviso{background:rgba(232,147,12,.08);border:1px solid rgba(232,147,12,.3);border-radius:var(--r2);padding:10px 14px;font-size:12px;color:var(--amber);margin-top:8px;line-height:1.5;}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04080548"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04080548"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04080617"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04080617"></script>
 </head>
 <body>
 
@@ -375,6 +427,16 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
   <div class="modal-box" id="modal-box"></div>
 </div>
 
+<!-- AGENDA DRAWER -->
+<div class="agenda-overlay" id="agenda-overlay-el" onclick="fecharAgendaDrawer()"></div>
+<div class="agenda-drawer" id="agenda-drawer">
+  <div class="agenda-drawer-head">
+    <div class="panel-title">Pagamentos <span id="agenda-drawer-data">—</span></div>
+    <button class="panel-close" onclick="fecharAgendaDrawer()">×</button>
+  </div>
+  <div class="agenda-drawer-body" id="agenda-drawer-body"></div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast-el"></div>
 
@@ -402,6 +464,9 @@ let PECAS_PERIODO = 'mes';
 let DRE_MES = new Date().getMonth();
 let DRE_ANO = new Date().getFullYear();
 let DRE_PERIODO = 'mes';
+let AGENDA_MES = new Date().getMonth();
+let AGENDA_ANO = new Date().getFullYear();
+let _agendaLista = [];
 
 // ── UTILS ──
 function esc(s){ return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -444,9 +509,9 @@ async function carregar() {
     <div class="tabs">
       ${(()=>{
         const MAP={fechamento:'fin_fechamento',caixa:'fin_caixa',pecas:'fin_lucro_pecas',dre:'fin_dre'};
-        const tabs=['fechamento','caixa','despesas','pecas','dre','receber'].filter(t=>!MAP[t]||INFRA.podeVer(MAP[t]));
+        const tabs=['fechamento','caixa','despesas','pecas','dre','receber','agenda'].filter(t=>!MAP[t]||INFRA.podeVer(MAP[t]));
         if(!tabs.includes(ABA))ABA=tabs[0]||'despesas';
-        const lbl={fechamento:'Fechamento',caixa:'Caixa',despesas:'Despesas',pecas:'Lucro Peças',dre:'DRE',receber:'A Receber'};
+        const lbl={fechamento:'Fechamento',caixa:'Caixa',despesas:'Despesas',pecas:'Lucro Peças',dre:'DRE',receber:'A Receber',agenda:'📅 Agenda'};
         return tabs.map(t=>`<div class="tab ${ABA===t?'on':''}" onclick="switchTab('${t}')">${lbl[t]}</div>`).join('');
       })()}
     </div>
@@ -458,6 +523,7 @@ async function carregar() {
   else if (ABA === 'pecas') await carregarLucroPecas();
   else if (ABA === 'dre') await carregarDRE();
   else if (ABA === 'receber') await carregarContasReceber();
+  else if (ABA === 'agenda') await carregarAgenda();
 }
 
 // ==================== FECHAMENTO ====================
@@ -1228,6 +1294,182 @@ function filtrarReceber(busca) {
   });
 }
 
+// ==================== AGENDA DE PAGAMENTOS ====================
+async function carregarAgenda() {
+  const el = document.getElementById('fin-tab-content');
+  const inicio = new Date(AGENDA_ANO, AGENDA_MES, 1).toISOString().split('T')[0];
+  const fim = new Date(AGENDA_ANO, AGENDA_MES+1, 0).toISOString().split('T')[0];
+
+  const { data } = await db.from('caixa').select('*')
+    .eq('oficina_id', OFICINA_ID).eq('tipo', 'saida')
+    .gte('data_vencimento', inicio).lte('data_vencimento', fim)
+    .order('data_vencimento');
+
+  _agendaLista = data || [];
+  buildAgendaFinanceira(el);
+}
+
+function buildAgendaFinanceira(el) {
+  const hoje = new Date().toISOString().split('T')[0];
+  const nomeMes = new Date(AGENDA_ANO, AGENDA_MES).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+
+  // Agrupar por data_vencimento
+  const porDia = {};
+  _agendaLista.forEach(d => {
+    const dia = d.data_vencimento;
+    if (!dia) return;
+    if (!porDia[dia]) porDia[dia] = [];
+    porDia[dia].push(d);
+  });
+
+  // Calcular totais do mês
+  const totalMes = _agendaLista.reduce((s,d)=>s+(d.valor||0),0);
+  const pendentes = _agendaLista.filter(d=>!d.pago).length;
+  const totalPendente = _agendaLista.filter(d=>!d.pago).reduce((s,d)=>s+(d.valor||0),0);
+
+  // Gerar células do calendário
+  const primeiroDia = new Date(AGENDA_ANO, AGENDA_MES, 1).getDay(); // 0=dom
+  const diasNoMes = new Date(AGENDA_ANO, AGENDA_MES+1, 0).getDate();
+
+  const cells = [];
+  // células vazias antes do dia 1
+  for (let i = 0; i < primeiroDia; i++) cells.push(null);
+  // dias reais
+  for (let d = 1; d <= diasNoMes; d++) {
+    const pad = n => String(n).padStart(2,'0');
+    const dataStr = `${AGENDA_ANO}-${pad(AGENDA_MES+1)}-${pad(d)}`;
+    const itens = porDia[dataStr] || [];
+    cells.push({ d, dataStr, itens });
+  }
+
+  // Calcular classe de cada dia
+  function diaClass(dataStr, itens) {
+    if (!itens.length) return '';
+    const temPendente = itens.some(i => !i.pago);
+    if (!temPendente) return 'day-paid';
+    if (dataStr < hoje) return 'day-overdue';
+    if (dataStr === hoje) return 'day-today';
+    return 'day-upcoming';
+  }
+
+  function dotClass(cls) {
+    if (cls === 'day-overdue') return 'overdue';
+    if (cls === 'day-today') return 'today';
+    if (cls === 'day-upcoming') return 'upcoming';
+    return '';
+  }
+
+  el.innerHTML = `
+    <div class="agenda-nav">
+      <div class="p-btn" onclick="navAgenda(-1)">◀</div>
+      <div style="font-family:var(--head);font-size:18px;font-weight:800;text-transform:capitalize;">${nomeMes}</div>
+      <div class="p-btn" onclick="navAgenda(1)">▶</div>
+    </div>
+
+    <div class="comp-grid" style="margin-bottom:20px;">
+      <div class="comp-block">
+        <div class="comp-block-label">Total Mês</div>
+        <div class="comp-block-val" style="color:var(--red);">${fmt(totalMes)}</div>
+        <div class="comp-block-sub">${_agendaLista.length} lançamento(s)</div>
+      </div>
+      <div class="comp-block">
+        <div class="comp-block-label">A Pagar</div>
+        <div class="comp-block-val" style="color:${pendentes?'var(--amber)':'var(--w3)'};">${fmt(totalPendente)}</div>
+        <div class="comp-block-sub">${pendentes} pendente(s)</div>
+      </div>
+      <div class="comp-block">
+        <div class="comp-block-label">Pago</div>
+        <div class="comp-block-val" style="color:var(--green);">${fmt(totalMes-totalPendente)}</div>
+        <div class="comp-block-sub">${_agendaLista.length-pendentes} quitado(s)</div>
+      </div>
+      <div class="comp-block">
+        <div class="comp-block-label">Vencidos</div>
+        <div class="comp-block-val" style="color:var(--red);">${_agendaLista.filter(d=>!d.pago&&d.data_vencimento<hoje).length}</div>
+        <div class="comp-block-sub">em atraso</div>
+      </div>
+    </div>
+
+    <div class="agenda-cal-dow">
+      ${['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(d=>`<div class="agenda-dow-lbl">${d}</div>`).join('')}
+    </div>
+    <div class="agenda-cal">
+      ${cells.map(c => {
+        if (!c) return `<div class="agenda-day empty"></div>`;
+        const cls = diaClass(c.dataStr, c.itens);
+        const total = c.itens.reduce((s,i)=>s+(i.valor||0),0);
+        const dot = cls && cls !== 'day-paid' ? `<div class="agenda-status-dot ${dotClass(cls)}"></div>` : (cls==='day-paid'?`<div class="agenda-paid-dot"></div>`:'');
+        return `<div class="agenda-day ${cls}" onclick="${c.itens.length?`abrirDiaAgenda('${c.dataStr}')`:''}" data-data="${c.dataStr}">
+          ${dot}
+          <div class="agenda-day-num">${c.d}</div>
+          ${c.itens.length ? `
+          <div class="agenda-day-val">${fmt(total)}</div>
+          <div class="agenda-day-count">${c.itens.length} item(s)</div>` : ''}
+        </div>`;
+      }).join('')}
+    </div>
+
+    ${!_agendaLista.length ? `<div style="text-align:center;padding:40px;font-family:var(--mono);font-size:12px;color:var(--w4);margin-top:20px;">Nenhum lançamento com vencimento neste mês</div>` : ''}
+  `;
+}
+
+function navAgenda(d) {
+  AGENDA_MES += d;
+  if (AGENDA_MES > 11) { AGENDA_MES = 0; AGENDA_ANO++; }
+  if (AGENDA_MES < 0) { AGENDA_MES = 11; AGENDA_ANO--; }
+  carregar();
+}
+
+function abrirDiaAgenda(dataStr) {
+  const itens = _agendaLista.filter(d => d.data_vencimento === dataStr);
+  if (!itens.length) return;
+  const hoje = new Date().toISOString().split('T')[0];
+  const dtFmt = new Date(dataStr+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+
+  function statusCard(d) {
+    if (d.pago) return 'pago';
+    if (d.data_vencimento < hoje) return 'vencido';
+    if (d.data_vencimento === hoje) return 'hoje';
+    return 'futuro';
+  }
+  function statusLabel(s) {
+    return {pago:'✅ Pago',vencido:'🔴 Vencido',hoje:'🟡 Vence hoje',futuro:'🔵 A pagar'}[s]||s;
+  }
+
+  document.getElementById('agenda-drawer-data').textContent = dtFmt;
+  document.getElementById('agenda-drawer-body').innerHTML = itens.map(d => {
+    const s = statusCard(d);
+    const cat = CAT_LABEL[d.categoria]||d.categoria||'';
+    const forma = FORMA_LABEL[d.forma_pagamento]||d.forma_pagamento||'';
+    return `<div class="agd-card ${s}">
+      <div class="agd-desc">${esc(d.descricao)}</div>
+      <div class="agd-meta">${esc(cat)} · ${esc(forma)} · ${statusLabel(s)}</div>
+      <div class="agd-val">${fmt(d.valor)}</div>
+      <div class="agd-actions">
+        ${d.codigo_barras ? `<button class="agd-btn" onclick="copiarCodBarras(event,'${esc(d.codigo_barras)}')">⎘ Copiar código</button>` : ''}
+        ${d.url_anexo ? `<button class="agd-btn" onclick="window.open('${esc(d.url_anexo)}','_blank')">📄 Abrir boleto</button>` : ''}
+        ${!d.pago ? `<button class="agd-btn pagar" onclick="marcarPago('${d.id}')">✓ Marcar como pago</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('agenda-overlay-el').classList.add('open');
+  document.getElementById('agenda-drawer').classList.add('open');
+}
+
+function fecharAgendaDrawer() {
+  document.getElementById('agenda-overlay-el').classList.remove('open');
+  document.getElementById('agenda-drawer').classList.remove('open');
+}
+
+async function marcarPago(id) {
+  const { error } = await db.from('caixa').update({ pago: true }).eq('id', id);
+  if (error) { toast('Erro ao atualizar','err'); return; }
+  toast('Marcado como pago ✓');
+  fecharAgendaDrawer();
+  await carregarAgenda();
+  buildAgendaFinanceira(document.getElementById('fin-tab-content'));
+}
+
 // ==================== RECEBER PAGAMENTO (MODAL) ====================
 async function receberPagamento(clienteId) {
   const { data: contas } = await db.from('contas_receber')
@@ -1442,9 +1684,15 @@ async function novaDespesa() {
         </select>
       </div>
     </div>
-    <div class="panel-field">
-      <div class="panel-label">Data</div>
-      <input class="panel-input" id="desp-data" type="date" value="${new Date().toISOString().split('T')[0]}">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="panel-field">
+        <div class="panel-label">Data de pagamento</div>
+        <input class="panel-input" id="desp-data" type="date" value="${new Date().toISOString().split('T')[0]}">
+      </div>
+      <div class="panel-field">
+        <div class="panel-label">Vencimento <span style="font-weight:400;color:var(--w4);">(boleto)</span></div>
+        <input class="panel-input" id="desp-vencimento" type="date" placeholder="">
+      </div>
     </div>
     <button class="panel-btn-submit panel-btn-saida" onclick="salvarDespesa()">Registrar Despesa</button>
   `;
@@ -1462,11 +1710,15 @@ async function salvarDespesa() {
   const desc = document.getElementById('desp-desc').value.trim();
   const valor = parseFloat(document.getElementById('desp-valor').value) || 0;
   const data = document.getElementById('desp-data').value;
+  const vencimento = document.getElementById('desp-vencimento')?.value || null;
 
   if (!desc || valor <= 0) { toast('Preencha descrição e valor','err'); return; }
   if (cat === 'vale' && !membroId) { toast('Selecione o funcionário','err'); return; }
 
   const codigoBarras = document.getElementById('desp-codigo-barras')?.value?.trim() || null;
+  const hoje = new Date().toISOString().split('T')[0];
+  const dataVenc = vencimento || data || hoje;
+  const pago = !vencimento || vencimento <= hoje;
 
   if (_busy.salvarDesp) return;
   _busy.salvarDesp = true;
@@ -1491,6 +1743,7 @@ async function salvarDespesa() {
     descricao:desc, valor, forma_pagamento:document.getElementById('desp-forma').value,
     membro_id: cat==='vale' ? membroId : null, created_by: PERFIL.id,
     created_at: data ? new Date(data+'T12:00:00').toISOString() : new Date().toISOString(),
+    data_vencimento: dataVenc, pago: pago,
     codigo_barras: codigoBarras, url_anexo: urlAnexo
   });
 
@@ -1716,11 +1969,13 @@ async function boletoOnFile(arquivo) {
       camposDestaque.push('Valor');
     }
     if (vencimento) {
-      const el = document.getElementById('desp-data');
-      el.value = vencimento;
-      el.classList.add('boleto-campo-destaque');
-      el.addEventListener('change', () => el.classList.remove('boleto-campo-destaque'), { once: true });
-      camposDestaque.push('Data');
+      const el = document.getElementById('desp-vencimento');
+      if (el) {
+        el.value = vencimento;
+        el.classList.add('boleto-campo-destaque');
+        el.addEventListener('change', () => el.classList.remove('boleto-campo-destaque'), { once: true });
+        camposDestaque.push('Vencimento');
+      }
     }
     document.getElementById('desp-forma').value = 'boleto';
 
