@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Configurações</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04081628"></script>
+<script src="js/infra.js?v=04081632"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -1076,6 +1076,7 @@ const _MODULOS = [
   { key: 'fin_lucro_pecas', label: 'Financeiro → Lucro Peças' },
   { key: 'fin_dre',         label: 'Financeiro → DRE' },
   { key: 'fin_resumo',      label: 'Dashboard → KPIs Faturado/Lucro' },
+  { key: 'fornecedores',    label: 'Fornecedores / Notas Fiscais' },
   { key: 'folha',           label: 'Folha de Pagamento' },
   { key: 'comissao',        label: 'Comissão' },
   { key: 'crm',             label: 'CRM / Reativação / Satisfação' },
@@ -1086,7 +1087,7 @@ const _MODULOS = [
 ];
 const _DEFAULTS_PERM = {
   dashboard: false, fin_fechamento: false, fin_caixa: false, fin_lucro_pecas: false,
-  fin_dre: false, fin_resumo: false, folha: false, comissao: false, crm: false,
+  fin_dre: false, fin_resumo: false, fornecedores: false, folha: false, comissao: false, crm: false,
   produtividade: false, equipe_edit: false, config: false, config_full: false,
 };
 

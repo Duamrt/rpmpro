@@ -11,10 +11,14 @@ const INFRA = {
     'satisfacao-v2.html':     'crm',
     'dashboard-v2.html':      'dashboard',
     'produtividade-v2.html':  'produtividade',
+    'fornecedores-v2.html':   'fornecedores',
+    'notas-fiscais-v2.html':  'fornecedores',
+    'historico-nf-v2.html':   'fornecedores',
   },
 
   // Padrões para quem não tem permissions configurado
   DEFAULTS: {
+    fornecedores:    false,
     folha:           false,
     comissao:        false,
     fin_resumo:      false,
