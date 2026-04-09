@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro — Master Admin</title>
+<link rel="stylesheet" href="css/style.css?v=04091639">
+<script>
+  (function(){ var t = localStorage.getItem('rpmpro-theme') || 'dark'; document.documentElement.setAttribute('data-theme', t); })();
+</script>
+</head>
+<body>
+
+<div class="hazard-top"></div>
+
+<!-- LOADING -->
+<div id="loading-screen" style="display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:16px;">
+  <div style="font-family:var(--heading);font-size:36px;letter-spacing:3px;color:var(--primary);">RPM<span style="color:var(--text);">PRO</span></div>
+  <div style="color:var(--text-secondary);font-size:14px;">Verificando acesso...</div>
+</div>
+
+<!-- ACESSO NEGADO -->
+<div id="denied-screen" style="display:none;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:16px;">
+  <div style="font-size:48px;">🔒</div>
+  <div style="font-family:var(--heading);font-size:24px;letter-spacing:2px;">ACESSO RESTRITO</div>
+  <div style="color:var(--text-secondary);">Esta área é exclusiva do administrador da plataforma.</div>
+  <a href="login.html" class="btn btn-primary" style="margin-top:8px;">Voltar ao Login</a>
+</div>
+
+<!-- PAINEL ADMIN -->
+<div id="admin-panel" style="display:none;" class="app-layout">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar" style="display:flex;flex-direction:column;">
+    <div class="sidebar-header">
+      <div style="font-family:var(--heading);font-size:28px;letter-spacing:3px;line-height:1;">
+        <span style="color:var(--primary);">RPM</span><span style="color:var(--text);">PRO</span>
+      </div>
+      <div style="font-size:10px;color:var(--primary);font-weight:700;letter-spacing:2px;margin-top:2px;">MASTER ADMIN</div>
+    </div>
+
+    <div class="sidebar-nav" style="flex:1;">
+      <div class="sidebar-group-label">PLATAFORMA</div>
+      <div class="sidebar-group">
+        <a href="#" data-tab="dashboard" onclick="setTab('dashboard',event)" class="active">
+          <span class="nav-icon">📊</span> Dashboard
+        </a>
+        <a href="#" data-tab="oficinas" onclick="setTab('oficinas',event)">
+          <span class="nav-icon">🏢</span> Oficinas
+        </a>
+        <a href="#" data-tab="leads" onclick="setTab('leads',event)">
+          <span class="nav-icon">🎯</span> Leads
+          <span id="admin-leads-badge" style="display:none;background:var(--danger);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:auto;"></span>
+        </a>
+      </div>
+
+      <div class="sidebar-group-label" style="margin-top:8px;">CONTA</div>
+      <div class="sidebar-group">
+        <a href="#" onclick="toggleTheme(event)">
+          <span class="nav-icon" id="theme-icon">🌙</span> Alternar Tema
+        </a>
+        <a href="#" onclick="sair(event)" style="color:var(--danger);">
+          <span class="nav-icon">⏻</span> Sair
+        </a>
+      </div>
+    </div>
+
+    <div style="padding:16px;font-size:11px;color:var(--text-muted);border-top:1px solid var(--border);">
+      Logado como<br><strong id="admin-email" style="color:var(--text-secondary);"></strong>
+    </div>
+  </nav>
+
+  <!-- CONTEÚDO -->
+  <main class="main-content" style="padding:24px;">
+    <div id="admin-content">Carregando...</div>
+  </main>
+
+</div>
+
+<!-- MODAL -->
+<div id="modal-overlay" class="modal-overlay hidden" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modal-box"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js?v=04091639"></script>
+<script src="js/super-admin.js?v=04091639"></script>
+<script>
+// ── Utilidades que super-admin.js depende ──
+
+function esc(s) {
+  if (!s && s !== 0) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(s) { return esc(s); }
+
+const APP = {
+  profile: null,
+  oficina: null,
+
+  formatMoney(v) {
+    return 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  },
+
+  formatDate(d) {
+    if (!d) return '-';
+    const parts = String(d).slice(0, 10).split('-');
+    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    return d;
+  },
+
+  formatDateTime(d) {
+    if (!d) return '-';
+    const dt = new Date(d);
+    return dt.toLocaleDateString('pt-BR') + ' ' + dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  },
+
+  toast(msg, type) {
+    const existing = document.getElementById('toast-rpm');
+    if (existing) existing.remove();
+    const t = document.createElement('div');
+    t.id = 'toast-rpm';
+    const bg = type === 'error' ? 'var(--danger)' : type === 'warning' ? 'var(--warning)' : 'var(--success)';
+    t.style.cssText = `position:fixed;bottom:24px;right:24px;background:${bg};color:#fff;padding:12px 20px;border-radius:8px;font-size:14px;font-weight:600;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.3);max-width:320px;`;
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+  },
+
+  loadPage(page) {
+    if (page === 'admin') {
+      SUPER_ADMIN._dados = null;
+      SUPER_ADMIN._tab = 'dashboard';
+      SUPER_ADMIN.carregar();
+      setTabActive('dashboard');
+    } else if (page === 'kanban') {
+      window.location.href = 'kanban-v2.html';
+    }
+  }
+};
+
+function openModal(html) {
+  document.getElementById('modal-box').innerHTML = html;
+  document.getElementById('modal-overlay').classList.remove('hidden');
+  document.getElementById('modal-overlay').classList.add('active');
+}
+function closeModal() {
+  document.getElementById('modal-overlay').classList.add('hidden');
+  document.getElementById('modal-overlay').classList.remove('active');
+}
+
+// ── Navegação de tabs ──
+
+function setTab(tab, e) {
+  if (e) e.preventDefault();
+  SUPER_ADMIN._tab = tab;
+  SUPER_ADMIN.carregar();
+  setTabActive(tab);
+}
+
+function setTabActive(tab) {
+  document.querySelectorAll('[data-tab]').forEach(a => {
+    a.classList.toggle('active', a.dataset.tab === tab);
+  });
+}
+
+// ── Tema ──
+
+function toggleTheme(e) {
+  if (e) e.preventDefault();
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('rpmpro-theme', next);
+  document.getElementById('theme-icon').textContent = next === 'dark' ? '🌙' : '☀️';
+}
+
+// ── Sair ──
+
+async function sair(e) {
+  if (e) e.preventDefault();
+  await db.auth.signOut();
+  window.location.href = 'login.html';
+}
+
+// ── Init ──
+
+(async () => {
+  const { data: { session } } = await db.auth.getSession();
+
+  if (!session) {
+    window.location.href = 'login.html';
+    return;
+  }
+
+  // Verifica se é super admin
+  const { data: isAdmin } = await db.rpc('is_platform_admin');
+
+  if (!isAdmin) {
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('denied-screen').style.display = 'flex';
+    return;
+  }
+
+  // Configura APP.profile
+  const { data: profile } = await db.from('profiles').select('*, oficinas(*)').eq('id', session.user.id).single();
+  APP.profile = profile || { id: session.user.id, oficina_id: null, role: 'dono' };
+  APP.oficina = profile?.oficinas || {};
+  SUPER_ADMIN.isSuperAdmin = true;
+
+  // Atualiza email na sidebar
+  document.getElementById('admin-email').textContent = session.user.email;
+
+  // Ajusta ícone de tema
+  const tema = localStorage.getItem('rpmpro-theme') || 'dark';
+  document.getElementById('theme-icon').textContent = tema === 'dark' ? '🌙' : '☀️';
+
+  // Mostra painel
+  document.getElementById('loading-screen').style.display = 'none';
+  document.getElementById('admin-panel').style.display = 'flex';
+
+  // Carrega dados
+  await SUPER_ADMIN.carregar();
+})();
+</script>
+</body>
+</html>
