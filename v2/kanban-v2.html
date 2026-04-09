@@ -6,12 +6,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Pátio</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04081637"></script>
+<script src="js/infra.js?v=04091626"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04081637"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04081637"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04081637"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04081637"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04091626"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04091626"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04091626"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04091626"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -912,8 +912,10 @@ async function drop(e, novoStatus) {
 // ── MOVER ──
 async function moverCard(osId, novoStatus) {
   // Busca dados frescos do banco para evitar cache desatualizado
+  // ATENÇÃO: ao adicionar novas validações de pagamento aqui embaixo, incluir os campos no SELECT abaixo também
+  // Campos obrigatórios para as validações de 'pronto': mecanico_id, forma_pagamento, maquininha_id, parcelas
   const { data: os, error: erOs } = await db.from('ordens_servico')
-    .select('id,status,mecanico_id,forma_pagamento,maquininha_id').eq('id', osId).eq('oficina_id', OFICINA_ID).single();
+    .select('id,status,mecanico_id,forma_pagamento,maquininha_id,parcelas').eq('id', osId).eq('oficina_id', OFICINA_ID).single();
   if (!os || os.status === novoStatus) return;
 
   // Bloqueia retrocesso de status (exceto dono/gerente)
