@@ -6,12 +6,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Pátio</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04091656"></script>
+<script src="js/infra.js?v=04091704"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04091656"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04091656"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04091656"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04091656"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04091704"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04091704"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04091704"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04091704"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -2415,11 +2415,28 @@ async function init() {
   OFICINA_ID = perfil.oficina_id;
   OFICINA   = perfil.oficinas;
 
+  // Super admin acessando outra oficina
+  const adminOficinaId = localStorage.getItem('rpmpro-admin-oficina');
+  if (adminOficinaId && perfil.oficina_id === 'aaaa0001-0000-0000-0000-000000000001') {
+    OFICINA_ID = adminOficinaId;
+    const { data: adminOficina } = await db.from('oficinas').select('*').eq('id', adminOficinaId).single();
+    if (adminOficina) {
+      OFICINA = adminOficina;
+      // Barra admin no topo
+      const barra = document.createElement('div');
+      barra.id = 'admin-barra';
+      barra.style.cssText = 'position:fixed;top:0;left:0;right:0;background:var(--primary,#2563eb);color:#fff;padding:10px 24px;font-size:13px;font-weight:700;z-index:150;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,0.3);';
+      barra.innerHTML = `<span>🏢 ${adminOficina.nome}</span><button onclick="localStorage.removeItem('rpmpro-admin-oficina');window.location.href='admin.html';" style="background:rgba(255,255,255,0.2);border:none;color:#fff;padding:6px 16px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">← Voltar ao Master</button>`;
+      document.body.appendChild(barra);
+      document.querySelector('.app-layout, .kanban-wrap, body > main')?.style && (document.querySelector('.app-layout, .kanban-wrap, body > main').style.paddingTop = '44px');
+    }
+  }
+
   const nomeDisplay = perfil.nome || session.user.email;
   document.getElementById('user-nome').textContent = nomeDisplay;
   document.getElementById('user-role').textContent = perfil.role || '';
   document.getElementById('user-avatar').textContent = nomeDisplay.charAt(0).toUpperCase();
-  document.getElementById('oficina-nome').textContent = perfil.oficinas?.nome || '';
+  document.getElementById('oficina-nome').textContent = OFICINA?.nome || perfil.oficinas?.nome || '';
 
   await carregar();
 
