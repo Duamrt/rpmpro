@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Configurações</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04101931"></script>
+<script src="js/infra.js?v=04101943"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -480,7 +480,16 @@ function renderDados(ct) {
         <div class="cfg-field"><div class="cfg-label">Capacidade diária (veículos)</div><input class="cfg-input" id="cfg-capacidade" type="number" value="${o.capacidade_diaria||5}" min="1"><div class="cfg-hint">Quantos veículos a oficina atende por dia (elevadores/boxes)</div></div>
       </div>
     </div>
-    <button class="cfg-btn" onclick="salvarDados()">Salvar Dados</button>`;
+    <button class="cfg-btn" onclick="salvarDados()">Salvar Dados</button>
+    <div class="cfg-section" style="margin-top:24px;">
+      <div class="cfg-section-title">Nota Fiscal de Serviço (NFS-e)</div>
+      <div class="cfg-row">
+        <div class="cfg-field"><div class="cfg-label">Código ISS (LC 116)</div><input class="cfg-input" id="cfg-codigo-iss" value="${esc(localStorage.getItem('rpm_codigo_iss_'+OFICINA_ID)||'')}" placeholder="Ex: 14.01" maxlength="10"></div>
+        <div class="cfg-field"><div class="cfg-label">Município do tomador (padrão)</div><input class="cfg-input" id="cfg-municipio-nfse" value="${esc(localStorage.getItem('rpm_municipio_nfse_'+OFICINA_ID)||'')}" placeholder="Ex: São Paulo - SP" maxlength="60"></div>
+      </div>
+      <div class="cfg-hint" style="margin-top:4px;">Usado para preencher o resumo NFS-e gerado nas OS entregues</div>
+      <button class="cfg-btn" style="margin-top:12px;" onclick="salvarNFSeConfig()">Salvar Config NFS-e</button>
+    </div>`;
 }
 
 async function salvarDados() {
@@ -507,6 +516,14 @@ async function salvarDados() {
     toast('Dados salvos');
   } catch(e) { toast('Erro inesperado','err'); console.error('[salvarDados]',e); }
   finally { _busy.salvarDados = false; }
+}
+
+function salvarNFSeConfig() {
+  const cod = (document.getElementById('cfg-codigo-iss')?.value || '').trim();
+  const mun = (document.getElementById('cfg-municipio-nfse')?.value || '').trim();
+  localStorage.setItem('rpm_codigo_iss_' + OFICINA_ID, cod);
+  localStorage.setItem('rpm_municipio_nfse_' + OFICINA_ID, mun);
+  toast('Config NFS-e salva');
 }
 
 // ══════════════════════════════════════════

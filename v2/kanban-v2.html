@@ -6,13 +6,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Pátio</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04101931"></script>
-<script src="js/onboarding.js?v=04101931"></script>
+<script src="js/infra.js?v=04101943"></script>
+<script src="js/onboarding.js?v=04101943"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04101931"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04101931"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04101931"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04101931"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04101943"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04101943"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04101943"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04101943"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -1197,6 +1197,9 @@ async function abrirOS(osId) {
       </div>
       <button class="btn-panel btn-panel-secondary" style="width:100%;margin-top:6px;gap:6px;display:flex;align-items:center;justify-content:center;" onclick="pdfMecanico('${osId}')">
         <span>🔧</span><span>Imprimir OS (Mecânico)</span>
+      </button>
+      <button class="btn-panel btn-panel-secondary" style="width:100%;margin-top:6px;gap:6px;display:flex;align-items:center;justify-content:center;" onclick="gerarNFSe('${osId}')">
+        <span>📄</span><span>Resumo NFS-e</span>
       </button>
     </div>
   `;
@@ -2638,6 +2641,61 @@ async function _buscarDadosOS(osId) {
   ]);
   if (!osRes.data) { toast('OS não encontrada','err'); return null; }
   return { os: osRes.data, itens: itensRes.data||[] };
+}
+
+async function gerarNFSe(osId) {
+  const dados = await _buscarDadosOS(osId);
+  if (!dados) return;
+  const { os, itens } = dados;
+  const _e = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const codigoISS = localStorage.getItem('rpm_codigo_iss_' + OFICINA_ID) || '';
+  const municipioNFSe = localStorage.getItem('rpm_municipio_nfse_' + OFICINA_ID) || '';
+  const servicos = itens.filter(i => i.tipo === 'servico');
+  const pecas = itens.filter(i => i.tipo === 'peca');
+  const fmtVal = v => (v||0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+  const discriminacao = [
+    ...servicos.map(s => `${s.descricao} — ${Number(s.quantidade||1).toLocaleString('pt-BR', {maximumFractionDigits:2})}x ${fmtVal(s.valor_unitario)}`),
+    ...(pecas.length ? ['', '--- Peças / Materiais ---', ...pecas.map(p => `${p.descricao} — ${Number(p.quantidade||1).toLocaleString('pt-BR', {maximumFractionDigits:2})}x ${fmtVal(p.valor_unitario)}`)] : [])
+  ].join('\n') || `Manutenção automotiva conforme OS #${os.numero_os}`;
+  const dataComp = os.data_entrega ? new Date(os.data_entrega).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR');
+  const of = OFICINA || {};
+  const endPrestador = [of.endereco, of.numero, of.bairro, of.cidade, of.estado].filter(Boolean).join(', ') || '—';
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>NFS-e — OS #${_e(os.numero_os)}</title>
+<style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:Arial,sans-serif;font-size:13px;color:#111;background:#fff;padding:28px;max-width:700px;margin:0 auto;}
+h1{font-size:16px;font-weight:800;border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:16px;}
+.badge{display:inline-block;background:#E8930C;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:1px;margin-left:8px;vertical-align:middle;}
+.alert{background:#FFF3CD;border:1px solid #E8930C;border-radius:4px;padding:8px 12px;font-size:12px;color:#7d4e00;margin-bottom:16px;}
+.sec{margin-bottom:16px;}.sec-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;border-bottom:1px solid #eee;padding-bottom:3px;margin-bottom:8px;}
+.row{display:flex;gap:16px;margin-bottom:6px;}.field{flex:1;}.field label{font-size:10px;color:#888;display:block;margin-bottom:1px;}.field span{font-size:13px;font-weight:600;}
+.discrim{background:#f7f7f7;border:1px solid #ddd;border-radius:4px;padding:10px 12px;font-size:12px;white-space:pre-wrap;line-height:1.75;min-height:80px;}
+.total-line{text-align:right;font-size:20px;font-weight:800;margin-top:14px;padding-top:10px;border-top:2px solid #111;}
+.footer{margin-top:20px;font-size:11px;color:#999;border-top:1px solid #eee;padding-top:8px;}
+.btn-print{display:block;margin:0 auto 18px;padding:9px 28px;background:#111;color:#fff;border:none;border-radius:6px;font-size:14px;cursor:pointer;font-weight:700;}
+@media print{.no-print{display:none!important;}body{padding:12px;}}</style></head><body>
+<button class="btn-print no-print" onclick="window.print()">Imprimir / Salvar PDF</button>
+<div class="alert">⚠️ <strong>Rascunho para preenchimento</strong> — use os dados abaixo para emitir a NFS-e no site da prefeitura. Este documento não é uma nota fiscal.</div>
+<h1>Resumo NFS-e <span class="badge">RASCUNHO</span></h1>
+<div class="sec"><div class="sec-title">Prestador de Serviços</div>
+<div class="row"><div class="field"><label>Razão Social / Nome</label><span>${_e(of.nome||'—')}</span></div><div class="field"><label>CNPJ</label><span>${_e(of.cnpj||'—')}</span></div></div>
+<div class="row"><div class="field"><label>Endereço</label><span>${_e(endPrestador)}</span></div></div></div>
+<div class="sec"><div class="sec-title">Tomador (Cliente)</div>
+<div class="row"><div class="field"><label>Nome / Razão Social</label><span>${_e(os.clientes?.nome||'—')}</span></div><div class="field"><label>CPF / CNPJ</label><span>${_e(os.clientes?.cpf_cnpj||'—')}</span></div></div>
+${municipioNFSe ? `<div class="row"><div class="field"><label>Município do Tomador</label><span>${_e(municipioNFSe)}</span></div></div>` : ''}</div>
+<div class="sec"><div class="sec-title">Serviço</div>
+<div class="row">
+<div class="field"><label>Código LC 116 (ISS)</label><span>${_e(codigoISS||'— configurar em Config → Dados')}</span></div>
+<div class="field"><label>OS de Referência</label><span>#${_e(os.numero_os)}</span></div>
+<div class="field"><label>Competência</label><span>${dataComp}</span></div>
+</div>
+<div style="margin-top:8px;"><label style="font-size:10px;color:#888;display:block;margin-bottom:4px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Discriminação dos Serviços</label>
+<div class="discrim">${_e(discriminacao)}</div></div></div>
+<div class="total-line">Total: ${fmtVal(os.valor_total)}</div>
+<div class="footer">Gerado pelo RPM Pro · OS #${_e(os.numero_os)} · ${new Date().toLocaleDateString('pt-BR')}</div>
+</body></html>`;
+  const w = window.open('', '_blank', 'width=760,height=920');
+  if (!w) { toast('Permita pop-ups para gerar o resumo', 'err'); return; }
+  w.document.write(html);
+  w.document.close();
 }
 
 function _fmtR(val) { return (val||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
