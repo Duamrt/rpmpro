@@ -6,12 +6,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Pátio</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04101834"></script>
+<script src="js/infra.js?v=04101837"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04101834"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04101834"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04101834"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04101834"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04101837"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04101837"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04101837"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04101837"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -1258,8 +1258,10 @@ function _onChangePagamento(osId, forma) {
 function _getTaxaCartao(maq, forma, parcelas) {
   if (!maq) return 0;
   if (forma === 'debito') return maq.taxa_debito || 0;
-  // taxa_parcelado_* não existe no banco — sempre usa taxa_credito como base
-  return maq.taxa_credito || 0;
+  const p = parcelas || 1;
+  if (p === 1) return maq.taxa_credito || 0;
+  if (p <= 6) return maq.taxa_parcelado_6 || maq.taxa_credito || 0;
+  return maq.taxa_parcelado_12 || maq.taxa_parcelado_6 || maq.taxa_credito || 0;
 }
 
 async function _onChangeMaq(osId) {
@@ -2024,7 +2026,7 @@ async function carregar() {
       : db.from('profiles').select('id,nome').eq('oficina_id', OFICINA_ID).in('role',['mecanico','aux_mecanico','dono','gerente']).eq('ativo', true),
     staticData
       ? Promise.resolve({ data: staticData.maquininhas })
-      : db.from('maquininhas').select('id,nome,taxa_debito,taxa_credito').eq('oficina_id', OFICINA_ID).eq('ativo', true).order('nome')
+      : db.from('maquininhas').select('id,nome,taxa_debito,taxa_credito,taxa_parcelado_6,taxa_parcelado_12').eq('oficina_id', OFICINA_ID).eq('ativo', true).order('nome')
   ]);
 
   // Salva cache se veio do banco
