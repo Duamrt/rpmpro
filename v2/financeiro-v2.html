@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Financeiro</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04100405"></script>
+<script src="js/infra.js?v=04100408"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -367,9 +367,9 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 .nfe-tbl td{padding:9px 8px;border-bottom:1px solid var(--ln3);vertical-align:middle;}
 .nfe-tbl tr:last-child td{border-bottom:none;}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04100405"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04100405"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js?v=04100405"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04100408"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04100408"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js?v=04100408"></script>
 </head>
 <body>
 
@@ -1860,37 +1860,36 @@ function toggleMembro() {
 }
 
 // ==================== AUTOCOMPLETE FORNECEDOR ====================
-function acBenefInput(el) {
-  const q = el.value.trim().toLowerCase();
-  const list = document.getElementById('ac-benef');
+let _acMatches = [];
+function _acRender(listId, matches) {
+  const list = document.getElementById(listId);
   if (!list) return;
-  const matches = q.length < 1 ? [] : _fornecedoresAC.filter(f => f.nome.toLowerCase().includes(q));
-  if (!matches.length) { list.classList.remove('open'); return; }
-  list.innerHTML = matches.slice(0,8).map(f =>
-    `<div class="ac-item" onmousedown="acSelectBenef(${JSON.stringify(f.nome)},${JSON.stringify(f.cnpj)})">
+  _acMatches = matches.slice(0, 8);
+  if (!_acMatches.length) { list.classList.remove('open'); return; }
+  list.innerHTML = _acMatches.map((f, i) =>
+    `<div class="ac-item" onmousedown="acSelectIdx(${i})">
       <div class="ac-nome">${f.nome}</div>
       ${f.cnpj ? `<div class="ac-cnpj">${f.cnpj}</div>` : ''}
     </div>`).join('');
   list.classList.add('open');
+}
+function acBenefInput(el) {
+  const q = el.value.trim().toLowerCase();
+  const matches = q.length < 1 ? [] : _fornecedoresAC.filter(f => f.nome.toLowerCase().includes(q));
+  _acRender('ac-benef', matches);
 }
 function acCnpjInput(el) {
   const q = el.value.trim().toLowerCase();
-  const list = document.getElementById('ac-cnpj');
-  if (!list) return;
   const matches = q.length < 1 ? [] : _fornecedoresAC.filter(f => f.cnpj.toLowerCase().includes(q) || f.nome.toLowerCase().includes(q));
-  if (!matches.length) { list.classList.remove('open'); return; }
-  list.innerHTML = matches.slice(0,8).map(f =>
-    `<div class="ac-item" onmousedown="acSelectBenef(${JSON.stringify(f.nome)},${JSON.stringify(f.cnpj)})">
-      <div class="ac-nome">${f.nome}</div>
-      ${f.cnpj ? `<div class="ac-cnpj">${f.cnpj}</div>` : ''}
-    </div>`).join('');
-  list.classList.add('open');
+  _acRender('ac-cnpj', matches);
 }
-function acSelectBenef(nome, cnpj) {
+function acSelectIdx(i) {
+  const f = _acMatches[i];
+  if (!f) return;
   const bn = document.getElementById('desp-beneficiario');
   const bc = document.getElementById('desp-cnpj-benef');
-  if (bn) bn.value = nome;
-  if (bc && cnpj) bc.value = cnpj;
+  if (bn) bn.value = f.nome;
+  if (bc && f.cnpj) bc.value = f.cnpj;
   acClose('ac-benef');
   acClose('ac-cnpj');
 }
