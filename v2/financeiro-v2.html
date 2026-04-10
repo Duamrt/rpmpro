@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Financeiro</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04100351"></script>
+<script src="js/infra.js?v=04100357"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -356,9 +356,9 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 .nfe-tbl td{padding:9px 8px;border-bottom:1px solid var(--ln3);vertical-align:middle;}
 .nfe-tbl tr:last-child td{border-bottom:none;}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04100351"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04100351"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js?v=04100351"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04100357"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04100357"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js?v=04100357"></script>
 </head>
 <body>
 
@@ -993,6 +993,10 @@ async function carregarDespesas() {
         + '<div style="font-family:var(--mono);font-size:10px;color:var(--w4);flex-shrink:0;">'+dt+'</div>'
         + '<span style="font-size:14px;cursor:pointer;opacity:.4;flex-shrink:0;padding:4px;" onclick="event.stopPropagation();editarDespesa(\''+d.id+'\')" title="Editar">✏️</span>'
         + '<span style="font-size:14px;cursor:pointer;opacity:.3;flex-shrink:0;" onclick="event.stopPropagation();excluirMov(\''+d.id+'\')" title="Excluir">✕</span>'
+        + (cbEsc ? '<div style="width:100%;display:flex;align-items:center;gap:8px;padding:6px 8px 6px 0;margin-left:calc(72px);border-top:1px solid var(--ln2);" onclick="event.stopPropagation()">'
+          + '<span style="font-family:var(--mono);font-size:10px;color:var(--w3);flex:1;word-break:break-all;line-height:1.4;">'+cbEsc+'</span>'
+          + '<button onclick="event.stopPropagation();abrirBarcodeDesp(\''+d.id+'\')" style="flex-shrink:0;background:var(--amber);color:#000;border:none;border-radius:6px;padding:4px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--mono);">📊 Ver código</button>'
+          + '</div>' : '')
         + '</div>';
     }).join('')}
     ${!lista.length ? '<div style="text-align:center;padding:40px;font-family:var(--mono);font-size:12px;color:var(--w4);">Nenhuma despesa neste mês</div>' : ''}
@@ -2537,6 +2541,14 @@ async function copiarCodBarras(e, codigo) {
 
 // ==================== MODAL CÓDIGO DE BARRAS ====================
 let _barcodeAtual = '';
+
+function abrirBarcodeDesp(id) {
+  const d = _despCache[id];
+  if (!d || !d.codigo_barras) return;
+  const key = 'bc_' + id;
+  _barcodeMap[key] = { codigo: d.codigo_barras, desc: d.descricao||'', valor: d.valor||0, benef: d.beneficiario||'', cnpj: d.cnpj_beneficiario||'', venc: d.data_vencimento||'' };
+  abrirBarcode(key);
+}
 
 function abrirBarcode(key) {
   const info = _barcodeMap[key];
