@@ -1,4 +1,5 @@
 // RPM Pro — Infra: Permissões granulares por módulo e seção
+(function(){const v=(document.currentScript?.src||'').match(/\?v=(\d+)/)?.[1]||'?';console.log('%c RPM Pro %c v'+v+' ','background:#1e3a5f;color:#60a5fa;font-weight:700;padding:3px 7px;border-radius:3px 0 0 3px','background:#60a5fa;color:#1e3a5f;font-weight:700;padding:3px 7px;border-radius:0 3px 3px 0');})();
 const INFRA = {
   _perms: null,
 
