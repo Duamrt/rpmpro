@@ -6,9 +6,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Veiculos</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04101907"></script>
+<script src="js/infra.js?v=04101931"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/catalogo-veiculos.js?v=04101907"></script>
+<script src="js/catalogo-veiculos.js?v=04101931"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -233,6 +233,32 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 .empty-state .icon{font-size:48px;margin-bottom:12px;}
 .empty-state h3{font-family:var(--head);font-size:18px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--w4);margin-bottom:6px;}
 .empty-state p{font-size:13px;}
+
+/* ── TIMELINE ── */
+.tl-wrap{position:relative;padding-left:22px;}
+.tl-wrap::before{content:'';position:absolute;left:5px;top:10px;bottom:10px;width:1px;background:var(--ln2);}
+.tl-node{position:relative;margin-bottom:14px;}
+.tl-node.tl-last{margin-bottom:0;}
+.tl-dot{position:absolute;left:-18px;top:13px;width:11px;height:11px;border-radius:50%;border:2px solid var(--w4);background:var(--bg);}
+.tl-card{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:11px 13px;transition:border-color .15s;}
+.tl-card:hover{border-color:var(--ln3);}
+.tl-card-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px;gap:6px;}
+.tl-os-num{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--w);}
+.tl-card-status{font-family:var(--head);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:2px 5px;border-radius:2px;margin-left:5px;}
+.tl-card-val{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--amber);flex-shrink:0;}
+.tl-card-desc{font-size:12px;color:var(--w2);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tl-card-meta{display:flex;gap:8px;flex-wrap:wrap;font-family:var(--mono);font-size:10px;color:var(--w4);}
+.tl-items-toggle{margin-top:7px;font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--w4);cursor:pointer;user-select:none;}
+.tl-items-toggle:hover{color:var(--amber);}
+.tl-items{display:none;margin-top:4px;border-top:1px solid var(--ln);padding-top:4px;}
+.tl-items.open{display:block;}
+.tl-item-row{display:flex;align-items:center;gap:7px;padding:4px 0;font-size:12px;border-bottom:1px solid var(--ln);}
+.tl-item-row:last-child{border-bottom:none;}
+.tl-item-badge{font-family:var(--head);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:1px 6px;border-radius:2px;flex-shrink:0;}
+.tl-item-badge.svc{background:var(--blue-dim);color:var(--blue);}
+.tl-item-badge.pec{background:var(--green-dim);color:var(--green);}
+.tl-item-desc{flex:1;color:var(--w2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tl-item-val{font-family:var(--mono);font-size:11px;color:var(--amber);flex-shrink:0;}
 </style>
 </head>
 <body>
@@ -551,7 +577,7 @@ function renderLista() {
 }
 
 // ── DETALHE ──
-async function abrirDetalhe(veiculoId) {
+async function abrirDetalhe(veiculoId, _tFiltro) {
   document.getElementById('panel-titulo').innerHTML = 'Detalhe <span>Veiculo</span>';
   const pb = document.getElementById('panel-body');
   pb.innerHTML = '<div style="text-align:center;padding:40px;color:var(--w4);">Carregando...</div>';
@@ -559,7 +585,7 @@ async function abrirDetalhe(veiculoId) {
 
   const [veiRes, osRes] = await Promise.all([
     db.from('veiculos').select('*, clientes(id, nome, whatsapp, cpf_cnpj)').eq('id', veiculoId).eq('oficina_id', OFICINA_ID).single(),
-    db.from('ordens_servico').select('id, numero_os, descricao, valor_total, status, created_at, profiles!ordens_servico_mecanico_id_fkey(nome)').eq('oficina_id', OFICINA_ID).eq('veiculo_id', veiculoId).order('created_at', { ascending: false })
+    db.from('ordens_servico').select('id, numero_os, descricao, valor_total, status, km_entrada, data_entrada, data_entrega, profiles!mecanico_id(nome), itens_os(tipo, descricao, quantidade, valor_unitario, valor_total)').eq('oficina_id', OFICINA_ID).eq('veiculo_id', veiculoId).order('data_entrada', { ascending: false })
   ]);
 
   const v = veiRes.data;
@@ -568,6 +594,8 @@ async function abrirDetalhe(veiculoId) {
   const osList = osRes.data || [];
   const osAberta = osList.filter(o => !['entregue','cancelada'].includes(o.status)).length;
   const totalGasto = osList.reduce((s, o) => s + (o.valor_total||0), 0);
+  const tFiltro = _tFiltro || 'todas';
+  const alertas = _calcAlertas(v, osList);
 
   let html = `
     <div class="panel-placa-hero">
@@ -608,26 +636,31 @@ async function abrirDetalhe(veiculoId) {
     </div>
 
     <div class="panel-section">
-      <div class="panel-section-title">Historico de OS (${osList.length})</div>`;
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--ln);">
+        <div style="font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);">Manutencao Preventiva${alertas.length ? ' <span style="background:var(--red);color:#fff;font-size:9px;padding:1px 5px;border-radius:10px;margin-left:4px;">'+alertas.length+'</span>' : ''}</div>
+        <button style="padding:4px 10px;background:var(--sf2);border:1px solid var(--ln2);border-radius:var(--r);color:var(--w3);font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;cursor:pointer;" onclick="configAlertas('${v.id}','${esc(v.placa)}')">Configurar</button>
+      </div>
+      ${alertas.length ? alertas.map(a => `
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:${a.urgente ? 'var(--red-dim)' : 'var(--amber-dim)'};border:1px solid ${a.urgente ? 'rgba(255,59,48,0.2)' : 'rgba(232,147,12,0.2)'};border-radius:var(--r2);margin-bottom:6px;">
+          <span style="font-size:15px;">${a.urgente ? '🔴' : '🟡'}</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:12px;font-weight:600;color:${a.urgente ? 'var(--red)' : 'var(--amber)'};">${esc(a.tipo)}</div>
+            <div style="font-size:11px;color:var(--w3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(a.descricao)}</div>
+          </div>
+        </div>`).join('') : '<div style="font-size:12px;color:var(--w4);text-align:center;padding:8px 0;">Sem alertas configurados</div>'}
+    </div>
 
-  if (osList.length) {
-    osList.forEach(o => {
-      const dt = new Date(o.created_at);
-      const dtStr = dt.toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit'});
-      html += `
-        <div class="os-hist-row">
-          <div class="os-hist-num">#${esc(o.numero_os||'-')}</div>
-          <div class="os-hist-desc">${esc(o.descricao||'Sem descricao')}</div>
-          <div class="os-hist-tag" style="background:${STATUS_COR[o.status]||'var(--w4)'};color:${STATUS_TXT[o.status]||'var(--w3)'};">${STATUS_LABEL[o.status]||o.status}</div>
-          <div class="os-hist-val">${fmt(o.valor_total)}</div>
-          <div class="os-hist-date">${dtStr}</div>
-        </div>`;
-    });
-  } else {
-    html += '<div style="text-align:center;padding:24px;color:var(--w4);font-size:13px;">Nenhuma OS registrada</div>';
-  }
+    <div class="panel-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--ln);">
+        <div style="font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);">Historico (${osList.length})</div>
+        <button style="padding:4px 10px;background:var(--sf2);border:1px solid var(--ln2);border-radius:var(--r);color:var(--w3);font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;cursor:pointer;" onclick="imprimirCartao('${v.id}')">Imprimir PDF</button>
+      </div>
+      <div style="display:flex;gap:4px;margin-bottom:14px;overflow-x:auto;">
+        ${['todas','servico','peca'].map(f => `<div style="padding:5px 11px;border-radius:var(--r);font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;cursor:pointer;white-space:nowrap;flex-shrink:0;border:1px solid ${f===tFiltro ? 'var(--amber)' : 'var(--ln2)'};background:${f===tFiltro ? 'var(--amber-dim)' : 'var(--sf)'};color:${f===tFiltro ? 'var(--amber)' : 'var(--w3)'};" onclick="abrirDetalhe('${v.id}','${f}')">${f==='todas'?'Todas':f==='servico'?'Servicos':'Pecas'}</div>`).join('')}
+      </div>
+      ${_renderTimeline(osList, tFiltro)}
+    </div>
 
-  html += `</div>
     <div style="display:flex;gap:8px;margin-top:20px;">
       <button class="panel-btn panel-btn-amber" style="flex:1;" onclick="editarVeiculo('${v.id}')">Editar</button>
       <button class="panel-btn panel-btn-sec" style="flex:1;" onclick="transferirVeiculo('${v.id}','${esc(v.placa)}')">Transferir Dono</button>
@@ -921,6 +954,158 @@ async function excluirVeiculo(id, placa) {
   carregar();
   } catch(e) { toast('Erro inesperado','err'); console.error('[excluirVeiculo]',e); }
   finally { _busy.exclVei = false; }
+}
+
+// ── TIMELINE ──
+function _renderTimeline(osList, filtro) {
+  if (!osList.length) return '<div style="text-align:center;padding:24px;color:var(--w4);font-size:13px;">Nenhuma OS registrada</div>';
+  let lista = osList;
+  if (filtro === 'servico') lista = osList.filter(o => (o.itens_os||[]).some(i => i.tipo === 'servico'));
+  else if (filtro === 'peca') lista = osList.filter(o => (o.itens_os||[]).some(i => i.tipo === 'peca'));
+  if (!lista.length) return '<div style="text-align:center;padding:24px;color:var(--w4);font-size:13px;">Nenhum resultado para este filtro</div>';
+
+  return '<div class="tl-wrap">' + lista.map((o, idx) => {
+    const dt = o.data_entrada ? new Date(o.data_entrada) : null;
+    const dtStr = dt ? dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'2-digit'}) : '';
+    const itens = o.itens_os || [];
+    const servicos = filtro === 'peca' ? [] : itens.filter(i => i.tipo === 'servico');
+    const pecas = filtro === 'servico' ? [] : itens.filter(i => i.tipo === 'peca');
+    const itensVisiveis = [...servicos, ...pecas];
+    const isLast = idx === lista.length - 1;
+    const itemsHtml = itensVisiveis.map(i => `<div class="tl-item-row"><span class="tl-item-badge ${i.tipo==='servico'?'svc':'pec'}">${i.tipo==='servico'?'Serv':'Peca'}</span><span class="tl-item-desc">${esc(i.descricao)}</span><span class="tl-item-val">${i.quantidade>1?i.quantidade+'x ':'' }${fmt(i.valor_total)}</span></div>`).join('');
+    return `<div class="tl-node${isLast?' tl-last':''}">
+      <div class="tl-dot" style="border-color:${STATUS_TXT[o.status]||'var(--w4)'}"></div>
+      <div class="tl-card">
+        <div class="tl-card-head">
+          <div><span class="tl-os-num">#${esc(o.numero_os||'-')}</span><span class="tl-card-status" style="background:${STATUS_COR[o.status]||'var(--w4)'};color:${STATUS_TXT[o.status]||'var(--w3)'};">${STATUS_LABEL[o.status]||o.status}</span></div>
+          <span class="tl-card-val">${fmt(o.valor_total)}</span>
+        </div>
+        <div class="tl-card-desc">${esc(o.descricao||'Sem descricao')}</div>
+        <div class="tl-card-meta">
+          ${dtStr ? '<span>'+dtStr+'</span>' : ''}
+          ${o.profiles?.nome ? '<span>Mec: '+esc(o.profiles.nome)+'</span>' : ''}
+          ${o.km_entrada ? '<span>'+o.km_entrada.toLocaleString('pt-BR')+' km</span>' : ''}
+        </div>
+        ${itensVisiveis.length ? `<div class="tl-items-toggle" onclick="var el=document.getElementById('tl-itens-${o.id}');el.classList.toggle('open');this.textContent=el.classList.contains('open')?'▲ Ocultar itens (${itensVisiveis.length})':'▼ Ver itens (${itensVisiveis.length})'">▼ Ver itens (${itensVisiveis.length})</div><div class="tl-items" id="tl-itens-${o.id}">${itemsHtml}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('') + '</div>';
+}
+
+// ── ALERTAS PREVENTIVOS ──
+function _calcAlertas(veiculo) {
+  const key = 'rpm_alertas_' + veiculo.id;
+  const configs = JSON.parse(localStorage.getItem(key) || '[]');
+  if (!configs.length) return [];
+  const kmAtual = veiculo.km_atual || 0;
+  const hoje = new Date();
+  const alertas = [];
+  configs.forEach(c => {
+    if (c.km_intervalo && kmAtual > 0 && c.ultima_km) {
+      const proxKm = c.ultima_km + c.km_intervalo;
+      const faltando = proxKm - kmAtual;
+      if (faltando <= 500) {
+        alertas.push({ tipo: c.tipo, urgente: faltando <= 0, descricao: faltando <= 0 ? 'Vencida! '+Math.abs(faltando).toLocaleString('pt-BR')+' km acima (limite: '+proxKm.toLocaleString('pt-BR')+' km)' : 'Vence em '+faltando.toLocaleString('pt-BR')+' km ('+proxKm.toLocaleString('pt-BR')+' km)' });
+        return;
+      }
+    }
+    if (c.meses_intervalo && c.ultima_data) {
+      const proxData = new Date(c.ultima_data);
+      proxData.setMonth(proxData.getMonth() + c.meses_intervalo);
+      const dias = Math.round((proxData - hoje) / (1000*60*60*24));
+      if (dias <= 30) alertas.push({ tipo: c.tipo, urgente: dias <= 0, descricao: dias <= 0 ? 'Vencida! '+Math.abs(dias)+' dias ('+proxData.toLocaleDateString('pt-BR')+')' : 'Vence em '+dias+' dia(s) ('+proxData.toLocaleDateString('pt-BR')+')' });
+    }
+  });
+  return alertas;
+}
+
+function configAlertas(veiculoId, placa) {
+  const key = 'rpm_alertas_' + veiculoId;
+  const configs = JSON.parse(localStorage.getItem(key) || '[]');
+  document.getElementById('panel-titulo').innerHTML = 'Alertas <span>' + esc(placa) + '</span>';
+  document.getElementById('panel-body').innerHTML = `
+    <div style="margin-bottom:16px;font-size:13px;color:var(--w3);">Configure lembretes de manutencao preventiva por km ou tempo.</div>
+    <div id="alertas-lista">${_renderConfigAlertas(configs, veiculoId, placa)}</div>
+    <button class="panel-btn panel-btn-amber" style="margin-top:8px;" onclick="_addAlerta('${esc(veiculoId)}','${esc(placa)}')">+ Adicionar Alerta</button>
+    <button class="panel-btn panel-btn-sec" onclick="abrirDetalhe('${esc(veiculoId)}')">Voltar</button>`;
+}
+
+function _renderConfigAlertas(configs, veiculoId, placa) {
+  if (!configs.length) return '<div style="text-align:center;padding:20px;color:var(--w4);font-size:13px;">Nenhum alerta configurado</div>';
+  return configs.map((c, idx) => `
+    <div style="background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:12px;">
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:600;font-size:13px;margin-bottom:2px;">${esc(c.tipo)}</div>
+        <div style="font-size:11px;color:var(--w3);">${c.km_intervalo ? 'A cada '+c.km_intervalo.toLocaleString('pt-BR')+' km' : ''}${c.km_intervalo && c.meses_intervalo ? ' / ' : ''}${c.meses_intervalo ? 'A cada '+c.meses_intervalo+' meses' : ''}</div>
+        <div style="font-size:10px;color:var(--w4);margin-top:2px;">Ultima: ${c.ultima_km ? c.ultima_km.toLocaleString('pt-BR')+' km' : '?'}${c.ultima_data ? ' · '+new Date(c.ultima_data).toLocaleDateString('pt-BR') : ''}</div>
+      </div>
+      <button style="padding:4px 10px;background:var(--red-dim);border:1px solid rgba(255,59,48,0.2);border-radius:var(--r);color:var(--red);font-size:11px;font-family:var(--head);font-weight:700;cursor:pointer;" onclick="_delAlerta(${idx},'${esc(veiculoId)}','${esc(placa)}')">Remover</button>
+    </div>`).join('');
+}
+
+function _addAlerta(veiculoId, placa) {
+  if (document.getElementById('form-alerta-novo')) return;
+  const tipos = ['Troca de oleo','Filtro de ar','Filtro de cabine','Revisao geral','Alinhamento','Correia dentada','Fluido de freio','Pneus','Outro'];
+  const form = document.createElement('div');
+  form.id = 'form-alerta-novo';
+  form.style.cssText = 'background:var(--sf2);border:1px solid var(--ln2);border-radius:var(--r2);padding:16px;margin-bottom:10px;';
+  form.innerHTML = `
+    <div class="panel-field"><div class="panel-label">Tipo</div>
+      <select class="panel-select" id="al-tipo">${tipos.map(t=>`<option>${t}</option>`).join('')}</select></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="panel-field"><div class="panel-label">Intervalo KM</div><input class="panel-input" type="number" id="al-km" placeholder="5000"></div>
+      <div class="panel-field"><div class="panel-label">Intervalo Meses</div><input class="panel-input" type="number" id="al-meses" placeholder="6"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="panel-field"><div class="panel-label">Ultima KM</div><input class="panel-input" type="number" id="al-ultima-km" placeholder="50000"></div>
+      <div class="panel-field"><div class="panel-label">Ultima Data</div><input class="panel-input" type="date" id="al-ultima-data"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <button style="flex:1;padding:10px;background:var(--amber);border:none;border-radius:var(--r2);color:#000;font-family:var(--head);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;cursor:pointer;" onclick="_salvarAlerta('${esc(veiculoId)}','${esc(placa)}')">Salvar</button>
+      <button style="flex:1;padding:10px;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);color:var(--w3);font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;cursor:pointer;" onclick="document.getElementById('form-alerta-novo')?.remove()">Cancelar</button>
+    </div>`;
+  document.getElementById('alertas-lista').prepend(form);
+}
+
+function _salvarAlerta(veiculoId, placa) {
+  const key = 'rpm_alertas_' + veiculoId;
+  const configs = JSON.parse(localStorage.getItem(key) || '[]');
+  const tipo = document.getElementById('al-tipo').value;
+  const kmI = parseInt(document.getElementById('al-km').value) || 0;
+  const mesI = parseInt(document.getElementById('al-meses').value) || 0;
+  const ultimaKm = parseInt(document.getElementById('al-ultima-km').value) || null;
+  const ultimaData = document.getElementById('al-ultima-data').value || null;
+  if (!kmI && !mesI) { toast('Informe intervalo em km ou meses', 'err'); return; }
+  configs.push({ tipo, km_intervalo: kmI||null, meses_intervalo: mesI||null, ultima_km: ultimaKm, ultima_data: ultimaData });
+  localStorage.setItem(key, JSON.stringify(configs));
+  configAlertas(veiculoId, placa);
+}
+
+function _delAlerta(idx, veiculoId, placa) {
+  const key = 'rpm_alertas_' + veiculoId;
+  const configs = JSON.parse(localStorage.getItem(key) || '[]');
+  configs.splice(idx, 1);
+  localStorage.setItem(key, JSON.stringify(configs));
+  document.getElementById('alertas-lista').innerHTML = _renderConfigAlertas(configs, veiculoId, placa);
+}
+
+// ── IMPRIMIR CARTAO PDF ──
+async function imprimirCartao(veiculoId) {
+  const [veiRes, osRes] = await Promise.all([
+    db.from('veiculos').select('*, clientes(nome, whatsapp)').eq('id', veiculoId).eq('oficina_id', OFICINA_ID).single(),
+    db.from('ordens_servico').select('id, numero_os, descricao, valor_total, status, km_entrada, data_entrada, profiles!mecanico_id(nome), itens_os(tipo, descricao, quantidade, valor_total)').eq('oficina_id', OFICINA_ID).eq('veiculo_id', veiculoId).order('data_entrada', { ascending: false })
+  ]);
+  const v = veiRes.data; const osList = osRes.data || [];
+  if (!v) return;
+  const totalGasto = osList.reduce((s, o) => s + (o.valor_total||0), 0);
+  const win = window.open('', '_blank');
+  const rows = osList.map(o => {
+    const dt = o.data_entrada ? new Date(o.data_entrada).toLocaleDateString('pt-BR') : '';
+    const itens = (o.itens_os||[]).map(i => `<div style="display:flex;gap:6px;font-size:11px;margin-top:3px;padding-top:3px;border-top:1px solid #eee;"><span style="border-radius:2px;padding:1px 5px;font-size:9px;font-weight:700;text-transform:uppercase;${i.tipo==='servico'?'background:#dbeafe;color:#1e40af;':'background:#dcfce7;color:#166534;'}">${i.tipo==='servico'?'Serv':'Peca'}</span><span style="flex:1;">${esc(i.descricao)}</span><span style="color:#E8930C;">${i.quantidade>1?i.quantidade+'x ':'' }${fmt(i.valor_total)}</span></div>`).join('');
+    return `<div style="border-left:3px solid #E8930C;padding:10px 14px;margin-bottom:10px;background:#fafafa;page-break-inside:avoid;"><div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span style="font-weight:700;font-size:13px;">#${esc(o.numero_os||'-')}${o.profiles?.nome?' · '+esc(o.profiles.nome):''}${o.km_entrada?' · '+o.km_entrada.toLocaleString('pt-BR')+' km':''}</span><span style="font-weight:700;color:#E8930C;">${fmt(o.valor_total)}</span></div><div style="font-size:13px;margin-bottom:3px;">${esc(o.descricao||'Sem descricao')}</div><div style="font-size:11px;color:#888;">${dt} · ${STATUS_LABEL[o.status]||o.status}</div>${itens}</div>`;
+  }).join('');
+  win.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Cartao — ${esc(v.placa)}</title><style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Segoe UI',sans-serif;background:#fff;color:#111;padding:24px;max-width:800px;margin:0 auto;}@media print{body{padding:12px;}}</style></head><body><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;padding-bottom:14px;border-bottom:3px solid #E8930C;"><div><div style="font-size:22px;font-weight:900;text-transform:uppercase;">RPM <span style="color:#E8930C;">PRO</span></div><div style="font-size:11px;color:#999;">${esc(OFICINA?.nome||'')}</div></div><div style="font-family:monospace;font-size:26px;font-weight:800;letter-spacing:4px;border:2px solid #aaa;border-radius:3px;padding:4px 14px;background:#f5f5f5;">${esc(v.placa)}</div></div><h2 style="font-size:18px;font-weight:800;text-transform:uppercase;margin-bottom:4px;">${esc((v.marca||'')+' '+(v.modelo||'')+' '+(v.ano||''))}</h2><p style="font-size:13px;color:#555;margin-bottom:16px;">Proprietario: <strong>${esc(v.clientes?.nome||'Sem dono')}</strong>${v.km_atual?' · KM: '+v.km_atual.toLocaleString('pt-BR'):''}${v.cor?' · '+esc(v.cor):''}</p><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;">${[['OS Total',osList.length,''],['Total Gasto',fmt(totalGasto),'color:#E8930C;'],['Entregues',osList.filter(o=>o.status==='entregue').length,'']].map(([l,v2,s])=>`<div style="text-align:center;background:#f5f5f5;border-radius:4px;padding:10px;"><div style="font-size:20px;font-weight:800;${s}">${v2}</div><div style="font-size:9px;text-transform:uppercase;color:#999;letter-spacing:1px;margin-top:2px;">${l}</div></div>`).join('')}</div><h3 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#555;margin-bottom:10px;">Historico de Servicos</h3>${rows}<footer style="margin-top:24px;text-align:center;font-size:10px;color:#bbb;padding-top:10px;border-top:1px solid #eee;">Gerado em ${new Date().toLocaleDateString('pt-BR')} · RPM Pro</footer><script>window.onload=function(){window.print();}<\/script></body></html>`);
+  win.document.close();
 }
 
 // ── UI HELPERS ──
