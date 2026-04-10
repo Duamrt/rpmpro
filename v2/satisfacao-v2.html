@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Satisfacao</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04101856"></script>
+<script src="js/infra.js?v=04101907"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -177,7 +177,11 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
         <button class="mob-menu-btn" onclick="toggleSidebarMob()" aria-label="Menu"><span></span><span></span><span></span></button>
         <div class="main-title">Pesquisa de Satisfacao</div>
       </div>
-      <button onclick="enviarPesquisas()" style="padding:8px 16px;background:var(--green-dim);color:var(--green);border:1px solid rgba(48,209,88,0.2);border-radius:var(--r);font-family:var(--head);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;cursor:pointer;">Gerar Pesquisas</button>
+      <div style="display:flex;gap:8px;">
+        <button id="btn-pendentes" onclick="dispararPendentes()" style="display:none;padding:8px 16px;background:rgba(232,147,12,0.12);color:var(--amber);border:1px solid rgba(232,147,12,0.3);border-radius:var(--r);font-family:var(--head);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;cursor:pointer;"></button>
+        <button onclick="verWidget()" style="padding:8px 16px;background:var(--amber-dim);color:var(--amber);border:1px solid rgba(232,147,12,0.2);border-radius:var(--r);font-family:var(--head);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;cursor:pointer;">Widget</button>
+        <button onclick="enviarPesquisas()" style="padding:8px 16px;background:var(--green-dim);color:var(--green);border:1px solid rgba(48,209,88,0.2);border-radius:var(--r);font-family:var(--head);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;cursor:pointer;">Gerar</button>
+      </div>
     </div>
     <div class="main-content">
       <div id="kpis" class="kpis"></div>
@@ -396,7 +400,56 @@ async function init(){
   document.getElementById('oficina-nome').textContent=perfil.oficinas?.nome||'';
 
   await carregar();
+  await _checarPendentes();
   document.getElementById('loading').style.display='none';
+}
+
+let _pendentes = [];
+
+async function _checarPendentes() {
+  const limite = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+  const { data } = await db.from('pesquisas_satisfacao')
+    .select('token, clientes(nome, whatsapp), ordens_servico(numero)')
+    .eq('oficina_id', OFICINA_ID)
+    .eq('wapp_enviado', false)
+    .is('respondido_em', null)
+    .lte('created_at', limite)
+    .limit(20);
+  _pendentes = (data || []).filter(p => p.clientes?.whatsapp);
+  const btn = document.getElementById('btn-pendentes');
+  if (_pendentes.length) {
+    btn.style.display = '';
+    btn.textContent = _pendentes.length + ' NPS Pendente' + (_pendentes.length > 1 ? 's' : '') + ' — Disparar';
+  }
+}
+
+let _idxDisparar = 0;
+async function dispararPendentes() {
+  if (!_pendentes.length) return;
+  if (_idxDisparar >= _pendentes.length) {
+    toast('Todos disparados!');
+    document.getElementById('btn-pendentes').style.display = 'none';
+    return;
+  }
+  const p = _pendentes[_idxDisparar];
+  const num = '55' + (p.clientes.whatsapp||'').replace(/\D/g,'');
+  const nome = (p.clientes.nome||'').split(' ')[0];
+  const link = window.location.origin + '/pesquisa.html?t=' + p.token;
+  const msg = `Oi ${nome}! Gostaríamos de saber como foi nosso serviço. Avalie em 1 minuto:\n${link}\nSua opinião nos ajuda a melhorar!`;
+  window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`, '_blank');
+  await db.from('pesquisas_satisfacao').update({ wapp_enviado: true }).eq('token', p.token);
+  _idxDisparar++;
+  if (_idxDisparar < _pendentes.length) {
+    document.getElementById('btn-pendentes').textContent = `Próximo: ${_pendentes.length - _idxDisparar} restante(s) — Continuar`;
+  } else {
+    document.getElementById('btn-pendentes').style.display = 'none';
+    toast('Todos disparados!');
+  }
+}
+
+function verWidget() {
+  const link = window.location.origin + '/v2/nps-widget.html?o=' + OFICINA_ID;
+  prompt('Link do widget de nota média (copie e compartilhe):', link);
 }
 
 init();

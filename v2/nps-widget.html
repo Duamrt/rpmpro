@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Avaliações — RPM Pro</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#09090B;color:#F0F0F2;font-family:'Segoe UI',system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:12px;}
+.widget{background:#111114;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:16px 20px;text-align:center;max-width:320px;width:100%;}
+.brand{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,0.3);margin-bottom:10px;}
+.brand span{color:#E8930C;}
+.stars{font-size:28px;letter-spacing:2px;margin-bottom:4px;line-height:1.2;}
+.media{font-size:36px;font-weight:800;color:#E8930C;font-variant-numeric:tabular-nums;letter-spacing:-1px;line-height:1;}
+.media sup{font-size:16px;font-weight:500;color:rgba(255,255,255,0.4);vertical-align:super;}
+.label{font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px;}
+.oficina-nome{font-size:13px;font-weight:600;color:rgba(255,255,255,0.7);margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.loading{color:rgba(255,255,255,0.3);font-size:13px;padding:12px 0;}
+</style>
+</head>
+<body>
+<div class="widget" id="w">
+  <div class="loading">Carregando...</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL='https://roeeyypssutzfzzkypsq.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZWV5eXBzc3V0emZ6emt5cHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MTk0MTgsImV4cCI6MjA5MDM5NTQxOH0.9oCOmABUTXox3FaRViD2zcUaqv94VfOJFMQYz_fcJi4';
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+async function init() {
+  const params = new URLSearchParams(window.location.search);
+  const oficina_id = params.get('o');
+  if (!oficina_id) { document.getElementById('w').innerHTML='<div class="loading">Parâmetro ?o= inválido</div>'; return; }
+
+  const [statsRes, oficRes] = await Promise.all([
+    db.rpc('get_nps_publica', { p_oficina_id: oficina_id }),
+    db.from('oficinas').select('nome').eq('id', oficina_id).single()
+  ]);
+
+  const s = statsRes.data || {};
+  const total = s.respondidas || 0;
+  const media = total ? parseFloat(s.media) : null;
+  const nomeOficina = oficRes.data?.nome || '';
+
+  const estrelasPreenchidas = media ? Math.round(media) : 0;
+  const stars = '★'.repeat(estrelasPreenchidas) + '☆'.repeat(5 - estrelasPreenchidas);
+
+  document.getElementById('w').innerHTML = `
+    <div class="brand">RPM <span>PRO</span> · Avaliações</div>
+    ${nomeOficina ? `<div class="oficina-nome">${esc(nomeOficina)}</div>` : ''}
+    ${media ? `
+      <div class="stars" style="color:#E8930C;">${stars}</div>
+      <div class="media">${media.toFixed(1)}<sup>/5</sup></div>
+      <div class="label">${total} avaliação${total !== 1 ? 'ões' : ''}</div>
+    ` : `<div class="label" style="padding:12px 0;">Sem avaliações ainda</div>`}
+  `;
+}
+
+function esc(s) {
+  if (!s) return '';
+  const d = document.createElement('div');
+  d.textContent = String(s);
+  return d.innerHTML;
+}
+
+init();
+</script>
+</body>
+</html>

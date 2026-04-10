@@ -6,13 +6,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Pátio</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04101856"></script>
-<script src="js/onboarding.js?v=04101856"></script>
+<script src="js/infra.js?v=04101907"></script>
+<script src="js/onboarding.js?v=04101907"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04101856"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04101856"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04101856"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04101856"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04101907"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04101907"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04101907"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04101907"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -2591,8 +2591,39 @@ async function confirmarEntrega(osId) {
     fecharPaineis();
     toast('Veículo entregue!', 'ok');
     carregar();
+    // NPS: cria pesquisa em background (não bloqueia entrega)
+    _criarPesquisaNPS(osId);
   } catch(e) { toast('Erro inesperado','err'); console.error('[confirmarEntrega]',e); }
   finally { _busy.entrega = false; }
+}
+
+async function _criarPesquisaNPS(osId) {
+  try {
+    const { data: osData } = await db.from('ordens_servico')
+      .select('numero_os, cliente_id, clientes(nome, whatsapp)')
+      .eq('id', osId).eq('oficina_id', OFICINA_ID).single();
+    if (!osData?.cliente_id || !osData?.clientes?.whatsapp) return;
+
+    // Verifica duplicata
+    const { data: existe } = await db.from('pesquisas_satisfacao')
+      .select('id').eq('os_id', osId).maybeSingle();
+    if (existe) return;
+
+    // Cria registro
+    const token = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    const { error } = await db.from('pesquisas_satisfacao').insert({
+      oficina_id: OFICINA_ID, os_id: osId, cliente_id: osData.cliente_id, token, wapp_enviado: true
+    });
+    if (error) { console.warn('[NPS insert]', error.message); return; }
+
+    // Abre WA com link NPS após 2.5s (para não conflitar com o toast de entrega)
+    const num = '55' + osData.clientes.whatsapp.replace(/\D/g,'');
+    const nome = (osData.clientes.nome||'').split(' ')[0] || '';
+    const link = window.location.origin + '/pesquisa.html?t=' + token;
+    const oficina = OFICINA?.nome || 'nossa oficina';
+    const msg = `Oi ${nome}! Obrigado por confiar na ${oficina}! Quando chegar em casa, nos dê uma nota rápida — leva 1 minuto:\n${link}\nSua opinião nos ajuda a melhorar!`;
+    setTimeout(() => window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`, '_blank'), 2500);
+  } catch(e) { console.warn('[NPS]', e); }
 }
 
 // ── PDF OS & RECIBO ──

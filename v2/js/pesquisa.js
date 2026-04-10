@@ -109,22 +109,27 @@ const PESQUISA = {
     if (existe) return; // já enviou
 
     // Cria pesquisa
+    const token = Math.random().toString(36).substring(2) + Date.now().toString(36);
     const { data, error } = await db.from('pesquisas_satisfacao').insert({
       oficina_id,
       os_id: osId,
-      cliente_id: clienteId
-    }).select('token').single();
+      cliente_id: clienteId,
+      token,
+      wapp_enviado: true
+    }).select('id').single();
 
     if (error || !data) return;
 
-    // Envia WhatsApp
-    const token = data.token;
+    // Envia WhatsApp com link NPS
     const link = `${window.location.origin}/pesquisa.html?t=${token}`;
     const num = clienteWhatsapp.replace(/\D/g, '');
     const numFull = num.length <= 11 ? '55' + num : num;
-    const msg = `Oi ${clienteNome}! Obrigado por confiar na ${APP.oficina?.nome || 'nossa oficina'}! Sua OS #${osNumero} foi entregue. Avalie nosso servico em 1 minuto:\n${link}\nSua opiniao e muito importante pra gente!`;
+    const nomeFirst = (clienteNome || '').split(' ')[0] || '';
+    const oficina = APP.oficina?.nome || 'nossa oficina';
+    const msg = `Oi ${nomeFirst}! Obrigado por confiar na ${oficina}! Quando chegar em casa, nos dê uma nota rápida sobre o serviço de hoje — leva 1 minuto:\n${link}\nSua opinião nos ajuda a melhorar!`;
 
-    window.open(`https://wa.me/${numFull}?text=${encodeURIComponent(msg)}`, '_blank');
+    // 2.5s de delay para não conflitar com o WA de entrega
+    setTimeout(() => window.open(`https://wa.me/${numFull}?text=${encodeURIComponent(msg)}`, '_blank'), 2500);
   },
 
   reenviar(fone, nome, token) {

@@ -2303,9 +2303,14 @@ const OS = {
 
     // WhatsApp de entrega
     const { data: os } = await db.from('ordens_servico')
-      .select('id, status, clientes(nome, whatsapp), veiculos(placa)')
+      .select('id, status, numero_os, cliente_id, clientes(nome, whatsapp), veiculos(placa)')
       .eq('id', osId).single();
     if (os) KANBAN._enviarWhatsAuto(os, 'entregue');
+
+    // NPS pesquisa (background, não bloqueia)
+    if (os?.cliente_id && typeof PESQUISA !== 'undefined') {
+      PESQUISA.criarEEnviar(osId, os.cliente_id, os.clientes?.nome, os.clientes?.whatsapp, os.numero_os);
+    }
 
     APP.toast('Veículo entregue');
     closeModal();
