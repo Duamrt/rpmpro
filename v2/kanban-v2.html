@@ -6,12 +6,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Pátio</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04101814"></script>
+<script src="js/infra.js?v=04101833"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04101814"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04101814"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04101814"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04101814"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04101833"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04101833"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04101833"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04101833"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -1287,30 +1287,29 @@ async function trocarPagamento(osId, forma) {
   if (!forma || _busy.trocarPag) return;
   _busy.trocarPag = true;
   try {
-    const payload = { forma_pagamento: forma, pago: forma !== 'faturado', taxa_cartao: forma === 'faturado' ? 0 : null };
-    if (payload.taxa_cartao === null) delete payload.taxa_cartao;
-    const { data, error } = await db.from('ordens_servico')
-      .update(payload).eq('id', osId).eq('oficina_id', OFICINA_ID).select('id, forma_pagamento, pago, valor_total, cliente_id').single();
-    if (error) { toast('Erro: ' + (error.message||error.code||JSON.stringify(error)), 'err'); return; }
-    if (!data) { toast('Sem permissão para salvar', 'err'); return; }
+    // Busca valor_total e cliente_id necessários para contas_receber
+    const { data: osData } = await db.from('ordens_servico')
+      .select('valor_total, cliente_id').eq('id', osId).eq('oficina_id', OFICINA_ID).single();
+    if (!osData) { toast('OS não encontrada', 'err'); return; }
 
-    // Verifica se existe conta já paga antes de mexer
-    const { data: contasExist } = await db.from('contas_receber').select('id, pago').eq('os_id', osId).eq('oficina_id', OFICINA_ID);
-    if ((contasExist||[]).some(c => c.pago)) { toast('Não é possível excluir uma conta já paga', 'err'); return; }
+    // Operação atômica: update OS + gestão contas_receber numa transação
+    const { data: result, error } = await db.rpc('rpm_trocar_pagamento_os', {
+      p_os_id:      osId,
+      p_oficina_id: OFICINA_ID,
+      p_forma:      forma,
+      p_pago:       forma !== 'faturado',
+      p_taxa:       0,
+      p_valor_total: osData.valor_total || 0,
+      p_cliente_id:  osData.cliente_id
+    });
 
-    // Faturado: criar conta a receber | Saiu de faturado: remover
-    if (forma === 'faturado') {
-      await db.from('contas_receber').delete().eq('os_id', osId).eq('oficina_id', OFICINA_ID);
-      const venc = new Date(); venc.setDate(venc.getDate() + 7);
-      await db.from('contas_receber').insert({
-        oficina_id: OFICINA_ID, os_id: osId, cliente_id: data.cliente_id,
-        valor: data.valor_total, vencimento: venc.toISOString().split('T')[0], pago: false
-      });
-    } else {
-      await db.from('contas_receber').delete().eq('os_id', osId).eq('oficina_id', OFICINA_ID);
+    if (error) { toast('Erro: ' + (error.message||error.code), 'err'); return; }
+    if (!result?.ok) {
+      if (result?.error === 'conta_ja_paga') { toast('Não é possível alterar uma conta já paga', 'err'); return; }
+      toast('Erro ao salvar pagamento', 'err'); return;
     }
 
-    toast('Pagamento: ' + (PAG_LABEL[data.forma_pagamento]||data.forma_pagamento), 'ok');
+    toast('Pagamento: ' + (PAG_LABEL[forma]||forma), 'ok');
     carregar();
   } catch(e) { toast('Erro inesperado','err'); console.error('[trocarPagamento]',e); }
   finally { _busy.trocarPag = false; }
@@ -2005,23 +2004,41 @@ async function salvarEdicaoItem(itemId, osId) {
 async function carregar() {
   const seteDiasAtras = new Date(Date.now() - 7*86400000).toISOString();
 
+  // Maquininhas e mecânicos com cache 10min (raramente mudam durante o turno)
+  const _cacheKey = 'rpm_kanban_static_' + OFICINA_ID;
+  let staticData = null;
+  try {
+    const _cached = sessionStorage.getItem(_cacheKey);
+    if (_cached) {
+      const _entry = JSON.parse(_cached);
+      if (Date.now() < _entry.exp) staticData = _entry;
+    }
+  } catch {}
+
   const [ativasRes, mecsRes, maqsRes] = await Promise.all([
     db.from('ordens_servico')
       .select('*, veiculos(placa,marca,modelo,cor), clientes(nome,whatsapp), profiles!ordens_servico_mecanico_id_fkey(nome)')
       .eq('oficina_id', OFICINA_ID)
       .not('status','in','("entregue","cancelada")')
       .order('created_at', { ascending: true }),
-    db.from('profiles')
-      .select('id,nome')
-      .eq('oficina_id', OFICINA_ID)
-      .in('role',['mecanico','aux_mecanico','dono','gerente'])
-      .eq('ativo', true),
-    db.from('maquininhas')
-      .select('id,nome,taxa_debito,taxa_credito')
-      .eq('oficina_id', OFICINA_ID)
-      .eq('ativo', true)
-      .order('nome')
+    staticData
+      ? Promise.resolve({ data: staticData.mecanicos })
+      : db.from('profiles').select('id,nome').eq('oficina_id', OFICINA_ID).in('role',['mecanico','aux_mecanico','dono','gerente']).eq('ativo', true),
+    staticData
+      ? Promise.resolve({ data: staticData.maquininhas })
+      : db.from('maquininhas').select('id,nome,taxa_debito,taxa_credito').eq('oficina_id', OFICINA_ID).eq('ativo', true).order('nome')
   ]);
+
+  // Salva cache se veio do banco
+  if (!staticData) {
+    try {
+      sessionStorage.setItem(_cacheKey, JSON.stringify({
+        mecanicos: mecsRes.data || [],
+        maquininhas: maqsRes.data || [],
+        exp: Date.now() + 600_000
+      }));
+    } catch {}
+  }
 
   if (ativasRes.error) { toast('Erro ao carregar: '+ativasRes.error.message,'err'); return; }
 

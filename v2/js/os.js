@@ -2205,9 +2205,14 @@ const OS = {
       return;
     }
 
-    // Carrega maquininhas pra mostrar no modal se tiver
-    const { data: maquininhas } = await db.from('maquininhas').select('id, nome, taxa_debito, taxa_credito').eq('oficina_id', APP.oficinaId).eq('ativo', true).order('nome');
-    OS._maquininhasCache = maquininhas || [];
+    // Carrega maquininhas com cache (TTL 10 min — raramente mudam)
+    OS._maquininhasCache = await CACHE.get(
+      'rpm_maquininhas_' + APP.oficinaId, 600,
+      async () => {
+        const { data } = await db.from('maquininhas').select('id, nome, taxa_debito, taxa_credito').eq('oficina_id', APP.oficinaId).eq('ativo', true).order('nome');
+        return data || [];
+      }
+    );
 
     // Pergunta forma de pagamento
     openModal(`
@@ -2308,44 +2313,34 @@ const OS = {
   },
 
   async _entregarFaturado(osId) {
-    // Busca dados da OS e prazo do cliente
+    // Busca prazo do cliente pra exibir no toast (não afeta a transação)
     const { data: os } = await db.from('ordens_servico')
-      .select('valor_total, cliente_id, clientes(nome, prazo_pagamento)')
+      .select('clientes(prazo_pagamento)')
       .eq('id', osId).single();
-    if (!os) return;
+    const prazo = parseInt(os?.clientes?.prazo_pagamento) || 7;
 
-    const prazo = parseInt(os.clientes?.prazo_pagamento) || 7;
-    const vencimento = new Date();
-    vencimento.setDate(vencimento.getDate() + prazo);
-    const vencStr = vencimento.toISOString().split('T')[0];
-
-    // Atualiza OS como faturado
-    await db.from('ordens_servico').update({
-      forma_pagamento: 'faturado',
-      pago: false,
-      status: 'entregue',
-      data_entrega: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }).eq('id', osId);
-
-    // Cria conta a receber
-    await db.from('contas_receber').insert({
-      oficina_id: APP.oficinaId,
-      cliente_id: os.cliente_id,
-      os_id: osId,
-      valor: os.valor_total,
-      vencimento: vencStr
+    // Operação atômica: update OS + contas_receber numa transação
+    const { data: result, error } = await db.rpc('rpm_entregar_os_faturado', {
+      p_os_id:      osId,
+      p_oficina_id: APP.oficinaId,
+      p_prazo_dias: prazo
     });
+
+    if (error || !result?.ok) {
+      APP.toast('Erro ao faturar OS: ' + (error?.message || result?.error || 'tente novamente'), 'error');
+      return;
+    }
 
     closeModal();
 
-    // WhatsApp
+    // WhatsApp de entrega
     const { data: osWpp } = await db.from('ordens_servico')
       .select('id, status, clientes(nome, whatsapp), veiculos(placa)')
       .eq('id', osId).single();
     if (osWpp) KANBAN._enviarWhatsAuto(osWpp, 'entregue');
 
-    APP.toast(`Faturado! Vencimento: ${vencimento.toLocaleDateString('pt-BR')}`);
+    const venc = new Date(result.vencimento + 'T12:00:00');
+    APP.toast(`Faturado! Vencimento: ${venc.toLocaleDateString('pt-BR')}`);
     if (typeof KANBAN !== 'undefined') KANBAN.carregar();
   },
 
