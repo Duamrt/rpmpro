@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Financeiro</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04100343"></script>
+<script src="js/infra.js?v=04100347"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -356,9 +356,9 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 .nfe-tbl td{padding:9px 8px;border-bottom:1px solid var(--ln3);vertical-align:middle;}
 .nfe-tbl tr:last-child td{border-bottom:none;}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04100343"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04100343"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js?v=04100343"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04100347"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04100347"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js?v=04100347"></script>
 </head>
 <body>
 
@@ -1734,7 +1734,8 @@ async function novaDespesa() {
     </div>
     <div class="panel-field" id="desp-codigo-barras-wrap" style="display:none;">
       <div class="panel-label">Linha Digitável / Código de Barras</div>
-      <input type="text" class="panel-input" id="desp-codigo-barras" placeholder="Cole ou digite o código do boleto" style="font-family:var(--mono);font-size:11px;" oninput="this.value=this.value.replace(/[^\d.\s\-\/]/g,'')">
+      <input type="text" class="panel-input" id="desp-codigo-barras" placeholder="Cole ou digite o código do boleto" style="font-family:var(--mono);font-size:11px;" oninput="this.value=this.value.replace(/[^\d.\s\-\/]/g,'');validarCodigoBarras()">
+      <div id="desp-barras-feedback" style="font-size:11px;margin-top:5px;display:none;padding:6px 10px;border-radius:6px;font-family:var(--body);"></div>
       <div style="font-size:10px;color:var(--w4);margin-top:4px;">Preencha se o OCR não extraiu automaticamente</div>
     </div>
     <div class="panel-field">
@@ -1827,6 +1828,32 @@ function toggleMembro() {
   wrap.style.display = document.getElementById('desp-cat').value === 'vale' ? '' : 'none';
 }
 
+function validarCodigoBarras() {
+  const el = document.getElementById('desp-codigo-barras');
+  const fb = document.getElementById('desp-barras-feedback');
+  if (!el || !fb) return true;
+  const raw = el.value.trim();
+  if (!raw) { fb.style.display = 'none'; return true; }
+  const digits = raw.replace(/\D/g, '');
+  const n = digits.length;
+  const validos = [44, 47, 48];
+  if (validos.includes(n)) {
+    fb.style.display = 'block';
+    fb.style.background = 'rgba(16,185,129,.12)';
+    fb.style.color = '#34d399';
+    fb.style.border = '1px solid rgba(16,185,129,.3)';
+    fb.textContent = '✓ Código válido (' + n + ' dígitos)';
+    return true;
+  } else {
+    fb.style.display = 'block';
+    fb.style.background = 'rgba(239,68,68,.12)';
+    fb.style.color = '#f87171';
+    fb.style.border = '1px solid rgba(239,68,68,.3)';
+    fb.textContent = '✗ Código inválido — ' + n + ' dígitos (esperado: 44, 47 ou 48). Confira se copiou completo.';
+    return false;
+  }
+}
+
 function updateSaveBtn() {
   const hasHighlights = document.querySelectorAll('#modal-box .ocr-highlight').length > 0;
   const checked = document.getElementById('check-conferencia')?.checked || false;
@@ -1851,6 +1878,7 @@ async function salvarDespesa() {
   if (cat === 'vale' && !membroId) { toast('Selecione o funcionário','err'); return; }
 
   const codigoBarras = document.getElementById('desp-codigo-barras')?.value?.trim() || null;
+  if (codigoBarras && !validarCodigoBarras()) { toast('Código de barras inválido — confira a quantidade de dígitos', 'err'); return; }
   const beneficiario = document.getElementById('desp-beneficiario')?.value?.trim() || null;
   const cnpjBenef = document.getElementById('desp-cnpj-benef')?.value?.trim() || null;
   const numDoc = document.getElementById('desp-num-doc')?.value?.trim() || null;
