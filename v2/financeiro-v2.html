@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Financeiro</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04100357"></script>
+<script src="js/infra.js?v=04100405"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -343,6 +343,17 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 .boleto-campo-destaque{border-color:var(--amber)!important;animation:boleto-pulse 1.4s ease-in-out 4;}
 @keyframes boleto-pulse{0%,100%{box-shadow:0 0 0 0 rgba(232,147,12,0);}50%{box-shadow:0 0 0 4px rgba(232,147,12,.25);}}
 .boleto-aviso{background:rgba(232,147,12,.08);border:1px solid rgba(232,147,12,.3);border-radius:var(--r2);padding:10px 14px;font-size:12px;color:var(--amber);margin-top:8px;line-height:1.5;}
+/* ── AUTOCOMPLETE FORNECEDOR ── */
+.ac-wrap{position:relative;}
+.ac-list{position:absolute;z-index:200;top:calc(100% + 2px);left:0;right:0;background:var(--sf3);border:1px solid var(--ln3);border-radius:var(--r2);max-height:160px;overflow-y:auto;display:none;}
+.ac-list.open{display:block;}
+.ac-item{padding:8px 12px;font-family:var(--body);font-size:12px;cursor:pointer;border-bottom:1px solid var(--ln);}
+.ac-item:last-child{border-bottom:none;}
+.ac-item:hover{background:var(--sf4);}
+.ac-item .ac-nome{color:var(--w);font-weight:600;}
+.ac-item .ac-cnpj{color:var(--w3);font-size:10px;font-family:var(--mono);}
+/* ── BOLETO REQUIRED INDICATOR ── */
+.field-req-boleto::after{content:' *';color:var(--red);font-weight:700;}
 /* NF-e view */
 .nfe-label{font-family:var(--mono);font-size:10px;color:var(--w3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;}
 .nfe-input{width:100%;background:var(--sf2);border:1px solid var(--ln3);border-radius:var(--r2);padding:9px 12px;font-family:var(--body);font-size:13px;color:var(--w);box-sizing:border-box;}
@@ -356,9 +367,9 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 .nfe-tbl td{padding:9px 8px;border-bottom:1px solid var(--ln3);vertical-align:middle;}
 .nfe-tbl tr:last-child td{border-bottom:none;}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04100357"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04100357"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js?v=04100357"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04100405"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04100405"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js?v=04100405"></script>
 </head>
 <body>
 
@@ -507,6 +518,7 @@ let CAIXA_ANO = new Date().getFullYear();
 let DESP_MES = new Date().getMonth();
 let DESP_ANO = new Date().getFullYear();
 let _despCache = {};
+let _fornecedoresAC = []; // autocomplete: [{nome, cnpj}]
 let PECAS_MES = new Date().getMonth();
 let PECAS_ANO = new Date().getFullYear();
 let PECAS_PERIODO = 'mes';
@@ -945,7 +957,16 @@ async function carregarDespesas() {
 
   const lista = despesas || [];
   _despCache = {};
-  lista.forEach(d => { _despCache[d.id] = d; });
+  // Montar cache de fornecedores para autocomplete (únicos por CNPJ ou nome)
+  const _fornMap = {};
+  lista.forEach(d => {
+    _despCache[d.id] = d;
+    if (d.beneficiario || d.cnpj_beneficiario) {
+      const key = d.cnpj_beneficiario || d.beneficiario;
+      if (!_fornMap[key]) _fornMap[key] = { nome: d.beneficiario||'', cnpj: d.cnpj_beneficiario||'' };
+    }
+  });
+  _fornecedoresAC = Object.values(_fornMap);
   const totalMes = lista.reduce((s,d)=>s+(d.valor||0),0);
   const porCat = {};
   lista.forEach(d => { const c=d.categoria||'outro'; porCat[c]=(porCat[c]||0)+(d.valor||0); });
@@ -1771,17 +1792,23 @@ async function novaDespesa() {
       <input class="panel-input" id="desp-desc" placeholder="Ex: Aluguel abril, Conta Equatorial...">
     </div>
     <div class="panel-field">
-      <div class="panel-label">Beneficiário <span style="font-weight:400;color:var(--w4);">— preenchido pelo boleto</span></div>
-      <input class="panel-input" id="desp-beneficiario" placeholder="Nome do favorecido">
+      <div class="panel-label" id="lbl-beneficiario">Beneficiário</div>
+      <div class="ac-wrap">
+        <input class="panel-input" id="desp-beneficiario" placeholder="Nome do favorecido" autocomplete="off"
+          oninput="acBenefInput(this)" onfocus="acBenefInput(this)" onblur="setTimeout(()=>acClose('ac-benef'),180)">
+        <div class="ac-list" id="ac-benef"></div>
+      </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
       <div class="panel-field">
         <div class="panel-label">Nº do Documento</div>
         <input class="panel-input" id="desp-num-doc" placeholder="Ex: 00123456">
       </div>
-      <div class="panel-field">
-        <div class="panel-label">CNPJ Beneficiário</div>
-        <input class="panel-input" id="desp-cnpj-benef" placeholder="00.000.000/0000-00">
+      <div class="panel-field" style="position:relative;">
+        <div class="panel-label" id="lbl-cnpj-benef">CNPJ Beneficiário</div>
+        <input class="panel-input" id="desp-cnpj-benef" placeholder="00.000.000/0000-00" autocomplete="off"
+          oninput="acCnpjInput(this)" onfocus="acCnpjInput(this)" onblur="setTimeout(()=>acClose('ac-cnpj'),180)">
+        <div class="ac-list" id="ac-cnpj"></div>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
@@ -1791,7 +1818,7 @@ async function novaDespesa() {
       </div>
       <div class="panel-field">
         <div class="panel-label">Forma de pagamento</div>
-        <select class="panel-input" id="desp-forma" style="font-family:var(--body);" onchange="document.getElementById('desp-codigo-barras-wrap').style.display=this.value==='boleto'?'':'none'">
+        <select class="panel-input" id="desp-forma" style="font-family:var(--body);" onchange="onFormaChange(this)">
           <option value="dinheiro">Dinheiro</option>
           <option value="pix">Pix</option>
           <option value="boleto">Boleto</option>
@@ -1830,6 +1857,56 @@ async function novaDespesa() {
 function toggleMembro() {
   const wrap = document.getElementById('desp-membro-wrap');
   wrap.style.display = document.getElementById('desp-cat').value === 'vale' ? '' : 'none';
+}
+
+// ==================== AUTOCOMPLETE FORNECEDOR ====================
+function acBenefInput(el) {
+  const q = el.value.trim().toLowerCase();
+  const list = document.getElementById('ac-benef');
+  if (!list) return;
+  const matches = q.length < 1 ? [] : _fornecedoresAC.filter(f => f.nome.toLowerCase().includes(q));
+  if (!matches.length) { list.classList.remove('open'); return; }
+  list.innerHTML = matches.slice(0,8).map(f =>
+    `<div class="ac-item" onmousedown="acSelectBenef(${JSON.stringify(f.nome)},${JSON.stringify(f.cnpj)})">
+      <div class="ac-nome">${f.nome}</div>
+      ${f.cnpj ? `<div class="ac-cnpj">${f.cnpj}</div>` : ''}
+    </div>`).join('');
+  list.classList.add('open');
+}
+function acCnpjInput(el) {
+  const q = el.value.trim().toLowerCase();
+  const list = document.getElementById('ac-cnpj');
+  if (!list) return;
+  const matches = q.length < 1 ? [] : _fornecedoresAC.filter(f => f.cnpj.toLowerCase().includes(q) || f.nome.toLowerCase().includes(q));
+  if (!matches.length) { list.classList.remove('open'); return; }
+  list.innerHTML = matches.slice(0,8).map(f =>
+    `<div class="ac-item" onmousedown="acSelectBenef(${JSON.stringify(f.nome)},${JSON.stringify(f.cnpj)})">
+      <div class="ac-nome">${f.nome}</div>
+      ${f.cnpj ? `<div class="ac-cnpj">${f.cnpj}</div>` : ''}
+    </div>`).join('');
+  list.classList.add('open');
+}
+function acSelectBenef(nome, cnpj) {
+  const bn = document.getElementById('desp-beneficiario');
+  const bc = document.getElementById('desp-cnpj-benef');
+  if (bn) bn.value = nome;
+  if (bc && cnpj) bc.value = cnpj;
+  acClose('ac-benef');
+  acClose('ac-cnpj');
+}
+function acClose(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('open');
+}
+
+// Marca/desmarca labels como obrigatórios quando forma=boleto muda
+function onFormaChange(sel) {
+  document.getElementById('desp-codigo-barras-wrap').style.display = sel.value === 'boleto' ? '' : 'none';
+  const isBoleto = sel.value === 'boleto';
+  const lblB = document.getElementById('lbl-beneficiario');
+  const lblC = document.getElementById('lbl-cnpj-benef');
+  if (lblB) { lblB.className = isBoleto ? 'field-req-boleto' : ''; lblB.textContent = 'Beneficiário'; }
+  if (lblC) { lblC.className = isBoleto ? 'field-req-boleto' : ''; lblC.textContent = 'CNPJ Beneficiário'; }
 }
 
 function validarCodigoBarras() {
@@ -1881,10 +1958,20 @@ async function salvarDespesa() {
   if (!desc || valor <= 0) { toast('Preencha descrição e valor','err'); return; }
   if (cat === 'vale' && !membroId) { toast('Selecione o funcionário','err'); return; }
 
+  const forma = document.getElementById('desp-forma').value;
   const codigoBarras = document.getElementById('desp-codigo-barras')?.value?.trim() || null;
-  if (codigoBarras && !validarCodigoBarras()) { toast('Código de barras inválido — confira a quantidade de dígitos', 'err'); return; }
   const beneficiario = document.getElementById('desp-beneficiario')?.value?.trim() || null;
   const cnpjBenef = document.getElementById('desp-cnpj-benef')?.value?.trim() || null;
+
+  // Validação obrigatória para boleto
+  if (forma === 'boleto') {
+    if (!codigoBarras) { toast('Boleto exige o código de barras / linha digitável','err'); return; }
+    if (!validarCodigoBarras()) { toast('Código de barras inválido — confira a quantidade de dígitos', 'err'); return; }
+    if (!beneficiario) { toast('Boleto exige o nome do Beneficiário','err'); return; }
+    if (!cnpjBenef) { toast('Boleto exige o CNPJ do Beneficiário','err'); return; }
+  } else {
+    if (codigoBarras && !validarCodigoBarras()) { toast('Código de barras inválido — confira a quantidade de dígitos', 'err'); return; }
+  }
   const numDoc = document.getElementById('desp-num-doc')?.value?.trim() || null;
   const hoje = new Date().toISOString().split('T')[0];
   const dataVenc = vencimento || data || hoje;
@@ -1904,6 +1991,25 @@ async function salvarDespesa() {
       if (dup && dup.length > 0) {
         const d = dup[0];
         const ok = confirm(`⚠️ Boleto duplicado!\n\nJá existe um lançamento com este código de barras:\n"${d.descricao}" — R$ ${Number(d.valor).toFixed(2).replace('.',',')}\n\nDeseja registrar mesmo assim?`);
+        if (!ok) { _busy.salvarDesp = false; return; }
+      }
+    } catch(_) {}
+  }
+
+  // Checar duplicidade por CNPJ (mesmo mês) — apenas para boleto
+  if (forma === 'boleto' && cnpjBenef) {
+    try {
+      const mesIni = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
+      const { data: dup2 } = await db.from('caixa')
+        .select('id, descricao, valor, created_at')
+        .eq('oficina_id', OFICINA_ID)
+        .eq('tipo', 'saida')
+        .eq('cnpj_beneficiario', cnpjBenef)
+        .gte('created_at', mesIni)
+        .limit(3);
+      if (dup2 && dup2.length > 0) {
+        const linhas = dup2.map(d => `• ${d.descricao} — R$ ${Number(d.valor).toFixed(2).replace('.',',')} (${new Date(d.created_at).toLocaleDateString('pt-BR')})`).join('\n');
+        const ok = confirm(`⚠️ Fornecedor já lançado este mês!\n\nEncontrei ${dup2.length} lançamento(s) para o CNPJ ${cnpjBenef}:\n${linhas}\n\nDeseja registrar mesmo assim?`);
         if (!ok) { _busy.salvarDesp = false; return; }
       }
     } catch(_) {}
