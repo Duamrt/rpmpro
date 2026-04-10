@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Financeiro</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04101317"></script>
+<script src="js/infra.js?v=04101324"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -367,9 +367,9 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 .nfe-tbl td{padding:9px 8px;border-bottom:1px solid var(--ln3);vertical-align:middle;}
 .nfe-tbl tr:last-child td{border-bottom:none;}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04101317"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04101317"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js?v=04101317"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04101324"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04101324"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js?v=04101324"></script>
 </head>
 <body>
 
@@ -1301,18 +1301,100 @@ function navDRE(d) {
 }
 
 // ==================== CONTAS A RECEBER ====================
+let _crTodas = [];
+let _crFiltro = 'aberto';
+let _crBusca = '';
+
 async function carregarContasReceber() {
   const el = document.getElementById('fin-tab-content');
-
-  const { data: contas } = await db.from('contas_receber')
-    .select('*, clientes(nome, whatsapp), ordens_servico(numero, veiculos(placa, marca, modelo))')
-    .eq('oficina_id', OFICINA_ID).eq('pago', false)
-    .order('vencimento', {ascending:true});
-
-  const lista = contas || [];
-  const totalPendente = lista.reduce((s,c)=>s+(c.valor||0),0);
   const hoje = new Date().toISOString().split('T')[0];
-  const vencidas = lista.filter(c => c.vencimento < hoje).length;
+  const d60 = new Date(Date.now() - 60*864e5).toISOString().split('T')[0];
+
+  const [pendRes, pagRes] = await Promise.all([
+    db.from('contas_receber')
+      .select('*, clientes(nome, whatsapp), ordens_servico(numero, veiculos(placa, marca, modelo))')
+      .eq('oficina_id', OFICINA_ID).eq('pago', false)
+      .order('vencimento', {ascending:true}),
+    db.from('contas_receber')
+      .select('*, clientes(nome, whatsapp), ordens_servico(numero, veiculos(placa, marca, modelo))')
+      .eq('oficina_id', OFICINA_ID).eq('pago', true)
+      .gte('data_pagamento', d60)
+      .order('data_pagamento', {ascending:false})
+  ]);
+
+  _crTodas = [...(pendRes.data||[]), ...(pagRes.data||[])];
+
+  const pendentes = pendRes.data || [];
+  const totalPendente = pendentes.reduce((s,c)=>s+(c.valor||0),0);
+  const emAberto = pendentes.filter(c => c.vencimento >= hoje).length;
+  const vencido = pendentes.filter(c => c.vencimento < hoje).length;
+  const recebido = (pagRes.data||[]).length;
+
+  el.innerHTML = `
+    <!-- HERO -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:16px;">
+      <div style="display:flex;gap:28px;flex-wrap:wrap;">
+        <div>
+          <div style="font-family:var(--body);font-size:12px;color:var(--w3);margin-bottom:2px;">Em Aberto</div>
+          <div style="font-family:var(--mono);font-size:22px;font-weight:800;">${emAberto}</div>
+        </div>
+        <div>
+          <div style="font-family:var(--body);font-size:12px;color:var(--w3);margin-bottom:2px;">Vencido</div>
+          <div style="font-family:var(--mono);font-size:22px;font-weight:800;${vencido?'color:var(--red);':''}">${vencido}</div>
+        </div>
+        <div>
+          <div style="font-family:var(--body);font-size:12px;color:var(--w3);margin-bottom:2px;">Recebido (60d)</div>
+          <div style="font-family:var(--mono);font-size:22px;font-weight:800;color:var(--green);">${recebido}</div>
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);margin-bottom:4px;">Total a Receber</div>
+        <div style="font-family:var(--mono);font-size:36px;font-weight:800;color:var(--amber);">${fmt(totalPendente)}</div>
+      </div>
+    </div>
+
+    <!-- FILTROS STATUS -->
+    <div id="cr-filtros" style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+      ${[
+        {k:'aberto', label:'Em Aberto'},
+        {k:'vencido', label:'Vencido'},
+        {k:'recebido', label:'Recebido'},
+        {k:'todos', label:'Todos'}
+      ].map(f => `<button onclick="filtrarCrStatus('${f.k}')" data-filtro="${f.k}"
+        style="font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:7px 16px;border-radius:20px;border:1px solid var(--ln3);cursor:pointer;transition:all .12s;background:${_crFiltro===f.k?'var(--amber)':'var(--sf2)'};color:${_crFiltro===f.k?'#000':'var(--w3)'};">${f.label}</button>`).join('')}
+    </div>
+
+    <input class="busca-input" placeholder="Buscar cliente..." oninput="_crBusca=this.value;_renderCrLista()" style="margin-bottom:16px;width:100%;box-sizing:border-box;">
+
+    <div id="cr-lista"></div>
+  `;
+
+  _crBusca = '';
+  _renderCrLista();
+}
+
+function filtrarCrStatus(filtro) {
+  _crFiltro = filtro;
+  document.querySelectorAll('#cr-filtros button').forEach(btn => {
+    const ativo = btn.dataset.filtro === filtro;
+    btn.style.background = ativo ? 'var(--amber)' : 'var(--sf2)';
+    btn.style.color = ativo ? '#000' : 'var(--w3)';
+    btn.style.borderColor = ativo ? 'var(--amber)' : 'var(--ln3)';
+  });
+  _renderCrLista();
+}
+
+function _renderCrLista() {
+  const hoje = new Date().toISOString().split('T')[0];
+  const termo = (_crBusca||'').toLowerCase();
+
+  let lista = _crTodas;
+  if (_crFiltro === 'aberto')   lista = lista.filter(c => !c.pago && c.vencimento >= hoje);
+  else if (_crFiltro === 'vencido')  lista = lista.filter(c => !c.pago && c.vencimento < hoje);
+  else if (_crFiltro === 'recebido') lista = lista.filter(c => c.pago);
+  // 'todos' = tudo
+
+  if (termo) lista = lista.filter(c => (c.clientes?.nome||'').toLowerCase().includes(termo));
 
   // Agrupa por cliente
   const porCliente = {};
@@ -1323,79 +1405,57 @@ async function carregarContasReceber() {
     porCliente[cid].total += c.valor||0;
   });
 
-  el.innerHTML = `
-    <!-- HERO -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:16px;">
-      <div style="display:flex;gap:28px;flex-wrap:wrap;">
+  const el = document.getElementById('cr-lista');
+  if (!el) return;
+
+  if (Object.keys(porCliente).length === 0) {
+    const msgs = {aberto:'Nenhuma conta em aberto.', vencido:'Nenhuma conta vencida.', recebido:'Nenhuma conta recebida nos últimos 60 dias.', todos:'Nenhuma conta encontrada.'};
+    el.innerHTML = `<div style="text-align:center;padding:50px;">
+      <div style="font-family:var(--head);font-size:18px;font-weight:800;color:var(--w3);margin-bottom:8px;">${msgs[_crFiltro]||'Nenhuma conta.'}</div>
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = Object.entries(porCliente).map(([cid, cli]) => {
+    const podeReceber = cli.contas.some(c => !c.pago);
+    return `<div class="cr-card" data-cliente="${esc(cli.nome)}">
+      <div class="cr-card-head">
         <div>
-          <div style="font-family:var(--body);font-size:12px;color:var(--w3);margin-bottom:2px;">OS Faturadas</div>
-          <div style="font-family:var(--mono);font-size:22px;font-weight:800;">${lista.length}</div>
+          <div class="cr-cliente">${esc(cli.nome)}</div>
+          <div style="font-family:var(--body);font-size:12px;color:var(--w3);">${cli.contas.length} OS</div>
         </div>
-        <div>
-          <div style="font-family:var(--body);font-size:12px;color:var(--w3);margin-bottom:2px;">Clientes</div>
-          <div style="font-family:var(--mono);font-size:22px;font-weight:800;">${Object.keys(porCliente).length}</div>
-        </div>
-        <div>
-          <div style="font-family:var(--body);font-size:12px;color:var(--w3);margin-bottom:2px;">Vencidas</div>
-          <div style="font-family:var(--mono);font-size:22px;font-weight:800;${vencidas?'color:var(--red);':''}">${vencidas}</div>
+        <div style="text-align:right;">
+          <div class="cr-total">${fmt(cli.total)}</div>
+          ${podeReceber ? `<button class="cr-btn" style="margin-top:6px;" onclick="receberPagamento('${cid}')">Receber</button>` : ''}
         </div>
       </div>
-      <div style="text-align:right;">
-        <div style="font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);margin-bottom:4px;">Total a Receber</div>
-        <div style="font-family:var(--mono);font-size:36px;font-weight:800;color:var(--amber);">${fmt(totalPendente)}</div>
-      </div>
-    </div>
-
-    ${Object.keys(porCliente).length ? `
-    <input class="busca-input" placeholder="Buscar cliente..." oninput="filtrarReceber(this.value)" style="margin-bottom:16px;">` : ''}
-
-    <div id="cr-lista">
-    ${Object.keys(porCliente).length === 0 ? `
-      <div style="text-align:center;padding:50px;">
-        <div style="font-family:var(--head);font-size:18px;font-weight:800;color:var(--w3);margin-bottom:8px;">Nenhuma conta a receber</div>
-        <div style="font-family:var(--body);font-size:13px;color:var(--w4);">Quando entregar uma OS como "Faturado", ela aparece aqui.</div>
-      </div>` : ''}
-
-    ${Object.entries(porCliente).map(([cid, cli]) => `
-      <div class="cr-card" data-cliente="${esc(cli.nome)}">
-        <div class="cr-card-head">
+      ${cli.contas.map(c => {
+        const pago = c.pago;
+        const vencida = !pago && c.vencimento < hoje;
+        const dtRef = pago ? new Date((c.data_pagamento||'').substring(0,10)+'T12:00:00').toLocaleDateString('pt-BR') : new Date(c.vencimento+'T12:00:00').toLocaleDateString('pt-BR');
+        const osNum = c.ordens_servico?.numero || '-';
+        const placa = c.ordens_servico?.veiculos?.placa || '';
+        const veiculo = [c.ordens_servico?.veiculos?.marca, c.ordens_servico?.veiculos?.modelo].filter(Boolean).join(' ');
+        const statusCor = pago ? 'var(--green)' : vencida ? 'var(--red)' : 'var(--w3)';
+        const statusTxt = pago ? 'Recebido ' : vencida ? 'Vencida ' : 'Vence ';
+        return `<div class="cr-os-line ${vencida?'vencida':pago?'normal':'normal'}">
           <div>
-            <div class="cr-cliente">${esc(cli.nome)}</div>
-            <div style="font-family:var(--body);font-size:12px;color:var(--w3);">${cli.contas.length} OS faturada(s)</div>
+            <span style="font-family:var(--mono);font-size:13px;font-weight:700;">OS #${esc(osNum)}</span>
+            <span style="font-family:var(--body);font-size:12px;color:var(--w3);margin-left:8px;">${esc(placa)} ${esc(veiculo)}</span>
           </div>
           <div style="text-align:right;">
-            <div class="cr-total">${fmt(cli.total)}</div>
-            <button class="cr-btn" style="margin-top:6px;" onclick="receberPagamento('${cid}')">Receber</button>
+            <span style="font-family:var(--mono);font-size:14px;font-weight:700;">${fmt(c.valor)}</span>
+            <span style="font-family:var(--mono);font-size:11px;margin-left:8px;color:${statusCor};">${statusTxt}${dtRef}</span>
           </div>
-        </div>
-        ${cli.contas.map(c => {
-          const vencida = c.vencimento < hoje;
-          const vencDt = new Date(c.vencimento+'T12:00:00').toLocaleDateString('pt-BR');
-          const osNum = c.ordens_servico?.numero || '-';
-          const placa = c.ordens_servico?.veiculos?.placa || '';
-          const veiculo = [c.ordens_servico?.veiculos?.marca, c.ordens_servico?.veiculos?.modelo].filter(Boolean).join(' ');
-          return `<div class="cr-os-line ${vencida?'vencida':'normal'}">
-            <div>
-              <span style="font-family:var(--mono);font-size:13px;font-weight:700;">OS #${esc(osNum)}</span>
-              <span style="font-family:var(--body);font-size:12px;color:var(--w3);margin-left:8px;">${esc(placa)} ${esc(veiculo)}</span>
-            </div>
-            <div style="text-align:right;">
-              <span style="font-family:var(--mono);font-size:14px;font-weight:700;">${fmt(c.valor)}</span>
-              <span style="font-family:var(--mono);font-size:11px;margin-left:8px;color:${vencida?'var(--red)':'var(--w3)'};">${vencida?'Vencida ':'Vence '}${vencDt}</span>
-            </div>
-          </div>`;
-        }).join('')}
-      </div>
-    `).join('')}
-    </div>
-  `;
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
 }
 
 function filtrarReceber(busca) {
-  const termo = (busca||'').toLowerCase();
-  document.querySelectorAll('#cr-lista .cr-card').forEach(el => {
-    el.style.display = !termo || el.dataset.cliente.toLowerCase().includes(termo) ? '' : 'none';
-  });
+  _crBusca = busca;
+  _renderCrLista();
 }
 
 // ==================== CALENDÁRIO DE DESPESAS ====================
