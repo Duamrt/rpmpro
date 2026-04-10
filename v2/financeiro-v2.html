@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Financeiro</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04100347"></script>
+<script src="js/infra.js?v=04100351"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -356,9 +356,9 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 .nfe-tbl td{padding:9px 8px;border-bottom:1px solid var(--ln3);vertical-align:middle;}
 .nfe-tbl tr:last-child td{border-bottom:none;}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04100347"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04100347"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js?v=04100347"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04100351"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04100351"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js?v=04100351"></script>
 </head>
 <body>
 
@@ -506,6 +506,7 @@ let CAIXA_MES = new Date().getMonth();
 let CAIXA_ANO = new Date().getFullYear();
 let DESP_MES = new Date().getMonth();
 let DESP_ANO = new Date().getFullYear();
+let _despCache = {};
 let PECAS_MES = new Date().getMonth();
 let PECAS_ANO = new Date().getFullYear();
 let PECAS_PERIODO = 'mes';
@@ -943,6 +944,8 @@ async function carregarDespesas() {
     .order('created_at',{ascending:false});
 
   const lista = despesas || [];
+  _despCache = {};
+  lista.forEach(d => { _despCache[d.id] = d; });
   const totalMes = lista.reduce((s,d)=>s+(d.valor||0),0);
   const porCat = {};
   lista.forEach(d => { const c=d.categoria||'outro'; porCat[c]=(porCat[c]||0)+(d.valor||0); });
@@ -980,7 +983,7 @@ async function carregarDespesas() {
       const t = catType(d.categoria);
       const dt = new Date(d.created_at).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
       const cbEsc = d.codigo_barras ? esc(d.codigo_barras) : '';
-      return '<div class="desp-row" style="flex-wrap:wrap;row-gap:0;">'
+      return '<div class="desp-row" style="flex-wrap:wrap;row-gap:0;cursor:pointer;" onclick="verDespesa(\''+d.id+'\')">'
         + '<div class="desp-cat-tag desp-'+t+'">'+(t==='fixo'?'Fixo':t==='pessoal'?'Pessoal':'Variável')+'</div>'
         + '<div class="desp-body">'
         + '<div class="desp-nome">'+esc(d.descricao)+'</div>'
@@ -988,11 +991,8 @@ async function carregarDespesas() {
         + '</div>'
         + '<div class="desp-val">-'+fmt(d.valor)+'</div>'
         + '<div style="font-family:var(--mono);font-size:10px;color:var(--w4);flex-shrink:0;">'+dt+'</div>'
-        + '<span style="font-size:14px;cursor:pointer;opacity:.3;flex-shrink:0;" onclick="excluirMov(\''+d.id+'\')" title="Excluir">✕</span>'
-        + (d.codigo_barras ? '<div style="width:100%;display:flex;align-items:center;gap:8px;padding:6px 8px 6px 0;margin-left:calc(72px);border-top:1px solid var(--ln2);">'
-          + '<span style="font-family:var(--mono);font-size:10px;color:var(--w3);flex:1;word-break:break-all;line-height:1.4;">'+cbEsc+'</span>'
-          + '<button onclick="copiarCodBarras(event,\''+cbEsc+'\')" style="flex-shrink:0;background:var(--amber);color:#000;border:none;border-radius:6px;padding:4px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--mono);">⎘ COPIAR</button>'
-          + '</div>' : '')
+        + '<span style="font-size:14px;cursor:pointer;opacity:.4;flex-shrink:0;padding:4px;" onclick="event.stopPropagation();editarDespesa(\''+d.id+'\')" title="Editar">✏️</span>'
+        + '<span style="font-size:14px;cursor:pointer;opacity:.3;flex-shrink:0;" onclick="event.stopPropagation();excluirMov(\''+d.id+'\')" title="Excluir">✕</span>'
         + '</div>';
     }).join('')}
     ${!lista.length ? '<div style="text-align:center;padding:40px;font-family:var(--mono);font-size:12px;color:var(--w4);">Nenhuma despesa neste mês</div>' : ''}
@@ -2027,6 +2027,219 @@ async function salvarLanc() {
   carregar();
   } catch(e) { toast('Erro inesperado','err'); console.error('[salvarLanc]',e); }
   finally { _busy.salvarLanc = false; }
+}
+
+// ==================== VER DESPESA (detalhes + barras) ====================
+function verDespesa(id) {
+  const d = _despCache[id];
+  if (!d) return;
+  const dt = new Date(d.created_at).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const venc = d.data_vencimento ? new Date(d.data_vencimento+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'}) : null;
+  document.getElementById('modal-box').innerHTML = `
+    <div class="modal-header">
+      <h3>Detalhes da Despesa</h3>
+      <button class="panel-close" onclick="fecharModal()">×</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div>
+        <div style="font-size:10px;color:var(--w4);font-family:var(--head);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Descrição</div>
+        <div style="font-size:16px;font-weight:700;font-family:var(--head);">${esc(d.descricao)}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <div style="font-size:10px;color:var(--w4);font-family:var(--head);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Valor</div>
+          <div style="font-size:20px;font-weight:800;font-family:var(--mono);color:var(--red);">-${fmt(d.valor)}</div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--w4);font-family:var(--head);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Categoria</div>
+          <div style="font-size:13px;font-family:var(--body);">${esc(CAT_LABEL[d.categoria]||d.categoria||'—')}</div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--w4);font-family:var(--head);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Forma</div>
+          <div style="font-size:13px;font-family:var(--body);">${esc(FORMA_LABEL[d.forma_pagamento]||d.forma_pagamento||'—')}</div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--w4);font-family:var(--head);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Data</div>
+          <div style="font-size:13px;font-family:var(--body);">${dt}${venc?' · Venc. '+venc:''}</div>
+        </div>
+        ${d.beneficiario ? `<div style="grid-column:1/-1;"><div style="font-size:10px;color:var(--w4);font-family:var(--head);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Beneficiário</div><div style="font-size:13px;font-family:var(--body);">${esc(d.beneficiario)}${d.cnpj_beneficiario?' · '+esc(d.cnpj_beneficiario):''}</div></div>` : ''}
+      </div>
+      ${d.codigo_barras ? `
+        <div style="background:var(--sf2);border:1px solid var(--ln2);border-radius:var(--r2);padding:12px;">
+          <div style="font-size:10px;color:var(--w4);font-family:var(--head);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Código de Barras</div>
+          <div style="font-family:var(--mono);font-size:11px;color:var(--w3);word-break:break-all;line-height:1.6;margin-bottom:10px;">${esc(d.codigo_barras)}</div>
+          <button onclick="copiarCodBarras(event,'${esc(d.codigo_barras)}')" style="width:100%;background:var(--amber);color:#000;border:none;border-radius:6px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--mono);">⎘ COPIAR CÓDIGO</button>
+        </div>` : ''}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;">
+        <button onclick="fecharModal();editarDespesa('${d.id}')" style="background:var(--blue-dim);color:var(--blue);border:1px solid rgba(10,132,255,.3);border-radius:var(--r2);padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--head);">✏️ Editar</button>
+        <button onclick="fecharModal();excluirMov('${d.id}')" style="background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.3);border-radius:var(--r2);padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--head);">✕ Excluir</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+// ==================== EDITAR DESPESA ====================
+async function editarDespesa(id) {
+  const d = _despCache[id];
+  if (!d) { toast('Despesa não encontrada','err'); return; }
+
+  const { data: membros } = await db.from('profiles')
+    .select('id, nome, role').eq('oficina_id', OFICINA_ID).eq('ativo', true)
+    .in('role', ['mecanico','aux_mecanico','gerente','atendente','aux_admin']).order('nome');
+  const lista = membros || [];
+
+  const dataVal = d.created_at ? d.created_at.split('T')[0] : new Date().toISOString().split('T')[0];
+  const vencVal = d.data_vencimento || '';
+  const barrasVal = d.codigo_barras || '';
+
+  document.getElementById('modal-box').innerHTML = `
+    <div class="modal-header">
+      <h3>Editar Despesa</h3>
+      <button class="panel-close" onclick="fecharModal()">×</button>
+    </div>
+    <div class="panel-field">
+      <div class="panel-label">Categoria</div>
+      <select class="panel-input" id="edit-cat" onchange="editToggleMembro()" style="font-family:var(--body);">
+        <option value="aluguel"${d.categoria==='aluguel'?' selected':''}>Aluguel</option>
+        <option value="conta_luz"${d.categoria==='conta_luz'?' selected':''}>Conta de Luz</option>
+        <option value="conta_agua"${d.categoria==='conta_agua'?' selected':''}>Conta de Água</option>
+        <option value="internet"${d.categoria==='internet'?' selected':''}>Internet</option>
+        <option value="fornecedor"${d.categoria==='fornecedor'?' selected':''}>Fornecedor</option>
+        <option value="manutencao"${d.categoria==='manutencao'?' selected':''}>Manutenção</option>
+        <option value="retirada"${d.categoria==='retirada'?' selected':''}>Retirada</option>
+        <option value="vale"${d.categoria==='vale'?' selected':''}>Vale Funcionário</option>
+        <option value="imposto"${d.categoria==='imposto'?' selected':''}>Imposto</option>
+        <option value="outro"${d.categoria==='outro'?' selected':''}>Outro</option>
+      </select>
+    </div>
+    <div class="panel-field" id="edit-membro-wrap" style="display:${d.categoria==='vale'?'':'none'}">
+      <div class="panel-label">Funcionário</div>
+      <select class="panel-input" id="edit-membro" style="font-family:var(--body);">
+        ${lista.map(m=>`<option value="${m.id}"${d.membro_id===m.id?' selected':''}>${esc(m.nome)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="panel-field">
+      <div class="panel-label">Descrição</div>
+      <input class="panel-input" id="edit-desc" value="${esc(d.descricao||'')}" placeholder="Ex: Aluguel abril, Conta Equatorial...">
+    </div>
+    <div class="panel-field">
+      <div class="panel-label">Beneficiário <span style="font-weight:400;color:var(--w4);">— nome do favorecido</span></div>
+      <input class="panel-input" id="edit-beneficiario" value="${esc(d.beneficiario||'')}" placeholder="Nome do favorecido">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="panel-field">
+        <div class="panel-label">Nº Documento</div>
+        <input class="panel-input" id="edit-num-doc" value="${esc(d.numero_documento||'')}" placeholder="Ex: 00123456">
+      </div>
+      <div class="panel-field">
+        <div class="panel-label">CNPJ</div>
+        <input class="panel-input" id="edit-cnpj" value="${esc(d.cnpj_beneficiario||'')}" placeholder="00.000.000/0000-00">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="panel-field">
+        <div class="panel-label">Valor (R$)</div>
+        <input class="panel-input" id="edit-valor" type="number" min="0.01" step="0.01" value="${d.valor||''}">
+      </div>
+      <div class="panel-field">
+        <div class="panel-label">Forma de pagamento</div>
+        <select class="panel-input" id="edit-forma" style="font-family:var(--body);" onchange="document.getElementById('edit-barras-wrap').style.display=this.value==='boleto'?'':'none'">
+          <option value="dinheiro"${d.forma_pagamento==='dinheiro'?' selected':''}>Dinheiro</option>
+          <option value="pix"${d.forma_pagamento==='pix'?' selected':''}>Pix</option>
+          <option value="boleto"${d.forma_pagamento==='boleto'?' selected':''}>Boleto</option>
+          <option value="debito"${d.forma_pagamento==='debito'?' selected':''}>Débito</option>
+          <option value="credito"${d.forma_pagamento==='credito'?' selected':''}>Crédito</option>
+          <option value="transferencia"${d.forma_pagamento==='transferencia'?' selected':''}>Transferência</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="panel-field">
+        <div class="panel-label">Data de pagamento</div>
+        <input class="panel-input" id="edit-data" type="date" value="${dataVal}">
+      </div>
+      <div class="panel-field">
+        <div class="panel-label">Vencimento</div>
+        <input class="panel-input" id="edit-vencimento" type="date" value="${vencVal}">
+      </div>
+    </div>
+    <div class="panel-field" id="edit-barras-wrap" style="display:${d.forma_pagamento==='boleto'?'':'none'}">
+      <div class="panel-label">Linha Digitável / Código de Barras</div>
+      <input type="text" class="panel-input" id="edit-codigo-barras" value="${esc(barrasVal)}" placeholder="Cole ou digite o código do boleto" style="font-family:var(--mono);font-size:11px;" oninput="this.value=this.value.replace(/[^\d.\s\-\/]/g,'');editValidarBarras()">
+      <div id="edit-barras-feedback" style="font-size:11px;margin-top:5px;display:none;padding:6px 10px;border-radius:6px;font-family:var(--body);"></div>
+    </div>
+    <button id="edit-save-btn" class="panel-btn-submit panel-btn-saida" onclick="salvarEdicaoDesp('${id}')">Salvar Alterações</button>
+  `;
+  document.getElementById('modal-overlay').classList.add('open');
+  if (barrasVal) editValidarBarras();
+}
+
+function editToggleMembro() {
+  const wrap = document.getElementById('edit-membro-wrap');
+  if (wrap) wrap.style.display = document.getElementById('edit-cat').value === 'vale' ? '' : 'none';
+}
+
+function editValidarBarras() {
+  const el = document.getElementById('edit-codigo-barras');
+  const fb = document.getElementById('edit-barras-feedback');
+  if (!el || !fb) return true;
+  const raw = el.value.trim();
+  if (!raw) { fb.style.display = 'none'; return true; }
+  const digits = raw.replace(/\D/g, '');
+  const n = digits.length;
+  const validos = [44, 47, 48];
+  if (validos.includes(n)) {
+    fb.style.display = 'block';
+    fb.style.background = 'rgba(16,185,129,.12)';
+    fb.style.color = '#34d399';
+    fb.style.border = '1px solid rgba(16,185,129,.3)';
+    fb.textContent = '✓ Código válido (' + n + ' dígitos)';
+    return true;
+  } else {
+    fb.style.display = 'block';
+    fb.style.background = 'rgba(239,68,68,.12)';
+    fb.style.color = '#f87171';
+    fb.style.border = '1px solid rgba(239,68,68,.3)';
+    fb.textContent = '✗ Código inválido — ' + n + ' dígitos (esperado: 44, 47 ou 48).';
+    return false;
+  }
+}
+
+async function salvarEdicaoDesp(id) {
+  const desc = document.getElementById('edit-desc').value.trim();
+  const valor = parseFloat(document.getElementById('edit-valor').value) || 0;
+  if (!desc || valor <= 0) { toast('Preencha descrição e valor','err'); return; }
+  const cat = document.getElementById('edit-cat').value;
+  const membroId = document.getElementById('edit-membro')?.value || null;
+  if (cat === 'vale' && !membroId) { toast('Selecione o funcionário','err'); return; }
+  const codigoBarras = document.getElementById('edit-codigo-barras')?.value?.trim() || null;
+  if (codigoBarras && !editValidarBarras()) { toast('Código de barras inválido — confira a quantidade de dígitos','err'); return; }
+  const data = document.getElementById('edit-data').value;
+  const vencimento = document.getElementById('edit-vencimento')?.value || null;
+  const beneficiario = document.getElementById('edit-beneficiario')?.value?.trim() || null;
+  const cnpjBenef = document.getElementById('edit-cnpj')?.value?.trim() || null;
+  const numDoc = document.getElementById('edit-num-doc')?.value?.trim() || null;
+  const hoje = new Date().toISOString().split('T')[0];
+  const dataVenc = vencimento || data || hoje;
+  const pago = !vencimento || vencimento <= hoje;
+  const btn = document.getElementById('edit-save-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+  try {
+    const { error } = await db.from('caixa').update({
+      descricao: desc, categoria: cat, valor,
+      forma_pagamento: document.getElementById('edit-forma').value,
+      membro_id: cat === 'vale' ? membroId : null,
+      created_at: data ? new Date(data+'T12:00:00').toISOString() : undefined,
+      data_vencimento: dataVenc, pago,
+      codigo_barras: codigoBarras, beneficiario, cnpj_beneficiario: cnpjBenef, numero_documento: numDoc
+    }).eq('id', id).eq('oficina_id', OFICINA_ID);
+    if (error) { toast('Erro: '+error.message,'err'); return; }
+    fecharModal();
+    toast('Despesa atualizada');
+    carregar();
+  } catch(e) { toast('Erro inesperado','err'); console.error('[salvarEdicaoDesp]',e); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = 'Salvar Alterações'; } }
 }
 
 // ==================== EXCLUIR MOVIMENTAÇÃO ====================
