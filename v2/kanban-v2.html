@@ -6,12 +6,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Pátio</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04101809"></script>
+<script src="js/infra.js?v=04101814"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04101809"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04101809"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04101809"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04101809"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04101814"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04101814"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04101814"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04101814"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -1319,6 +1319,7 @@ async function trocarPagamento(osId, forma) {
 // ── NOVA OS (unificada com os-list-v2) ──
 let NOS_SERVICOS = [];
 let _modoClienteAtual = 'existente';
+let _fromAgendamentoId = null;
 
 function abrirNovaOS() {
   NOS_SERVICOS = [];
@@ -1716,6 +1717,11 @@ async function criarOS(e) {
 
     NOS_SERVICOS = [];
     toast('OS criada!');
+    if (_fromAgendamentoId) {
+      await db.from('agendamentos').update({ status: 'realizado' }).eq('id', _fromAgendamentoId).eq('oficina_id', OFICINA_ID);
+      _fromAgendamentoId = null;
+      history.replaceState(null, '', window.location.pathname);
+    }
     fecharPaineis();
     await carregar();
   } catch(e) {
@@ -2461,6 +2467,25 @@ async function init() {
     .subscribe();
 
   document.getElementById('loading').style.display = 'none';
+
+  // Pré-preenchimento vindo de agendamento
+  const _qp = new URLSearchParams(window.location.search);
+  _fromAgendamentoId = _qp.get('from_agendamento') || null;
+  if (_fromAgendamentoId) {
+    const placa   = _qp.get('placa') || '';
+    const vId     = _qp.get('veiculo_id') || '';
+    const cId     = _qp.get('cliente_id') || '';
+    const marca   = _qp.get('marca') || '';
+    const modelo  = _qp.get('modelo') || '';
+    const cliNome = _qp.get('cli_nome') || '';
+    const desc    = _qp.get('desc') || '';
+    abrirNovaOS();
+    setTimeout(() => {
+      if (vId) nosSelecionarVeiculo(vId, cId, placa, marca, modelo, cliNome);
+      const descEl = document.getElementById('nos-desc');
+      if (descEl && desc) descEl.value = desc;
+    }, 80);
+  }
 }
 
 // ── ENTREGA DE VEÍCULO ──
