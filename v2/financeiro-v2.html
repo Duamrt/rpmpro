@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Financeiro</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04101324"></script>
+<script src="js/infra.js?v=04101809"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -367,9 +367,9 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 .nfe-tbl td{padding:9px 8px;border-bottom:1px solid var(--ln3);vertical-align:middle;}
 .nfe-tbl tr:last-child td{border-bottom:none;}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04101324"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04101324"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js?v=04101324"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04101809"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04101809"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js?v=04101809"></script>
 </head>
 <body>
 
@@ -1170,15 +1170,29 @@ async function carregarDRE() {
   const saidas = movs.filter(m => m.tipo === 'saida');
   const entradasAvulsas = movs.filter(m => m.tipo === 'entrada' && !m.os_id).reduce((s,m) => s+(m.valor||0), 0);
 
-  const catsPeca   = ['peca'];
+  // CMV: custo real das peças usadas nas OS pagas do período
+  let custoPecas = 0;
+  if (ordens.length > 0) {
+    const osIds = ordens.map(o => o.id);
+    const { data: itensOS } = await db.from('itens_os')
+      .select('custo_unitario, quantidade, pecas(custo)')
+      .in('os_id', osIds)
+      .eq('tipo', 'peca')
+      .eq('oficina_id', OFICINA_ID);
+    custoPecas = (itensOS || []).reduce((s, item) => {
+      const custo = (item.custo_unitario > 0 ? item.custo_unitario : (item.pecas?.custo || 0));
+      return s + custo * (item.quantidade || 1);
+    }, 0);
+  }
+
   const catsFixos  = ['aluguel','conta_luz','conta_agua','internet'];
   const catsPessoal = ['retirada','vale'];
+  const catsPeca   = ['peca'];
 
   const totalOS      = ordens.reduce((s,o) => s+(o.valor_total||0), 0);
   const totalTaxas   = ordens.reduce((s,o) => s+(o.valor_total||0)*(o.taxa_cartao||0)/100, 0);
   const faturamento  = totalOS + entradasAvulsas;
 
-  const custoPecas   = saidas.filter(m => catsPeca.includes(m.categoria)).reduce((s,m) => s+(m.valor||0), 0);
   const custosFixos  = saidas.filter(m => catsFixos.includes(m.categoria)).reduce((s,m) => s+(m.valor||0), 0);
   const custosPessoal= saidas.filter(m => catsPessoal.includes(m.categoria)).reduce((s,m) => s+(m.valor||0), 0);
   const outrosCustos = saidas.filter(m => !catsPeca.includes(m.categoria) && !catsFixos.includes(m.categoria) && !catsPessoal.includes(m.categoria)).reduce((s,m) => s+(m.valor||0), 0);

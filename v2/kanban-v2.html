@@ -6,12 +6,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Pátio</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04101324"></script>
+<script src="js/infra.js?v=04101809"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04101324"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04101324"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04101324"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04101324"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04101809"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04101809"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04101809"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04101809"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -1727,9 +1727,12 @@ async function criarOS(e) {
 
 // ── ITENS DA OS ──
 let _tipoItem = 'servico';
+let _selectedPecaId = null;
+let _selectedPecaCusto = 0;
 
 function setTipoItem(tipo, btn) {
   _tipoItem = tipo;
+  _selectedPecaId = null; _selectedPecaCusto = 0;
   const descInput = document.getElementById('add-item-desc');
   if (descInput) { descInput.value = ''; }
   const acList = document.getElementById('item-ac-list');
@@ -1756,7 +1759,7 @@ async function buscarItemCatalogo(q) {
     const campoValor = _tipoItem === 'servico' ? 'valor_padrao' : 'preco_venda';
     const campoExtra = _tipoItem === 'servico' ? 'categoria' : 'quantidade';
 
-    const campoCodigo = _tipoItem === 'peca' ? ',codigo' : '';
+    const campoCodigo = _tipoItem === 'peca' ? ',codigo,custo' : '';
     const { data } = await db.from(tabela)
       .select(`id,nome,${campoValor},${campoExtra}${campoCodigo}`)
       .eq('oficina_id', OFICINA_ID)
@@ -1774,22 +1777,29 @@ async function buscarItemCatalogo(q) {
       return;
     }
 
-    ac.innerHTML = data.map(item => {
+    ac.innerHTML = data.map((item, idx) => {
       const val = item[campoValor] || 0;
       const codigoLabel = (_tipoItem === 'peca' && item.codigo) ? ` · ${esc(item.codigo)}` : '';
       const extra = _tipoItem === 'peca' ? `${codigoLabel} · ${item.quantidade||0} em estoque` : (item.categoria ? ` · ${item.categoria}` : '');
-      const nomeSafe = item.nome.replace(/'/g,"\\'");
-      return `<div class="item-ac-row" onclick="selecionarItemCatalogo('${nomeSafe}',${val})">
+      return `<div class="item-ac-row" onclick="selecionarItemCatalogo(${idx})">
         <span class="item-ac-nome">${esc(item.nome)}</span>
         <span class="item-ac-cat">${extra}</span>
         <span class="item-ac-val">R$ ${val.toFixed(2)}</span>
       </div>`;
     }).join('');
     ac.classList.add('show');
+    window._acItens = data;
   }, 250);
 }
 
-function selecionarItemCatalogo(nome, valor) {
+function selecionarItemCatalogo(idx) {
+  const item = (window._acItens || [])[idx];
+  if (!item) return;
+  const campoValor = _tipoItem === 'servico' ? 'valor_padrao' : 'preco_venda';
+  const nome = item.nome;
+  const valor = item[campoValor] || 0;
+  _selectedPecaId = _tipoItem === 'peca' ? (item.id || null) : null;
+  _selectedPecaCusto = _tipoItem === 'peca' ? (item.custo || 0) : 0;
   document.getElementById('add-item-desc').value = nome;
   document.getElementById('add-item-val').value = valor;
   document.getElementById('item-ac-list').classList.remove('show');
@@ -1872,8 +1882,11 @@ async function adicionarItem(osId) {
       tipo: _tipoItem, descricao: desc,
       quantidade: qtd, valor_unitario: vUnit,
       valor_total: qtd * vUnit,
-      mecanico_id: mecId || null
+      mecanico_id: mecId || null,
+      peca_id: _selectedPecaId || null,
+      custo_unitario: _selectedPecaCusto || 0
     });
+    _selectedPecaId = null; _selectedPecaCusto = 0;
     if (error) { toast('Erro: '+error.message,'err'); return; }
 
     const { data: todos } = await db.from('itens_os').select('tipo, valor_total').eq('os_id', osId).eq('oficina_id', OFICINA_ID);
