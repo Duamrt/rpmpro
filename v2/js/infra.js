@@ -44,11 +44,14 @@ const INFRA = {
   _trialExpirado(oficina) {
     if (!oficina) return false;
     const plano = oficina.plano;
-    if (['essencial','profissional','rede','beta'].includes(plano)) return false;
-    if (plano === 'trial' && oficina.trial_ate) {
+    // beta: nunca bloqueia
+    if (plano === 'beta') return false;
+    // qualquer plano com trial_ate preenchida: bloqueia se vencida
+    if (oficina.trial_ate) {
       const hoje = new Date().toISOString().split('T')[0];
       return oficina.trial_ate < hoje;
     }
+    // sem plano e sem data: bloqueia
     return !plano;
   },
 
