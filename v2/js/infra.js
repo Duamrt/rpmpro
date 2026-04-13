@@ -171,11 +171,13 @@ const INFRA = {
     if (!of) return;
     const barra = document.createElement('div');
     barra.id = 'admin-barra';
-    barra.style.cssText = 'position:fixed;top:0;left:0;right:0;background:var(--primary);color:#000;padding:8px 24px;font-size:13px;font-weight:700;z-index:9000;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,0.3);';
+    barra.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#1d4ed8;color:#fff;padding:8px 24px;font-size:13px;font-weight:700;z-index:9000;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,0.4);';
     const nomeSafe = of.nome.replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    barra.innerHTML = '<span>\uD83C\uDFE2 ' + nomeSafe + '</span><button onclick="localStorage.removeItem(\'rpmpro-admin-oficina\');window.location.href=\'admin.html\';" style="background:rgba(0,0,0,0.15);border:none;color:#000;padding:5px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">\u2190 Voltar ao Master</button>';
+    barra.innerHTML = '<span>\uD83C\uDFE2 Visualizando: ' + nomeSafe + '</span><button onclick="localStorage.removeItem(\'rpmpro-admin-oficina\');window.location.href=\'admin.html\';" style="background:rgba(255,255,255,0.2);border:none;color:#fff;padding:5px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">\u2190 Voltar ao Master</button>';
     document.body.appendChild(barra);
-    const layout = document.querySelector('.app-layout');
-    if (layout) layout.style.paddingTop = '48px';
+    document.body.style.paddingTop = '40px';
+    // Atualiza nome da oficina na sidebar de qualquer página
+    const elNome = document.getElementById('oficina-nome');
+    if (elNome) elNome.textContent = of.nome;
   }
 };
