@@ -32,7 +32,7 @@ Sempre responda em português brasileiro.
 - **kanban-v2 init:** seta `OFICINA_ID = perfil.oficina_id` próprio — acessar oficina via localStorage `rpmpro-admin-oficina`
 - **modal admin.html:** CSS usa `.modal-overlay.show` (não `.active`) — `classList.add('show')`
 - **FK profiles:** `profiles!mecanico_id(nome)` — não usar nome da FK completo
-- **maquininhas SELECT:** SEMPRE incluir `taxa_parcelado_6,taxa_parcelado_12` — existem no banco, usadas para cálculo de taxa por faixa de parcelas (1x→taxa_credito, 2-6x→parcelado_6, 7-12x→parcelado_12). Marcondes tem 2 maquininhas com taxas diferentes. NÃO remover essas colunas do SELECT.
+- **maquininhas SELECT:** NUNCA incluir `taxa_parcelado_6,taxa_parcelado_12` — NÃO existem no banco, causam 400. SELECT sempre com `id,nome,taxa_debito,taxa_credito` apenas. Fallback no cálculo de parcelas usa `taxa_credito`.
 - **config-v2 sair():** DEVE ser async
 - **tv.html:** existe em raiz E em v2/ — editar o certo
 - **moverCard:** SELECT deve incluir todos campos obrigatórios
