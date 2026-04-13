@@ -154,5 +154,28 @@ const INFRA = {
     } else {
       applyHide();
     }
+  },
+
+  // Retorna o oficina_id correto: se super admin com localStorage, usa o da oficina acessada
+  resolveOficinaId(perfilOficinaId) {
+    const superAdminId = 'aaaa0001-0000-0000-0000-000000000001';
+    if (perfilOficinaId !== superAdminId) return perfilOficinaId;
+    return localStorage.getItem('rpmpro-admin-oficina') || perfilOficinaId;
+  },
+
+  // Mostra barra "Voltar ao Master" quando super admin está acessando outra oficina
+  async mostrarBarraAdmin() {
+    const adminId = localStorage.getItem('rpmpro-admin-oficina');
+    if (!adminId || document.getElementById('admin-barra')) return;
+    const { data: of } = await db.from('oficinas').select('nome').eq('id', adminId).single();
+    if (!of) return;
+    const barra = document.createElement('div');
+    barra.id = 'admin-barra';
+    barra.style.cssText = 'position:fixed;top:0;left:0;right:0;background:var(--primary);color:#000;padding:8px 24px;font-size:13px;font-weight:700;z-index:9000;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,0.3);';
+    barra.innerHTML = `<span>\uD83C\uDFE2 ${barra.textContent = ''; of.nome}</span><button onclick="localStorage.removeItem('rpmpro-admin-oficina');window.location.href='admin.html';" style="background:rgba(0,0,0,0.15);border:none;color:#000;padding:5px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">\u2190 Voltar ao Master</button>`;
+    barra.querySelector('span').textContent = '\uD83C\uDFE2 ' + of.nome;
+    document.body.appendChild(barra);
+    const layout = document.querySelector('.app-layout');
+    if (layout) layout.style.paddingTop = '48px';
   }
 };

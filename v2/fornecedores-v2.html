@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Fornecedores</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04131808"></script>
+<script src="js/infra.js?v=04131812"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -240,7 +240,8 @@ async function init() {
   const { data: perfil } = await db.from('profiles').select('*, oficinas(*)').eq('user_id', session.user.id).single();
   if (!perfil) { toast('Perfil não encontrado','err'); return; }
   PERFIL = perfil;
-  OFICINA_ID = perfil.oficina_id;
+  OFICINA_ID = INFRA.resolveOficinaId(perfil.oficina_id);
+  INFRA.mostrarBarraAdmin();
   INFRA.checkPermissions(PERFIL);
   document.getElementById('user-nome').textContent = perfil.nome || session.user.email;
   document.getElementById('user-role').textContent = perfil.role || '';
