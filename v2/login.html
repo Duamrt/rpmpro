@@ -29,6 +29,11 @@
   .login-footer { text-align: center; margin-top: 20px; font-size: 13px; color: var(--text-secondary); }
   .login-footer a { color: var(--primary); text-decoration: none; font-weight: 600; }
   .login-error { background: var(--danger-bg); color: var(--danger); padding: 10px 14px; border-radius: var(--radius); font-size: 13px; margin-bottom: 16px; display: none; }
+  .session-banner { background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--primary); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 20px; display: none; }
+  .session-banner p { font-size: 13px; color: var(--text-secondary); margin-bottom: 10px; }
+  .session-banner p strong { color: var(--text); }
+  .session-banner-btns { display: flex; gap: 8px; }
+  .session-banner-btns .btn { flex: 1; padding: 8px; font-size: 13px; }
   .tab-switch { display: flex; gap: 0; margin-bottom: 24px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
   .tab-switch button { flex: 1; padding: 10px; background: var(--bg-input); color: var(--text-secondary); border: none; font-size: 14px; font-weight: 600; cursor: pointer; font-family: var(--body); transition: background .3s; }
   .tab-switch button.active { background: var(--primary); color: #000; }
@@ -52,6 +57,13 @@
       <button onclick="showTab('cadastro', event)">Criar conta</button>
     </div>
 
+    <div class="session-banner" id="session-banner">
+      <p>Você já está logado como <strong id="session-email"></strong></p>
+      <div class="session-banner-btns">
+        <button class="btn btn-primary" id="btn-continuar" onclick="continuarSessao()">Continuar</button>
+        <button class="btn btn-secondary" onclick="trocarConta()">Trocar conta</button>
+      </div>
+    </div>
     <div class="login-error" id="login-error"></div>
 
     <!-- LOGIN -->
@@ -102,13 +114,32 @@
 <script src="js/auth.js?v=04131905"></script>
 <script>
   // Checa se ja ta logado
+  let _sessaoAtiva = null;
   (async () => {
     const { data: { session } } = await db.auth.getSession();
     if (session) {
-      const { data: isAdmin } = await db.rpc('is_platform_admin');
-      window.location.href = isAdmin ? 'admin.html' : 'kanban-v2.html';
+      _sessaoAtiva = session;
+      const banner = document.getElementById('session-banner');
+      document.getElementById('session-email').textContent = session.user.email;
+      banner.style.display = 'block';
     }
   })();
+
+  async function continuarSessao() {
+    const btn = document.getElementById('btn-continuar');
+    btn.disabled = true; btn.textContent = 'Carregando...';
+    const { data: isAdmin } = await db.rpc('is_platform_admin');
+    window.location.href = isAdmin ? 'admin.html' : 'kanban-v2.html';
+  }
+
+  async function trocarConta() {
+    await db.auth.signOut();
+    _sessaoAtiva = null;
+    document.getElementById('session-banner').style.display = 'none';
+    document.getElementById('login-email').value = '';
+    document.getElementById('login-senha').value = '';
+    document.getElementById('login-email').focus();
+  }
 
   function showTab(tab, e) {
     document.querySelectorAll('.tab-switch button').forEach(b => b.classList.remove('active'));
