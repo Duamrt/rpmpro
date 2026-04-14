@@ -93,7 +93,7 @@ const INFRA = {
         </div>
         <div style="background:var(--sf2,#18181C);border-top:1px solid rgba(255,255,255,.08);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;">
           <span style="font-family:var(--mono,'JetBrains Mono',monospace);font-size:11px;color:var(--w4,rgba(255,255,255,.14));">A partir de R$ 189/mês</span>
-          <span style="font-family:var(--mono,'JetBrains Mono',monospace);font-size:11px;color:var(--w4,rgba(255,255,255,.14));">(87) 9 8145-6565</span>
+          <button onclick="(async()=>{await db.auth.signOut();localStorage.removeItem('rpmpro-admin-oficina');window.location.href='login.html';})()" style="background:none;border:none;font-family:var(--mono,'JetBrains Mono',monospace);font-size:11px;color:var(--w3,rgba(255,255,255,.32));cursor:pointer;padding:0;text-decoration:underline;">Sair da conta</button>
         </div>
       </div>
     </div>`;
