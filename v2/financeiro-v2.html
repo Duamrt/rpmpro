@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Financeiro</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04131905"></script>
+<script src="js/infra.js?v=04161021"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -367,9 +367,9 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 .nfe-tbl td{padding:9px 8px;border-bottom:1px solid var(--ln3);vertical-align:middle;}
 .nfe-tbl tr:last-child td{border-bottom:none;}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04131905"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04131905"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js?v=04131905"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js?v=04161021"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04161021"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js?v=04161021"></script>
 </head>
 <body>
 
@@ -1146,14 +1146,15 @@ function navPecas(d) {
 async function carregarDRE() {
   const el = document.getElementById('fin-tab-content');
   const agora = new Date();
-  const dataInicio = new Date(DRE_ANO, DRE_MES, 1).toISOString().split('T')[0];
+  const _d2s = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const dataInicio = `${DRE_ANO}-${String(DRE_MES+1).padStart(2,'0')}-01`;
   const dataFim = new Date(DRE_ANO, DRE_MES+1, 0, 23, 59, 59).toISOString();
-  const hoje = agora.toISOString().split('T')[0];
+  const hoje = _d2s(agora);
   const inicioSemana = new Date(agora); inicioSemana.setDate(agora.getDate()-agora.getDay());
   let filtroInicio = dataInicio;
   if (DRE_PERIODO==='hoje') filtroInicio = hoje;
-  else if (DRE_PERIODO==='semana') filtroInicio = inicioSemana.toISOString().split('T')[0];
-  else if (DRE_PERIODO==='dias60') { const d60=new Date(agora);d60.setDate(agora.getDate()-59);filtroInicio=d60.toISOString().split('T')[0]; }
+  else if (DRE_PERIODO==='semana') filtroInicio = _d2s(inicioSemana);
+  else if (DRE_PERIODO==='dias60') { const d60=new Date(agora);d60.setDate(agora.getDate()-59);filtroInicio=_d2s(d60); }
 
   const [osRes, caixaRes] = await Promise.all([
     db.from('ordens_servico')
