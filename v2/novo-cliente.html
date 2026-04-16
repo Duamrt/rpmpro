@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro — Novo Cliente</title>
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; -webkit-font-smoothing: antialiased; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ── LADO ESQUERDO ── */
+.left {
+  width: 420px;
+  min-height: 100vh;
+  background: #1a1a2e;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 48px 44px;
+  flex-shrink: 0;
+}
+
+.left-logo {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 800;
+  font-size: 1.5rem;
+  color: #fff;
+  letter-spacing: -0.5px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.left-logo span {
+  background: rgba(99,102,241,.3);
+  color: rgba(255,255,255,.9);
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 6px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.left-body { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+
+.left-body h1 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 800;
+  font-size: 2rem;
+  color: #fff;
+  line-height: 1.25;
+  margin-bottom: 16px;
+}
+
+.left-body p {
+  font-size: 0.95rem;
+  color: rgba(255,255,255,.55);
+  line-height: 1.65;
+  max-width: 300px;
+}
+
+.left-footer {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,.25);
+}
+
+/* ── LADO DIREITO ── */
+.right {
+  flex: 1;
+  background: #F9FAFB;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 32px;
+}
+
+.form-wrap {
+  width: 100%;
+  max-width: 420px;
+}
+
+.form-wrap h2 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 700;
+  font-size: 1.35rem;
+  color: #111827;
+  margin-bottom: 6px;
+}
+
+.form-wrap .sub {
+  font-size: 0.875rem;
+  color: #6B7280;
+  margin-bottom: 32px;
+}
+
+.field { margin-bottom: 18px; }
+
+label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+  letter-spacing: 0.2px;
+}
+
+input, select {
+  width: 100%;
+  background: #fff;
+  border: 1.5px solid #E5E7EB;
+  border-radius: 10px;
+  padding: 11px 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  color: #111827;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+  height: 44px;
+}
+
+input:focus, select:focus {
+  border-color: #6366F1;
+  box-shadow: 0 0 0 3px rgba(99,102,241,.12);
+}
+
+input::placeholder { color: #9CA3AF; }
+
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+.btn {
+  margin-top: 8px;
+  width: 100%;
+  background: #6366F1;
+  color: #fff;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  border-radius: 10px;
+  padding: 13px;
+  border: none;
+  cursor: pointer;
+  transition: background .15s;
+}
+.btn:hover { background: #4F46E5; }
+.btn:disabled { background: #C7D2FE; color: #818CF8; cursor: not-allowed; }
+
+.msg {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  display: none;
+  line-height: 1.55;
+}
+.msg.ok  { background: #EEF2FF; border: 1px solid #C7D2FE; color: #3730A3; display: block; }
+.msg.err { background: #FEF2F2; border: 1px solid #FECACA; color: #991B1B; display: block; }
+
+.cred-box {
+  background: #F0FDF4;
+  border: 1px solid #BBF7D0;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-top: 16px;
+  display: none;
+}
+.cred-box h4 {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #166534;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.cred-box p {
+  font-size: 0.875rem;
+  color: #166534;
+  margin-bottom: 4px;
+}
+.cred-box strong { font-weight: 700; }
+
+/* Mobile */
+@media (max-width: 720px) {
+  body { flex-direction: column; }
+  .left { width: 100%; min-height: auto; padding: 28px 24px; }
+  .left-body h1 { font-size: 1.5rem; }
+  .left-body p, .left-footer { display: none; }
+  .right { padding: 28px 20px; align-items: flex-start; }
+  .row2 { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- Esquerda -->
+<div class="left">
+  <div class="left-logo">RPM Pro <span>Admin</span></div>
+  <div class="left-body">
+    <h1>Onboarding de nova oficina</h1>
+    <p>Crie a conta de uma nova oficina no RPM Pro. O acesso é imediato após o cadastro.</p>
+  </div>
+  <div class="left-footer">rpmpro.com.br · acesso restrito DM Stack</div>
+</div>
+
+<!-- Direita -->
+<div class="right">
+  <div class="form-wrap">
+
+    <!-- Lock -->
+    <div id="lock">
+      <h2>Acesso restrito</h2>
+      <p class="sub">Digite a senha para continuar</p>
+      <div class="field">
+        <label>Senha de acesso</label>
+        <input type="password" id="lockPwd" placeholder="••••••••" onkeydown="if(event.key==='Enter')unlock()">
+      </div>
+      <button class="btn" onclick="unlock()">Entrar</button>
+      <div id="lockMsg" class="msg"></div>
+    </div>
+
+    <!-- Form -->
+    <div id="form" style="display:none">
+      <h2>Nova oficina</h2>
+      <p class="sub">Preencha os dados do cliente</p>
+
+      <div class="field">
+        <label>Nome da oficina *</label>
+        <input type="text" id="oficina" placeholder="Ex: Auto Center Marcondes">
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label>Nome do dono *</label>
+          <input type="text" id="nome" placeholder="Ex: Carlos Marcondes">
+        </div>
+        <div class="field">
+          <label>WhatsApp</label>
+          <input type="text" id="whats" placeholder="Ex: 87999990000">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>E-mail de acesso *</label>
+        <input type="email" id="email" placeholder="carlos@autocenter.com.br">
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label>Senha inicial *</label>
+          <input type="text" id="senha" placeholder="Mínimo 6 caracteres">
+        </div>
+        <div class="field">
+          <label>Plano</label>
+          <select id="plano">
+            <option value="trial">Trial (7 dias)</option>
+            <option value="ativo" selected>Ativo — R$399/mês</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn" id="btn" onclick="criar()">Criar oficina</button>
+      <div id="msg" class="msg"></div>
+
+      <div class="cred-box" id="credBox">
+        <h4>Acesso criado</h4>
+        <p id="credOficina"></p>
+        <p id="credEmail"></p>
+        <p id="credSenha"></p>
+        <p style="margin-top:8px;font-size:0.8rem;color:#4B7C60;">Copie e envie pro cliente no WhatsApp antes de fechar esta tela.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const _VER = 'rpm-v04161021';
+console.log('%c RPM Pro %c ' + _VER + ' ', 'background:#1a1a2e;color:#818cf8;font-weight:700;padding:3px 7px;border-radius:3px 0 0 3px', 'background:#6366f1;color:#fff;font-weight:700;padding:3px 7px;border-radius:0 3px 3px 0');
+
+const SUPABASE_URL    = 'https://roeeyypssutzfzzkypsq.supabase.co';
+const SUPABASE_ANON   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZWV5eXBzc3V0emZ6emt5cHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MTk0MTgsImV4cCI6MjA5MDM5NTQxOH0.9oCOmABUTXox3FaRViD2zcUaqv94VfOJFMQYz_fcJi4';
+const SENHA_ACESSO    = 'rpm@admin2026';
+
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+function unlock() {
+  const pwd = document.getElementById('lockPwd').value;
+  if (pwd === SENHA_ACESSO) {
+    document.getElementById('lock').style.display = 'none';
+    document.getElementById('form').style.display = 'block';
+    document.getElementById('oficina').focus();
+  } else {
+    const m = document.getElementById('lockMsg');
+    m.textContent = 'Senha incorreta.';
+    m.className = 'msg err';
+  }
+}
+
+async function criar() {
+  const oficina = document.getElementById('oficina').value.trim();
+  const nome    = document.getElementById('nome').value.trim();
+  const whats   = document.getElementById('whats').value.trim();
+  const email   = document.getElementById('email').value.trim();
+  const senha   = document.getElementById('senha').value.trim();
+  const plano   = document.getElementById('plano').value;
+  const msg     = document.getElementById('msg');
+  const btn     = document.getElementById('btn');
+
+  msg.className = 'msg';
+  msg.textContent = '';
+  document.getElementById('credBox').style.display = 'none';
+
+  if (!oficina || !nome || !email || !senha) {
+    msg.textContent = 'Preencha nome da oficina, nome do dono, e-mail e senha.';
+    msg.className = 'msg err';
+    return;
+  }
+  if (senha.length < 6) {
+    msg.textContent = 'Senha precisa ter pelo menos 6 caracteres.';
+    msg.className = 'msg err';
+    return;
+  }
+  if (!email.includes('@')) {
+    msg.textContent = 'E-mail inválido.';
+    msg.className = 'msg err';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Criando conta...';
+
+  try {
+    // 1. Cria usuário no Auth
+    const { data: authData, error: authErr } = await db.auth.signUp({ email, password: senha });
+    if (authErr) throw authErr;
+
+    // Faz login imediato (confirmar email pode estar desligado)
+    const { data: loginData, error: loginErr } = await db.auth.signInWithPassword({ email, password: senha });
+    if (loginErr) throw new Error('Usuário criado mas login falhou: ' + loginErr.message);
+
+    const userId = loginData.user.id;
+
+    // 2. Cria oficina + profile via RPC (atômico)
+    const { data: rpcData, error: rpcErr } = await db.rpc('criar_oficina_e_dono', {
+      p_user_id:      userId,
+      p_email:        email,
+      p_nome_oficina: oficina,
+      p_nome_usuario: nome
+    });
+    if (rpcErr) throw rpcErr;
+
+    // 3. Atualiza plano + whatsapp na oficina criada
+    const { data: perfil } = await db.from('profiles').select('oficina_id').eq('user_id', userId).single();
+    if (perfil?.oficina_id) {
+      const updates = {};
+      if (plano !== 'trial') updates.plano = plano;
+      if (whats) updates.whatsapp = whats;
+      if (Object.keys(updates).length > 0) {
+        await db.from('oficinas').update(updates).eq('id', perfil.oficina_id);
+      }
+    }
+
+    // Faz logout (não deixar sessão da oficina aberta no browser do admin)
+    await db.auth.signOut();
+
+    // Mostra credenciais
+    msg.textContent = `Oficina "${oficina}" criada com sucesso!`;
+    msg.className = 'msg ok';
+
+    document.getElementById('credOficina').innerHTML = `<strong>Oficina:</strong> ${oficina}`;
+    document.getElementById('credEmail').innerHTML   = `<strong>Login:</strong> ${email}`;
+    document.getElementById('credSenha').innerHTML   = `<strong>Senha:</strong> ${senha}`;
+    document.getElementById('credBox').style.display = 'block';
+
+    // Limpa form
+    document.getElementById('oficina').value = '';
+    document.getElementById('nome').value    = '';
+    document.getElementById('whats').value   = '';
+    document.getElementById('email').value   = '';
+    document.getElementById('senha').value   = '';
+    document.getElementById('plano').value   = 'ativo';
+
+  } catch (e) {
+    msg.textContent = 'Erro: ' + (e.message || 'desconhecido');
+    msg.className = 'msg err';
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Criar oficina';
+}
+</script>
+</body>
+</html>
