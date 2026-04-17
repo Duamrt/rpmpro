@@ -6,13 +6,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Pátio</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04170533"></script>
-<script src="js/onboarding.js?v=04170533"></script>
+<script src="js/infra.js?v=04170602"></script>
+<script src="js/onboarding.js?v=04170602"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04170533"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04170533"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04170533"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04170533"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04170602"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04170602"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04170602"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04170602"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -985,12 +985,14 @@ async function moverCard(osId, novoStatus) {
 }
 
 // ── DESCONTO (KANBAN) ──
-async function salvarDescontoKanban(osId, totalSrv, totalPecas) {
+async function salvarDescontoKanban(osId) {
   if(_busy.descontoK)return;
   _busy.descontoK=true;
   try{
     const desc=parseFloat(document.getElementById('det-desconto-'+osId).value)||0;
-    const total=totalSrv+totalPecas-desc;
+    const {data:itens}=await db.from('itens_os').select('subtotal').eq('os_id',osId).eq('oficina_id',OFICINA_ID);
+    const somaItens=(itens||[]).reduce((s,i)=>s+(parseFloat(i.subtotal)||0),0);
+    const total=Math.max(0,somaItens-desc);
     const el=document.getElementById('det-total-val-'+osId);
     if(el)el.textContent='R$ '+total.toFixed(2);
     await db.from('ordens_servico').update({desconto:desc,valor_total:total,updated_at:new Date().toISOString()}).eq('id',osId).eq('oficina_id',OFICINA_ID);
@@ -1119,7 +1121,7 @@ async function abrirOS(osId) {
         <span style="font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--w4);">Desconto R$</span>
         <input type="number" id="det-desconto-${osId}" value="${desconto}" min="0" step="0.01"
           style="width:90px;padding:5px 8px;background:var(--sf2);border:1px solid var(--ln3);border-radius:var(--r);color:var(--w);font-family:var(--mono);font-size:12px;outline:none;"
-          onchange="salvarDescontoKanban('${osId}',${totalS},${totalP})">
+          onchange="salvarDescontoKanban('${osId}')">
       </div>
       <div class="det-total-bar" style="margin-top:6px;" id="det-total-bar-${osId}">
         <span class="det-total-label">Total</span>

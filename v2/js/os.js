@@ -601,23 +601,23 @@ const OS = {
     const [osRes, itensRes, chkEntradaRes, chkSaidaRes, diagRes, mecsRes] = await Promise.all([
       db.from('ordens_servico')
         .select('*, veiculos(placa, marca, modelo, km_atual), clientes(nome, whatsapp), profiles!mecanico_id(nome)')
-        .eq('id', id).single(),
+        .eq('id', id).eq('oficina_id', APP.oficinaId).single(),
       db.from('itens_os')
         .select('*, pecas(nome)')
-        .eq('os_id', id)
+        .eq('os_id', id).eq('oficina_id', APP.oficinaId)
         .order('tipo', { ascending: false })
         .order('created_at'),
       db.from('checklists_entrada')
         .select('*')
-        .eq('os_id', id)
+        .eq('os_id', id).eq('oficina_id', APP.oficinaId)
         .maybeSingle(),
       db.from('checklists_saida')
         .select('*')
-        .eq('os_id', id)
+        .eq('os_id', id).eq('oficina_id', APP.oficinaId)
         .maybeSingle(),
       db.from('diagnosticos_tecnicos')
         .select('*')
-        .eq('os_id', id)
+        .eq('os_id', id).eq('oficina_id', APP.oficinaId)
         .maybeSingle(),
       db.from('profiles')
         .select('id, nome')

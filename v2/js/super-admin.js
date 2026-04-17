@@ -394,7 +394,8 @@ const SUPER_ADMIN = {
 
   // ========== AÇÕES ==========
   async mudarStatusLead(id, status) {
-    await db.from('leads').update({ status, updated_at: new Date().toISOString() }).eq('id', id);
+    const { error } = await db.from('leads').update({ status, updated_at: new Date().toISOString() }).eq('id', id);
+    if (error) { APP.toast('Erro ao atualizar lead', 'error'); return; }
     APP.toast('Lead atualizado');
     // Atualiza dados locais sem re-fetch
     if (this._dados) {
@@ -406,8 +407,9 @@ const SUPER_ADMIN = {
 
   async excluirLead(id) {
     if (!confirm('Excluir este lead?')) return;
-    await db.from('leads').delete().eq('id', id);
-    APP.toast('Lead excluido');
+    const { error } = await db.from('leads').delete().eq('id', id);
+    if (error) { APP.toast('Erro ao excluir lead', 'error'); return; }
+    APP.toast('Lead excluído');
     if (this._dados) this._dados.leads = this._dados.leads.filter(l => l.id !== id);
     this.carregar();
   },

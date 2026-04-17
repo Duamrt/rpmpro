@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Agendamentos</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04170533"></script>
+<script src="js/infra.js?v=04170602"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -610,7 +610,7 @@ async function abrirDetalhe(id) {
     html += `<button class="panel-btn panel-btn-amber" onclick="mudarStatus('${ag.id}','realizado')">Marcar como Realizado</button>`;
   }
   if (cliWpp && ag.status !== 'realizado') {
-    html += `<button class="panel-btn" style="background:#25D366;color:#fff;" onclick="notificar('${ag.id}','${esc(cliWpp)}','${esc(cliNome)}','${esc(servico)}','${ag.data_prevista}')">Notificar via WhatsApp</button>`;
+    html += `<button class="panel-btn" style="background:#25D366;color:#fff;" onclick="notificar('${ag.id}','${esc(cliWpp)}','${esc(cliNome)}','${esc(servico)}','${esc(ag.data_prevista||'')}')">Notificar via WhatsApp</button>`;
   }
   if (ag.status !== 'realizado' && ag.status !== 'cancelado') {
     html += `<button class="panel-btn" style="background:var(--green);color:#000;font-weight:800;" onclick="criarOSDeAgendamento('${ag.id}')">Criar OS</button>`;
