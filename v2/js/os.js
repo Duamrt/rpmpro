@@ -1425,20 +1425,9 @@ const OS = {
 
     const oficina_id = APP.oficinaId;
 
-    // Verifica se não é entregue
-    const { data: os } = await db.from('ordens_servico').select('status').eq('id', id).single();
-    if (os?.status === 'entregue') {
-      APP.toast('OS entregue nao pode ser excluida', 'error');
-      return;
-    }
-
-    // Remove itens, checklists e depois a OS
-    await db.from('itens_os').delete().eq('os_id', id).eq('oficina_id', oficina_id);
-    await db.from('checklists_entrada').delete().eq('os_id', id).eq('oficina_id', oficina_id);
-    await db.from('checklists_saida').delete().eq('os_id', id).eq('oficina_id', oficina_id);
-    const { error } = await db.from('ordens_servico').delete().eq('id', id).eq('oficina_id', oficina_id);
-
+    const { data, error } = await db.rpc('rpm_excluir_os', { p_os_id: id, p_oficina_id: oficina_id });
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
+    if (data && !data.ok) { APP.toast(data.erro, 'error'); return; }
     closeModal();
     APP.toast('OS excluida');
     this.carregar();

@@ -6,13 +6,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Pátio</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04170531"></script>
-<script src="js/onboarding.js?v=04170531"></script>
+<script src="js/infra.js?v=04170533"></script>
+<script src="js/onboarding.js?v=04170533"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04170531"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04170531"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04170531"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04170531"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04170533"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04170533"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04170533"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04170533"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -1899,12 +1899,7 @@ async function adicionarItem(osId) {
     _selectedPecaId = null; _selectedPecaCusto = 0;
     if (error) { toast('Erro: '+error.message,'err'); return; }
 
-    const { data: todos } = await db.from('itens_os').select('tipo, valor_total').eq('os_id', osId).eq('oficina_id', OFICINA_ID);
-    const totalMao = (todos||[]).filter(i=>i.tipo==='servico').reduce((s,i)=>s+(i.valor_total||0),0);
-    const totalPecas = (todos||[]).filter(i=>i.tipo==='peca').reduce((s,i)=>s+(i.valor_total||0),0);
-    const { data: osDesc } = await db.from('ordens_servico').select('desconto').eq('id', osId).eq('oficina_id', OFICINA_ID).single();
-    const descOS = osDesc?.desconto || 0;
-    await db.from('ordens_servico').update({ valor_mao_obra:totalMao, valor_pecas:totalPecas, valor_total:totalMao+totalPecas-descOS }).eq('id', osId).eq('oficina_id', OFICINA_ID);
+    await db.rpc('rpm_recalcular_totais_os', { p_os_id: osId, p_oficina_id: OFICINA_ID });
 
     toast('Item adicionado', 'ok');
     document.getElementById('add-item-desc').value = '';
@@ -1923,12 +1918,7 @@ async function excluirItem(itemId, osId) {
   try {
     await db.from('itens_os').delete().eq('id', itemId).eq('oficina_id', OFICINA_ID);
 
-    const { data: todos } = await db.from('itens_os').select('tipo, valor_total').eq('os_id', osId).eq('oficina_id', OFICINA_ID);
-    const totalMao = (todos||[]).filter(i=>i.tipo==='servico').reduce((s,i)=>s+(i.valor_total||0),0);
-    const totalPecas = (todos||[]).filter(i=>i.tipo==='peca').reduce((s,i)=>s+(i.valor_total||0),0);
-    const { data: osDesc } = await db.from('ordens_servico').select('desconto').eq('id', osId).eq('oficina_id', OFICINA_ID).single();
-    const descOS = osDesc?.desconto || 0;
-    await db.from('ordens_servico').update({ valor_mao_obra:totalMao, valor_pecas:totalPecas, valor_total:totalMao+totalPecas-descOS }).eq('id', osId).eq('oficina_id', OFICINA_ID);
+    await db.rpc('rpm_recalcular_totais_os', { p_os_id: osId, p_oficina_id: OFICINA_ID });
 
     toast('Item removido', 'ok');
     abrirOS(osId);
