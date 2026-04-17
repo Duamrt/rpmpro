@@ -6,13 +6,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Pátio</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04170513"></script>
-<script src="js/onboarding.js?v=04170513"></script>
+<script src="js/infra.js?v=04170531"></script>
+<script src="js/onboarding.js?v=04170531"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04170513"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04170513"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04170513"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04170513"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js?v=04170531"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js?v=04170531"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js?v=04170531"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js?v=04170531"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -1715,7 +1715,8 @@ async function criarOS(e) {
 
     if (NOS_SERVICOS.length && osData) {
       const itens = NOS_SERVICOS.map(s => ({ oficina_id:OFICINA_ID, os_id:osData.id, tipo:'servico', descricao:s.nome, quantidade:1, valor_unitario:s.valor, valor_total:s.valor }));
-      await db.from('itens_os').insert(itens);
+      const { error: itemErr } = await db.from('itens_os').insert(itens);
+      if (itemErr) { toast('OS criada mas serviços não foram salvos: ' + itemErr.message, 'error'); return; }
     }
 
     NOS_SERVICOS = [];
@@ -2688,7 +2689,7 @@ async function _criarPesquisaNPS(osId) {
     if (existe) return;
 
     // Cria registro
-    const token = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    const token = (crypto.randomUUID ? crypto.randomUUID() : crypto.getRandomValues(new Uint8Array(16)).reduce((s,b)=>s+b.toString(16).padStart(2,'0'),''));
     const { error } = await db.from('pesquisas_satisfacao').insert({
       oficina_id: OFICINA_ID, os_id: osId, cliente_id: osData.cliente_id, token, wapp_enviado: true
     });

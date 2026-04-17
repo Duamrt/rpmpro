@@ -96,7 +96,9 @@ const APP = {
       if (precisaOnboarding) ONBOARDING.iniciar();
     }
 
-    // Sidebar navigation
+    // Sidebar navigation — bind único
+    if (!this._navBound) {
+    this._navBound = true;
     document.querySelectorAll('[data-page]').forEach(el => {
       el.addEventListener('click', (e) => {
         e.preventDefault();
@@ -110,6 +112,7 @@ const APP = {
         if (moreMenu) moreMenu.remove();
       });
     });
+    }
     } catch (e) { console.error('[APP] Erro no init:', e); }
   },
 

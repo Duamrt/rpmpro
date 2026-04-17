@@ -42,6 +42,7 @@ const FINANCEIRO = {
 
   // ==================== FECHAMENTO DO DIA ====================
   async _carregarFechamento() {
+    if (!INFRA.podeVer('fin_fechamento')) return;
     const el = document.getElementById('fin-conteudo');
     const oficina_id = APP.oficinaId;
     const hoje = new Date().toISOString().split('T')[0];
@@ -360,6 +361,7 @@ const FINANCEIRO = {
 
   // ==================== CAIXA ====================
   async _carregarCaixa() {
+    if (!INFRA.podeVer('fin_caixa')) return;
     const el = document.getElementById('fin-conteudo');
     const oficina_id = APP.oficinaId;
     const agora = new Date();
@@ -901,6 +903,7 @@ const FINANCEIRO = {
 
   // ==================== LUCRO PECAS ====================
   async _carregarLucroPecas() {
+    if (!INFRA.podeVer('fin_lucro_pecas')) return;
     const el = document.getElementById('fin-conteudo');
     const oficina_id = APP.oficinaId;
     const agora = new Date();

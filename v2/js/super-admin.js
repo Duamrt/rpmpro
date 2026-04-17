@@ -16,8 +16,8 @@ const SUPER_ADMIN = {
   async _fetchDados() {
     const [oficinasRes, usersRes, osRes, leadsRes] = await Promise.all([
       db.from('oficinas').select('id, nome, plano, trial_ate, ativo, cidade, estado, cnpj, telefone, whatsapp, created_at').neq('id', 'aaaa0001-0000-0000-0000-000000000001').order('created_at', { ascending: false }),
-      db.from('profiles').select('id, oficina_id, nome, role, created_at'),
-      db.from('ordens_servico').select('id, oficina_id, status, valor_total, created_at'),
+      db.from('profiles').select('id, oficina_id, nome, role, created_at').limit(2000),
+      db.from('ordens_servico').select('id, oficina_id, status, valor_total, created_at').gte('created_at', new Date(Date.now() - 365*24*60*60*1000).toISOString()).limit(5000),
       db.from('leads').select('*').order('created_at', { ascending: false })
     ]);
 

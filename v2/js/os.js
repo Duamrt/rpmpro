@@ -586,7 +586,8 @@ const OS = {
         valor_unitario: s.valor,
         valor_total: s.valor
       }));
-      await db.from('itens_os').insert(itens);
+      const { error: itemErr } = await db.from('itens_os').insert(itens);
+      if (itemErr) { APP.toast('OS criada mas serviços não foram salvos: ' + itemErr.message, 'error'); return; }
     }
 
     closeModal();
