@@ -375,8 +375,9 @@ const AGENDAMENTOS = {
     // Carrega vagas
     this._carregarVagas(dataPadrao);
 
-    // Fecha dropdown ao clicar fora
-    document.addEventListener('click', function _closeDrop(e) {
+    // Fecha dropdown ao clicar fora — um único listener reutilizado
+    if (AGENDAMENTOS._dropListener) document.removeEventListener('click', AGENDAMENTOS._dropListener);
+    AGENDAMENTOS._dropListener = function(e) {
       if (!e.target.closest('#ag-cliente-busca, #ag-cliente-lista')) {
         const l = document.getElementById('ag-cliente-lista');
         if (l) l.style.display = 'none';
@@ -385,7 +386,8 @@ const AGENDAMENTOS = {
         const l = document.getElementById('ag-veiculo-lista');
         if (l) l.style.display = 'none';
       }
-    });
+    };
+    document.addEventListener('click', AGENDAMENTOS._dropListener);
   },
 
   _buscarCliente(termo) {

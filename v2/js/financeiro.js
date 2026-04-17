@@ -60,7 +60,8 @@ const FINANCEIRO = {
         .eq('oficina_id', oficina_id)
         .eq('status', 'entregue')
         .eq('pago', false)
-        .order('data_entrega', { ascending: false }),
+        .order('data_entrega', { ascending: false })
+        .limit(500),
       db.from('ordens_servico')
         .select('id, numero, valor_total, updated_at')
         .eq('oficina_id', oficina_id)

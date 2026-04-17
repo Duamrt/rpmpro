@@ -2,6 +2,7 @@
 (function(){const v=(document.currentScript?.src||'').match(/\?v=(\d+)/)?.[1]||'?';console.log('%c RPM Pro %c v'+v+' ','background:#1e3a5f;color:#60a5fa;font-weight:700;padding:3px 7px;border-radius:3px 0 0 3px','background:#60a5fa;color:#1e3a5f;font-weight:700;padding:3px 7px;border-radius:0 3px 3px 0');})();
 const INFRA = {
   _perms: null,
+  _isUnrestricted: false,
 
   // Mapeia página → chave de permissão (bloqueio de rota inteira)
   PAGE_MODULE: {
@@ -37,7 +38,8 @@ const INFRA = {
 
   // Verifica se usuário pode ver determinada chave
   podeVer(key) {
-    if (!this._perms) return true; // dono/gerente — sem restrição
+    if (this._isUnrestricted) return true;
+    if (!this._perms) return false;
     return this._perms[key] !== false;
   },
 
@@ -111,8 +113,8 @@ const INFRA = {
     }
     // Dono nunca é bloqueado por permissões
     // Gerente só é bloqueado se tiver permissions configurado explicitamente
-    if (perfil.role === 'dono') return;
-    if (perfil.role === 'gerente' && !perfil.permissions) return;
+    if (perfil.role === 'dono') { this._isUnrestricted = true; return; }
+    if (perfil.role === 'gerente' && !perfil.permissions) { this._isUnrestricted = true; return; }
 
     this._perms = Object.assign({}, this.DEFAULTS, perfil.permissions || {});
 

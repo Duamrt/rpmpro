@@ -616,7 +616,7 @@ const SUPER_ADMIN = {
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
     if (data && !data.ok) { APP.toast(data.erro, 'error'); return; }
 
-    APP.toast('Senha alterada pra: ' + novaSenha);
+    APP.toast('Senha alterada com sucesso');
   }
 };
 

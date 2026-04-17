@@ -48,3 +48,8 @@ Sempre responda em português brasileiro.
 
 ## Módulos V2
 kanban · financeiro · fornecedores · notas-fiscais · historico-nf · config · tv · admin
+
+## Início de sessão
+Ao iniciar qualquer sessão neste repo, leia primeiro:
+`G:/DUAM - ECOSISTEMA/DUAM - ECOSISTEMA/06_RPM PRO V2/_CONTEXTO_MESTRE.md`
+Esse arquivo tem: estado atual, pendências priorizadas, bugs abertos, próxima task.
