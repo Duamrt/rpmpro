@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Minha Assinatura</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04180929"></script>
+<script src="js/infra.js?v=04181206"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -239,7 +239,7 @@ const SUPABASE_URL = 'https://roeeyypssutzfzzkypsq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZWV5eXBzc3V0emZ6emt5cHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MTk0MTgsImV4cCI6MjA5MDM5NTQxOH0.9oCOmABUTXox3FaRViD2zcUaqv94VfOJFMQYz_fcJi4';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const APP_VERSION = 'v04181900';
+const APP_VERSION = 'v04181200';
 
 let PERFIL=null, OFICINA_ID=null, OFICINA=null, ASSINATURA=null;
 
@@ -360,7 +360,60 @@ function renderDetalhes(){
         <div class="det-field"><div class="det-lab">Último pagamento</div><div class="det-val">${ASSINATURA.ultimo_pagamento_em?new Date(ASSINATURA.ultimo_pagamento_em).toLocaleDateString('pt-BR'):'—'}</div></div>
         <div class="det-field"><div class="det-lab">Status</div><div class="det-val">${esc(ASSINATURA.status)}</div></div>
       </div>
+      <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
+        <button class="btn primary" style="flex:1;min-width:180px;" onclick="trocarCartao()">💳 Trocar cartão / forma de pagamento</button>
+        <button class="btn danger" style="flex:1;min-width:180px;" onclick="cancelarAssinatura()">Cancelar assinatura</button>
+      </div>
     </div>`;
+}
+
+async function trocarCartao(){
+  if (!ASSINATURA){ toast('Sem assinatura ativa','err'); return; }
+  document.getElementById('loading').style.display='flex';
+  try {
+    const { data:{ session } } = await db.auth.getSession();
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/asaas-gerenciar-assinatura`,{
+      method:'POST',
+      headers:{'authorization':`Bearer ${session.access_token}`,'content-type':'application/json','apikey':SUPABASE_KEY},
+      body: JSON.stringify({ action:'proxima_cobranca', assinatura_id: ASSINATURA.id }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || data.error || 'Erro');
+    if (data.invoice_url) window.open(data.invoice_url,'_blank');
+    else toast('Não há cobrança pendente pra trocar forma de pagamento agora.','ok');
+  } catch(e){ toast('Erro: '+e.message,'err'); }
+  finally { document.getElementById('loading').style.display='none'; }
+}
+
+async function cancelarAssinatura(){
+  if (PERFIL?.role !== 'dono'){ toast('Apenas o dono pode cancelar','err'); return; }
+  if (!ASSINATURA) return;
+  const ok = await abrirConfirm({
+    tag:'Cancelar assinatura',
+    titulo:'Deseja mesmo cancelar?',
+    texto:'Sua assinatura será encerrada <strong>imediatamente</strong>. Você pode reativar escolhendo um plano depois.',
+    okLabel:'Sim, cancelar',
+    cancelLabel:'Manter assinatura',
+    danger:true,
+  });
+  if (!ok) return;
+  document.getElementById('loading').style.display='flex';
+  try {
+    const { data:{ session } } = await db.auth.getSession();
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/asaas-gerenciar-assinatura`,{
+      method:'POST',
+      headers:{'authorization':`Bearer ${session.access_token}`,'content-type':'application/json','apikey':SUPABASE_KEY},
+      body: JSON.stringify({ action:'cancelar', assinatura_id: ASSINATURA.id }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || data.error || 'Erro');
+    toast('Assinatura cancelada.','ok');
+    await carregarAssinatura();
+    const { data: ofRefresh } = await db.from('oficinas').select('*').eq('id', OFICINA_ID).single();
+    OFICINA = ofRefresh;
+    render();
+  } catch(e){ toast('Erro: '+e.message,'err'); }
+  finally { document.getElementById('loading').style.display='none'; }
 }
 
 function renderPlanos(){
@@ -470,6 +523,6 @@ async function assinar(planoId, valor){
 console.log(`%c🔧 RPM Pro — Minha Assinatura ${APP_VERSION}`,'color:#E8930C;font-weight:bold;');
 init();
 </script>
-<div style="position:fixed;bottom:8px;left:8px;font-family:var(--mono);font-size:9px;color:var(--w4);letter-spacing:1px;z-index:100;">RPM Pro v04181900</div>
+<div style="position:fixed;bottom:8px;left:8px;font-family:var(--mono);font-size:9px;color:var(--w4);letter-spacing:1px;z-index:100;">RPM Pro v04181200</div>
 </body>
 </html>

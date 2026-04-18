@@ -105,6 +105,8 @@ Deno.serve(async (req) => {
 
         await sb.from("oficinas").update({
           status_pagamento: "ativo",
+          plano: assinatura.plano,
+          trial_ate: null,
           ativo: true,
           dias_atraso: 0,
           bloqueado_em: null,

@@ -86,6 +86,26 @@ Deno.serve(async (req) => {
   if (ofErr || !oficina) return json({ error: "oficina_not_found" }, 404);
 
   try {
+    // 0. Deduplicação: se já existe assinatura ativa/atrasada/suspensa, devolve a cobrança pendente
+    const { data: existente } = await sb
+      .from("assinaturas")
+      .select("*")
+      .eq("oficina_id", oficina_id)
+      .in("status", ["pendente", "ativa", "atrasada", "suspensa"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (existente && existente.plano === plano) {
+      let invoiceUrl: string | null = null;
+      try {
+        const payments = await asaas(`/payments?subscription=${existente.asaas_subscription_id}&status=PENDING&limit=1`);
+        if (payments?.data?.[0]) {
+          invoiceUrl = payments.data[0].invoiceUrl ?? payments.data[0].bankSlipUrl ?? null;
+        }
+      } catch (_) {}
+      return json({ ok: true, assinatura: existente, subscription_id: existente.asaas_subscription_id, invoice_url: invoiceUrl, duplicado: true });
+    }
+
     // 1. Garante customer no Asaas
     let customerId = oficina.asaas_customer_id;
     if (!customerId) {
@@ -121,7 +141,7 @@ Deno.serve(async (req) => {
       }),
     });
 
-    // 3. Salva assinatura
+    // 3. Salva assinatura como PENDENTE. Webhook PAYMENT_CONFIRMED/RECEIVED ativa a oficina depois.
     const { data: assinatura, error: assErr } = await sb
       .from("assinaturas")
       .insert({
@@ -132,25 +152,14 @@ Deno.serve(async (req) => {
         valor: Number(valor),
         ciclo,
         forma_pagamento,
-        status: "ativa",
+        status: "pendente",
         proximo_vencimento: nextDueISO,
       })
       .select()
       .single();
     if (assErr) throw assErr;
 
-    // 4. Atualiza oficina -> status ativo, plano, trial_ate=null
-    await sb
-      .from("oficinas")
-      .update({
-        status_pagamento: "ativo",
-        plano,
-        ativo: true,
-        dias_atraso: 0,
-        bloqueado_em: null,
-        trial_ate: null,
-      })
-      .eq("id", oficina.id);
+    // 4. NÃO tocar na oficina — trial continua valendo até o pagamento ser confirmado pelo webhook.
 
     // 5. Busca primeira cobrança (link de pagamento)
     let invoiceUrl: string | null = null;
