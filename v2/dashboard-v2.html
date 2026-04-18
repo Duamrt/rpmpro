@@ -6,14 +6,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04181303"></script>
+<script src="js/infra.js?v=04181400"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
   --bg:#09090B;--sf:#111114;--sf2:#18181C;--sf3:#1F1F24;--sf4:#27272D;
   --ln:rgba(255,255,255,0.04);--ln2:rgba(255,255,255,0.08);--ln3:rgba(255,255,255,0.14);
-  --amber:#E8930C;--amber-dim:rgba(232,147,12,0.1);
+  --amber:#E8930C;--amber-dim:rgba(232,147,12,0.1);--amber-glow:rgba(232,147,12,0.35);
   --orange:#EA580C;--orange-dim:rgba(234,88,12,0.1);
   --red:#FF3B30;--red-dim:rgba(255,59,48,0.08);--red-glow:rgba(255,59,48,0.04);
   --green:#30D158;--green-dim:rgba(48,209,88,0.08);
@@ -26,10 +27,10 @@
 }
 body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100vh;-webkit-font-smoothing:antialiased;overflow:hidden;}
 
-/* ── LAYOUT ── */
+/* LAYOUT */
 .app{display:flex;height:100vh;overflow:hidden;}
 
-/* ── SIDEBAR ── */
+/* SIDEBAR */
 .sidebar{width:220px;flex-shrink:0;background:var(--sf);border-right:1px solid var(--ln2);display:flex;flex-direction:column;height:100vh;}
 .sidebar-logo{padding:20px 16px 16px;border-bottom:1px solid var(--ln2);}
 .sidebar-logo-brand{font-family:var(--head);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
@@ -51,24 +52,27 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 .btn-logout{width:100%;font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--w3);background:none;border:1px solid var(--ln3);padding:7px;border-radius:var(--r);cursor:pointer;transition:all .15s;}
 .btn-logout:hover{color:var(--w);border-color:var(--w3);}
 
-/* ── MAIN ── */
+/* MAIN */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
 .main-topbar{height:48px;background:var(--sf);border-bottom:1px solid var(--ln2);display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0;}
 .main-title{font-family:var(--head);font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:2px;}
-.main-content{flex:1;overflow-y:auto;padding:20px;scrollbar-width:thin;scrollbar-color:var(--sf3) transparent;}
+.main-content{flex:1;overflow-y:auto;padding:20px 22px;scrollbar-width:thin;scrollbar-color:var(--sf3) transparent;}
 .main-content::-webkit-scrollbar{width:4px;}
 .main-content::-webkit-scrollbar-thumb{background:var(--sf3);border-radius:2px;}
 
-/* ── KPI ROW ── */
-.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:20px;}
-.kpi{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:18px 16px;}
-.kpi-val{font-family:var(--mono);font-size:28px;font-weight:800;letter-spacing:-1px;line-height:1;}
-.kpi-lbl{font-family:var(--head);font-size:10px;font-weight:600;color:var(--w3);text-transform:uppercase;letter-spacing:1.5px;margin-top:6px;}
-.kpi-sub{font-family:var(--mono);font-size:11px;color:var(--w3);margin-top:2px;}
-.kpi-alert{border-left:3px solid var(--red);}
+/* HERO */
+.hero{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px;gap:16px;flex-wrap:wrap;}
+.hero-title{font-family:var(--head);font-size:26px;font-weight:900;text-transform:uppercase;letter-spacing:1px;line-height:1;}
+.hero-title span{color:var(--amber);}
+.hero-date{font-family:var(--mono);font-size:11px;color:var(--w3);margin-top:6px;letter-spacing:1px;}
+.hero-actions{display:flex;gap:8px;}
+.pill{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r);padding:8px 14px;font-family:var(--body);font-size:12px;font-weight:600;color:var(--w2);cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .12s;}
+.pill:hover{color:var(--w);border-color:var(--ln3);}
+.pill.primary{background:var(--amber);color:#000;border-color:var(--amber);font-weight:700;}
+.pill.primary:hover{background:#FFA726;color:#000;}
 
-/* ── ALERT BAR ── */
-.alert-critico{display:flex;align-items:center;gap:14px;background:var(--red-glow);border:1px solid rgba(255,59,48,0.15);border-radius:var(--r2);padding:14px 18px;margin-bottom:20px;cursor:pointer;transition:background .12s;border-left:4px solid var(--red);animation:alertGlow 2s infinite;}
+/* ALERT */
+.alert-critico{display:flex;align-items:center;gap:14px;background:var(--red-glow);border:1px solid rgba(255,59,48,0.15);border-radius:var(--r2);padding:14px 18px;margin-bottom:16px;cursor:pointer;transition:background .12s;border-left:4px solid var(--red);animation:alertGlow 2s infinite;}
 @keyframes alertGlow{0%,100%{box-shadow:0 0 0 rgba(255,59,48,0);}50%{box-shadow:0 0 20px rgba(255,59,48,0.08);}}
 .alert-critico:hover{background:rgba(255,59,48,0.06);}
 .alert-critico-icon{font-family:var(--mono);font-size:20px;font-weight:800;color:var(--red);}
@@ -77,83 +81,79 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 .alert-critico-sub{font-family:var(--body);font-size:12px;color:var(--w2);margin-top:2px;}
 .alert-critico-val{font-family:var(--mono);font-size:22px;font-weight:800;color:var(--red);}
 
-/* ── GRID ── */
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
-.grid-2-wide{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:20px;}
+/* METRICS PRIMARIAS */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px;}
+.metrics-secondary{grid-template-columns:1fr 1fr 1.4fr;margin-bottom:18px;}
+.metric{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:18px;position:relative;transition:border-color .15s;}
+.metric:hover{border-color:var(--ln3);}
+.metric-label{font-family:var(--head);font-size:10px;font-weight:700;color:var(--w3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+.metric-dot{width:6px;height:6px;border-radius:50%;background:var(--amber);}
+.metric-value{font-family:var(--mono);font-size:26px;font-weight:800;color:var(--w);letter-spacing:-1px;line-height:1;margin-bottom:4px;}
+.metric-sub{font-family:var(--mono);font-size:11px;color:var(--w3);margin-bottom:10px;}
+.metric-change{font-family:var(--mono);font-size:11px;color:var(--green);font-weight:600;letter-spacing:.3px;}
+.metric-change.down{color:var(--red);}
+.metric-change.neutral{color:var(--w3);}
+.metric-warn{border-color:rgba(255,59,48,0.25);background:linear-gradient(180deg,rgba(255,59,48,0.04),var(--sf));}
+.metric-top{background:linear-gradient(135deg,rgba(232,147,12,0.06),var(--sf));}
+.top-mec{display:flex;align-items:center;gap:12px;margin-top:4px;}
+.top-mec-av{width:44px;height:44px;border-radius:var(--r);background:var(--amber-dim);border:1px solid rgba(232,147,12,0.35);display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:16px;font-weight:800;color:var(--amber);flex-shrink:0;}
+.top-mec-info{flex:1;min-width:0;}
+.top-mec-name{font-family:var(--head);font-size:16px;font-weight:800;color:var(--w);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.top-mec-stats{font-family:var(--mono);font-size:11px;color:var(--w2);margin-top:2px;}
+.top-mec-trophy{font-size:22px;flex-shrink:0;}
 
-/* ── CARD ── */
+/* GRID */
+.grid{display:grid;grid-template-columns:1.6fr 1fr;gap:10px;margin-bottom:18px;}
+
+/* CARD */
 .card{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);overflow:hidden;}
 .card-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--ln);}
-.card-title{font-family:var(--head);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w3);}
-.card-badge{font-family:var(--mono);font-size:12px;color:var(--w3);}
+.card-title{font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);}
+.card-value{font-family:var(--mono);font-size:18px;font-weight:800;color:var(--w);margin-top:4px;letter-spacing:-.5px;}
+.card-sub{font-family:var(--mono);font-size:10px;color:var(--w3);margin-top:2px;letter-spacing:.5px;}
 .card-body{padding:16px 18px;}
+.legend{display:flex;gap:14px;font-family:var(--mono);font-size:11px;color:var(--w2);margin-top:6px;}
+.legend-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle;}
 
-/* ── PATIO GRID ── */
-.patio-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
-.patio-col{background:var(--sf2);border-radius:var(--r2);padding:12px;text-align:center;border-top:3px solid var(--w4);}
-.patio-col-num{font-family:var(--head);font-size:28px;font-weight:900;letter-spacing:-1px;}
-.patio-col-lbl{font-family:var(--head);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--w3);margin-top:2px;}
+/* TABS */
+.tabs{display:flex;gap:2px;background:var(--sf2);border-radius:var(--r);padding:3px;}
+.tab{padding:5px 11px;font-family:var(--head);font-size:10px;font-weight:700;color:var(--w3);cursor:pointer;border-radius:calc(var(--r) - 1px);text-transform:uppercase;letter-spacing:.5px;}
+.tab:hover{color:var(--w);}
+.tab.active{background:var(--amber);color:#000;}
 
-/* ── BAR CHART ── */
-.chart{display:flex;align-items:flex-end;gap:6px;height:120px;padding-top:8px;}
-.chart-bar{flex:1;background:var(--sf3);border-radius:2px 2px 0 0;position:relative;transition:height .3s;min-height:4px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;}
-.chart-bar.today{background:var(--amber);}
-.chart-bar-val{font-family:var(--mono);font-size:9px;font-weight:600;color:var(--w3);position:absolute;top:-16px;white-space:nowrap;}
-.chart-bar.today .chart-bar-val{color:var(--amber);}
-.chart-labels{display:flex;gap:6px;margin-top:6px;}
-.chart-label{flex:1;text-align:center;font-family:var(--head);font-size:10px;font-weight:600;color:var(--w4);text-transform:uppercase;letter-spacing:.5px;}
-.chart-label.today{color:var(--amber);}
+.chart-box{position:relative;height:240px;}
+.pie-box{position:relative;height:200px;margin-bottom:10px;}
 
-/* ── RANKING MECANICO ── */
-.mec-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--ln);}
-.mec-row:last-child{border-bottom:none;}
-.mec-pos{font-family:var(--mono);font-size:14px;font-weight:700;width:24px;text-align:center;color:var(--w3);}
-.mec-pos.top{color:var(--amber);}
-.mec-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;}
-.mec-name{font-family:var(--head);font-size:15px;font-weight:700;text-transform:uppercase;flex:1;}
-.mec-stats{display:flex;gap:16px;align-items:center;}
-.mec-os{font-family:var(--mono);font-size:13px;font-weight:600;}
-.mec-val{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--amber);}
+.ai-hint{background:var(--sf2);border:1px dashed var(--ln3);border-radius:var(--r);padding:10px 12px;font-family:var(--body);font-size:11px;color:var(--w2);display:flex;align-items:center;gap:8px;margin-top:12px;font-weight:500;}
+.ai-hint b{color:var(--amber);font-weight:700;}
 
-/* ── RESUMO MES ── */
-.resumo-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--ln);}
-.resumo-row:last-child{border-bottom:none;}
-.resumo-label{font-family:var(--body);font-size:13px;color:var(--w2);}
-.resumo-val{font-family:var(--mono);font-size:14px;font-weight:700;}
-
-/* ── FILA DE HOJE ── */
-.fila-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--ln);cursor:pointer;transition:background .1s;margin:0 -18px;padding-left:18px;padding-right:18px;}
-.fila-row:hover{background:var(--sf2);}
-.fila-row:last-child{border-bottom:none;}
-.fila-sla{width:3px;height:36px;border-radius:2px;flex-shrink:0;}
-.sla-ok{background:var(--green);}
-.sla-warn{background:var(--amber);}
-.sla-danger{background:var(--red);}
-.sla-critical{background:var(--red);animation:slaPulse 1s infinite;}
-@keyframes slaPulse{0%,100%{opacity:1;}50%{opacity:.4;}}
-
+/* TABLE */
+.table-card .card-head{padding:14px 18px;}
+.table-actions{display:flex;gap:8px;}
+.search{background:var(--sf2);border:1px solid var(--ln2);border-radius:var(--r);padding:7px 12px;color:var(--w2);font-family:var(--body);font-size:12px;width:220px;outline:none;}
+.search:focus{border-color:var(--amber);}
+table{width:100%;border-collapse:collapse;font-family:var(--body);font-size:12px;}
+thead th{text-align:left;padding:11px 18px;font-family:var(--head);font-size:10px;color:var(--w3);text-transform:uppercase;letter-spacing:1px;font-weight:700;border-bottom:1px solid var(--ln2);background:var(--sf2);}
+tbody td{padding:12px 18px;border-bottom:1px solid var(--ln);color:var(--w2);}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr{cursor:pointer;transition:background .1s;}
+tbody tr:hover td{background:var(--sf2);}
+.os-num{font-family:var(--mono);font-weight:800;color:var(--amber);font-size:13px;}
+.cli-cell{display:flex;align-items:center;gap:8px;}
+.cli-av{width:26px;height:26px;border-radius:50%;background:var(--sf3);display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:10px;font-weight:800;color:var(--w2);flex-shrink:0;}
+.cli-name{font-family:var(--body);font-weight:600;color:var(--w);}
+.total{font-family:var(--mono);font-weight:700;color:var(--w);}
+.badge-tag{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:3px 8px;border-radius:2px;}
+.tag-pago{background:var(--green-dim);color:var(--green);}
+.tag-pend{background:var(--amber-dim);color:var(--amber);}
+.tag-atras{background:var(--red-dim);color:var(--red);}
+.tag-andamento{background:var(--blue-dim);color:var(--blue);}
 .placa-mini{display:inline-flex;flex-direction:column;background:#FFFFFF;border-radius:2px;overflow:hidden;border:1.5px solid #C8C8C8;flex-shrink:0;line-height:1;}
 .placa-mini-topo{background:#003399;padding:1px 4px;display:flex;align-items:center;justify-content:center;}
 .placa-mini-br{font-family:var(--mono);font-size:4px;font-weight:700;color:#fff;letter-spacing:.2px;}
-.placa-mini-cod{padding:2px 6px 2px;font-family:var(--mono);font-size:13px;font-weight:800;color:#1A1A1A;letter-spacing:1.5px;text-align:center;line-height:1;}
+.placa-mini-cod{padding:2px 6px 2px;font-family:var(--mono);font-size:11px;font-weight:800;color:#1A1A1A;letter-spacing:1.2px;text-align:center;line-height:1;}
 
-.fila-info{flex:1;min-width:0;}
-.fila-veiculo{font-family:var(--head);font-size:14px;font-weight:700;text-transform:uppercase;}
-.fila-cliente{font-family:var(--body);font-size:11px;color:var(--w2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.fila-right{display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0;}
-.fila-val{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--amber);}
-.fila-tag{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:2px 8px;border-radius:2px;}
-.fila-mec{font-family:var(--body);font-size:10px;color:#B0B0B0;}
-
-.tag-entrada{background:rgba(10,132,255,0.18);color:var(--blue);}
-.tag-diagnostico{background:rgba(124,58,237,0.2);color:#A78BFA;}
-.tag-orcamento{background:var(--amber-dim);color:var(--amber);}
-.tag-aprovada{background:var(--cyan-dim);color:var(--cyan);}
-.tag-execucao{background:rgba(234,88,12,0.18);color:#FB923C;}
-.tag-aguardando_peca{background:rgba(255,59,48,0.18);color:var(--red);}
-.tag-pronto{background:rgba(48,209,88,0.18);color:var(--green);}
-
-/* ── LOGIN ── */
+/* LOGIN */
 .login-overlay{position:fixed;inset:0;z-index:2000;background:var(--bg);display:flex;align-items:center;justify-content:center;}
 .login-box{width:340px;padding:40px 32px;background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);}
 .login-brand{font-family:var(--head);font-size:36px;font-weight:900;text-transform:uppercase;letter-spacing:2px;text-align:center;margin-bottom:4px;}
@@ -165,30 +165,35 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 .login-btn{width:100%;padding:14px;border:none;border-radius:var(--r);background:var(--amber);color:#000;font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:2px;cursor:pointer;margin-top:4px;}
 .login-err{display:none;font-family:var(--body);font-size:12px;color:var(--red);text-align:center;margin-top:12px;}
 
-/* ── LOADING ── */
+/* LOADING */
 .loading-screen{position:fixed;inset:0;z-index:1500;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
 .loading-spinner{width:32px;height:32px;border:3px solid var(--ln2);border-top-color:var(--amber);border-radius:50%;animation:spin 1s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
 .loading-label{font-family:var(--mono);font-size:12px;color:var(--w4);letter-spacing:2px;}
 
-/* ── TOAST ── */
+/* TOAST */
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);font-family:var(--body);font-size:13px;font-weight:600;padding:12px 24px;border-radius:var(--r2);z-index:9999;opacity:0;transition:all .3s;pointer-events:none;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 .toast.ok{background:var(--green);color:#000;}
 .toast.err{background:var(--red);color:#fff;}
 
-/* ── RESPONSIVE ── */
+/* RESPONSIVE */
 .mob-menu-btn{display:none;background:none;border:none;cursor:pointer;color:var(--amber);padding:4px 6px;flex-direction:column;gap:5px;align-items:center;justify-content:center;}
 .mob-menu-btn span{display:block;width:20px;height:2px;background:var(--amber);border-radius:1px;transition:all .2s;}
 .sidebar-mob-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:940;}
 .sidebar-mob-overlay.open{display:block;}
+@media(max-width:1100px){
+  .metrics{grid-template-columns:repeat(2,1fr);}
+  .metrics-secondary{grid-template-columns:1fr;}
+  .grid{grid-template-columns:1fr;}
+}
 @media(max-width:768px){
   .sidebar{position:fixed;left:-240px;top:0;height:100vh;z-index:950;width:220px;transition:left .25s;box-shadow:4px 0 24px rgba(0,0,0,.5);}
   .sidebar.mob-open{left:0;}
   .mob-menu-btn{display:flex;}
-  .kpis{grid-template-columns:repeat(3,1fr);}
-  .grid-2,.grid-2-wide{grid-template-columns:1fr;}
-  .patio-grid{grid-template-columns:repeat(2,1fr);}
+  .metrics{grid-template-columns:1fr 1fr;}
+  .search{display:none;}
+  .hero{flex-direction:column;align-items:flex-start;}
 }
 </style>
 </head>
@@ -282,26 +287,19 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let PERFIL = null, OFICINA_ID = null, OFICINA = null;
-let DASH_CHART_DIAS = 7;
+let _barChart = null, _pieChart = null;
 
 function esc(s){ return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmt(v){ return (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
 function fmtK(v){ return v >= 1000 ? (v/1000).toFixed(1).replace('.0','')+'k' : Math.round(v).toString(); }
+function fmtPct(v){ return (v>=0?'▲ ':'▼ ') + Math.abs(v).toFixed(1) + '%'; }
+function initials(nome){ return (nome||'?').trim().split(/\s+/).map(p=>p[0]).slice(0,2).join('').toUpperCase(); }
 
 function toast(msg, tipo='ok') {
   const el = document.getElementById('toast-el');
   el.textContent = msg; el.className = 'toast ' + tipo + ' show';
   setTimeout(() => el.classList.remove('show'), 3000);
 }
-
-const STATUS_LABEL = {
-  entrada:'Entrada', diagnostico:'Diagnostico', orcamento:'Orcamento',
-  aprovada:'Aprovada', execucao:'Execucao', aguardando_peca:'Ag. Peca', pronto:'Pronto'
-};
-const STATUS_COLOR = {
-  entrada:'var(--blue)', diagnostico:'var(--purple)', orcamento:'var(--amber)',
-  aprovada:'var(--cyan)', execucao:'var(--orange)', aguardando_peca:'var(--red)', pronto:'var(--green)'
-};
 
 function tempoHumano(ms) {
   if (ms < 0) ms = 0;
@@ -312,14 +310,6 @@ function tempoHumano(ms) {
   return d + 'd' + (rh ? ' ' + rh + 'h' : '');
 }
 
-function slaClass(horasNoPatioMs) {
-  const h = horasNoPatioMs / 3600000;
-  if (h < 24) return 'sla-ok';
-  if (h < 48) return 'sla-warn';
-  if (h < 72) return 'sla-danger';
-  return 'sla-critical';
-}
-
 // ── CARREGAR DASHBOARD ──
 async function carregar() {
   const el = document.getElementById('dash-content');
@@ -327,117 +317,112 @@ async function carregar() {
   const hoje = agora.toISOString().split('T')[0];
   const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString().split('T')[0];
   const fimMes = new Date(agora.getFullYear(), agora.getMonth() + 1, 0, 23, 59, 59).toISOString();
-  const inicioChart = new Date(agora); inicioChart.setDate(agora.getDate() - (DASH_CHART_DIAS - 1));
-  const inicioChartStr = inicioChart.toISOString().split('T')[0];
+  const inicioMesAnt = new Date(agora.getFullYear(), agora.getMonth() - 1, 1).toISOString().split('T')[0];
+  const fimMesAnt = new Date(agora.getFullYear(), agora.getMonth(), 0, 23, 59, 59).toISOString();
+  const inicio30d = new Date(agora); inicio30d.setDate(agora.getDate() - 29);
+  const inicio30dStr = inicio30d.toISOString().split('T')[0];
 
   // Queries paralelas
-  const [osAbertasRes, osEntreguesMesRes, semPagRes, caixaRes, membrosRes, osChartRes] = await Promise.all([
+  const [osMesRes, osMesAntRes, semPagRes, novosClientesRes, novosClientesAntRes, membrosRes, osChartRes, osRecentesRes] = await Promise.all([
     db.from('ordens_servico')
-      .select('id, numero, status, valor_total, valor_mao_obra, created_at, mecanico_id, veiculos(placa, marca, modelo), clientes(nome)')
-      .eq('oficina_id', OFICINA_ID)
-      .not('status', 'in', '(entregue,cancelada)')
-      .order('created_at', {ascending: true}),
-    db.from('ordens_servico')
-      .select('id, numero, valor_total, valor_mao_obra, valor_pecas, forma_pagamento, taxa_cartao, data_entrega, mecanico_id, created_at')
+      .select('id,numero,valor_total,valor_mao_obra,valor_pecas,forma_pagamento,taxa_cartao,data_entrega,mecanico_id,created_at,status,clientes(nome),veiculos(placa,marca,modelo)')
       .eq('oficina_id', OFICINA_ID).eq('status', 'entregue').eq('pago', true)
-      .gte('data_entrega', inicioMes).lte('data_entrega', fimMes)
-      .order('data_entrega', {ascending: false}),
+      .gte('data_entrega', inicioMes).lte('data_entrega', fimMes),
     db.from('ordens_servico')
-      .select('id, numero, valor_total, forma_pagamento, veiculos(placa), clientes(nome)')
+      .select('id,valor_total,data_entrega,created_at')
+      .eq('oficina_id', OFICINA_ID).eq('status', 'entregue').eq('pago', true)
+      .gte('data_entrega', inicioMesAnt).lte('data_entrega', fimMesAnt),
+    db.from('ordens_servico')
+      .select('id,numero,valor_total,data_entrega,clientes(nome)')
       .eq('oficina_id', OFICINA_ID).eq('status', 'entregue').eq('pago', false)
       .neq('forma_pagamento', 'faturado'),
-    db.from('caixa').select('tipo, valor')
-      .eq('oficina_id', OFICINA_ID).gte('created_at', inicioMes).lte('created_at', fimMes),
-    db.from('profiles').select('id, nome')
-      .eq('oficina_id', OFICINA_ID).in('role', ['mecanico','aux_mecanico']),
-    db.from('ordens_servico')
-      .select('id, valor_total, data_entrega')
+    db.from('clientes').select('id').eq('oficina_id', OFICINA_ID).gte('created_at', inicioMes),
+    db.from('clientes').select('id').eq('oficina_id', OFICINA_ID).gte('created_at', inicioMesAnt).lt('created_at', inicioMes),
+    db.from('profiles').select('id,nome').eq('oficina_id', OFICINA_ID).in('role', ['mecanico','aux_mecanico']),
+    db.from('ordens_servico').select('valor_total,valor_mao_obra,valor_pecas,data_entrega')
       .eq('oficina_id', OFICINA_ID).eq('status', 'entregue').eq('pago', true)
-      .gte('data_entrega', inicioChartStr).lte('data_entrega', hoje)
+      .gte('data_entrega', inicio30dStr).lte('data_entrega', hoje),
+    db.from('ordens_servico')
+      .select('id,numero,valor_total,status,data_entrega,forma_pagamento,pago,mecanico_id,clientes(nome),veiculos(placa,marca,modelo)')
+      .eq('oficina_id', OFICINA_ID).order('updated_at', {ascending:false}).limit(8)
   ]);
 
-  const osAbertas = osAbertasRes.data || [];
-  const osEntreguesMes = osEntreguesMesRes.data || [];
-  const osChart = osChartRes.data || [];
+  const osMes = osMesRes.data || [];
+  const osMesAnt = osMesAntRes.data || [];
   const semPag = semPagRes.data || [];
-  const movsMes = caixaRes.data || [];
+  const novos = novosClientesRes.data || [];
+  const novosAnt = novosClientesAntRes.data || [];
   const membros = membrosRes.data || [];
+  const osChart = osChartRes.data || [];
+  const osRecentes = osRecentesRes.data || [];
 
-  // Faturamento por período (7/30/60 dias)
-  const fat7dias = [];
-  for (let i = DASH_CHART_DIAS - 1; i >= 0; i--) {
-    const d = new Date(agora);
-    d.setDate(d.getDate() - i);
-    const ds = d.toISOString().split('T')[0];
-    const label = DASH_CHART_DIAS <= 7
-      ? d.toLocaleDateString('pt-BR', {weekday: 'short'}).replace('.','').toUpperCase()
-      : d.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'});
-    const total = osChart.filter(o => (o.data_entrega||'').startsWith(ds)).reduce((s,o) => s + (o.valor_total||0), 0);
-    fat7dias.push({ label, total, isToday: i === 0 });
-  }
-  const maxFat = Math.max(...fat7dias.map(d => d.total), 1);
+  // KPIs principais
+  const fatMes = osMes.reduce((s,o)=>s+(o.valor_total||0),0);
+  const fatAnt = osMesAnt.reduce((s,o)=>s+(o.valor_total||0),0);
+  const fatVar = fatAnt > 0 ? ((fatMes-fatAnt)/fatAnt*100) : 0;
+  const osCount = osMes.length;
+  const osAntCount = osMesAnt.length;
+  const osVar = osAntCount > 0 ? ((osCount-osAntCount)/osAntCount*100) : 0;
+  const novosCount = novos.length;
+  const novosAntCount = novosAnt.length;
+  const novosVar = novosAntCount > 0 ? ((novosCount-novosAntCount)/novosAntCount*100) : 0;
+  const ticket = osCount ? fatMes/osCount : 0;
+  const ticketAnt = osAntCount ? fatAnt/osAntCount : 0;
+  const ticketVar = ticketAnt > 0 ? ((ticket-ticketAnt)/ticketAnt*100) : 0;
 
-  // KPIs
-  const totalAbertas = osAbertas.length;
-  const prontas = osAbertas.filter(o => o.status === 'pronto').length;
-  const fatMes = osEntreguesMes.reduce((s,o) => s + (o.valor_total||0), 0);
-  const ticketMedio = osEntreguesMes.length ? fatMes / osEntreguesMes.length : 0;
-  const totalSemPag = semPag.reduce((s,o) => s + (o.valor_total||0), 0);
-
-  // Tempo medio (OS entregues no mês)
-  let tempoMedioMs = 0;
-  if (osEntreguesMes.length) {
-    const tempos = osEntreguesMes.map(o => {
-      const c = new Date(o.created_at).getTime();
-      const e = new Date(o.data_entrega).getTime();
+  // Tempo médio (OS do mês)
+  let tempoMs = 0;
+  if (osMes.length) {
+    const temps = osMes.map(o=>{
+      const c = new Date(o.created_at).getTime(), e = new Date(o.data_entrega).getTime();
       return e - c;
-    }).filter(t => t > 0);
-    if (tempos.length) tempoMedioMs = tempos.reduce((a,b) => a+b, 0) / tempos.length;
+    }).filter(t=>t>0);
+    if (temps.length) tempoMs = temps.reduce((a,b)=>a+b,0)/temps.length;
+  }
+  let tempoAntMs = 0;
+  if (osMesAnt.length) {
+    const temps = osMesAnt.map(o=>{
+      const c = new Date(o.created_at).getTime(), e = new Date(o.data_entrega).getTime();
+      return e - c;
+    }).filter(t=>t>0);
+    if (temps.length) tempoAntMs = temps.reduce((a,b)=>a+b,0)/temps.length;
   }
 
-  // Status patio
-  const porStatus = {};
-  osAbertas.forEach(o => { porStatus[o.status] = (porStatus[o.status]||0) + 1; });
+  // Inadimplência
+  const inadTotal = semPag.reduce((s,o)=>s+(o.valor_total||0),0);
+  const inadPct = fatMes > 0 ? (inadTotal/fatMes*100) : 0;
 
-  // Ranking mecanicos
+  // Top mecânico
   const mecMap = {};
-  membros.forEach(m => { mecMap[m.id] = { nome: m.nome || 'Sem nome', os: 0, valor: 0 }; });
-  osEntreguesMes.forEach(o => {
-    if (o.mecanico_id && mecMap[o.mecanico_id]) {
-      mecMap[o.mecanico_id].os++;
-      mecMap[o.mecanico_id].valor += o.valor_total || 0;
-    }
-  });
-  const ranking = Object.values(mecMap).sort((a,b) => b.valor - a.valor);
+  membros.forEach(m=>{ mecMap[m.id] = {nome:m.nome||'Sem nome', os:0, valor:0}; });
+  osMes.forEach(o=>{ if (o.mecanico_id && mecMap[o.mecanico_id]) { mecMap[o.mecanico_id].os++; mecMap[o.mecanico_id].valor+=o.valor_total||0; } });
+  const ranking = Object.values(mecMap).sort((a,b)=>b.valor-a.valor);
+  const topMec = ranking[0] && ranking[0].os > 0 ? ranking[0] : null;
+  const topMecPct = topMec && fatMes > 0 ? (topMec.valor/fatMes*100) : 0;
 
-  // Despesas mes
-  const despesasMes = movsMes.filter(m => m.tipo === 'saida').reduce((s,m) => s + (m.valor||0), 0);
-  const entradasAvulsas = movsMes.filter(m => m.tipo === 'entrada').reduce((s,m) => s + (m.valor||0), 0);
-  const taxasMes = osEntreguesMes.reduce((s,o) => s + (o.valor_total||0) * ((o.taxa_cartao||0)/100), 0);
-  const lucroMes = fatMes + entradasAvulsas - despesasMes - taxasMes;
+  // Chart 30 dias
+  const serieDias = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(agora); d.setDate(d.getDate() - i);
+    const ds = d.toISOString().split('T')[0];
+    const servicos = osChart.filter(o => (o.data_entrega||'').startsWith(ds)).reduce((s,o)=>s+(o.valor_mao_obra||0),0);
+    const pecas = osChart.filter(o => (o.data_entrega||'').startsWith(ds)).reduce((s,o)=>s+(o.valor_pecas||0),0);
+    serieDias.push({ label: d.getDate().toString().padStart(2,'0'), servicos, pecas });
+  }
 
-  // Resumo de hoje
-  const osAbertasHoje = osAbertas.filter(o => o.created_at.startsWith(hoje));
-  const osEntreguesHoje = osEntreguesMes.filter(o => (o.data_entrega||'').startsWith(hoje));
-  const fatHoje = osEntreguesHoje.reduce((s,o) => s + (o.valor_total||0), 0);
-  const mecHojeMap = {};
-  osEntreguesHoje.forEach(o => { if (o.mecanico_id) mecHojeMap[o.mecanico_id] = (mecHojeMap[o.mecanico_id]||0) + 1; });
-  const mecDestaqueEntry = Object.entries(mecHojeMap).sort((a,b)=>b[1]-a[1])[0];
-  const mecDestaque = mecDestaqueEntry ? membros.find(m => m.id === mecDestaqueEntry[0]) : null;
-  const mecDestaqueQtd = mecDestaqueEntry ? mecDestaqueEntry[1] : 0;
-
-  // Nome mês
-  const nomeMes = agora.toLocaleDateString('pt-BR', {month:'long'});
+  // Donut categorias (serviços, peças, taxas cartão do mês)
+  const totServicos = osMes.reduce((s,o)=>s+(o.valor_mao_obra||0),0);
+  const totPecas = osMes.reduce((s,o)=>s+(o.valor_pecas||0),0);
 
   // Alerta sem pagamento
-  const alertaHtml = semPag.length > 0 ? `
-    <div class="alert-critico">
+  const alertaHtml = semPag.length > 0 && INFRA.podeVer('fin_resumo') ? `
+    <div class="alert-critico" onclick="window.location.href='os-list-v2.html'">
       <div class="alert-critico-icon">!</div>
       <div class="alert-critico-text">
         <div class="alert-critico-title">${semPag.length} OS Entregues Sem Pagamento</div>
         <div class="alert-critico-sub">Cobrar antes de fechar o dia</div>
       </div>
-      <div class="alert-critico-val">${fmt(totalSemPag)}</div>
+      <div class="alert-critico-val">${fmt(inadTotal)}</div>
     </div>` : '';
 
   // Topbar date
@@ -445,239 +430,275 @@ async function carregar() {
     agora.toLocaleDateString('pt-BR', {weekday:'short', day:'numeric', month:'short', year:'numeric'}).toUpperCase() +
     ' · ' + agora.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
 
+  const nomeMes = agora.toLocaleDateString('pt-BR',{month:'long'});
+  const nomeDono = (PERFIL.nome || '').split(' ')[0] || '—';
+
+  const canVerFin = INFRA.podeVer('fin_resumo');
+
   el.innerHTML = `
-    <!-- ALERTA -->
+    <!-- HERO -->
+    <div class="hero">
+      <div>
+        <div class="hero-title">Bem-vindo, <span>${esc(nomeDono)}</span></div>
+        <div class="hero-date">${agora.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).toUpperCase()}</div>
+      </div>
+      <div class="hero-actions">
+        <a href="kanban-v2.html" class="pill">◀ Pátio</a>
+        <a href="os-list-v2.html" class="pill primary">+ Nova OS</a>
+      </div>
+    </div>
+
     ${alertaHtml}
 
-    <!-- KPIs -->
-    <div class="kpis">
-      <div class="kpi">
-        <div class="kpi-val" style="color:var(--amber);">${totalAbertas}</div>
-        <div class="kpi-lbl">OS Abertas</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-val" style="color:var(--green);">${prontas}</div>
-        <div class="kpi-lbl">Prontas</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-val">${ticketMedio >= 1000 ? 'R$ '+fmtK(ticketMedio) : fmt(ticketMedio).replace('R$\u00a0','R$ ')}</div>
-        <div class="kpi-lbl">Ticket Medio</div>
-        <div class="kpi-sub">${osEntreguesMes.length} entregas</div>
-      </div>
-      ${INFRA.podeVer('fin_resumo') ? `
-      <div class="kpi">
-        <div class="kpi-val" style="color:var(--green);">R$ ${fmtK(fatMes)}</div>
-        <div class="kpi-lbl">Faturado Mes</div>
+    <!-- KPIs PRIMÁRIOS -->
+    <div class="metrics">
+      ${canVerFin ? `
+      <div class="metric">
+        <div class="metric-label"><span class="metric-dot"></span>Faturamento ${nomeMes}</div>
+        <div class="metric-value">${fatMes >= 1000 ? 'R$ '+fmtK(fatMes) : fmt(fatMes)}</div>
+        <div class="metric-sub">${osCount} OS entregues</div>
+        <div class="metric-change ${fatVar < 0 ? 'down' : (fatVar === 0 ? 'neutral' : '')}">${fatAnt > 0 ? fmtPct(fatVar)+' vs mês anterior' : 'sem histórico'}</div>
       </div>` : ''}
-      <div class="kpi">
-        <div class="kpi-val">${tempoMedioMs > 0 ? tempoHumano(tempoMedioMs) : '—'}</div>
-        <div class="kpi-lbl">Tempo Medio</div>
-        <div class="kpi-sub">permanencia</div>
+      <div class="metric">
+        <div class="metric-label"><span class="metric-dot"></span>OS Entregues</div>
+        <div class="metric-value">${osCount}</div>
+        <div class="metric-sub">atendimentos concluídos</div>
+        <div class="metric-change ${osVar < 0 ? 'down' : (osVar === 0 ? 'neutral' : '')}">${osAntCount > 0 ? fmtPct(osVar)+' vs mês anterior' : 'sem histórico'}</div>
       </div>
-      ${INFRA.podeVer('fin_resumo') ? (semPag.length ? `
-      <div class="kpi kpi-alert">
-        <div class="kpi-val" style="color:var(--red);">${semPag.length}</div>
-        <div class="kpi-lbl">Sem Pagamento</div>
-        <div class="kpi-sub" style="color:var(--red);">${fmt(totalSemPag)}</div>
+      <div class="metric">
+        <div class="metric-label"><span class="metric-dot"></span>Novos Clientes</div>
+        <div class="metric-value">${novosCount}</div>
+        <div class="metric-sub">cadastrados no mês</div>
+        <div class="metric-change ${novosVar < 0 ? 'down' : (novosVar === 0 ? 'neutral' : '')}">${novosAntCount > 0 ? fmtPct(novosVar)+' vs mês anterior' : 'sem histórico'}</div>
+      </div>
+      ${canVerFin ? `
+      <div class="metric">
+        <div class="metric-label"><span class="metric-dot"></span>Ticket Médio</div>
+        <div class="metric-value">${ticket >= 1000 ? 'R$ '+fmtK(ticket) : fmt(ticket)}</div>
+        <div class="metric-sub">por OS finalizada</div>
+        <div class="metric-change ${ticketVar < 0 ? 'down' : (ticketVar === 0 ? 'neutral' : '')}">${ticketAnt > 0 ? fmtPct(ticketVar)+' vs mês anterior' : 'sem histórico'}</div>
       </div>` : `
-      <div class="kpi">
-        <div class="kpi-val" style="color:var(--green);">R$ ${fmtK(lucroMes)}</div>
-        <div class="kpi-lbl">Lucro Mes</div>
-        <div class="kpi-sub">estimado</div>
-      </div>`) : ''}
-    </div>
-
-    <!-- RESUMO DE HOJE -->
-    <div class="card" style="margin-bottom:20px;border-left:3px solid var(--amber);">
-      <div class="card-head" style="padding:10px 18px;">
-        <div class="card-title">Resumo de Hoje</div>
-        <div class="card-badge">${agora.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short'}).toUpperCase()}</div>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--ln2);">
-        <div style="background:var(--sf);padding:14px 12px;text-align:center;">
-          <div style="font-family:var(--mono);font-size:30px;font-weight:800;color:var(--blue);line-height:1;">${osAbertasHoje.length}</div>
-          <div style="font-family:var(--head);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);margin-top:4px;">Entradas</div>
-        </div>
-        <div style="background:var(--sf);padding:14px 12px;text-align:center;">
-          <div style="font-family:var(--mono);font-size:30px;font-weight:800;color:var(--green);line-height:1;">${osEntreguesHoje.length}</div>
-          <div style="font-family:var(--head);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);margin-top:4px;">Entregas</div>
-        </div>
-        <div style="background:var(--sf);padding:14px 12px;text-align:center;">
-          <div style="font-family:var(--mono);font-size:20px;font-weight:800;color:var(--amber);line-height:1;white-space:nowrap;">${fatHoje >= 1000 ? 'R$\u00a0'+fmtK(fatHoje) : fmt(fatHoje)}</div>
-          <div style="font-family:var(--head);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);margin-top:4px;">Faturado Hoje</div>
-        </div>
-        <div style="background:var(--sf);padding:14px 12px;text-align:center;">
-          <div style="font-family:var(--mono);font-size:30px;font-weight:800;color:${prontas>0?'var(--green)':'var(--w3)'};line-height:1;">${prontas}</div>
-          <div style="font-family:var(--head);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);margin-top:4px;">Prontas</div>
-        </div>
-        <div style="background:var(--sf);padding:14px 12px;text-align:center;">
-          <div style="font-family:var(--head);font-size:${mecDestaque&&mecDestaque.nome.split(' ')[0].length>7?'14':'18'}px;font-weight:900;text-transform:uppercase;line-height:1;color:${mecDestaque?'var(--amber)':'var(--w4)'};">${mecDestaque ? esc(mecDestaque.nome.split(' ')[0]) : '—'}</div>
-          ${mecDestaque ? `<div style="font-family:var(--mono);font-size:10px;color:var(--w3);margin-top:3px;">${mecDestaqueQtd} OS</div>` : ''}
-          <div style="font-family:var(--head);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--w3);margin-top:4px;">Destaque</div>
-        </div>
+      <div class="metric">
+        <div class="metric-label"><span class="metric-dot"></span>OS no Pátio</div>
+        <div class="metric-value">${osRecentes.filter(o=>!['entregue','cancelada'].includes(o.status)).length}</div>
+        <div class="metric-sub">abertas agora</div>
+        <div class="metric-change neutral">—</div>
+      </div>`}
+      <div class="metric">
+        <div class="metric-label"><span class="metric-dot"></span>Tempo Médio</div>
+        <div class="metric-value">${tempoMs > 0 ? tempoHumano(tempoMs) : '—'}</div>
+        <div class="metric-sub">permanência da OS</div>
+        <div class="metric-change neutral">${tempoAntMs > 0 && tempoMs > 0 ? (tempoMs < tempoAntMs ? '▼ mais rápido' : '▲ mais lento') : '—'}</div>
       </div>
     </div>
 
-    <!-- PATIO + FATURAMENTO 7 DIAS -->
-    <div class="grid-2">
-      <!-- Status do Patio -->
+    <!-- KPIs SECUNDÁRIOS -->
+    <div class="metrics metrics-secondary">
+      ${canVerFin ? `
+      <div class="metric ${semPag.length ? 'metric-warn' : ''}">
+        <div class="metric-label"><span class="metric-dot" style="background:var(--red);"></span>Inadimplência</div>
+        <div class="metric-value" style="color:${semPag.length ? 'var(--red)' : 'var(--green)'};">${fmt(inadTotal)}</div>
+        <div class="metric-sub">${semPag.length} OS em atraso${fatMes > 0 ? ' · '+inadPct.toFixed(1)+'% do faturamento' : ''}</div>
+        <div class="metric-change ${semPag.length ? 'down' : ''}">${semPag.length ? 'cobrar pendências' : 'tudo em dia ✓'}</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label"><span class="metric-dot"></span>Taxa Conversão</div>
+        <div class="metric-value">${osAntCount > 0 ? ((osCount/(osCount+semPag.length)*100)||0).toFixed(0)+'%' : '—'}</div>
+        <div class="metric-sub">OS pagas / concluídas</div>
+        <div class="metric-change neutral">&nbsp;</div>
+      </div>` : `
+      <div class="metric">
+        <div class="metric-label"><span class="metric-dot"></span>Mecânicos Ativos</div>
+        <div class="metric-value">${ranking.filter(m=>m.os>0).length}</div>
+        <div class="metric-sub">de ${membros.length} cadastrados</div>
+        <div class="metric-change neutral">no mês</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label"><span class="metric-dot"></span>Total Equipe</div>
+        <div class="metric-value">${membros.length}</div>
+        <div class="metric-sub">mecânicos</div>
+        <div class="metric-change neutral">&nbsp;</div>
+      </div>`}
+      <div class="metric metric-top">
+        <div class="metric-label"><span class="metric-dot"></span>Top Mecânico · ${nomeMes}</div>
+        ${topMec ? `
+        <div class="top-mec">
+          <div class="top-mec-av">${initials(topMec.nome)}</div>
+          <div class="top-mec-info">
+            <div class="top-mec-name">${esc(topMec.nome)}</div>
+            <div class="top-mec-stats">${topMec.os} OS · ${canVerFin ? fmt(topMec.valor)+' gerados' : 'produção top'}</div>
+          </div>
+          <div class="top-mec-trophy">🏆</div>
+        </div>
+        ${canVerFin && topMecPct > 0 ? `<div class="metric-change" style="margin-top:10px;">▲ ${topMecPct.toFixed(0)}% da produção da equipe</div>` : '<div class="metric-change neutral" style="margin-top:10px;">&nbsp;</div>'}
+        ` : `
+        <div style="font-family:var(--mono);font-size:12px;color:var(--w4);padding:20px 0;text-align:center;">Nenhuma OS entregue no mês</div>
+        `}
+      </div>
+    </div>
+
+    <!-- CHART + DONUT -->
+    <div class="grid">
       <div class="card">
         <div class="card-head">
-          <div class="card-title">Status do Patio</div>
-          <div class="card-badge">${totalAbertas} veiculo${totalAbertas!==1?'s':''}</div>
+          <div>
+            <div class="card-title">Tendência de Faturamento · 30 dias</div>
+            ${canVerFin ? `<div class="card-value">${fmt(fatMes)}</div>` : ''}
+            ${canVerFin ? `<div class="legend">
+              <span><span class="legend-dot" style="background:var(--amber);"></span>Serviços</span>
+              <span><span class="legend-dot" style="background:var(--sf4);"></span>Peças</span>
+            </div>` : ''}
+          </div>
+          <div class="card-sub">${canVerFin ? fmt(totServicos)+' serv · '+fmt(totPecas)+' peças' : ''}</div>
         </div>
         <div class="card-body">
-          <div class="patio-grid">
-            ${['entrada','diagnostico','execucao','aguardando_peca'].map(s => `
-              <div class="patio-col" style="border-top-color:${STATUS_COLOR[s]};">
-                <div class="patio-col-num" style="${(porStatus[s]||0)>0&&(s==='aguardando_peca')?'color:var(--red);':''}">${porStatus[s]||0}</div>
-                <div class="patio-col-lbl">${STATUS_LABEL[s]}</div>
-              </div>
-            `).join('')}
-          </div>
-          <div style="margin-top:10px;">
-            <div class="patio-grid" style="grid-template-columns:1fr 1fr 1fr;">
-              <div class="patio-col" style="border-top-color:var(--cyan);">
-                <div class="patio-col-num">${(porStatus['orcamento']||0)+(porStatus['aprovada']||0)}</div>
-                <div class="patio-col-lbl">Orc/Aprov</div>
-              </div>
-              <div class="patio-col" style="border-top-color:var(--green);">
-                <div class="patio-col-num" style="color:var(--green);">${prontas}</div>
-                <div class="patio-col-lbl">Prontas</div>
-              </div>
-              <div class="patio-col" style="border-top-color:var(--w4);">
-                <div class="patio-col-num">${osEntreguesMes.length}</div>
-                <div class="patio-col-lbl">Entregues (mes)</div>
-              </div>
-            </div>
-          </div>
+          <div class="chart-box"><canvas id="barChart"></canvas></div>
         </div>
       </div>
 
-      <!-- Faturamento por período -->
       <div class="card">
         <div class="card-head">
-          <div class="card-title">Faturamento ${DASH_CHART_DIAS} Dias</div>
-          <div style="display:flex;align-items:center;gap:6px;">
-            ${[7,30,60].map(n=>`<div class="p-btn${DASH_CHART_DIAS===n?' on':''}" style="font-size:10px;padding:3px 8px;cursor:pointer;" onclick="DASH_CHART_DIAS=${n};carregar();">${n}d</div>`).join('')}
-            <div class="card-badge">${fmt(fat7dias.reduce((s,d)=>s+d.total,0))}</div>
+          <div>
+            <div class="card-title">Mão de Obra × Peças</div>
+            ${canVerFin ? `<div class="card-value">${fmt(fatMes)}</div>` : ''}
+            <div class="card-sub">${nomeMes}</div>
           </div>
         </div>
         <div class="card-body">
-          <div class="chart">
-            ${fat7dias.map(d => {
-              const pct = maxFat > 0 ? Math.max((d.total / maxFat) * 100, 3) : 3;
-              return `<div class="chart-bar${d.isToday?' today':''}" style="height:${pct}%;"><span class="chart-bar-val">${d.total > 0 ? fmtK(d.total) : '0'}</span></div>`;
-            }).join('')}
-          </div>
-          <div class="chart-labels">
-            ${fat7dias.map(d => `<div class="chart-label${d.isToday?' today':''}">${d.isToday ? 'HOJE' : d.label}</div>`).join('')}
-          </div>
+          <div class="pie-box"><canvas id="pieChart"></canvas></div>
+          ${topMec ? `<div class="ai-hint"><b>🏆 ${esc(topMec.nome.split(' ')[0])}</b>lidera a equipe com ${topMec.os} OS${canVerFin ? ' · '+fmt(topMec.valor) : ''}.</div>` : ''}
         </div>
       </div>
     </div>
 
-    <!-- RANKING + RESUMO -->
-    <div class="grid-2-wide">
-      <!-- Ranking Mecanicos -->
-      <div class="card">
-        <div class="card-head">
-          <div class="card-title">Ranking Mecanicos</div>
-          <div class="card-badge">${nomeMes}</div>
-        </div>
-        <div class="card-body">
-          ${ranking.length ? ranking.map((m, i) => `
-            <div class="mec-row">
-              <div class="mec-pos ${i<2?'top':''}">${m.os > 0 ? (i+1) : '—'}</div>
-              <div class="mec-dot" style="background:${m.os > 0 ? 'var(--green)' : 'var(--w4)'};"></div>
-              <div class="mec-name" ${m.os===0?'style="color:var(--w3);"':''}>${esc(m.nome)}</div>
-              <div class="mec-stats">
-                <div class="mec-os" ${m.os===0?'style="color:var(--w4);"':''}>${m.os} OS</div>
-                <div class="mec-val" ${m.os===0?'style="color:var(--w4);"':''}>${fmt(m.valor)}</div>
-              </div>
-            </div>
-          `).join('') : '<div style="padding:20px;text-align:center;font-family:var(--mono);font-size:12px;color:var(--w4);">Nenhum mecanico cadastrado</div>'}
-        </div>
-      </div>
-
-      <!-- Resumo do Mes -->
-      <div class="card">
-        <div class="card-head">
-          <div class="card-title">Resumo do Mes</div>
-          <div class="card-badge">${nomeMes}</div>
-        </div>
-        <div class="card-body">
-          <div class="resumo-row">
-            <div class="resumo-label">Faturamento</div>
-            <div class="resumo-val" style="color:var(--amber);">${fmt(fatMes)}</div>
-          </div>
-          <div class="resumo-row">
-            <div class="resumo-label">Lucro Estimado</div>
-            <div class="resumo-val" style="color:${lucroMes>=0?'var(--green)':'var(--red)'};">${fmt(lucroMes)}</div>
-          </div>
-          <div class="resumo-row">
-            <div class="resumo-label">Ticket Medio</div>
-            <div class="resumo-val">${fmt(ticketMedio)}</div>
-          </div>
-          <div class="resumo-row">
-            <div class="resumo-label">OS Abertas</div>
-            <div class="resumo-val">${totalAbertas}</div>
-          </div>
-          <div class="resumo-row">
-            <div class="resumo-label">OS Entregues</div>
-            <div class="resumo-val">${osEntreguesMes.length}</div>
-          </div>
-          <div class="resumo-row">
-            <div class="resumo-label">Tempo Medio</div>
-            <div class="resumo-val">${tempoMedioMs > 0 ? tempoHumano(tempoMedioMs) : '—'}</div>
-          </div>
-          <div class="resumo-row">
-            <div class="resumo-label">Despesas</div>
-            <div class="resumo-val" style="color:var(--red);">${fmt(despesasMes)}</div>
-          </div>
-          <div class="resumo-row">
-            <div class="resumo-label">Taxas Cartao</div>
-            <div class="resumo-val" style="color:var(--red);">${fmt(taxasMes)}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- FILA DE HOJE -->
-    <div class="card">
+    <!-- TABELA OS RECENTES -->
+    <div class="card table-card">
       <div class="card-head">
-        <div class="card-title">Veiculos no Patio</div>
-        <div class="card-badge">${totalAbertas} veiculo${totalAbertas!==1?'s':''}</div>
+        <div>
+          <div class="card-title">Ordens de Serviço Recentes</div>
+          <div class="card-sub">últimas ${osRecentes.length} movimentações</div>
+        </div>
+        <div class="table-actions">
+          <a href="os-list-v2.html" class="pill">Ver todas →</a>
+        </div>
       </div>
-      <div class="card-body">
-        ${osAbertas.length ? osAbertas.map(o => {
-          const agMs = agora.getTime() - new Date(o.created_at).getTime();
-          const placa = o.veiculos?.placa || '---';
-          const veiculo = [o.veiculos?.marca, o.veiculos?.modelo].filter(Boolean).join(' ') || 'Veiculo';
-          const cliente = o.clientes?.nome || '—';
-          const mec = membros.find(m => m.id === o.mecanico_id);
-          const semPagOS = o.status === 'pronto' && !o.valor_total;
-          return `
-            <div class="fila-row" onclick="window.location.href='kanban-v2.html'">
-              <div class="fila-sla ${slaClass(agMs)}"></div>
-              <div class="placa-mini">
-                <div class="placa-mini-topo"><div class="placa-mini-br">BR</div></div>
-                <div class="placa-mini-cod">${esc(placa)}</div>
-              </div>
-              <div class="fila-info">
-                <div class="fila-veiculo">${esc(veiculo)}</div>
-                <div class="fila-cliente">${esc(cliente)}</div>
-              </div>
-              <div class="fila-right">
-                <div class="fila-val" ${o.valor_total?'':'style="color:var(--w3);"'}>${o.valor_total ? fmt(o.valor_total) : '—'}</div>
-                <div class="fila-tag tag-${o.status}">${STATUS_LABEL[o.status]||o.status}</div>
-                <div class="fila-mec">${mec ? esc(mec.nome) + ' · ' : ''}${tempoHumano(agMs)}</div>
-              </div>
-            </div>`;
-        }).join('') : '<div style="padding:20px;text-align:center;font-family:var(--mono);font-size:12px;color:var(--w4);">Nenhum veiculo no patio</div>'}
-      </div>
+      ${osRecentes.length ? `
+      <table>
+        <thead>
+          <tr>
+            <th>OS</th><th>Cliente</th><th>Veículo</th><th>Mecânico</th>
+            ${canVerFin ? '<th>Total</th>' : ''}
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${osRecentes.map(o => {
+            const cliNome = o.clientes?.nome || '—';
+            const placa = o.veiculos?.placa || '---';
+            const veic = [o.veiculos?.marca, o.veiculos?.modelo].filter(Boolean).join(' ') || '—';
+            const mec = membros.find(m=>m.id===o.mecanico_id);
+            let statusTag = '', statusLbl = '';
+            if (o.status === 'entregue' && o.pago) { statusTag = 'tag-pago'; statusLbl = 'Pago'; }
+            else if (o.status === 'entregue' && !o.pago) { statusTag = 'tag-atras'; statusLbl = 'Sem Pag.'; }
+            else if (['execucao','aprovada'].includes(o.status)) { statusTag = 'tag-andamento'; statusLbl = 'Em andamento'; }
+            else { statusTag = 'tag-pend'; statusLbl = (o.status||'').replace('_',' '); }
+            return `
+            <tr onclick="window.location.href='kanban-v2.html'">
+              <td><span class="os-num">#${o.numero || o.id.slice(0,6)}</span></td>
+              <td>
+                <div class="cli-cell">
+                  <div class="cli-av">${initials(cliNome)}</div>
+                  <div class="cli-name">${esc(cliNome)}</div>
+                </div>
+              </td>
+              <td>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div class="placa-mini">
+                    <div class="placa-mini-topo"><div class="placa-mini-br">BR</div></div>
+                    <div class="placa-mini-cod">${esc(placa)}</div>
+                  </div>
+                  <span style="color:var(--w2);font-size:11px;">${esc(veic)}</span>
+                </div>
+              </td>
+              <td>${mec ? esc(mec.nome) : '<span style="color:var(--w4);">—</span>'}</td>
+              ${canVerFin ? `<td><span class="total">${o.valor_total ? fmt(o.valor_total) : '—'}</span></td>` : ''}
+              <td><span class="badge-tag ${statusTag}">${statusLbl}</span></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>` : '<div style="padding:40px;text-align:center;font-family:var(--mono);font-size:12px;color:var(--w4);">Nenhuma OS recente</div>'}
     </div>
   `;
+
+  // Desenha charts
+  if (canVerFin) {
+    requestAnimationFrame(() => {
+      desenharBarChart(serieDias);
+      desenharPieChart(totServicos, totPecas);
+    });
+  }
+}
+
+function desenharBarChart(serie) {
+  const ctx = document.getElementById('barChart');
+  if (!ctx) return;
+  if (_barChart) _barChart.destroy();
+  _barChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: serie.map(d => d.label),
+      datasets: [
+        { label: 'Serviços', data: serie.map(d => d.servicos), backgroundColor: '#E8930C', borderRadius: 2, barThickness: 9 },
+        { label: 'Peças', data: serie.map(d => d.pecas), backgroundColor: '#27272D', borderRadius: 2, barThickness: 9 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#18181C', borderColor: '#E8930C', borderWidth: 1, padding: 10,
+          titleFont: { family: 'Space Grotesk', weight: 'bold' },
+          bodyFont: { family: 'JetBrains Mono' },
+          callbacks: { label: (c) => c.dataset.label + ': ' + new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(c.parsed.y) }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.32)', font: { size: 10, family: 'JetBrains Mono' } } },
+        y: { stacked: false, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: 'rgba(255,255,255,0.32)', font: { size: 10, family: 'JetBrains Mono' }, callback: v => v >= 1000 ? 'R$ '+(v/1000).toFixed(1).replace('.0','')+'k' : 'R$ '+v } }
+      }
+    }
+  });
+}
+
+function desenharPieChart(servicos, pecas) {
+  const ctx = document.getElementById('pieChart');
+  if (!ctx) return;
+  if (_pieChart) _pieChart.destroy();
+  const hasData = (servicos + pecas) > 0;
+  _pieChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Mão de obra', 'Peças'],
+      datasets: [{
+        data: hasData ? [servicos, pecas] : [1, 0],
+        backgroundColor: hasData ? ['#E8930C', '#27272D'] : ['#1F1F24', '#1F1F24'],
+        borderColor: '#111114', borderWidth: 3
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '65%',
+      plugins: {
+        legend: { position: 'bottom', labels: { color: 'rgba(255,255,255,0.6)', font: { size: 11, family: 'Space Grotesk', weight: '600' }, padding: 10, boxWidth: 8, boxHeight: 8 } },
+        tooltip: {
+          backgroundColor: '#18181C', borderColor: '#E8930C', borderWidth: 1, padding: 10,
+          titleFont: { family: 'Space Grotesk', weight: 'bold' },
+          bodyFont: { family: 'JetBrains Mono' },
+          callbacks: { label: (c) => c.label + ': ' + new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(c.parsed) }
+        }
+      }
+    }
+  });
 }
 
 // ── LOGIN ──
@@ -718,7 +739,8 @@ async function init() {
   if (!perfil) { toast('Perfil nao encontrado','err'); return; }
 
   PERFIL = perfil;
-  INFRA.checkPermissions(PERFIL);  OFICINA_ID = INFRA.resolveOficinaId(perfil.oficina_id);
+  INFRA.checkPermissions(PERFIL);
+  OFICINA_ID = INFRA.resolveOficinaId(perfil.oficina_id);
   INFRA.mostrarBarraAdmin();
   OFICINA = perfil.oficinas;
 
@@ -731,7 +753,7 @@ async function init() {
   await carregar();
 
   // Realtime — atualiza quando OS muda
-  db.channel('dash-v2-'+OFICINA_ID)
+  db.channel('dash-v3-'+OFICINA_ID)
     .on('postgres_changes',{event:'*',schema:'public',table:'ordens_servico',filter:'oficina_id=eq.'+OFICINA_ID},()=>carregar())
     .on('postgres_changes',{event:'*',schema:'public',table:'caixa',filter:'oficina_id=eq.'+OFICINA_ID},()=>carregar())
     .subscribe();
