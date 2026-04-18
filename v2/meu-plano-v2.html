@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPM Pro V2 — Minha Assinatura</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="js/infra.js?v=04181330"></script>
+<script src="js/infra.js?v=04180929"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -81,6 +81,8 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 .plano-features{list-style:none;margin:8px 0;display:flex;flex-direction:column;gap:6px;}
 .plano-features li{font-size:12px;color:var(--w);display:flex;gap:6px;align-items:flex-start;}
 .plano-features li::before{content:"✓";color:var(--green);font-weight:700;}
+.plano-formas{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 2px;}
+.plano-formas span{font-family:var(--mono);font-size:10px;padding:3px 7px;border-radius:var(--r);background:var(--sf3);color:var(--w2);letter-spacing:.5px;border:1px solid var(--ln2);}
 .plano-btn{padding:10px;background:var(--amber);border:none;border-radius:var(--r);font-family:var(--head);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#000;cursor:pointer;margin-top:auto;}
 .plano-btn:hover{filter:brightness(1.1);}
 .plano-btn:disabled{opacity:.5;cursor:not-allowed;}
@@ -237,7 +239,7 @@ const SUPABASE_URL = 'https://roeeyypssutzfzzkypsq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZWV5eXBzc3V0emZ6emt5cHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MTk0MTgsImV4cCI6MjA5MDM5NTQxOH0.9oCOmABUTXox3FaRViD2zcUaqv94VfOJFMQYz_fcJi4';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const APP_VERSION = 'v04181830';
+const APP_VERSION = 'v04181900';
 
 let PERFIL=null, OFICINA_ID=null, OFICINA=null, ASSINATURA=null;
 
@@ -358,10 +360,6 @@ function renderDetalhes(){
         <div class="det-field"><div class="det-lab">Último pagamento</div><div class="det-val">${ASSINATURA.ultimo_pagamento_em?new Date(ASSINATURA.ultimo_pagamento_em).toLocaleDateString('pt-BR'):'—'}</div></div>
         <div class="det-field"><div class="det-lab">Status</div><div class="det-val">${esc(ASSINATURA.status)}</div></div>
       </div>
-      <div class="act-row">
-        <button class="btn primary" onclick="abrirPortalPagamento()">💳 Ver cobranças / trocar cartão</button>
-        <button class="btn danger" onclick="cancelarAssinatura()">Cancelar assinatura</button>
-      </div>
     </div>`;
 }
 
@@ -379,6 +377,7 @@ function renderPlanos(){
       <div class="plano-valor"><span class="plano-valor-num">${fmt(p.valor).replace('R$','R$ ')}</span><span class="plano-valor-ciclo">/mês</span></div>
       <div class="plano-desc">${esc(p.desc)}</div>
       <ul class="plano-features">${p.features.map(f=>`<li>${esc(f)}</li>`).join('')}</ul>
+      <div class="plano-formas"><span>💳 Cartão</span><span>PIX</span><span>Boleto</span></div>
       <button class="plano-btn ${atual?'ghost':''}" ${btnDisabled?'disabled':''} onclick="assinar('${p.id}',${p.valor})">${btnLabel}</button>
     </div>`;
   }).join('');
@@ -427,7 +426,7 @@ async function assinar(planoId, valor){
   const ok = await abrirConfirm({
     tag:'Confirmar assinatura',
     titulo:`RPM Pro — ${fmt(valor)}/mês`,
-    texto:`Você vai ativar a assinatura <strong>RPM Pro</strong> por <strong>${fmt(valor)}/mês</strong> e será redirecionado para o pagamento (cartão de crédito ou PIX).<br><br>Sem fidelidade. Cancele quando quiser.`,
+    texto:`Você vai ativar a assinatura <strong>RPM Pro</strong> por <strong>${fmt(valor)}/mês</strong> e será redirecionado para o pagamento (cartão, PIX ou boleto).<br><br>Sem fidelidade. Cancele quando quiser.`,
     okLabel:'Continuar para o pagamento',
     cancelLabel:'Cancelar',
   });
@@ -468,30 +467,9 @@ async function assinar(planoId, valor){
   }
 }
 
-async function abrirPortalPagamento(){
-  if (!ASSINATURA){ toast('Nenhuma assinatura ativa','err'); return; }
-  // Fase 2a: abre link Asaas pra trocar cartão (será implementado via Edge Function asaas-portal na Fase 3)
-  toast('Em breve: portal do cliente Asaas. Por ora, entre em contato com o suporte.','ok');
-}
-
-async function cancelarAssinatura(){
-  if (PERFIL?.role !== 'dono'){ toast('Apenas o dono pode cancelar','err'); return; }
-  if (!ASSINATURA){ return; }
-  const ok = await abrirConfirm({
-    tag:'Cancelar assinatura',
-    titulo:'Deseja mesmo cancelar?',
-    texto:'Seu acesso será <strong>interrompido no fim do período pago</strong>. Você perde o acesso ao RPM Pro ao fim deste ciclo.',
-    okLabel:'Sim, cancelar',
-    cancelLabel:'Manter assinatura',
-    danger:true,
-  });
-  if (!ok) return;
-  toast('Em breve: cancelamento via portal. Por ora, entre em contato com o suporte.','ok');
-}
-
 console.log(`%c🔧 RPM Pro — Minha Assinatura ${APP_VERSION}`,'color:#E8930C;font-weight:bold;');
 init();
 </script>
-<div style="position:fixed;bottom:8px;left:8px;font-family:var(--mono);font-size:9px;color:var(--w4);letter-spacing:1px;z-index:100;">RPM Pro v04181830</div>
+<div style="position:fixed;bottom:8px;left:8px;font-family:var(--mono);font-size:9px;color:var(--w4);letter-spacing:1px;z-index:100;">RPM Pro v04181900</div>
 </body>
 </html>
