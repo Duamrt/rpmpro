@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM PRO — Reel Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#09090B;--sf:#111114;--sf2:#18181C;--sf3:#1F1F24;--sf4:#27272D;
+    --ln:rgba(255,255,255,0.04);--ln2:rgba(255,255,255,0.08);--ln3:rgba(255,255,255,0.14);
+    --amber:#E8930C;--orange:#EA580C;--red:#FF3B30;--green:#30D158;--blue:#0A84FF;--purple:#7C3AED;--cyan:#00C7BE;
+    --w:#F0F0F2;--w2:rgba(255,255,255,0.6);--w3:rgba(255,255,255,0.32);--w4:rgba(255,255,255,0.14);
+    --head:'Barlow Condensed',sans-serif;--body:'Space Grotesk',sans-serif;--mono:'JetBrains Mono',monospace;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background:#050506;font-family:var(--body);color:var(--w);
+    min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;
+  }
+  .app-label {
+    color:var(--w3);font-size:11px;letter-spacing:3px;text-transform:uppercase;font-family:var(--head);
+    margin-bottom:14px;font-weight:700;
+  }
+  .phone {
+    width:360px;height:640px;background:#000;border-radius:40px;border:6px solid #222;
+    overflow:hidden;position:relative;box-shadow:0 0 80px rgba(232,147,12,0.15),0 20px 60px rgba(0,0,0,0.8);
+  }
+  .status-bar {
+    position:absolute;top:0;left:0;right:0;height:30px;background:rgba(0,0,0,0.95);
+    display:flex;align-items:center;justify-content:space-between;padding:0 24px;z-index:100;
+    font-size:11px;font-weight:600;
+  }
+  .scene {
+    position:absolute;inset:30px 0 0 0;background:var(--bg);
+    opacity:0;transition:opacity 0.5s ease;overflow:hidden;
+  }
+  .scene.active { opacity:1; z-index:10; }
+  .app-header {
+    display:flex;align-items:center;justify-content:space-between;padding:12px 16px;
+    background:var(--sf);border-bottom:1px solid var(--ln2);
+  }
+  .app-title { font-family:var(--head); font-weight:800; font-size:16px; letter-spacing:1px; }
+  .app-title span { color:var(--amber); }
+  .app-menu { display:flex; gap:6px; }
+  .app-menu div { width:3px; height:3px; border-radius:50%; background:var(--w2); }
+
+  /* ===== CENA 1: DASHBOARD ===== */
+  .dash-grid { padding:14px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .kpi { background:var(--sf2);border:1px solid var(--ln2);border-radius:8px;padding:12px; }
+  .kpi .lbl { font-size:9px; text-transform:uppercase; letter-spacing:1px; color:var(--w3); font-weight:600; }
+  .kpi .val { font-family:var(--head); font-size:24px; font-weight:800; margin-top:6px; }
+  .kpi .delta { font-size:10px; color:var(--green); margin-top:3px; font-weight:600; }
+  .kpi.amber .val { color:var(--amber); }
+  .kpi.green .val { color:var(--green); }
+  .kpi.blue .val { color:var(--blue); }
+  .kpi.red .val { color:var(--red); }
+  .dash-chart { margin:10px 14px 0 14px;background:var(--sf2);border:1px solid var(--ln2);border-radius:8px;padding:14px; }
+  .chart-title { font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--w3); font-weight:600; margin-bottom:10px; }
+  .chart-bars { display:flex; gap:6px; align-items:flex-end; height:70px; }
+  .chart-bar { flex:1; background:linear-gradient(180deg, var(--amber), var(--orange)); border-radius:2px 2px 0 0; transition:height 1s ease; }
+  .chart-labels { display:flex; gap:6px; margin-top:6px; }
+  .chart-label { flex:1; text-align:center; font-size:9px; color:var(--w3); }
+
+  /* ===== CENA 2: KANBAN ===== */
+  .kanban-grid { display:grid;grid-template-columns:repeat(4, 1fr);gap:6px;padding:14px;height:calc(100% - 50px); }
+  .kcol { background:var(--sf2);border:1px solid var(--ln2);border-radius:6px;padding:8px 4px;display:flex;flex-direction:column;gap:6px; }
+  .kcol-head { font-family:var(--head);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;text-align:center;padding-bottom:5px;border-bottom:2px solid; }
+  .kcol:nth-child(1) .kcol-head { color:var(--w3); border-color:var(--w4); }
+  .kcol:nth-child(2) .kcol-head { color:var(--blue); border-color:var(--blue); }
+  .kcol:nth-child(3) .kcol-head { color:var(--amber); border-color:var(--amber); }
+  .kcol:nth-child(4) .kcol-head { color:var(--green); border-color:var(--green); }
+  .kcard { background:var(--sf3);border-radius:4px;padding:6px;font-size:9px;border-left:2px solid var(--w4); }
+  .kcard .placa { display:inline-block;background:#FFF;color:#000;font-family:var(--mono);font-weight:700;padding:1px 4px;border-radius:2px;font-size:8px;margin-bottom:3px; }
+  .kcard .srv { color:var(--w2); font-size:8px; line-height:1.3; }
+  .kcard.moving { position:absolute;z-index:50;box-shadow:0 10px 30px rgba(232,147,12,0.4);border-left-color:var(--amber);transform:scale(1.05);transition:all 1.5s cubic-bezier(0.5, 0, 0.2, 1); }
+
+  /* ===== CENA 3: OS ===== */
+  .os-panel { padding:14px; height:calc(100% - 50px); overflow:hidden; }
+  .os-header { background:var(--sf2);border:1px solid var(--ln2);border-radius:6px;padding:10px;margin-bottom:10px; }
+  .os-num { font-family:var(--head); font-size:18px; font-weight:800; color:var(--amber); }
+  .os-placa { display:inline-block;background:#FFF;color:#003399;font-family:var(--mono);font-weight:700;padding:2px 8px;border-radius:3px;font-size:12px;margin-left:8px; }
+  .os-cli { font-size:10px; color:var(--w2); margin-top:4px; }
+  .os-items-title { font-family:var(--head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--w2);margin-bottom:6px; }
+  .os-item { background:var(--sf2);border:1px solid var(--ln2);border-radius:4px;padding:8px 10px;display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;opacity:0;transform:translateX(-20px);transition:all 0.4s ease; }
+  .os-item.show { opacity:1; transform:translateX(0); }
+  .os-item .desc { font-size:10px; }
+  .os-item .tipo { font-family:var(--head);font-size:8px;font-weight:700;padding:2px 5px;border-radius:2px;text-transform:uppercase;letter-spacing:0.5px;margin-right:6px;display:inline-block; }
+  .os-item .tipo.pc { background:var(--blue); color:#fff; }
+  .os-item .tipo.sv { background:var(--purple); color:#fff; }
+  .os-item .val { font-family:var(--mono); font-size:11px; font-weight:700; color:var(--green); }
+  .os-total { background:linear-gradient(135deg, rgba(232,147,12,0.15), rgba(234,88,12,0.15));border:1px solid var(--amber);border-radius:6px;padding:10px;margin-top:10px;display:flex;justify-content:space-between;align-items:center; }
+  .os-total .lbl { font-family:var(--head); font-size:11px; font-weight:700; text-transform:uppercase; color:var(--amber); letter-spacing:1px; }
+  .os-total .val { font-family:var(--head); font-size:22px; font-weight:800; color:var(--amber); }
+
+  /* ===== CENA 4: WHATSAPP ===== */
+  .wpp-scene { background:#0a1014; height:100%; display:flex; flex-direction:column; position:relative; }
+  .wpp-header { background:#1f2c33;padding:10px 14px;display:flex;align-items:center;gap:10px; }
+  .wpp-avatar { width:36px;height:36px;border-radius:50%;background:var(--amber);display:flex;align-items:center;justify-content:center;font-size:16px; }
+  .wpp-info .name { font-size:13px; font-weight:700; }
+  .wpp-info .status { font-size:10px; color:rgba(255,255,255,0.5); }
+  .wpp-body { flex:1;padding:14px;overflow:hidden;background:#0a1014;display:flex;flex-direction:column;gap:8px;justify-content:flex-end; }
+  .wpp-msg { background:#005c4b;padding:8px 10px;border-radius:8px;max-width:85%;align-self:flex-end;font-size:11px;line-height:1.4;opacity:0;transform:translateY(15px);transition:all 0.4s ease; }
+  .wpp-msg.show { opacity:1; transform:translateY(0); }
+  .wpp-msg .time { font-size:9px; color:rgba(255,255,255,0.6); text-align:right; margin-top:3px; }
+  .wpp-msg .checks { color:#53bdeb; font-weight:700; }
+  .wpp-auto-tag { position:absolute;top:60px;right:14px;background:var(--amber);color:#000;font-family:var(--head);font-size:9px;font-weight:800;padding:3px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:1px;opacity:0;transform:translateY(-10px);transition:all 0.5s ease; z-index:5; }
+  .wpp-auto-tag.show { opacity:1; transform:translateY(0); }
+  .wpp-auto-tag::before { content:"⚡";margin-right:3px; }
+  .wpp-typing { background:#1f2c33;padding:8px 12px;border-radius:8px;max-width:60px;align-self:flex-end;font-size:11px;opacity:0;transition:opacity 0.3s; }
+  .wpp-typing.show { opacity:1; }
+  .wpp-typing .dot { width:5px;height:5px;border-radius:50%;background:#aebac1;display:inline-block;margin:0 1px;animation:typing 1s infinite; }
+  .wpp-typing .dot:nth-child(2) { animation-delay:0.2s; }
+  .wpp-typing .dot:nth-child(3) { animation-delay:0.4s; }
+  @keyframes typing { 0%, 60%, 100% { opacity:0.3; } 30% { opacity:1; } }
+
+  /* ===== CENA 5: PAGAMENTO ===== */
+  .pay-scene { padding:14px; height:calc(100% - 50px); position:relative; }
+  .pay-title { font-family:var(--head);font-size:18px;font-weight:800;margin-bottom:12px;display:flex;align-items:center;gap:8px; }
+  .pay-title::before { content:"";width:4px;height:20px;background:var(--green);border-radius:2px; }
+  .pay-row { background:var(--sf2);border:1px solid var(--ln2);border-radius:6px;padding:10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;opacity:0;transform:translateY(10px);transition:all 0.4s ease; }
+  .pay-row.show { opacity:1; transform:translateY(0); }
+  .pay-row .lbl { font-size:10px; color:var(--w2); font-weight:500; }
+  .pay-row .val { font-family:var(--mono); font-size:12px; font-weight:700; }
+  .pay-methods { display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-top:10px; }
+  .pay-method { background:var(--sf2);border:1px solid var(--ln2);border-radius:6px;padding:10px 4px;text-align:center;font-size:9px;font-weight:600;transition:all 0.4s ease; }
+  .pay-method.selected { background:var(--green);color:#000;border-color:var(--green);box-shadow:0 0 20px rgba(48,209,88,0.5); }
+  .pay-method-icon { font-size:20px; display:block; margin-bottom:3px; }
+  .pay-confirm { width:100%;background:var(--green);color:#000;border:none;padding:14px;border-radius:6px;font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-top:12px;opacity:0;transition:all 0.5s ease; }
+  .pay-confirm.show { opacity:1; }
+  .pay-success { position:absolute;inset:0;background:rgba(0,0,0,0.9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;opacity:0;transition:opacity 0.5s;pointer-events:none; z-index:30; }
+  .pay-success.show { opacity:1; }
+  .pay-success-icon { width:80px;height:80px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:40px;box-shadow:0 0 40px rgba(48,209,88,0.5);animation:pop 0.5s cubic-bezier(0.3, 1.5, 0.5, 1); }
+  @keyframes pop { 0% { transform:scale(0); } 100% { transform:scale(1); } }
+  .pay-success-title { font-family:var(--head); font-size:20px; font-weight:800; color:var(--green); }
+  .pay-success-sub { font-size:11px; color:var(--w2); }
+
+  /* ===== CENA 6: FINANCEIRO ===== */
+  .fin-scene { padding:14px; height:calc(100% - 50px); }
+  .fin-header { background:linear-gradient(135deg, rgba(48,209,88,0.15), rgba(0,199,190,0.1));border:1px solid rgba(48,209,88,0.3);border-radius:8px;padding:12px;margin-bottom:10px; }
+  .fin-header .lbl { font-family:var(--head); font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--green); font-weight:700; }
+  .fin-header .val { font-family:var(--head); font-size:28px; font-weight:800; color:var(--green); margin-top:4px; }
+  .fin-header .delta { font-size:10px; color:var(--green); margin-top:4px; }
+  .fin-chart { background:var(--sf2); border:1px solid var(--ln2); border-radius:6px; padding:12px; }
+  .fin-bars { display:flex; gap:4px; align-items:flex-end; height:80px; }
+  .fin-bar { flex:1;background:linear-gradient(180deg, var(--green), #1b8e3a);border-radius:2px;height:0;transition:height 1.2s cubic-bezier(0.3, 1, 0.3, 1); }
+  .fin-bar.highlight { background:linear-gradient(180deg, var(--amber), var(--orange)); }
+  .fin-list { margin-top:10px; }
+  .fin-item { background:var(--sf2);border:1px solid var(--ln2);border-radius:4px;padding:8px 10px;display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;font-size:10px;opacity:0;transform:translateY(10px);transition:all 0.4s ease; }
+  .fin-item.show { opacity:1; transform:translateY(0); }
+  .fin-item.new { border-color:var(--amber);background:linear-gradient(135deg, rgba(232,147,12,0.15), rgba(234,88,12,0.05)); }
+  .fin-item .desc { font-weight:500; }
+  .fin-item .val { font-family:var(--mono); font-weight:700; color:var(--green); }
+
+  /* ===== CENA 7: CTA ===== */
+  .cta-scene { padding:40px 30px;height:calc(100% - 50px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:radial-gradient(ellipse at top, rgba(232,147,12,0.2), transparent 60%),radial-gradient(ellipse at bottom, rgba(234,88,12,0.15), transparent 60%),var(--bg); }
+  .cta-big { font-family:var(--head);font-size:36px;font-weight:800;line-height:1;background:linear-gradient(135deg, var(--amber), var(--orange));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:14px; }
+  .cta-msg { font-size:14px;line-height:1.4;color:var(--w);margin-bottom:24px;font-weight:500; }
+  .cta-msg b { color:var(--amber); font-weight:700; }
+  .cta-btn { background:var(--amber);color:#000;padding:14px 36px;border-radius:50px;font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;box-shadow:0 8px 30px rgba(232,147,12,0.4); }
+  .cta-url { font-size:12px; color:var(--w3); margin-top:14px; font-family:var(--mono); }
+  .cta-benefits { display:flex; gap:18px; margin-top:20px; font-size:10px; }
+  .cta-benefits div { color:var(--w2); display:flex; align-items:center; gap:4px; }
+  .cta-benefits div::before { content:"✓"; color:var(--green); font-weight:700; }
+
+  /* CAPTION */
+  .caption { position:absolute;left:14px;right:14px;bottom:16px;background:rgba(0,0,0,0.85);backdrop-filter:blur(10px);border-radius:12px;padding:12px 14px;z-index:20;opacity:0;transform:translateY(20px);transition:all 0.5s ease; }
+  .caption.show { opacity:1; transform:translateY(0); }
+  .caption .tag { display:inline-block;font-family:var(--head);font-size:9px;font-weight:800;letter-spacing:1.5px;padding:2px 8px;border-radius:10px;text-transform:uppercase;margin-bottom:5px; }
+  .caption .tag.dor { background:rgba(255,59,48,0.2); color:var(--red); border:1px solid var(--red); }
+  .caption .tag.sol { background:rgba(48,209,88,0.2); color:var(--green); border:1px solid var(--green); }
+  .caption .tag.amber { background:rgba(232,147,12,0.2); color:var(--amber); border:1px solid var(--amber); }
+  .caption .txt { font-size:13px;font-weight:600;line-height:1.3;color:#fff; }
+
+  /* PROGRESS */
+  .progress-bar { position:absolute;top:30px;left:8px;right:8px;height:2px;background:rgba(255,255,255,0.1);border-radius:1px;z-index:200; }
+  .progress-fill { height:100%; background:var(--amber); border-radius:1px; width:0; }
+
+  /* CONTROLES */
+  .controls { display:flex;gap:10px;align-items:center;margin-top:20px; }
+  .btn { background:var(--sf2);border:1px solid var(--ln2);color:var(--w);padding:10px 18px;border-radius:50px;font-family:var(--body);font-size:12px;cursor:pointer;font-weight:500;transition:all 0.2s; }
+  .btn:hover { background:var(--sf3); border-color:var(--ln3); }
+  .btn.primary { background:var(--amber); color:#000; border-color:var(--amber); font-weight:700; }
+  .btn.primary:hover { background:#f5a520; }
+  .scene-counter { font-family:var(--mono);font-size:11px;color:var(--w3);min-width:60px;text-align:center; }
+  .scene-hint { font-size:11px;color:var(--w3);margin-top:10px;text-align:center;max-width:360px; }
+  .dots { display:flex; gap:4px; margin-top:10px; }
+  .dot { width:6px; height:6px; border-radius:50%; background:var(--w4); transition:all 0.3s; }
+  .dot.active { background:var(--amber); width:16px; border-radius:3px; }
+</style>
+</head>
+<body>
+
+<div class="app-label">RPM PRO · Reel Demo · 55s</div>
+
+<div class="phone">
+
+  <div class="status-bar">
+    <span>9:41</span>
+    <span style="display:flex;gap:4px;align-items:center;font-size:10px;">
+      <span>●●●●</span> <span>📶</span> <span>🔋</span>
+    </span>
+  </div>
+
+  <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+
+  <!-- CENA 1 — DASHBOARD -->
+  <div class="scene active" id="s1">
+    <div class="app-header">
+      <div class="app-title">RPM<span>PRO</span> · Dashboard</div>
+      <div class="app-menu"><div></div><div></div><div></div></div>
+    </div>
+    <div class="dash-grid">
+      <div class="kpi amber"><div class="lbl">OS Ativas</div><div class="val" id="k1">0</div><div class="delta">↑ 3 hoje</div></div>
+      <div class="kpi green"><div class="lbl">Faturamento</div><div class="val" id="k2">R$ 0</div><div class="delta">↑ 18%</div></div>
+      <div class="kpi blue"><div class="lbl">No pátio</div><div class="val" id="k3">0</div><div class="delta">5 aguardando</div></div>
+      <div class="kpi red"><div class="lbl">Prontos</div><div class="val" id="k4">0</div><div class="delta">Buscar clientes</div></div>
+    </div>
+    <div class="dash-chart">
+      <div class="chart-title">Faturamento da semana</div>
+      <div class="chart-bars">
+        <div class="chart-bar" style="height:30%"></div><div class="chart-bar" style="height:45%"></div>
+        <div class="chart-bar" style="height:55%"></div><div class="chart-bar" style="height:40%"></div>
+        <div class="chart-bar" style="height:70%"></div><div class="chart-bar" style="height:85%"></div>
+        <div class="chart-bar" style="height:95%"></div>
+      </div>
+      <div class="chart-labels">
+        <div class="chart-label">SEG</div><div class="chart-label">TER</div><div class="chart-label">QUA</div>
+        <div class="chart-label">QUI</div><div class="chart-label">SEX</div><div class="chart-label">SÁB</div><div class="chart-label">DOM</div>
+      </div>
+    </div>
+    <div class="caption" id="c1">
+      <span class="tag amber">DASHBOARD</span>
+      <div class="txt">Sua oficina inteira, em 1 tela.</div>
+    </div>
+  </div>
+
+  <!-- CENA 2 — KANBAN -->
+  <div class="scene" id="s2">
+    <div class="app-header">
+      <div class="app-title">RPM<span>PRO</span> · Pátio</div>
+      <div class="app-menu"><div></div><div></div><div></div></div>
+    </div>
+    <div class="kanban-grid">
+      <div class="kcol">
+        <div class="kcol-head">Aguard.</div>
+        <div class="kcard"><span class="placa">ABC-1234</span><div class="srv">Alinhamento</div></div>
+      </div>
+      <div class="kcol" id="col-exec">
+        <div class="kcol-head">Em serviço</div>
+        <div class="kcard" id="moving-card"><span class="placa">MNO-9012</span><div class="srv">Revisão geral</div></div>
+        <div class="kcard"><span class="placa">XYZ-5678</span><div class="srv">Troca de óleo</div></div>
+      </div>
+      <div class="kcol" id="col-ready"><div class="kcol-head">Pronto</div></div>
+      <div class="kcol"><div class="kcol-head">Entregue</div></div>
+    </div>
+    <div class="caption" id="c2">
+      <span class="tag sol">AVANÇOU</span>
+      <div class="txt">Mecânico arrasta. O cliente já vai saber.</div>
+    </div>
+  </div>
+
+  <!-- CENA 3 — OS -->
+  <div class="scene" id="s3">
+    <div class="app-header">
+      <div class="app-title">RPM<span>PRO</span> · OS #0417</div>
+      <div class="app-menu"><div></div><div></div><div></div></div>
+    </div>
+    <div class="os-panel">
+      <div class="os-header">
+        <div><span class="os-num">#0417</span><span class="os-placa">MNO-9012</span></div>
+        <div class="os-cli">João Silva · Gol 2018</div>
+      </div>
+      <div class="os-items-title">Itens da OS</div>
+      <div class="os-item" id="i1"><div><span class="tipo sv">SV</span><span class="desc">Revisão geral</span></div><div class="val">R$ 280,00</div></div>
+      <div class="os-item" id="i2"><div><span class="tipo pc">PÇ</span><span class="desc">Óleo 5W30 — 4L</span></div><div class="val">R$ 180,00</div></div>
+      <div class="os-item" id="i3"><div><span class="tipo pc">PÇ</span><span class="desc">Filtro de óleo</span></div><div class="val">R$ 45,00</div></div>
+      <div class="os-item" id="i4"><div><span class="tipo pc">PÇ</span><span class="desc">Filtro de ar</span></div><div class="val">R$ 38,00</div></div>
+      <div class="os-item" id="i5"><div><span class="tipo sv">SV</span><span class="desc">Mão de obra</span></div><div class="val">R$ 150,00</div></div>
+      <div class="os-total"><div class="lbl">Total</div><div class="val" id="os-total-val">R$ 0,00</div></div>
+    </div>
+    <div class="caption" id="c3">
+      <span class="tag amber">ORDEM DE SERVIÇO</span>
+      <div class="txt">Peças, serviços, total — tudo automático.</div>
+    </div>
+  </div>
+
+  <!-- CENA 4 — WHATSAPP -->
+  <div class="scene" id="s4">
+    <div class="wpp-scene">
+      <div class="wpp-header">
+        <div class="wpp-avatar">👤</div>
+        <div class="wpp-info"><div class="name">João Silva</div><div class="status">online</div></div>
+      </div>
+      <div class="wpp-auto-tag" id="wpp-tag">Automático</div>
+      <div class="wpp-body">
+        <div class="wpp-typing" id="wpp-typing"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+        <div class="wpp-msg" id="wpp-m1">🔧 Olá João! Aqui é da <b>Oficina do Marcondes</b>.<div class="time">09:41 <span class="checks">✓✓</span></div></div>
+        <div class="wpp-msg" id="wpp-m2">✅ Seu Gol (<b>MNO-9012</b>) está <b>pronto</b> para retirada!<div class="time">09:41 <span class="checks">✓✓</span></div></div>
+        <div class="wpp-msg" id="wpp-m3">📍 Estamos até as 18h. Qualquer dúvida, só chamar!<div class="time">09:41 <span class="checks">✓✓</span></div></div>
+      </div>
+    </div>
+    <div class="caption" id="c4">
+      <span class="tag sol">SEM VOCÊ LIGAR</span>
+      <div class="txt">WhatsApp enviado pelo sistema. Na hora.</div>
+    </div>
+  </div>
+
+  <!-- CENA 5 — PAGAMENTO -->
+  <div class="scene" id="s5">
+    <div class="app-header">
+      <div class="app-title">RPM<span>PRO</span> · Entregar</div>
+      <div class="app-menu"><div></div><div></div><div></div></div>
+    </div>
+    <div class="pay-scene">
+      <div class="pay-title">Fechar OS #0417</div>
+      <div class="pay-row" id="p1"><div class="lbl">Subtotal peças</div><div class="val">R$ 263,00</div></div>
+      <div class="pay-row" id="p2"><div class="lbl">Serviços</div><div class="val">R$ 430,00</div></div>
+      <div class="pay-row" id="p3"><div class="lbl">Desconto</div><div class="val" style="color:var(--red);">— R$ 0,00</div></div>
+      <div class="pay-row" id="p4" style="background:linear-gradient(135deg, rgba(48,209,88,0.15), rgba(48,209,88,0.05));border-color:var(--green);">
+        <div class="lbl" style="color:var(--green);font-weight:700;">TOTAL</div>
+        <div class="val" style="font-size:16px;color:var(--green);">R$ 693,00</div>
+      </div>
+      <div style="font-family:var(--head);font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--w3);margin-top:12px;margin-bottom:6px;font-weight:700;">Forma de pagamento</div>
+      <div class="pay-methods">
+        <div class="pay-method" id="pm1"><span class="pay-method-icon">💵</span>Dinheiro</div>
+        <div class="pay-method" id="pm2"><span class="pay-method-icon">💳</span>Cartão</div>
+        <div class="pay-method" id="pm3"><span class="pay-method-icon">📱</span>Pix</div>
+      </div>
+      <button class="pay-confirm" id="pay-btn">✓ Confirmar Entrega</button>
+      <div class="pay-success" id="pay-ok">
+        <div class="pay-success-icon">✓</div>
+        <div class="pay-success-title">Pago!</div>
+        <div class="pay-success-sub">R$ 693,00 · Pix · João Silva</div>
+      </div>
+    </div>
+    <div class="caption" id="c5">
+      <span class="tag amber">ENTREGAR</span>
+      <div class="txt">Pagamento em 2 toques. OS fechada.</div>
+    </div>
+  </div>
+
+  <!-- CENA 6 — FINANCEIRO -->
+  <div class="scene" id="s6">
+    <div class="app-header">
+      <div class="app-title">RPM<span>PRO</span> · Caixa do dia</div>
+      <div class="app-menu"><div></div><div></div><div></div></div>
+    </div>
+    <div class="fin-scene">
+      <div class="fin-header">
+        <div class="lbl">Entrada hoje</div>
+        <div class="val" id="fin-val">R$ 0</div>
+        <div class="delta">↑ 1 nova entrada agora</div>
+      </div>
+      <div class="fin-chart">
+        <div class="chart-title" style="margin-bottom:8px;">Últimos 7 dias</div>
+        <div class="fin-bars">
+          <div class="fin-bar" data-h="30"></div><div class="fin-bar" data-h="45"></div>
+          <div class="fin-bar" data-h="55"></div><div class="fin-bar" data-h="40"></div>
+          <div class="fin-bar" data-h="60"></div><div class="fin-bar" data-h="70"></div>
+          <div class="fin-bar highlight" data-h="100"></div>
+        </div>
+      </div>
+      <div class="fin-list">
+        <div class="fin-item new" id="f1"><div class="desc">OS #0417 · João Silva · Pix</div><div class="val">+ R$ 693,00</div></div>
+        <div class="fin-item" id="f2"><div class="desc">OS #0416 · Carlos · Cartão</div><div class="val">+ R$ 420,00</div></div>
+        <div class="fin-item" id="f3"><div class="desc">OS #0415 · Maria · Dinheiro</div><div class="val">+ R$ 180,00</div></div>
+      </div>
+    </div>
+    <div class="caption" id="c6">
+      <span class="tag sol">FINANCEIRO ATUALIZADO</span>
+      <div class="txt">Entrou no caixa. Sem digitar planilha.</div>
+    </div>
+  </div>
+
+  <!-- CENA 7 — CTA -->
+  <div class="scene" id="s7">
+    <div class="cta-scene">
+      <div class="cta-big">RPM<br>PRO</div>
+      <div class="cta-msg">Do pátio ao pagamento.<br><b>Tudo em um só lugar.</b></div>
+      <div class="cta-btn">Testar 14 dias grátis</div>
+      <div class="cta-url">rpmpro.com.br</div>
+      <div class="cta-benefits">
+        <div>Sem cartão</div><div>Sem contrato</div><div>Suporte WhatsApp</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="dots">
+  <div class="dot active" id="d1"></div><div class="dot" id="d2"></div><div class="dot" id="d3"></div>
+  <div class="dot" id="d4"></div><div class="dot" id="d5"></div><div class="dot" id="d6"></div><div class="dot" id="d7"></div>
+</div>
+
+<div class="controls">
+  <button class="btn" onclick="prevScene()">◀ Anterior</button>
+  <div class="scene-counter" id="counter">1 / 7</div>
+  <button class="btn" onclick="nextScene()">Próxima ▶</button>
+</div>
+<div style="margin-top:12px;">
+  <button class="btn primary" id="playBtn" onclick="togglePlay()">▶ Play automático</button>
+</div>
+<div class="scene-hint">Clique em Play e veja o Reel completo (55s) com animações realistas do sistema</div>
+
+<script>
+  const timings = [6000, 9000, 8500, 9000, 9000, 7500, 6000];
+  const total = timings.reduce((a,b) => a+b, 0);
+
+  let current = 0;
+  let playing = false;
+  let sceneTimer = null;
+  let progressTimer = null;
+  let elapsed = 0;
+
+  function showScene(n) {
+    document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.dot').forEach(d => d.classList.remove('active'));
+    document.getElementById('s' + (n+1)).classList.add('active');
+    document.getElementById('d' + (n+1)).classList.add('active');
+    document.getElementById('counter').textContent = (n+1) + ' / 7';
+    current = n;
+    resetScenes();
+    setTimeout(() => animateScene(n+1), 100);
+  }
+
+  function resetScenes() {
+    document.querySelectorAll('.caption').forEach(c => c.classList.remove('show'));
+    document.querySelectorAll('.os-item').forEach(i => i.classList.remove('show'));
+    document.querySelectorAll('.pay-row').forEach(p => p.classList.remove('show'));
+    document.querySelectorAll('.pay-method').forEach(m => m.classList.remove('selected'));
+    document.querySelectorAll('.wpp-msg').forEach(m => m.classList.remove('show'));
+    document.querySelectorAll('.fin-item').forEach(f => f.classList.remove('show'));
+    document.querySelectorAll('.fin-bar').forEach(b => b.style.height = '0');
+    const wppTag = document.getElementById('wpp-tag'); if (wppTag) wppTag.classList.remove('show');
+    const wppTyping = document.getElementById('wpp-typing'); if (wppTyping) wppTyping.classList.remove('show');
+    const payBtn = document.getElementById('pay-btn'); if (payBtn) payBtn.classList.remove('show');
+    const payOk = document.getElementById('pay-ok'); if (payOk) payOk.classList.remove('show');
+    const moving = document.getElementById('moving-card');
+    if (moving) { moving.classList.remove('moving'); moving.style = ''; }
+    const osTotal = document.getElementById('os-total-val'); if (osTotal) osTotal.textContent = 'R$ 0,00';
+    const finVal = document.getElementById('fin-val'); if (finVal) finVal.textContent = 'R$ 0';
+  }
+
+  function animateScene(n) {
+    if (n === 1) {
+      animateNumber('k1', 0, 12, 800, v => v);
+      animateNumber('k2', 0, 4380, 1200, v => 'R$ ' + v.toLocaleString('pt-BR'));
+      animateNumber('k3', 0, 8, 700, v => v);
+      animateNumber('k4', 0, 4, 600, v => v);
+      setTimeout(() => document.getElementById('c1').classList.add('show'), 1200);
+    }
+    if (n === 2) {
+      setTimeout(() => document.getElementById('c2').classList.add('show'), 300);
+      setTimeout(() => {
+        const card = document.getElementById('moving-card');
+        const ready = document.getElementById('col-ready');
+        if (!card || !ready) return;
+        const rect1 = card.getBoundingClientRect();
+        const parentRect = card.parentElement.parentElement.getBoundingClientRect();
+        card.classList.add('moving');
+        card.style.left = (rect1.left - parentRect.left) + 'px';
+        card.style.top = (rect1.top - parentRect.top) + 'px';
+        card.style.width = rect1.width + 'px';
+        setTimeout(() => {
+          const rt = ready.getBoundingClientRect();
+          card.style.left = (rt.left - parentRect.left) + 'px';
+          card.style.top = (rt.top - parentRect.top + 28) + 'px';
+          card.style.borderLeftColor = 'var(--green)';
+          card.style.background = 'rgba(48,209,88,0.15)';
+        }, 100);
+      }, 1500);
+    }
+    if (n === 3) {
+      setTimeout(() => document.getElementById('c3').classList.add('show'), 200);
+      const items = ['i1','i2','i3','i4','i5'];
+      const values = [280, 460, 505, 543, 693];
+      items.forEach((id, idx) => {
+        setTimeout(() => {
+          document.getElementById(id).classList.add('show');
+          animateNumber('os-total-val', idx>0?values[idx-1]:0, values[idx], 400, v => 'R$ ' + v.toFixed(2).replace('.', ','));
+        }, 700 + idx*1000);
+      });
+    }
+    if (n === 4) {
+      setTimeout(() => document.getElementById('wpp-tag').classList.add('show'), 500);
+      setTimeout(() => document.getElementById('wpp-typing').classList.add('show'), 1000);
+      setTimeout(() => {
+        document.getElementById('wpp-typing').classList.remove('show');
+        document.getElementById('wpp-m1').classList.add('show');
+      }, 2500);
+      setTimeout(() => document.getElementById('wpp-m2').classList.add('show'), 4000);
+      setTimeout(() => document.getElementById('wpp-m3').classList.add('show'), 5500);
+      setTimeout(() => document.getElementById('c4').classList.add('show'), 6500);
+    }
+    if (n === 5) {
+      setTimeout(() => document.getElementById('c5').classList.add('show'), 200);
+      ['p1','p2','p3','p4'].forEach((id, idx) => {
+        setTimeout(() => document.getElementById(id).classList.add('show'), 400 + idx*400);
+      });
+      setTimeout(() => document.getElementById('pm3').classList.add('selected'), 2800);
+      setTimeout(() => document.getElementById('pay-btn').classList.add('show'), 3400);
+      setTimeout(() => document.getElementById('pay-ok').classList.add('show'), 5500);
+    }
+    if (n === 6) {
+      setTimeout(() => {
+        document.querySelectorAll('.fin-bar').forEach((bar, i) => {
+          setTimeout(() => { bar.style.height = bar.dataset.h + '%'; }, i * 100);
+        });
+      }, 500);
+      setTimeout(() => animateNumber('fin-val', 0, 1293, 1500, v => 'R$ ' + v.toLocaleString('pt-BR')), 800);
+      setTimeout(() => document.getElementById('f1').classList.add('show'), 2500);
+      setTimeout(() => document.getElementById('f2').classList.add('show'), 3000);
+      setTimeout(() => document.getElementById('f3').classList.add('show'), 3400);
+      setTimeout(() => document.getElementById('c6').classList.add('show'), 3800);
+    }
+  }
+
+  function animateNumber(elId, from, to, duration, formatter) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    const start = performance.now();
+    function frame(now) {
+      const el2 = now - start;
+      const pct = Math.min(el2 / duration, 1);
+      const eased = 1 - Math.pow(1 - pct, 3);
+      const val = Math.round(from + (to - from) * eased);
+      el.textContent = formatter(val);
+      if (pct < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function nextScene() { if (current < 6) showScene(current + 1); else showScene(0); }
+  function prevScene() { if (current > 0) showScene(current - 1); else showScene(6); }
+
+  function togglePlay() { if (playing) stopPlay(); else startPlay(); }
+  function startPlay() {
+    playing = true;
+    document.getElementById('playBtn').textContent = '⏸ Pausar';
+    elapsed = 0;
+    showScene(0);
+    runScene(0);
+  }
+  function stopPlay() {
+    playing = false;
+    document.getElementById('playBtn').textContent = '▶ Play automático';
+    clearTimeout(sceneTimer);
+    clearInterval(progressTimer);
+  }
+  function runScene(n) {
+    if (!playing) return;
+    clearInterval(progressTimer);
+    progressTimer = setInterval(() => {
+      elapsed += 50;
+      const pct = Math.min((elapsed / total) * 100, 100);
+      document.getElementById('progress').style.width = pct + '%';
+      if (elapsed >= total) clearInterval(progressTimer);
+    }, 50);
+    sceneTimer = setTimeout(() => {
+      if (!playing) return;
+      if (n < 6) { showScene(n + 1); runScene(n + 1); }
+      else { stopPlay(); document.getElementById('playBtn').textContent = '▶ Replay'; document.getElementById('progress').style.width = '100%'; }
+    }, timings[n]);
+  }
+
+  animateScene(1);
+</script>
+
+</body>
+</html>

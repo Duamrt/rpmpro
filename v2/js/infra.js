@@ -57,6 +57,60 @@ const INFRA = {
     return !plano;
   },
 
+  // Bloqueio por inadimplência: status=bloqueado OU atrasado > 7 dias
+  _pagamentoBloqueado(oficina) {
+    if (!oficina) return false;
+    const st = oficina.status_pagamento;
+    if (st === 'bloqueado' || st === 'cancelado') return true;
+    if (st === 'atrasado' && (oficina.dias_atraso || 0) > 7) return true;
+    return false;
+  },
+
+  // Páginas que ficam acessíveis mesmo bloqueado (pra cliente poder regularizar)
+  _paginasExentas: ['meu-plano-v2.html','login.html','landing.html','novo-cliente.html','trial-block.html'],
+
+  _estaEmPaginaExenta() {
+    const page = (window.location.pathname.split('/').pop() || '').toLowerCase();
+    return this._paginasExentas.includes(page);
+  },
+
+  _mostrarBloqueioPagamento(oficina) {
+    const nome = oficina?.nome || 'Sua Oficina';
+    const dias = oficina?.dias_atraso || 0;
+    const st = oficina?.status_pagamento || 'bloqueado';
+    const titulo = st === 'cancelado' ? 'Assinatura cancelada' : 'Pagamento em atraso';
+    const msg = st === 'cancelado'
+      ? 'Sua assinatura foi cancelada. Reative escolhendo um plano para voltar a usar o RPM Pro.'
+      : `Seu pagamento está em atraso há ${dias} dia(s). Regularize agora para recuperar o acesso.`;
+    document.querySelectorAll('.sidebar,.bottom-nav').forEach(el => el.style.display = 'none');
+    const ov = document.createElement('div');
+    ov.id = 'rpm-pagto-block';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:var(--bg,#09090B);display:flex;align-items:center;justify-content:center;padding:24px;font-family:var(--body,"Space Grotesk",sans-serif)';
+    ov.innerHTML = `<div style="width:100%;max-width:440px;">
+      <div style="text-align:center;margin-bottom:32px;">
+        <div style="font-family:var(--head,'Barlow Condensed',sans-serif);font-size:28px;font-weight:900;text-transform:uppercase;letter-spacing:1px;color:var(--w,#F0F0F2);">RPM<span style="color:var(--amber,#E8930C);">PRO</span></div>
+        <div style="font-family:var(--mono,'JetBrains Mono',monospace);font-size:10px;color:var(--w3,rgba(255,255,255,.32));letter-spacing:2px;margin-top:2px;">GESTÃO DE OFICINAS</div>
+      </div>
+      <div style="background:var(--sf,#111114);border:1px solid rgba(255,255,255,.08);border-radius:4px;overflow:hidden;">
+        <div style="background:rgba(255,59,48,.12);border-bottom:1px solid rgba(255,59,48,.2);padding:10px 20px;display:flex;align-items:center;gap:8px;">
+          <div style="width:6px;height:6px;border-radius:50%;background:#FF3B30;flex-shrink:0;box-shadow:0 0 8px #FF3B30;"></div>
+          <span style="font-family:var(--head,'Barlow Condensed',sans-serif);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#FF3B30;">${titulo}</span>
+        </div>
+        <div style="padding:32px 28px;">
+          <div style="font-family:var(--head,'Barlow Condensed',sans-serif);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:var(--w,#F0F0F2);margin-bottom:24px;">${nome}</div>
+          <div style="height:1px;background:rgba(255,255,255,.08);margin-bottom:24px;"></div>
+          <p style="font-size:14px;color:var(--w2,rgba(255,255,255,.6));line-height:1.65;margin-bottom:28px;">${msg}</p>
+          <a href="meu-plano-v2.html" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;background:var(--amber,#E8930C);color:#000;font-family:var(--head,'Barlow Condensed',sans-serif);font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:14px 20px;border-radius:3px;text-decoration:none;margin-bottom:10px;">💳 Regularizar pagamento</a>
+          <a href="https://wa.me/5587981456565" target="_blank" style="display:flex;align-items:center;justify-content:center;width:100%;background:none;color:var(--w3,rgba(255,255,255,.32));font-size:13px;padding:10px;border-radius:3px;text-decoration:none;border:1px solid rgba(255,255,255,.14);margin-bottom:10px;">Falar com suporte</a>
+        </div>
+        <div style="background:var(--sf2,#18181C);border-top:1px solid rgba(255,255,255,.08);padding:14px 28px;text-align:right;">
+          <button onclick="(async()=>{await db.auth.signOut();localStorage.removeItem('rpmpro-admin-oficina');window.location.href='login.html';})()" style="background:none;border:none;font-family:var(--mono,'JetBrains Mono',monospace);font-size:11px;color:var(--w3,rgba(255,255,255,.32));cursor:pointer;padding:0;text-decoration:underline;">Sair da conta</button>
+        </div>
+      </div>
+    </div>`;
+    document.body.appendChild(ov);
+  },
+
   _mostrarBloqueio(oficina) {
     const nome = oficina?.nome || 'Sua Oficina';
     const fimRaw = oficina?.trial_ate || '';
@@ -105,11 +159,18 @@ const INFRA = {
 
   checkPermissions(perfil) {
     if (!perfil) return;
-    // Bloquear trial expirado (super admin DM Stack nunca é bloqueado)
+    // Bloquear trial expirado / inadimplência (super admin DM Stack nunca é bloqueado)
     const isSuperAdmin = perfil.oficina_id === 'aaaa0001-0000-0000-0000-000000000001';
-    if (!isSuperAdmin && this._trialExpirado(perfil.oficinas)) {
-      this._mostrarBloqueio(perfil.oficinas);
-      return;
+    const exenta = this._estaEmPaginaExenta();
+    if (!isSuperAdmin && !exenta) {
+      if (this._pagamentoBloqueado(perfil.oficinas)) {
+        this._mostrarBloqueioPagamento(perfil.oficinas);
+        return;
+      }
+      if (this._trialExpirado(perfil.oficinas)) {
+        this._mostrarBloqueio(perfil.oficinas);
+        return;
+      }
     }
     // Dono nunca é bloqueado por permissões
     // Gerente só é bloqueado se tiver permissions configurado explicitamente

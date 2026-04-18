@@ -14,26 +14,29 @@ const SUPER_ADMIN = {
 
   // Busca todos os dados de uma vez e cacheia
   async _fetchDados() {
-    const [oficinasRes, usersRes, osRes, leadsRes] = await Promise.all([
-      db.from('oficinas').select('id, nome, plano, trial_ate, ativo, cidade, estado, cnpj, telefone, whatsapp, created_at').neq('id', 'aaaa0001-0000-0000-0000-000000000001').order('created_at', { ascending: false }),
+    const [oficinasRes, usersRes, osRes, leadsRes, assinRes] = await Promise.all([
+      db.from('oficinas').select('id, nome, plano, trial_ate, ativo, cidade, estado, cnpj, telefone, whatsapp, created_at, status_pagamento, dias_atraso, bloqueado_em, asaas_customer_id').neq('id', 'aaaa0001-0000-0000-0000-000000000001').order('created_at', { ascending: false }),
       db.from('profiles').select('id, oficina_id, nome, role, created_at').limit(2000),
       db.from('ordens_servico').select('id, oficina_id, status, valor_total, created_at').gte('created_at', new Date(Date.now() - 365*24*60*60*1000).toISOString()).limit(5000),
-      db.from('leads').select('*').order('created_at', { ascending: false })
+      db.from('leads').select('*').order('created_at', { ascending: false }),
+      db.from('assinaturas').select('*').in('status',['ativa','atrasada','suspensa']).order('created_at',{ascending:false})
     ]);
 
     const oficinas = oficinasRes.data || [];
     const users = usersRes.data || [];
     const ordens = osRes.data || [];
     const leads = leadsRes.data || [];
+    const assinaturas = assinRes.data || [];
 
-    // Pre-calcula contagens por oficina
+    // Pre-calcula contagens por oficina + assinatura ativa
     oficinas.forEach(o => {
       o._qtdUsers = users.filter(u => u.oficina_id === o.id).length;
       o._qtdOS = ordens.filter(os => os.oficina_id === o.id).length;
       o._faturamento = ordens.filter(os => os.oficina_id === o.id && os.status === 'entregue').reduce((s, os) => s + (os.valor_total || 0), 0);
+      o._assinatura = assinaturas.find(a => a.oficina_id === o.id) || null;
     });
 
-    this._dados = { oficinas, users, ordens, leads };
+    this._dados = { oficinas, users, ordens, leads, assinaturas };
     return this._dados;
   },
 
@@ -77,9 +80,14 @@ const SUPER_ADMIN = {
     const leadsConvertidos = leads.filter(l => l.status === 'convertido').length;
     const taxaConversao = leads.length ? Math.round(leadsConvertidos / leads.length * 100) : 0;
 
-    // MRR estimado
+    // MRR real (baseado em assinaturas ativas Asaas) + fallback por plano
     const precos = { essencial: 189, profissional: 324, rede: 494 };
-    const mrr = oficinas.reduce((s, o) => s + (precos[o.plano] || 0), 0);
+    const mrrReal = oficinas.reduce((s, o) => s + (o._assinatura?.status === 'ativa' ? Number(o._assinatura.valor || 0) : 0), 0);
+    const mrrEstim = oficinas.reduce((s, o) => s + (precos[o.plano] || 0), 0);
+    const mrr = mrrReal || mrrEstim;
+    const inadimplentes = oficinas.filter(o => ['atrasado','bloqueado'].includes(o.status_pagamento)).length;
+    const ativosPagto = oficinas.filter(o => o.status_pagamento === 'ativo').length;
+    const trialPagto = oficinas.filter(o => o.status_pagamento === 'trial').length;
 
     // OS do mês
     const mesAtual = new Date().toISOString().slice(0, 7);
@@ -120,8 +128,20 @@ const SUPER_ADMIN = {
           <div class="value">${users.length}</div>
         </div>
         <div class="kpi-card">
-          <div class="label">MRR Estimado</div>
+          <div class="label">MRR ${mrrReal?'(Asaas)':'(estim)'}</div>
           <div class="value success">${APP.formatMoney(mrr)}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="label">Pagto em Dia</div>
+          <div class="value success">${ativosPagto}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="label">Inadimplentes</div>
+          <div class="value" style="color:${inadimplentes>0?'var(--danger)':'var(--text-secondary)'};">${inadimplentes}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="label">Em Trial</div>
+          <div class="value warning">${trialPagto}</div>
         </div>
         <div class="kpi-card">
           <div class="label">Leads Novos</div>
@@ -361,6 +381,13 @@ const SUPER_ADMIN = {
               <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
                 <span style="font-size:11px;font-weight:700;color:${planoCores[o.plano] || 'var(--warning)'};background:${planoCores[o.plano] || 'var(--warning)'}18;padding:2px 10px;border-radius:10px;">${(o.plano || 'trial').toUpperCase()}</span>
                 ${trialVencido ? '<span style="font-size:10px;color:var(--danger);font-weight:600;">VENCIDO</span>' : ''}
+                ${(() => {
+                  const pagtoCores = { ativo:'var(--success)', atrasado:'var(--warning)', bloqueado:'var(--danger)', cancelado:'var(--danger)', trial:'var(--text-muted)' };
+                  const st = o.status_pagamento || 'trial';
+                  const lbl = ({ativo:'💳 em dia',atrasado:`⚠️ atraso ${o.dias_atraso||0}d`,bloqueado:'🚫 bloqueado',cancelado:'❌ cancelado',trial:'🎁 trial'})[st] || st;
+                  return `<span style="font-size:10px;font-weight:700;color:${pagtoCores[st]};background:${pagtoCores[st]}18;padding:2px 8px;border-radius:10px;">${lbl}</span>`;
+                })()}
+                ${o._assinatura?.proximo_vencimento ? `<span style="font-size:9px;color:var(--text-muted);">vence ${APP.formatDate(o._assinatura.proximo_vencimento)}</span>` : ''}
               </div>
             </div>
             <div style="display:flex;gap:16px;margin-bottom:14px;font-size:13px;color:var(--text-secondary);flex-wrap:wrap;">
