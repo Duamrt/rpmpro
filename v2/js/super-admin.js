@@ -81,7 +81,8 @@ const SUPER_ADMIN = {
     const taxaConversao = leads.length ? Math.round(leadsConvertidos / leads.length * 100) : 0;
 
     // MRR real (baseado em assinaturas ativas Asaas) + fallback por plano
-    const precos = { essencial: 189, profissional: 324, rede: 494 };
+    // Plano unico: RPM Pro R$ 399 (Marcondes fica em 350 por contrato antigo)
+    const precos = { essencial: 399, profissional: 399, rede: 399, beta: 0, trial: 0 };
     const mrrReal = oficinas.reduce((s, o) => s + (o._assinatura?.status === 'ativa' ? Number(o._assinatura.valor || 0) : 0), 0);
     const mrrEstim = oficinas.reduce((s, o) => s + (precos[o.plano] || 0), 0);
     const mrr = mrrReal || mrrEstim;

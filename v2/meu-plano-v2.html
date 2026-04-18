@@ -66,7 +66,7 @@ body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100v
 .banner-sub{font-size:12px;color:var(--w2);margin-top:2px;}
 
 /* ── GRID PLANOS ── */
-.planos-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-bottom:22px;}
+.planos-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,420px));gap:14px;margin-bottom:22px;justify-content:center;}
 .plano-card{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:20px;display:flex;flex-direction:column;gap:10px;transition:all .15s;}
 .plano-card:hover{border-color:var(--ln3);}
 .plano-card.atual{border-color:var(--amber);background:var(--amber-dim);}
@@ -186,17 +186,25 @@ const SUPABASE_URL = 'https://roeeyypssutzfzzkypsq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZWV5eXBzc3V0emZ6emt5cHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MTk0MTgsImV4cCI6MjA5MDM5NTQxOH0.9oCOmABUTXox3FaRViD2zcUaqv94VfOJFMQYz_fcJi4';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const APP_VERSION = 'v04181200';
+const APP_VERSION = 'v04181500';
 
 let PERFIL=null, OFICINA_ID=null, OFICINA=null, ASSINATURA=null;
 
 const PLANOS = [
-  { id:'essencial',    nome:'Essencial',    valor:99.00,  desc:'Para oficinas que querem organizar atendimento e estoque.',
-    features:['Pátio Kanban','Clientes e veículos','Catálogo de peças e serviços','Ordens de serviço ilimitadas','Financeiro básico','1 mecânico'] },
-  { id:'profissional', nome:'Profissional', valor:199.00, destaque:true, desc:'Controle total da oficina com equipe, comissão e BI.',
-    features:['Tudo do Essencial','Mecânicos ilimitados','Comissão e folha','Notas fiscais','Dashboard e BI','CRM e reativação','Satisfação NPS','WhatsApp Web'] },
-  { id:'rede',         nome:'Rede',         valor:399.00, desc:'Para redes com múltiplas unidades.',
-    features:['Tudo do Profissional','Multi-oficina','Gestor de rede','Relatórios consolidados','Suporte prioritário'] },
+  { id:'profissional', nome:'RPM Pro', valor:399.00, destaque:true,
+    desc:'Um plano. Tudo incluso. Sem feature bloqueada.',
+    features:[
+      'Usuários ilimitados',
+      'Ordens de serviço ilimitadas',
+      'Pátio visual (Kanban)',
+      'Financeiro completo',
+      'Estoque + Fornecedores',
+      'CRM + Agendamento',
+      'Comissão de mecânicos',
+      'Pesquisa de satisfação',
+      'TV pátio (display público)',
+      'Suporte WhatsApp',
+    ] },
 ];
 
 function esc(s){return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):'';}
@@ -373,6 +381,6 @@ async function cancelarAssinatura(){
 console.log(`%c🔧 RPM Pro — Minha Assinatura ${APP_VERSION}`,'color:#E8930C;font-weight:bold;');
 init();
 </script>
-<div style="position:fixed;bottom:8px;left:8px;font-family:var(--mono);font-size:9px;color:var(--w4);letter-spacing:1px;z-index:100;">RPM Pro v04181200</div>
+<div style="position:fixed;bottom:8px;left:8px;font-family:var(--mono);font-size:9px;color:var(--w4);letter-spacing:1px;z-index:100;">RPM Pro v04181500</div>
 </body>
 </html>
