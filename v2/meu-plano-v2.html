@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPM Pro V2 — Minha Assinatura</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="js/infra.js?v=04181200"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#09090B;--sf:#111114;--sf2:#18181C;--sf3:#1F1F24;--sf4:#27272D;
+  --ln:rgba(255,255,255,0.04);--ln2:rgba(255,255,255,0.08);--ln3:rgba(255,255,255,0.14);
+  --amber:#E8930C;--amber-dim:rgba(232,147,12,0.1);
+  --orange:#EA580C;--orange-dim:rgba(234,88,12,0.1);
+  --red:#FF3B30;--red-dim:rgba(255,59,48,0.08);
+  --green:#30D158;--green-dim:rgba(48,209,88,0.08);
+  --blue:#0A84FF;--blue-dim:rgba(10,132,255,0.1);
+  --purple:#7C3AED;--purple-dim:rgba(124,58,237,0.1);
+  --w:#F0F0F2;--w2:rgba(255,255,255,0.6);--w3:rgba(255,255,255,0.32);--w4:rgba(255,255,255,0.14);
+  --mono:'JetBrains Mono',monospace;--head:'Barlow Condensed',sans-serif;--body:'Space Grotesk',sans-serif;
+  --r:3px;--r2:4px;
+}
+body{background:var(--bg);color:var(--w);font-family:var(--body);min-height:100vh;-webkit-font-smoothing:antialiased;overflow:hidden;}
+.app{display:flex;height:100vh;overflow:hidden;}
+.sidebar{width:220px;flex-shrink:0;background:var(--sf);border-right:1px solid var(--ln2);display:flex;flex-direction:column;}
+.sidebar-logo{padding:20px 16px 12px;border-bottom:1px solid var(--ln);}
+.sidebar-logo-brand{font-family:var(--head);font-size:22px;font-weight:900;letter-spacing:1px;}
+.sidebar-logo-brand span{color:var(--amber);}
+.sidebar-logo-oficina{font-family:var(--mono);font-size:10px;color:var(--w3);margin-top:2px;letter-spacing:.5px;}
+.sidebar-nav{flex:1;overflow-y:auto;padding:8px 0;}
+.nav-section{font-family:var(--head);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--w4);padding:14px 16px 4px;}
+.nav-item{display:flex;align-items:center;gap:8px;padding:7px 16px;font-size:13px;color:var(--w3);cursor:pointer;transition:all .12s;text-decoration:none;border-left:3px solid transparent;}
+.nav-item:hover{color:var(--w);background:var(--sf2);}
+.nav-item.active{color:var(--amber);border-left-color:var(--amber);background:var(--amber-dim);}
+.nav-icon{font-size:14px;width:20px;text-align:center;flex-shrink:0;}
+.sidebar-footer{border-top:1px solid var(--ln2);padding:12px 16px;display:flex;align-items:center;gap:8px;}
+.user-avatar{width:28px;height:28px;border-radius:50%;background:var(--amber-dim);border:1px solid var(--amber);color:var(--amber);display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:12px;font-weight:900;flex-shrink:0;}
+.user-details{min-width:0;flex:1;}
+.user-name{font-family:var(--body);font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.user-role{font-family:var(--mono);font-size:9px;color:var(--w3);text-transform:uppercase;letter-spacing:1px;}
+.btn-logout{background:none;border:1px solid var(--ln3);color:var(--w3);font-family:var(--mono);font-size:10px;padding:4px 8px;border-radius:var(--r);cursor:pointer;}
+
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.main-topbar{padding:16px 24px;border-bottom:1px solid var(--ln);display:flex;align-items:center;gap:12px;}
+.main-title{font-family:var(--head);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.main-title span{color:var(--amber);}
+.main-body{flex:1;overflow-y:auto;padding:24px;}
+
+.login-overlay{position:fixed;inset:0;background:var(--bg);z-index:9999;display:none;align-items:center;justify-content:center;}
+.loading-screen{position:fixed;inset:0;background:var(--bg);z-index:9998;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
+.loading-spinner{width:32px;height:32px;border:3px solid var(--ln3);border-top-color:var(--amber);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── STATUS BANNER ── */
+.banner{padding:18px 22px;border-radius:var(--r2);border:1px solid var(--ln2);margin-bottom:20px;display:flex;gap:16px;align-items:center;}
+.banner.trial{background:var(--blue-dim);border-color:var(--blue);}
+.banner.ativo{background:var(--green-dim);border-color:var(--green);}
+.banner.atrasado{background:var(--orange-dim);border-color:var(--orange);}
+.banner.bloqueado,.banner.cancelado{background:var(--red-dim);border-color:var(--red);}
+.banner-ic{font-size:28px;flex-shrink:0;}
+.banner-body{flex:1;}
+.banner-title{font-family:var(--head);font-size:18px;font-weight:800;text-transform:uppercase;letter-spacing:1px;}
+.banner-sub{font-size:12px;color:var(--w2);margin-top:2px;}
+
+/* ── GRID PLANOS ── */
+.planos-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-bottom:22px;}
+.plano-card{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:20px;display:flex;flex-direction:column;gap:10px;transition:all .15s;}
+.plano-card:hover{border-color:var(--ln3);}
+.plano-card.atual{border-color:var(--amber);background:var(--amber-dim);}
+.plano-card.destaque{border-color:var(--blue);}
+.plano-badge{display:inline-block;font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:1.5px;padding:3px 8px;border-radius:var(--r);background:var(--blue-dim);color:var(--blue);align-self:flex-start;}
+.plano-badge.atual{background:var(--amber-dim);color:var(--amber);}
+.plano-nome{font-family:var(--head);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+.plano-valor{display:flex;align-items:baseline;gap:4px;}
+.plano-valor-num{font-family:var(--head);font-size:34px;font-weight:900;color:var(--amber);}
+.plano-valor-ciclo{font-family:var(--mono);font-size:11px;color:var(--w3);}
+.plano-desc{font-size:12px;color:var(--w2);line-height:1.5;}
+.plano-features{list-style:none;margin:8px 0;display:flex;flex-direction:column;gap:6px;}
+.plano-features li{font-size:12px;color:var(--w);display:flex;gap:6px;align-items:flex-start;}
+.plano-features li::before{content:"✓";color:var(--green);font-weight:700;}
+.plano-btn{padding:10px;background:var(--amber);border:none;border-radius:var(--r);font-family:var(--head);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#000;cursor:pointer;margin-top:auto;}
+.plano-btn:hover{filter:brightness(1.1);}
+.plano-btn:disabled{opacity:.5;cursor:not-allowed;}
+.plano-btn.ghost{background:transparent;border:1px solid var(--ln3);color:var(--w);}
+
+/* ── DETALHES ASSINATURA ── */
+.sec{background:var(--sf);border:1px solid var(--ln2);border-radius:var(--r2);padding:20px;margin-bottom:14px;}
+.sec-title{font-family:var(--head);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:var(--w2);margin-bottom:12px;}
+.det-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;}
+.det-field{}
+.det-lab{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--w3);margin-bottom:4px;}
+.det-val{font-size:14px;color:var(--w);font-weight:500;}
+
+.act-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+.btn{padding:9px 14px;background:var(--sf3);border:1px solid var(--ln3);border-radius:var(--r);font-family:var(--head);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--w);cursor:pointer;}
+.btn:hover{border-color:var(--ln3);background:var(--sf4);}
+.btn.primary{background:var(--amber);color:#000;border-color:var(--amber);}
+.btn.danger{background:transparent;border-color:var(--red);color:var(--red);}
+
+.toast-area{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:9999;}
+.toast{padding:12px 16px;border-radius:var(--r);font-size:13px;background:var(--sf3);border:1px solid var(--ln3);color:var(--w);animation:slideIn .2s;}
+.toast-ok{border-color:var(--green);}
+.toast-err{border-color:var(--red);}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0;}}
+
+.empty{text-align:center;padding:40px 20px;color:var(--w3);font-size:13px;}
+
+@media(max-width:720px){
+  .sidebar{position:fixed;top:0;left:-240px;height:100vh;z-index:1000;transition:left .2s;}
+  .sidebar.mob-open{left:0;}
+  #sidebar-mob-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;}
+  #sidebar-mob-overlay.open{display:block;}
+  .btn-ham{display:flex!important;}
+  .main-body{padding:14px;}
+}
+.btn-ham{display:none;background:none;border:1px solid var(--ln3);color:var(--w);padding:6px 10px;border-radius:var(--r);cursor:pointer;font-size:16px;margin-right:8px;}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-brand">RPM <span>PRO</span></div>
+      <div class="sidebar-logo-oficina" id="oficina-nome">—</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Oficina</div>
+      <a class="nav-item" href="kanban-v2.html"><span class="nav-icon">⬛</span>Pátio</a>
+      <a class="nav-item" href="dashboard-v2.html"><span class="nav-icon">◈</span>Dashboard</a>
+      <div class="nav-section">Atendimento</div>
+      <a class="nav-item" href="fila-espera-v2.html"><span class="nav-icon">⏳</span>Fila de Espera</a>
+      <a class="nav-item" href="os-list-v2.html"><span class="nav-icon">📋</span>Ordens de Servico</a>
+      <a class="nav-item" href="execucao-os-v2.html"><span class="nav-icon">🔧</span>Execucao OS</a>
+      <a class="nav-item" href="clientes-v2.html"><span class="nav-icon">👥</span>Clientes</a>
+      <a class="nav-item" href="veiculos-v2.html"><span class="nav-icon">🚗</span>Veículos</a>
+      <a class="nav-item" href="agendamentos-v2.html"><span class="nav-icon">📅</span>Agendamentos</a>
+      <div class="nav-section">Catálogo</div>
+      <a class="nav-item" href="catalogo-v2.html"><span class="nav-icon">🔧</span>Servicos / Pecas</a>
+      <a class="nav-item" href="fornecedores-v2.html"><span class="nav-icon">🏭</span>Fornecedores</a>
+      <div class="nav-section">Financeiro</div>
+      <a class="nav-item" href="notas-fiscais-v2.html"><span class="nav-icon">🧾</span>Nota Fiscal</a>
+      <a class="nav-item" href="financeiro-v2.html"><span class="nav-icon">💰</span>Caixa</a>
+      <a class="nav-item" href="comissao-v2.html"><span class="nav-icon">📊</span>Comissão</a>
+      <a class="nav-item" href="folha-v2.html"><span class="nav-icon">📄</span>Folha</a>
+      <div class="nav-section">Equipe</div>
+      <a class="nav-item" href="equipe-v2.html"><span class="nav-icon">👤</span>Equipe</a>
+      <a class="nav-item" href="produtividade-v2.html"><span class="nav-icon">⚡</span>Produtividade</a>
+      <a class="nav-item" href="crm-v2.html"><span class="nav-icon">📡</span>CRM / Reativacao</a>
+      <a class="nav-item" href="satisfacao-v2.html"><span class="nav-icon">⭐</span>Satisfacao</a>
+      <div class="nav-section">Conta</div>
+      <a class="nav-item" href="config-v2.html"><span class="nav-icon">⚙️</span>Configurações</a>
+      <a class="nav-item active"><span class="nav-icon">💳</span>Minha Assinatura</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-avatar" id="user-avatar">—</div>
+      <div class="user-details">
+        <div class="user-name" id="user-nome">—</div>
+        <div class="user-role" id="user-role">—</div>
+      </div>
+      <button class="btn-logout" onclick="sair()">SAIR</button>
+    </div>
+  </div>
+  <div id="sidebar-mob-overlay" onclick="toggleSidebarMob()"></div>
+
+  <div class="main">
+    <div class="main-topbar">
+      <button class="btn-ham" onclick="toggleSidebarMob()">☰</button>
+      <div class="main-title">Minha <span>Assinatura</span></div>
+    </div>
+    <div class="main-body" id="body">
+      <div class="empty">Carregando...</div>
+    </div>
+  </div>
+</div>
+
+<div class="loading-screen" id="loading"><div class="loading-spinner"></div><div style="font-family:var(--mono);font-size:12px;color:var(--w3);">CARREGANDO...</div></div>
+<div class="login-overlay" id="login-overlay"></div>
+<div class="toast-area" id="toast-area"></div>
+
+<script>
+const SUPABASE_URL = 'https://roeeyypssutzfzzkypsq.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZWV5eXBzc3V0emZ6emt5cHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MTk0MTgsImV4cCI6MjA5MDM5NTQxOH0.9oCOmABUTXox3FaRViD2zcUaqv94VfOJFMQYz_fcJi4';
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const APP_VERSION = 'v04181200';
+
+let PERFIL=null, OFICINA_ID=null, OFICINA=null, ASSINATURA=null;
+
+const PLANOS = [
+  { id:'essencial',    nome:'Essencial',    valor:99.00,  desc:'Para oficinas que querem organizar atendimento e estoque.',
+    features:['Pátio Kanban','Clientes e veículos','Catálogo de peças e serviços','Ordens de serviço ilimitadas','Financeiro básico','1 mecânico'] },
+  { id:'profissional', nome:'Profissional', valor:199.00, destaque:true, desc:'Controle total da oficina com equipe, comissão e BI.',
+    features:['Tudo do Essencial','Mecânicos ilimitados','Comissão e folha','Notas fiscais','Dashboard e BI','CRM e reativação','Satisfação NPS','WhatsApp Web'] },
+  { id:'rede',         nome:'Rede',         valor:399.00, desc:'Para redes com múltiplas unidades.',
+    features:['Tudo do Profissional','Multi-oficina','Gestor de rede','Relatórios consolidados','Suporte prioritário'] },
+];
+
+function esc(s){return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):'';}
+function fmt(v){return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});}
+function fmtDate(d){if(!d)return '—';const dt=new Date(d+'T00:00:00');return dt.toLocaleDateString('pt-BR');}
+function toast(msg,tipo='ok'){const el=document.createElement('div');el.className='toast toast-'+tipo;el.textContent=msg;document.getElementById('toast-area').appendChild(el);setTimeout(()=>el.remove(),3200);}
+
+async function toggleSidebarMob(){const sb=document.querySelector('.sidebar');const ov=document.getElementById('sidebar-mob-overlay');const open=sb.classList.toggle('mob-open');ov.classList.toggle('open',open);}
+async function sair(){await db.auth.signOut();window.location.href='login.html';}
+
+async function init(){
+  db.auth.onAuthStateChange((ev)=>{if(ev==='SIGNED_OUT')window.location.href='login.html';});
+  const { data:{ session } } = await db.auth.getSession();
+  if (!session){ window.location.href='login.html'; return; }
+  document.getElementById('loading').style.display='flex';
+
+  const { data: perfil } = await db.from('profiles').select('*, oficinas(*)').eq('user_id', session.user.id).single();
+  if (!perfil){ toast('Perfil não encontrado','err'); return; }
+  PERFIL = perfil;
+  INFRA.checkPermissions(PERFIL);
+  OFICINA_ID = INFRA.resolveOficinaId(perfil.oficina_id);
+  INFRA.mostrarBarraAdmin();
+
+  const { data: ofData } = await db.from('oficinas').select('*').eq('id', OFICINA_ID).single();
+  OFICINA = ofData;
+
+  const nomeDisplay = perfil.nome || session.user.email;
+  document.getElementById('user-nome').textContent = nomeDisplay;
+  document.getElementById('user-role').textContent = perfil.role || '';
+  document.getElementById('user-avatar').textContent = nomeDisplay.charAt(0).toUpperCase();
+  document.getElementById('oficina-nome').textContent = OFICINA?.nome || '';
+
+  await carregarAssinatura();
+  render();
+  document.getElementById('loading').style.display='none';
+}
+
+async function carregarAssinatura(){
+  const { data } = await db.from('assinaturas').select('*')
+    .eq('oficina_id', OFICINA_ID).in('status',['ativa','atrasada','suspensa'])
+    .order('created_at',{ascending:false}).limit(1).maybeSingle();
+  ASSINATURA = data;
+}
+
+function renderBanner(){
+  const status = OFICINA?.status_pagamento || 'trial';
+  const trialAte = OFICINA?.trial_ate;
+  const diasAtraso = OFICINA?.dias_atraso || 0;
+  const nextDue = ASSINATURA?.proximo_vencimento;
+  let ic='', title='', sub='';
+  if (status==='trial'){
+    ic='🎁'; title='Você está em período de teste';
+    sub = trialAte ? `Teste grátis até ${fmtDate(trialAte)}. Escolha um plano abaixo para continuar depois.` : 'Escolha um plano abaixo para começar.';
+  } else if (status==='ativo'){
+    ic='✅'; title='Assinatura ativa';
+    sub = nextDue ? `Próxima cobrança: ${fmtDate(nextDue)} — ${fmt(ASSINATURA?.valor)}` : 'Tudo certo com sua assinatura.';
+  } else if (status==='atrasado'){
+    ic='⚠️'; title='Pagamento em atraso';
+    sub = `${diasAtraso} dia(s) em atraso. Regularize para evitar bloqueio em ${Math.max(0,7-diasAtraso)} dia(s).`;
+  } else if (status==='bloqueado'){
+    ic='🚫'; title='Acesso bloqueado por inadimplência';
+    sub = 'Regularize o pagamento para recuperar o acesso.';
+  } else if (status==='cancelado'){
+    ic='❌'; title='Assinatura cancelada';
+    sub = 'Reative escolhendo um plano abaixo.';
+  }
+  return `<div class="banner ${status}"><div class="banner-ic">${ic}</div><div class="banner-body"><div class="banner-title">${title}</div><div class="banner-sub">${esc(sub)}</div></div></div>`;
+}
+
+function renderDetalhes(){
+  if (!ASSINATURA) return '';
+  const forma = ({CREDIT_CARD:'Cartão de crédito',PIX:'PIX',BOLETO:'Boleto',UNDEFINED:'A definir'})[ASSINATURA.forma_pagamento]||ASSINATURA.forma_pagamento;
+  const cartao = ASSINATURA.cartao_ultimos_digitos ? `${ASSINATURA.cartao_bandeira||''} •••• ${ASSINATURA.cartao_ultimos_digitos}` : '—';
+  return `
+    <div class="sec">
+      <div class="sec-title">Detalhes da assinatura</div>
+      <div class="det-grid">
+        <div class="det-field"><div class="det-lab">Plano</div><div class="det-val">${esc(ASSINATURA.plano)}</div></div>
+        <div class="det-field"><div class="det-lab">Valor</div><div class="det-val">${fmt(ASSINATURA.valor)}</div></div>
+        <div class="det-field"><div class="det-lab">Ciclo</div><div class="det-val">${ASSINATURA.ciclo==='YEARLY'?'Anual':'Mensal'}</div></div>
+        <div class="det-field"><div class="det-lab">Forma de pagamento</div><div class="det-val">${esc(forma)}</div></div>
+        <div class="det-field"><div class="det-lab">Cartão</div><div class="det-val">${esc(cartao)}</div></div>
+        <div class="det-field"><div class="det-lab">Próximo vencimento</div><div class="det-val">${fmtDate(ASSINATURA.proximo_vencimento)}</div></div>
+        <div class="det-field"><div class="det-lab">Último pagamento</div><div class="det-val">${ASSINATURA.ultimo_pagamento_em?new Date(ASSINATURA.ultimo_pagamento_em).toLocaleDateString('pt-BR'):'—'}</div></div>
+        <div class="det-field"><div class="det-lab">Status</div><div class="det-val">${esc(ASSINATURA.status)}</div></div>
+      </div>
+      <div class="act-row">
+        <button class="btn primary" onclick="abrirPortalPagamento()">💳 Ver cobranças / trocar cartão</button>
+        <button class="btn danger" onclick="cancelarAssinatura()">Cancelar assinatura</button>
+      </div>
+    </div>`;
+}
+
+function renderPlanos(){
+  const planoAtual = ASSINATURA?.plano || OFICINA?.plano;
+  const ehDono = PERFIL?.role === 'dono';
+  const cards = PLANOS.map(p=>{
+    const atual = p.id === planoAtual && ASSINATURA;
+    const destaque = p.destaque;
+    const btnLabel = atual ? 'Plano atual' : (ASSINATURA ? 'Mudar para este' : 'Assinar');
+    const btnDisabled = atual || !ehDono;
+    return `<div class="plano-card ${atual?'atual':''} ${destaque?'destaque':''}">
+      ${atual?'<span class="plano-badge atual">SEU PLANO</span>':(destaque?'<span class="plano-badge">MAIS ESCOLHIDO</span>':'')}
+      <div class="plano-nome">${esc(p.nome)}</div>
+      <div class="plano-valor"><span class="plano-valor-num">${fmt(p.valor).replace('R$','R$ ')}</span><span class="plano-valor-ciclo">/mês</span></div>
+      <div class="plano-desc">${esc(p.desc)}</div>
+      <ul class="plano-features">${p.features.map(f=>`<li>${esc(f)}</li>`).join('')}</ul>
+      <button class="plano-btn ${atual?'ghost':''}" ${btnDisabled?'disabled':''} onclick="assinar('${p.id}',${p.valor})">${btnLabel}</button>
+    </div>`;
+  }).join('');
+  return `<div class="sec">
+    <div class="sec-title">Planos disponíveis</div>
+    <div class="planos-grid">${cards}</div>
+    ${!ehDono?'<div class="empty" style="padding:12px;">Apenas o dono pode alterar o plano.</div>':''}
+  </div>`;
+}
+
+function render(){
+  document.getElementById('body').innerHTML = renderBanner() + renderDetalhes() + renderPlanos();
+}
+
+async function assinar(planoId, valor){
+  if (PERFIL?.role !== 'dono'){ toast('Apenas o dono pode assinar','err'); return; }
+  if (!confirm(`Confirmar assinatura do plano ${planoId.toUpperCase()} por ${fmt(valor)}/mês?\n\nVocê será redirecionado para o pagamento.`)) return;
+
+  document.getElementById('loading').style.display='flex';
+  try{
+    const { data:{ session } } = await db.auth.getSession();
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/asaas-criar-assinatura`,{
+      method:'POST',
+      headers:{
+        'authorization':`Bearer ${session.access_token}`,
+        'content-type':'application/json',
+        'apikey':SUPABASE_KEY,
+      },
+      body: JSON.stringify({
+        oficina_id: OFICINA_ID,
+        plano: planoId,
+        valor: valor,
+        ciclo: 'MONTHLY',
+        forma_pagamento: 'UNDEFINED',
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || data.error || 'Erro ao criar assinatura');
+    toast('Assinatura criada! Abrindo pagamento...','ok');
+    if (data.invoice_url){
+      window.open(data.invoice_url, '_blank');
+    }
+    await carregarAssinatura();
+    const { data: ofRefresh } = await db.from('oficinas').select('*').eq('id', OFICINA_ID).single();
+    OFICINA = ofRefresh;
+    render();
+  } catch(e){
+    console.error(e); toast('Erro: '+e.message,'err');
+  } finally {
+    document.getElementById('loading').style.display='none';
+  }
+}
+
+async function abrirPortalPagamento(){
+  if (!ASSINATURA){ toast('Nenhuma assinatura ativa','err'); return; }
+  // Fase 2a: abre link Asaas pra trocar cartão (será implementado via Edge Function asaas-portal na Fase 3)
+  toast('Em breve: portal do cliente Asaas. Por ora, entre em contato com o suporte.','ok');
+}
+
+async function cancelarAssinatura(){
+  if (PERFIL?.role !== 'dono'){ toast('Apenas o dono pode cancelar','err'); return; }
+  if (!ASSINATURA){ return; }
+  if (!confirm('Tem certeza que deseja cancelar? Seu acesso será interrompido no fim do período pago.')) return;
+  toast('Em breve: cancelamento via portal. Por ora, entre em contato com o suporte.','ok');
+}
+
+console.log(`%c🔧 RPM Pro — Minha Assinatura ${APP_VERSION}`,'color:#E8930C;font-weight:bold;');
+init();
+</script>
+<div style="position:fixed;bottom:8px;left:8px;font-family:var(--mono);font-size:9px;color:var(--w4);letter-spacing:1px;z-index:100;">RPM Pro v04181200</div>
+</body>
+</html>
