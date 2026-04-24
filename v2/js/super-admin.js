@@ -15,7 +15,7 @@ const SUPER_ADMIN = {
   // Busca todos os dados de uma vez e cacheia
   async _fetchDados() {
     const [oficinasRes, usersRes, osRes, leadsRes, assinRes] = await Promise.all([
-      db.from('oficinas').select('id, nome, plano, trial_ate, ativo, cidade, estado, cnpj, telefone, whatsapp, created_at, status_pagamento, dias_atraso, bloqueado_em, asaas_customer_id').neq('id', 'aaaa0001-0000-0000-0000-000000000001').order('created_at', { ascending: false }),
+      db.from('oficinas').select('id, nome, plano, trial_ate, plan_expires_at, ativo, cidade, estado, cnpj, telefone, whatsapp, created_at, status_pagamento, dias_atraso, bloqueado_em, asaas_customer_id').neq('id', 'aaaa0001-0000-0000-0000-000000000001').order('created_at', { ascending: false }),
       db.from('profiles').select('id, oficina_id, nome, role, created_at').limit(2000),
       db.from('ordens_servico').select('id, oficina_id, status, valor_total, created_at').gte('created_at', new Date(Date.now() - 365*24*60*60*1000).toISOString()).limit(5000),
       db.from('leads').select('*').order('created_at', { ascending: false }),
@@ -395,13 +395,14 @@ const SUPER_ADMIN = {
               <span>👥 ${o._qtdUsers}</span>
               <span>🔧 ${o._qtdOS} OS</span>
               ${o._faturamento ? `<span>💰 ${APP.formatMoney(o._faturamento)}</span>` : ''}
-              ${o.trial_ate ? `<span>📅 ${APP.formatDate(o.trial_ate)}</span>` : ''}
+              ${o.plano === 'trial' && o.trial_ate ? `<span>📅 trial até ${APP.formatDate(o.trial_ate)}</span>` : ''}
+              ${o.plano !== 'trial' && o.plan_expires_at ? (() => { const d = new Date(o.plan_expires_at); const diff = Math.ceil((d - new Date()) / 86400000); const str = APP.formatDate(o.plan_expires_at); return diff < 0 ? `<span style="color:var(--danger);">📅 venceu ${str}</span>` : diff <= 5 ? `<span style="color:var(--warning);">📅 vence em ${diff}d (${str})</span>` : `<span>📅 vence ${str}</span>`; })() : ''}
             </div>
             ${o.cnpj ? `<div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">CNPJ: ${esc(o.cnpj)}</div>` : ''}
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
               <button class="btn btn-primary btn-sm" onclick="SUPER_ADMIN.acessarOficina('${o.id}','${escAttr(o.nome)}')">Acessar</button>
               <button class="btn btn-secondary btn-sm" onclick="SUPER_ADMIN.verUsuarios('${o.id}','${escAttr(o.nome)}')">Usuarios</button>
-              <button class="btn btn-secondary btn-sm" onclick="SUPER_ADMIN.editarPlano('${o.id}','${escAttr(o.nome)}','${o.plano || 'trial'}','${o.trial_ate || ''}')">Plano</button>
+              <button class="btn btn-secondary btn-sm" onclick="SUPER_ADMIN.editarPlano('${o.id}','${escAttr(o.nome)}','${o.plano || 'trial'}','${o.trial_ate || ''}','${o.plan_expires_at || ''}')">Plano</button>
               ${o.whatsapp ? `<a href="https://wa.me/55${o.whatsapp.replace(/[^0-9]/g, '')}" target="_blank" class="btn btn-success btn-sm">WhatsApp</a>` : ''}
             </div>
           </div>`;
@@ -547,7 +548,8 @@ const SUPER_ADMIN = {
     APP.toast('Voltou pro painel admin');
   },
 
-  editarPlano(oficinaId, nome, planoAtual, trialAte) {
+  editarPlano(oficinaId, nome, planoAtual, trialAte, planExpiresAt) {
+    const expiresDate = planExpiresAt ? planExpiresAt.substring(0, 10) : '';
     openModal(`
       <div class="modal-header">
         <h3>Plano — ${esc(nome)}</h3>
@@ -562,8 +564,12 @@ const SUPER_ADMIN = {
             </select>
           </div>
           <div class="form-group">
-            <label>Trial/Validade ate</label>
+            <label>Trial válido até (só trial)</label>
             <input type="date" class="form-control" id="adm-trial" value="${trialAte}">
+          </div>
+          <div class="form-group">
+            <label>Vencimento do plano pago (PIX manual)</label>
+            <input type="date" class="form-control" id="adm-expires" value="${expiresDate}">
           </div>
           <div class="modal-footer" style="padding:16px 0 0;border:0;">
             <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
@@ -578,11 +584,14 @@ const SUPER_ADMIN = {
     e.preventDefault();
     const plano = document.getElementById('adm-plano').value;
     const trialAte = document.getElementById('adm-trial').value || null;
+    const expiresVal = document.getElementById('adm-expires').value;
+    const planExpiresAt = expiresVal ? expiresVal + 'T23:59:59+00:00' : null;
 
     const { data, error } = await db.rpc('admin_mudar_plano', {
       p_oficina_id: oficinaId,
       p_plano: plano,
-      p_trial_ate: trialAte
+      p_trial_ate: trialAte,
+      p_plan_expires_at: planExpiresAt
     });
 
     if (error) { APP.toast('Erro: ' + error.message, 'error'); return; }
