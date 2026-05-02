@@ -20,6 +20,15 @@ const APP = {
     }
     this.oficina = this.profile.oficinas || null;
 
+    if (window.posthog) {
+      posthog.identify(user.id, {
+        email: user.email,
+        name: this.profile.nome || null,
+        oficina_id: this.profile.oficina_id || null,
+        oficina_nome: this.oficina?.nome || null
+      });
+    }
+
     // Atualiza nome da oficina no header
     const elNome = document.getElementById('oficina-nome');
     if (elNome) elNome.textContent = this.oficina?.nome || '';
