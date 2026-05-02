@@ -8,10 +8,11 @@ const AUTH = {
     return data;
   },
 
-  async cadastrar(email, senha, nomeOficina, nomeUsuario) {
+  async cadastrar(email, senha, nomeOficina, nomeUsuario, captchaToken) {
     // 1. Cria usuario no auth
     const { data: authData, error: authError } = await db.auth.signUp({
-      email, password: senha
+      email, password: senha,
+      options: { captchaToken }
     });
     if (authError) throw authError;
 

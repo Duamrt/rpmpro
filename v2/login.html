@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/svg+xml" href="img/icon-192.svg">
 <link rel="apple-touch-icon" href="img/icon-192.svg">
-<link rel="stylesheet" href="css/style.css?v=05020538">
+<link rel="stylesheet" href="css/style.css?v=05020606">
 <style>
   body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
   .hazard-login { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: repeating-linear-gradient(-45deg, var(--primary), var(--primary) 6px, transparent 6px, transparent 12px); opacity: 0.5; }
@@ -100,6 +100,11 @@
         <label>Senha</label>
         <input type="password" class="form-control" id="cad-senha" required minlength="6" placeholder="Minimo 6 caracteres">
       </div>
+      <div class="h-captcha" id="hcaptcha-rpm"
+        data-sitekey="527e801e-2256-4dec-a880-4d78ffe4e99c"
+        style="margin-bottom:16px">
+      </div>
+
       <button type="submit" class="btn btn-primary login-btn" id="btn-cadastro">Criar minha conta</button>
     </form>
   </div>
@@ -109,9 +114,10 @@
   </div>
 </div>
 
+<script src="https://js.hcaptcha.com/1/api.js?v=05020606" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/config.js?v=05020538"></script>
-<script src="js/auth.js?v=05020538"></script>
+<script src="js/config.js?v=05020606"></script>
+<script src="js/auth.js?v=05020606"></script>
 <script>
   // Checa se ja ta logado
   let _sessaoAtiva = null;
@@ -202,6 +208,10 @@
   async function handleCadastro(e) {
     e.preventDefault();
     const btn = document.getElementById('btn-cadastro');
+
+    const captchaToken = hcaptcha.getResponse();
+    if (!captchaToken) { showError('Confirme que você não é um robô.'); return; }
+
     btn.disabled = true;
     btn.textContent = 'Criando conta...';
 
@@ -210,13 +220,15 @@
         document.getElementById('cad-email').value,
         document.getElementById('cad-senha').value,
         document.getElementById('cad-oficina').value,
-        document.getElementById('cad-nome').value
+        document.getElementById('cad-nome').value,
+        captchaToken
       );
       window.location.href = 'kanban-v2.html';
     } catch (err) {
       showError(err.message);
       btn.disabled = false;
       btn.textContent = 'Criar minha conta';
+      hcaptcha.reset();
     }
   }
 </script>
